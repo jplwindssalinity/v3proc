@@ -184,14 +184,16 @@ MeasList::WriteAscii(
 LonLat
 MeasList::AverageLonLat()
 {
-	EarthPosition sum(0,0,0,EarthPosition::RECTANGULAR);
+	EarthPosition sum;
+	sum.SetPosition(0.0, 0.0, 0.0);
 	for (Meas* meas = GetHead(); meas; meas = GetNext())
 	{
 		sum += meas->center;
 	}
 
 	// The center of the earth is at 0,0,0 (geocentric coords)
-	EarthPosition earth_center(0,0,0,EarthPosition::RECTANGULAR);
+	EarthPosition earth_center;
+	earth_center.SetPosition(0.0, 0.0, 0.0);
 	// Find the surface point lying along the averaged direction.
 	EarthPosition ravg = earth_intercept(earth_center,sum);
 

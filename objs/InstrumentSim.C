@@ -169,10 +169,9 @@ InstrumentSim::ScatSim(
 		//----------------------------------------//
 
 		double alt, lat, lon;
-		if (spot_on_earth.GetAltLatLon(EarthPosition::GEODETIC,
-			 &alt, &lat, &lon) == 0)
+		if (! spot_on_earth.GetAltLonGDLat(&alt, &lon, &lat))
 		{
-			printf("Error: ScatSim can't convert spot_on_earth\n");
+			fprintf(stderr, "Error: ScatSim can't convert spot_on_earth\n");
 			return(0);
 		}
 
@@ -224,10 +223,9 @@ InstrumentSim::ScatSim(
 		{
 			l00FrameReady = 0;
 			l00_frame->time = time;
-			if (orbit_state->rsat.GetAltLatLon(EarthPosition::GEODETIC,
-				 &alt, &lat, &lon) == 0)
+			if (! orbit_state->rsat.GetAltLonGDLat(&alt, &lon, &lat))
 			{
-				printf("Error: ScatSim can't convert rsat\n");
+				fprintf(stderr, "Error: ScatSim can't convert rsat\n");
 				return(0);
 			}
 			l00_frame->gcAltitude = alt;
@@ -300,37 +298,26 @@ InstrumentSim::ScatSim(
 			// find the slice //
 			//----------------//
 
-			Vector3 centroid;
+			EarthPosition centroid;
+			Vector3 look_vector;
 			// guess at a reasonable slice frequency tolerance of 1%
 			float ftol = fabs(f1 - f2) / 100.0;
 			if (! FindSlice(&antenna_frame_to_gc, spacecraft, instrument,
-				look, azimuth, f1, f2, ftol, &(meas.outline), &centroid))
+				look, azimuth, f1, f2, ftol, &(meas.outline), &look_vector,
+				&centroid))
 			{
 				return(0);
 			}
-
-			//---------------------------------------------------//
-			// calculate the look vector in the geocentric frame //
-			//---------------------------------------------------//
-
-			Vector3 rlook_gc = antenna_frame_to_gc.Forward(centroid);
-
-			//-------------------------------//
-			// calculate the earth intercept //
-			//-------------------------------//
-
-			EarthPosition spot_on_earth = earth_intercept(orbit_state->rsat,
-				rlook_gc);
 
 			//----------------------------------------//
 			// get wind vector for the earth location //
 			//----------------------------------------//
 
 			double alt, lat, lon;
-			if (spot_on_earth.GetAltLatLon(EarthPosition::GEODETIC,
-				 &alt, &lat, &lon) == 0)
+			if (! centroid.GetAltLonGDLat(&alt, &lon, &lat))
 			{
-				printf("Error: ScatSim can't convert spot_on_earth\n");
+				fprintf(stderr,
+					"Error: ScatSim can't convert spot_on_earth\n");
 				return(0);
 			}
 
@@ -350,14 +337,14 @@ InstrumentSim::ScatSim(
 
 			// get local measurement azimuth
 			CoordinateSwitch gc_to_surface =
-				spot_on_earth.SurfaceCoordinateSystem();
-			Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);
+				centroid.SurfaceCoordinateSystem();
+			Vector3 rlook_surface = gc_to_surface.Forward(look_vector);
 			double r, theta, phi;
 			rlook_surface.SphericalGet(&r, &theta, &phi);
 			meas.eastAzimuth = phi;
 
 			// get incidence angle
-			meas.incidenceAngle = spot_on_earth.IncidenceAngle(rlook_gc);
+			meas.incidenceAngle = centroid.IncidenceAngle(look_vector);
 
 			//--------------------------------//
 			// convert wind vector to sigma-0 //
@@ -379,10 +366,9 @@ InstrumentSim::ScatSim(
 			{
 				l00FrameReady = 0;
 				l00_frame->time = time;
-				if (orbit_state->rsat.GetAltLatLon(EarthPosition::GEODETIC,
-					 &alt, &lat, &lon) == 0)
+				if (! orbit_state->rsat.GetAltLonGDLat(&alt, &lon, &lat))
 				{
-					printf("Error: ScatSim can't convert rsat\n");
+					fprintf(stderr, "Error: ScatSim can't convert rsat\n");
 					return(0);
 				}
 				l00_frame->gcAltitude = alt;

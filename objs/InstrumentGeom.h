@@ -46,7 +46,7 @@ CoordinateSwitch	AntennaFrameToGC(OrbitState* orbit_state,
 int		FindSlice(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, float look,
 			float azimuth, float freq_1, float freq_2, float freq_tol,
-			Outline* outline, Vector3* centroid);
+			Outline* outline, Vector3* look_vector, EarthPosition* centroid);
 
 int		JumpToFreq(CoordinateSwitch* beam_frame_to_gc, Spacecraft* spacecraft,
 			Instrument* instrument, float* az, float* el,

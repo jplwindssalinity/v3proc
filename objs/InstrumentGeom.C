@@ -117,7 +117,8 @@ FindSlice(
 	float				freq_2,
 	float				freq_tol,
 	Outline*			outline,
-	Vector3*			centroid)
+	Vector3*			look_vector,
+	EarthPosition*		centroid)
 {
 	float s_peak;
 	float look_array[3], azimuth_array[3];
@@ -217,7 +218,8 @@ FindSlice(
 	// create the outline //
 	//--------------------//
 
-	EarthPosition sum(0.0, 0.0, 0.0, EarthPosition::GEODETIC);
+	EarthPosition sum;
+	sum.SetPosition(0.0, 0.0, 0.0);
 	for (int i = 0; i < 2; i++)
 	{
 		for (int j = 0; j < 2; j++)
@@ -239,8 +241,15 @@ FindSlice(
 	// find the centroid //
 	//-------------------//
 
-	// hacked into outline loop
-	*centroid = sum / 4.0;
+	Vector3 earth_center;
+	earth_center.Set(0.0, 0.0, 0.0);
+	*centroid = earth_intercept(earth_center, sum);
+
+	//--------------------------------------------//
+	// determine the look vector for the centroid //
+	//--------------------------------------------//
+
+	*look_vector = *centroid - spacecraft->orbitState.rsat;
 
 	return(1);
 }
