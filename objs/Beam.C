@@ -27,6 +27,16 @@ Beam::Beam()
     return;
 }
 
+Beam::Beam(const Beam& from)
+:   polarization(NONE), _elecBoresightLook(0.0), _elecBoresightAzim(0.0),
+    _electrical_boresight_Em(0.0), _electrical_boresight_Am(0.0), _Nx(0),
+    _Ny(0), _ix_zero(0), _iy_zero(0), _x_spacing(0.0), _y_spacing(0.0),
+    _power_gain(NULL), peakGain(0.0)
+{
+    *this=from;
+    return;
+}
+
 Beam::~Beam()
 {
 	if (_power_gain != NULL)
@@ -577,6 +587,8 @@ Beam::operator=(
         polarization=from.polarization;
 	_elecBoresightLook=from._elecBoresightLook;
 	_elecBoresightAzim=from._elecBoresightAzim;
+        _electrical_boresight_Em=from._electrical_boresight_Em;
+        _electrical_boresight_Am=from._electrical_boresight_Am;
 	_antennaFrameToBeamFrame=from._antennaFrameToBeamFrame;
 	if(_power_gain!=NULL) free_array((void*)_power_gain,2,_Nx,_Ny);
 	_Nx=from._Nx;
@@ -584,6 +596,7 @@ Beam::operator=(
         _ix_zero=from._ix_zero;
         _iy_zero=from._iy_zero;
         _x_spacing=from._x_spacing;
+        _y_spacing=from._y_spacing;
         peakGain=from.peakGain;
         if(from._power_gain==NULL) _power_gain=from._power_gain;
 	else{

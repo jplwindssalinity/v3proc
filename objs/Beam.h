@@ -48,6 +48,7 @@ public:
 	//--------------//
 
 	Beam();
+	Beam(const Beam& from);
 	~Beam();
         
 	// Get and Set Beams separately.
@@ -93,9 +94,8 @@ public:
 	//-----------//
 
 	PolE			polarization;
-	double				
-_elecBoresightLook;		// in the antenna frame
-	double				_elecBoresightAzim;
+	double			_elecBoresightLook;		// in the antenna frame
+	double			_elecBoresightAzim;
 
 	// coordinate swith from antenna frame to beam measurement frame
 	CoordinateSwitch	_antennaFrameToBeamFrame;
@@ -110,9 +110,8 @@ _elecBoresightLook;		// in the antenna frame
 	double		_x_spacing;
 	double		_y_spacing;
 	float**		_power_gain;
-    float       peakGain;
+	float       peakGain;
 };
-
 #endif
 
 

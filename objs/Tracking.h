@@ -111,6 +111,7 @@ class RangeTracker : public TrackerBase<unsigned char>
     //--------------//
 
     RangeTracker();
+    RangeTracker(const RangeTracker& from){*this=from;return;}
     ~RangeTracker();
 
     //--------------//
@@ -168,6 +169,7 @@ public:
     //--------------//
 
     DopplerTracker();
+    DopplerTracker(const DopplerTracker& from){*this=from;return;}
     ~DopplerTracker();
 
     //------------//
