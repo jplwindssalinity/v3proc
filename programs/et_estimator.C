@@ -93,6 +93,18 @@ template class List<EarthPosition>;
 #define PULSES				3000
 #define AZIMUTH_STEP_SIZE	5.0
 
+#define MIN_ROLL			-0.1*dtr
+#define MAX_ROLL			0.1*dtr
+#define ROLL_STEP			0.01*dtr
+
+#define MIN_PITCH			-0.1*dtr
+#define MAX_PITCH			0.1*dtr
+#define PITCH_STEP			0.01*dtr
+
+#define MIN_YAW				-0.1*dtr
+#define MAX_YAW				0.1*dtr
+#define YAW_STEP			0.01*dtr
+
 //--------//
 // MACROS //
 //--------//
@@ -123,6 +135,8 @@ Attitude		reported_attitude[BEAMS][PULSES];
 unsigned int	antenna_encoder[BEAMS][PULSES];
 float			f_bb_peak[BEAMS][PULSES];
 int				pulse_count[BEAMS] = { 0, 0};
+float			commanded_doppler[BEAMS][PULSES];
+float			commanded_delay[BEAMS][PULSES];
 
 //--------------//
 // MAIN PROGRAM //
@@ -341,6 +355,18 @@ main(
 					return(0);
 				}
 
+				//--------------------------------------//
+				// set up the spacecraft and instrument //
+				//--------------------------------------//
+
+				spacecraft.orbitState = os;
+				antenna->SetAzimuthWithEncoder(
+					(unsigned int)frame->antennaPosition);
+				instrument.orbitTicks = beam->rangeTracker.OrbitStepToTicks(
+					orbit_step, instrument.orbitTicksPerOrbit);
+
+				SetRangeAndDoppler(&spacecraft, &instrument);
+
 				//-----------------------//
 				// get the azimuth angle //
 				//-----------------------//
@@ -397,6 +423,10 @@ main(
 				//------------//
 
 				unsigned int pc = pulse_count[beam_idx];
+				commanded_doppler[beam_idx][pc] = instrument.commandedDoppler;
+printf("x %g\n", instrument.commandedDoppler);
+				commanded_delay[beam_idx][pc] =
+					instrument.commandedRxGateDelay;
 				orbit_state[beam_idx][pc] = os;
 				antenna_encoder[beam_idx][pc] = encoder;
 				f_bb_peak[beam_idx][pc] = f_bb_data;
@@ -457,7 +487,10 @@ estimate(
 			instrument->orbitTicks = beam->rangeTracker.OrbitStepToTicks(
 				orbit_step, instrument->orbitTicksPerOrbit);
 
-			SetRangeAndDoppler(spacecraft, instrument);
+			instrument->commandedDoppler =
+				commanded_doppler[beam_idx][pulse_idx];
+			instrument->commandedRxGateDelay =
+				commanded_delay[beam_idx][pulse_idx];
 
 			//-----------------------//
 			// use reported attitude //
@@ -488,8 +521,214 @@ estimate(
 			printf("%d %g %g\n", antenna_encoder[beam_idx][pulse_idx],
 				f_bb_peak[beam_idx][pulse_idx], f_bb_expected);
 		}
-printf("&\n");
+		printf("&\n");
 	}
-	printf("&\n");
+
+	//--------------------------------//
+	// fit a third order to each beam //
+	//--------------------------------//
+
+	double target_az[BEAMS][4];
+	unsigned int target_encoder[BEAMS][4];
+	double target_bb[BEAMS][4];
+	unsigned int target_pulse[BEAMS][4];
+
+	double c[3];
+	Vector coefs;
+	coefs.Allocate(4);
+	for (int beam_idx = 0; beam_idx < 2; beam_idx++)
+	{
+		float antenna_azimuth[PULSES];
+		for (int pulse = 0; pulse < pulse_count[beam_idx]; pulse++)
+		{
+			antenna_azimuth[pulse] = 2.0 * M_PI *
+				(float)antenna_encoder[beam_idx][pulse] / 32768.0;
+		}
+
+		Matrix u, v;
+		Vector w;
+		u.SVDFit(antenna_azimuth, f_bb_peak[beam_idx], NULL,
+			pulse_count[beam_idx], &coefs, 4, &u, &v, &w);
+		coefs.GetElement(0, &(c[0]));
+		coefs.GetElement(1, &(c[1]));
+		coefs.GetElement(2, &(c[2]));
+		coefs.GetElement(3, &(c[3]));
+
+		double uc[3];
+		uc[0] = c[1];
+		uc[1] = 2.0 * c[2];
+		uc[2] = 3.0 * c[3];
+
+		double qr = uc[1] * uc[1] - 4.0 * uc[2] * uc[0];
+		double q = sqrt(qr);
+		double twoa = 2.0 * uc[2];
+
+		target_az[beam_idx][0] = (-uc[1] + q) / twoa;
+		target_az[beam_idx][1] = fmod(target_az[beam_idx][0] + 90.0 * dtr,
+			two_pi);
+		target_az[beam_idx][2] = (-uc[1] - q) / twoa;
+		target_az[beam_idx][3] = fmod(target_az[beam_idx][2] + 90.0 * dtr,
+			two_pi);
+
+		for (int i = 0; i < 4; i++)
+		{
+			target_encoder[beam_idx][i] =
+				antenna->AngleToEncoder(target_az[beam_idx][i]);
+			target_bb[beam_idx][i] = ((c[3] * target_az[beam_idx][i] +
+				c[2]) * target_az[beam_idx][i] +
+				c[1]) * target_az[beam_idx][i] + c[0];
+			target_pulse[beam_idx][i] = (unsigned int)pulse_count[beam_idx] /
+				2;
+		}
+	}
+ 
+	//---------------------------//
+	// for each roll, pitch, yaw //
+	//---------------------------//
+
+	double min_sum_dif = 9E69;
+	float min_roll, min_pitch, min_yaw;
+
+	for (float roll = MIN_ROLL; roll <= MAX_ROLL; roll += ROLL_STEP)
+	{
+	for (float pitch = MIN_PITCH; pitch <= MAX_PITCH; pitch += PITCH_STEP)
+	{
+	for (float yaw = MIN_YAW; yaw <= MAX_YAW; yaw += YAW_STEP)
+	{
+
+	double sum_dif = 0.0;
+
+	//------------------//
+	// for each beam... //
+	//------------------//
+
+	for (int beam_idx = 0; beam_idx < 2; beam_idx++)
+	{
+		//-------------------------//
+		// for each trial point... //
+		//-------------------------//
+
+		for (int point = 0; point < 4; point++)
+		{
+			//--------------------------------------//
+			// set up the spacecraft and instrument //
+			//--------------------------------------//
+
+			unsigned int tp = target_pulse[beam_idx][point];
+
+			spacecraft->orbitState = orbit_state[beam_idx][tp];
+			antenna->SetAzimuthWithEncoder(
+				target_encoder[beam_idx][point]);
+			antenna->currentBeamIdx = beam_idx;
+			Beam* beam = antenna->GetCurrentBeam();
+			instrument->orbitTicks = beam->rangeTracker.OrbitStepToTicks(
+				orbit_step, instrument->orbitTicksPerOrbit);
+
+			instrument->commandedDoppler = commanded_doppler[beam_idx][tp];
+			instrument->commandedRxGateDelay = commanded_delay[beam_idx][tp];
+
+			//---------------------//
+			// use search attitude //
+			//---------------------//
+
+			Attitude attitude;
+			attitude.SetRPY(roll, pitch, yaw);
+
+			CoordinateSwitch antenna_frame_to_gc =
+				AntennaFrameToGC(&(spacecraft->orbitState), &attitude,
+				antenna);
+
+			double center_look, center_azim;
+			if (! GetTwoWayPeakGain2(&antenna_frame_to_gc, spacecraft, beam,
+				instrument->antenna.actualSpinRate, &center_look,
+				&center_azim))
+			{
+				return(0);
+			}
+ 
+			Vector3 vector;
+			vector.SphericalSet(1.0, center_look, center_azim);
+			TargetInfoPackage tip;
+			if (! TargetInfo(&antenna_frame_to_gc, spacecraft, instrument,
+				vector, &tip))
+			{
+				return(0);
+			}
+			double f_bb_expected = tip.basebandFreq;
+			double dif = f_bb_expected - f_bb_peak[beam_idx][tp];
+			dif *= dif;
+printf("%d %g\n", target_encoder[beam_idx][point], f_bb_expected);
+
+			sum_dif += dif;
+
+		}
+printf("&\n");
+/*
+		for (int pulse_idx = 0; pulse_idx < pulse_count[beam_idx]; pulse_idx++)
+		{
+			//--------------------------------------//
+			// set up the spacecraft and instrument //
+			//--------------------------------------//
+
+			spacecraft->orbitState = orbit_state[beam_idx][pulse_idx];
+			antenna->SetAzimuthWithEncoder(
+				antenna_encoder[beam_idx][pulse_idx]);
+			antenna->currentBeamIdx = beam_idx;
+			Beam* beam = antenna->GetCurrentBeam();
+			instrument->orbitTicks = beam->rangeTracker.OrbitStepToTicks(
+				orbit_step, instrument->orbitTicksPerOrbit);
+
+			SetRangeAndDoppler(spacecraft, instrument);
+
+			//---------------------//
+			// use search attitude //
+			//---------------------//
+
+			Attitude attitude;
+			attitude.SetRPY(roll, pitch, yaw);
+
+			CoordinateSwitch antenna_frame_to_gc =
+				AntennaFrameToGC(&(spacecraft->orbitState), &attitude,
+				antenna);
+
+			double center_look, center_azim;
+			if (! GetTwoWayPeakGain2(&antenna_frame_to_gc, spacecraft, beam,
+				instrument->antenna.actualSpinRate, &center_look,
+				&center_azim))
+			{
+				return(0);
+			}
+ 
+			Vector3 vector;
+			vector.SphericalSet(1.0, center_look, center_azim);
+			TargetInfoPackage tip;
+			if (! TargetInfo(&antenna_frame_to_gc, spacecraft, instrument,
+				vector, &tip))
+			{
+				return(0);
+			}
+			double f_bb_expected = tip.basebandFreq;
+			double dif = f_bb_expected - f_bb_peak[beam_idx][pulse_idx];
+			dif *= dif;
+
+			sum_dif += dif;
+
+		}
+*/
+	}
+
+//	printf("%g %g %g %g\n", roll, pitch, yaw, sum_dif);
+	if (sum_dif < min_sum_dif)
+	{
+		min_roll = roll;
+		min_pitch = pitch;
+		min_yaw = yaw;
+		min_sum_dif = sum_dif;
+	}
+
+	}
+	}
+	}
+// printf("Min: %g %g %g %g\n", min_roll, min_pitch, min_yaw, min_sum_dif);
 	return(1);
 }
