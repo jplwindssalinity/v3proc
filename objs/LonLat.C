@@ -21,9 +21,31 @@ LonLat::LonLat()
 	return;
 }
 
+LonLat::LonLat(EarthPosition r)
+
+{
+	this->Set(r);
+	return;
+}
+
 LonLat::~LonLat()
 {
 	return;
+}
+
+//-------------//
+// LonLat::Set //
+//-------------//
+
+int
+LonLat::Set(EarthPosition r)
+
+{
+	double alt,lat,lon;
+	r.GetAltLatLon(EarthPosition::GEODETIC,&alt,&lat,&lon);
+	longitude = (float)lon;
+	latitude = (float)lat;
+	return(1);
 }
 
 //---------------//
@@ -85,10 +107,10 @@ Outline::Outline()
 
 Outline::~Outline()
 {
-	LonLat* lon_lat;
+	EarthPosition* r;
 	GotoHead();
-	while ((lon_lat=RemoveCurrent()) != NULL)
-		delete lon_lat;
+	while ((r=RemoveCurrent()) != NULL)
+		delete r;
 
 	return;
 }
@@ -96,6 +118,11 @@ Outline::~Outline()
 //----------------//
 // Outline::Write //
 //----------------//
+
+//
+// Oulines are written out as LonLat objects even though they are stored as
+// EarthPositions.  Thus, nonzero altitudes will be lost.
+//
 
 int
 Outline::Write(
@@ -105,9 +132,11 @@ Outline::Write(
 	if (fwrite((void *)&count, sizeof(int), 1, fp) != 1)
 		return(0);
 
-    for (LonLat* lon_lat = GetHead(); lon_lat; lon_lat = GetNext())
+	LonLat lon_lat;
+    for (EarthPosition* r = GetHead(); r; r = GetNext())
 	{
-        if (! lon_lat->Write(fp))
+		lon_lat.Set(*r);
+        if (! lon_lat.Write(fp))
 			return(0);
 	}
 	return(1);
@@ -127,14 +156,14 @@ Outline::Read(
 	if (fread((void *)&count, sizeof(int), 1, fp) != 1)
 		return(0);
 
+	LonLat lon_lat;
 	for (int i = 0; i < count; i++)
 	{
-		LonLat* new_lon_lat = new LonLat();
-		if (! new_lon_lat->Read(fp) ||
-			! Append(new_lon_lat))
-		{
-			return(0);
-		}
+		EarthPosition *new_r = new EarthPosition();
+		if (! lon_lat.Read(fp) ) return(0);
+		new_r->SetPosition(0.0, lon_lat.latitude, lon_lat.longitude,
+			EarthPosition::GEODETIC);
+		if (! Append(new_r)) return(0);
 	}
 	return(1);
 }
@@ -148,16 +177,19 @@ Outline::WriteBvg(
 	FILE*	fp)
 {
 	// write the points
-	LonLat* lon_lat;
-    for (lon_lat = GetHead(); lon_lat; lon_lat = GetNext())
+	EarthPosition* r;
+	LonLat lon_lat;
+    for (r = GetHead(); r; r = GetNext())
 	{
-        if (! lon_lat->WriteBvg(fp))
+		lon_lat.Set(*r);
+        if (! lon_lat.WriteBvg(fp))
 			return(0);
 	}
 
 	// close the figure
-	lon_lat = GetHead();
-	if (! lon_lat->WriteBvg(fp))
+	r = GetHead();
+	lon_lat.Set(*r);
+	if (! lon_lat.WriteBvg(fp))
 		return(0);
 
 	// indicate done
@@ -177,9 +209,9 @@ Outline::WriteBvg(
 void
 Outline::FreeContents()
 {
-	LonLat* lon_lat;
+	EarthPosition* r;
 	GotoHead();
-	while ((lon_lat = RemoveCurrent()) != NULL)
-		delete lon_lat;
+	while ((r = RemoveCurrent()) != NULL)
+		delete r;
 	return;
 }

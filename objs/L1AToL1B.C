@@ -112,16 +112,7 @@ L10ToL15::Convert(
 
 		Meas* meas = new Meas();
 		meas->value = l10->frame.science[i];
-		double alt,lat,lon;
-		if (spot_on_earth.GetAltLatLon(EarthPosition::GEODETIC, &alt,
-				&lat, &lon) == 0)
-		{
-			printf("Error: L10ToL15 can't convert spot_on_earth\n");
-			return(0);
-		}
-		meas->center.longitude = (float)lon;
-		meas->center.latitude = (float)lat;
-//		meas->outline = 
+		meas->center = spot_on_earth;
 		meas->pol = antenna->beam[beam_idx].polarization;
 
 		// get local measurement azimuth

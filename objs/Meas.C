@@ -12,6 +12,7 @@ static const char rcs_id_measurement_c[] =
 #include "Beam.h"
 #include "Constants.h"
 #include "LonLat.h"
+#include "GenericGeom.h"
 
 
 //======//
@@ -40,7 +41,7 @@ Meas::Write(
 {
 	if (fwrite((void *)&value, sizeof(float), 1, fp) != 1 ||
 		outline.Write(fp) != 1 ||
-		center.Write(fp) != 1 ||
+		center.WriteLonLat(fp) != 1 ||
 		fwrite((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
 		fwrite((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
@@ -62,7 +63,7 @@ Meas::Read(
 	FreeContents();
 	if (fread((void *)&value, sizeof(float), 1, fp) != 1 ||
 		outline.Read(fp) != 1 ||
-		center.Read(fp) != 1 ||
+		center.ReadLonLat(fp) != 1 ||
 		fread((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
 		fread((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
@@ -183,50 +184,18 @@ MeasList::WriteAscii(
 LonLat
 MeasList::AverageLonLat()
 {
-	// determine if the 360/0 gap is jumped (eg. points at 1 and 359 lon)
-	int above_pi = 0;
-	int below_pi = 0;
+	EarthPosition sum(0,0,0,EarthPosition::RECTANGULAR);
 	for (Meas* meas = GetHead(); meas; meas = GetNext())
 	{
-		if (meas->center.longitude > pi)
-			above_pi = 1;
-		else
-			below_pi = 1;
+		sum += meas->center;
 	}
 
-	float lon = 0.0;
-	float lat = 0.0;
-	int count = 0;
-	if (above_pi && below_pi)
-	{
-		for (Meas* meas = GetHead(); meas; meas = GetNext())
-		{
-			lon += meas->center.longitude;
-			if (meas->center.longitude > pi)
-				lon -= two_pi;		// wrapping was necessary
-			lat += meas->center.latitude;
-			count++;
-		}
-	}
-	else
-	{
-		for (Meas* meas = GetHead(); meas; meas = GetNext())
-		{
-			lon += meas->center.longitude;
-			lat += meas->center.latitude;
-			count++;
-		}
-	}
+	// The center of the earth is at 0,0,0 (geocentric coords)
+	EarthPosition earth_center(0,0,0,EarthPosition::RECTANGULAR);
+	// Find the surface point lying along the averaged direction.
+	EarthPosition ravg = earth_intercept(earth_center,sum);
 
-	lat /= (float)count;
-	lon /= (float)count;
-	if (lon < 0.0)
-		lon += two_pi;
-
-	LonLat lon_lat;
-	lon_lat.longitude = lon;
-	lon_lat.latitude = lat;
-
+	LonLat lon_lat(ravg);
 	return(lon_lat);
 }
 

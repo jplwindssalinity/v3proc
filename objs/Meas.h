@@ -62,7 +62,7 @@ public:
 
 	float		value;
 	Outline		outline;
-	LonLat		center;
+	EarthPosition		center;
 
 	PolE		pol;
 	float		eastAzimuth;		// azimuth angle ccw from east

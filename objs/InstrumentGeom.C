@@ -226,21 +226,12 @@ FindSlice(
 			rlook_antenna.SphericalSet(1.0, outline_look[i][j],
 				outline_azimuth[i][j]);
 			Vector3 rlook_gc = antenna_frame_to_gc->Forward(rlook_antenna);
-			EarthPosition spot_on_earth =
+			EarthPosition* spot_on_earth = new EarthPosition();
+			*spot_on_earth =
 				earth_intercept(spacecraft->orbitState.rsat, rlook_gc);
-			double alt, lat, lon;
-			if (spot_on_earth.GetAltLatLon(EarthPosition::GEODETIC,
-				&alt, &lat, &lon) == 0)
-			{
-				printf("Error: FindSlice can't convert spot_on_earth\n");
+			if (! outline->Append(spot_on_earth))
 				return(0);
-			}
-			LonLat* ll = new LonLat;
-			ll->longitude = lon;
-			ll->latitude = lat;
-			if (! outline->Append(ll))
-				return(0);
-			sum = sum + spot_on_earth;
+			sum = sum + *spot_on_earth;
 		}
 	}
 

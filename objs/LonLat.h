@@ -10,6 +10,7 @@ static const char rcs_id_lonlat_h[] =
 	"@(#) $Id$";
 
 #include "List.h"
+#include "EarthPosition.h"
 
 
 //======================================================================
@@ -34,7 +35,10 @@ public:
 	//--------------//
 
 	LonLat();
+	LonLat(EarthPosition r);
 	~LonLat();
+
+	Set(EarthPosition r);
 
 	//--------------//
 	// input/output //
@@ -58,11 +62,11 @@ public:
 //		Outline
 //
 // DESCRIPTION
-//		The Outline object contains a list of LonLat.  Typically used
+//		The Outline object contains a list of EarthPositions.  Typically used
 //		to indicate the outline of a cell on the earth.
 //======================================================================
 
-class Outline : public List<LonLat>
+class Outline : public List<EarthPosition>
 {
 public:
 
