@@ -1376,10 +1376,14 @@ WindSwath::Add(
 	if (cti < 0 || cti >= _crossTrackBins ||
 		ati < 0 || ati >= _alongTrackBins)
 	{
-        fprintf(stderr, "WindSwath::Add: out of range\n");
-        fprintf(stderr, "  cti = %d (Max = %d), ati = %d (Max = %d)\n",
-            cti, _crossTrackBins, ati, _alongTrackBins);
-		return(0);	// out of range
+		// Quietly dump out of range cells.
+		delete wvc;
+		return(1);
+
+//        fprintf(stderr, "WindSwath::Add: out of range\n");
+//        fprintf(stderr, "  cti = %d (Max = %d), ati = %d (Max = %d)\n",
+//            cti, _crossTrackBins, ati, _alongTrackBins);
+//		return(0);	// out of range
 	}
 
 	if (swath[cti][ati])
