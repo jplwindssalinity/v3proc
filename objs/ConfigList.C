@@ -25,6 +25,7 @@ StringPair::StringPair()
 StringPair::StringPair(
 	const char*		keyword,
 	const char*		value)
+:	_keyword(NULL), _value(NULL)
 {
 	Set(keyword, value);
 	return;
