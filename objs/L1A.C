@@ -343,7 +343,7 @@ L1A::WriteGSCalPulseRec()
     for (int i = 0; i < SLICES_PER_PULSE; i++)
     {
         cpr.loop_back_cal_power[i] = *(frame.loopbackSlices + i);
-        cpr.loop_back_cal_power[i] = *(frame.loadSlices + i);
+        cpr.load_cal_power[i] = *(frame.loadSlices + i);
     }
 
     // loop back cal noise
