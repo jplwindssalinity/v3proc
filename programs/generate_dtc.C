@@ -372,12 +372,5 @@ main(
 
 	free_array((void *)terms, 2, DOPPLER_ORBIT_STEPS, 3);
 
-	//-----------------------------------//
-	// mention the orbit period in ticks //
-	//-----------------------------------//
-
-	unsigned int ticks = instrument.TimeToOrbitTicks(orbit_period);
-	printf("ORBIT_TICKS_PER_ORBIT   %d\n", ticks);
-
 	return (0);
 }

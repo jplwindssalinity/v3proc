@@ -334,12 +334,5 @@ main(
 
 	free_array((void *)terms, 2, RANGE_ORBIT_STEPS, 3);
 
-	//-----------------------------------//
-	// mention the orbit period in ticks //
-	//-----------------------------------//
-
-	unsigned int ticks = instrument.TimeToOrbitTicks(orbit_period);
-	printf("%s	%d\n", ORBIT_TICKS_PER_ORBIT_KEYWORD, ticks);
-
 	return (0);
 }
