@@ -82,7 +82,7 @@ public:
 	float	receiverGateWidth;	// receiver gate width in seconds
 	float	timeOffset;			// seconds after prf for beam index 0
 
-protected:
+//protected:
 
 	//---------//
 	// methods //
