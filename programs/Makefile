@@ -27,6 +27,8 @@ PROGRAMS = \
 	l2a_to_l2b \
 	l2b_medianfilter \
 	l2b_to_vctr \
+        l2b_diff    \
+        l2b_diff_from_truth \
 	test_hdf_l2b \
 	l2b_metrics \
 	see_spot \
