@@ -77,6 +77,7 @@ PROGRAMS = \
 	l2a_dissect \
         l2a_getcell \
         l2b_spddif \
+        l2b_get_diffs \
         prob_3d \
         SNRandKpc \
         plot_obj_curves \
