@@ -6,64 +6,17 @@
 static const char rcs_id_instrumentgeom_c[] =
 	"@(#) $Id$";
 
-#include <stdio.h>
-#include <math.h>
-#include "InstrumentGeom.h"
 #include "CoordinateSwitch.h"
 #include "Ephemeris.h"
 #include "Attitude.h"
 #include "Antenna.h"
-#include "GenericGeom.h"
-#include "Constants.h"
-#include "LonLat.h"
-#include "Beam.h"
 #include "Matrix3.h"
+#include "GenericGeom.h"
+#include "Spacecraft.h"
+#include "Instrument.h"
+#include "LonLat.h"
+#include "InstrumentGeom.h"
 #include "Interpolate.h"
-#include "Misc.h"
-
-/*
-//---------------//
-// BeamFrameToGC //
-//---------------//
-
-CoordinateSwitch
-BeamFrameToGC(
-	OrbitState*		sc_orbit_state,
-	Attitude*		sc_attitude,
-	Antenna*		antenna)
-{
-	CoordinateSwitch total;
-
-	// geocentric to s/c velocity
-	Vector3 sc_xv, sc_yv, sc_zv;
-	velocity_frame(sc_orbit_state->rsat, sc_orbit_state->vsat,
-		&sc_xv, &sc_yv, &sc_zv);
-	CoordinateSwitch gc_to_scv(sc_xv, sc_yv, sc_zv);
-	total = gc_to_scv;
-
-	// s/c velocity to s/c body
-	CoordinateSwitch scv_to_sc_body(*sc_attitude);
-	total.Append(&scv_to_sc_body);
-
-	// s/c body to antenna pedestal
-	CoordinateSwitch sc_body_to_ant_ped = antenna->GetScBodyToAntPed();
-	total.Append(&sc_body_to_ant_ped);
-
-	// antenna pedestal to antenna frame
-	Attitude att;
-	att.Set(0.0, 0.0, antenna->azimuthAngle, 1, 2, 3);
-	CoordinateSwitch ant_ped_to_ant_frame(att);
-	total.Append(&ant_ped_to_ant_frame);
-
-	// antenna frame to beam frame
-	Beam* beam = antenna->GetCurrentBeam();
-	CoordinateSwitch ant_frame_to_beam_frame(beam->GetAntFrameToBeamFrame());
-	total.Append(&ant_frame_to_beam_frame);
-
-	total = total.ReverseDirection();
-	return(total);
-}
-*/
 
 //------------------//
 // AntennaFrameToGC //
@@ -106,17 +59,13 @@ AntennaFrameToGC(
 // FindSlice //
 //-----------//
 
-// step size for evaluating gradient
-#define FREQ_GRADIENT_ANGLE		0.009		// about 0.5 degree
-#define QUADRATIC_ANGLE			0.017		// about 0.5 degree
-
 int
 FindSlice(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
 	float				look,
-	float				azimuth,
+	float				azim,
 	float				freq_1,
 	float				freq_2,
 	float				freq_tol,
@@ -124,352 +73,111 @@ FindSlice(
 	Vector3*			look_vector,
 	EarthPosition*		centroid)
 {
-	float s_peak;
-	float look_array[3], azimuth_array[3];
-	double s[3];
+	//--------------------------------//
+	// find peak gain for frequency 1 //
+	//--------------------------------//
 
-	//-----------------------//
-	// get frequency 1 slice //
-	//-----------------------//
-
-	float angle_f1;
-	double c_f1[3];
 	float look_1 = look;
-	float azimuth_1 = azimuth;
-	JumpToFreq(antenna_frame_to_gc, spacecraft, instrument, &look_1,
-		&azimuth_1, FREQ_GRADIENT_ANGLE, freq_1, freq_tol);
-	IsoFreqAngle(antenna_frame_to_gc, spacecraft, instrument, &look_1,
-		&azimuth_1, FREQ_GRADIENT_ANGLE, &angle_f1);
-	SetPoints(look_1, azimuth_1, QUADRATIC_ANGLE, angle_f1, look_array,
-		azimuth_array);
-	GainSlice(antenna_frame_to_gc, spacecraft, instrument, look_array,
-		azimuth_array, s, c_f1);
-	s_peak = -c_f1[1] / (2.0 * c_f1[2]);
-	look_1 = look_array[1] + s_peak * sin(angle_f1);
-	azimuth_1 = azimuth_array[1] + s_peak * cos(angle_f1);
+	float azim_1 = azim;
+	float gain_1;
+	if (! FindPeakGainAtFreq(antenna_frame_to_gc, spacecraft, instrument,
+		freq_1, freq_tol, &look_1, &azim_1, &gain_1))
+	{
+		return(0);
+	}
 
-	//-----------------------//
-	// get frequency 2 slice //
-	//-----------------------//
+	//--------------------------------//
+	// find peak gain for frequency 2 //
+	//--------------------------------//
 
-	float angle_f2;
-	double c_f2[3];
 	float look_2 = look;
-	float azimuth_2 = azimuth;
-	JumpToFreq(antenna_frame_to_gc, spacecraft, instrument, &look_2,
-		&azimuth_2, FREQ_GRADIENT_ANGLE, freq_2, freq_tol);
-	IsoFreqAngle(antenna_frame_to_gc, spacecraft, instrument, &look_2,
-		&azimuth_2, FREQ_GRADIENT_ANGLE, &angle_f2);
-	SetPoints(look_2, azimuth_2, QUADRATIC_ANGLE, angle_f2, look_array,
-		azimuth_array);
-	GainSlice(antenna_frame_to_gc, spacecraft, instrument, look_array,
-		azimuth_array, s, c_f2);
-	s_peak = -c_f2[1] / (2.0 * c_f2[2]);
-	look_2 = look_array[1] + s_peak * sin(angle_f2);
-	azimuth_2 = azimuth_array[1] + s_peak * cos(angle_f2);
-
-	//----------------------------------------//
-	// determine absolute peak gain for slice //
-	//----------------------------------------//
-
-	look_array[0] = look_1;
-	azimuth_array[0] = azimuth_1;
-	look_array[2] = look_2;
-	azimuth_array[2] = azimuth_2;
-	double c[3];
-	GainSlice(antenna_frame_to_gc, spacecraft, instrument, look_array,
-		azimuth_array, s, c);
-	s_peak = -c[1] / (2.0 * c[2]);
-
-	float gain;
-	if (s_peak < s[0] || s_peak > s[2])
+	float azim_2 = azim;
+	float gain_2;
+	if (! FindPeakGainAtFreq(antenna_frame_to_gc, spacecraft, instrument,
+		freq_2, freq_tol, &look_2, &azim_2, &gain_2))
 	{
-		// peak of pattern is out of slice, choose highest gain in slice
-		float gain1 = ((c[2] * s[0]) + c[1]) * s[0] + c[0];
-		float gain2 = ((c[2] * s[2]) + c[1]) * s[2] + c[0];
-		gain = MAX(gain1, gain2);
-	}
-	else
-	{
-		// peak of pattern is in slice, use peak
-		gain = ((c[2] * s_peak) + c[1]) * s_peak + c[0];
+		return(0);
 	}
 
-	float outline_look[4];
-	float outline_azimuth[4];
-	double qr;
-	float q, twoa, s1, s2;
+	//--------------------------//
+	// find peak gain for slice //
+	//--------------------------//
 
-	//------------------------------------------------------//
-	// determine target -3 db gain location for frequency 1 //
-	//------------------------------------------------------//
-
-	// just solve the quadratic for the desired gain
-	float target_gain = gain / pow(10.0, 0.3);
-	qr = c_f1[1]*c_f1[1] - 4.0 * c_f1[2] * (c_f1[0] - target_gain);
-
-	if (qr < 0.0)
+	float peak_gain;
+	if (! FindPeakGainForSlice(antenna_frame_to_gc, spacecraft, instrument,
+		look_1, azim_1, gain_1, look_2, azim_2, gain_2, &peak_gain))
 	{
-		// desired gain not on pattern, use best point
-		outline_look[0] = look_array[0];
-		outline_azimuth[0] = azimuth_array[0];
-		outline_look[1] = look_array[0];
-		outline_azimuth[1] = azimuth_array[0];
-	}
-	else
-	{
-		q = sqrt(qr);
-		twoa = 2.0 * c_f1[2];
-		s1 = (-c_f1[1] + q) / twoa;
-		s2 = (-c_f1[1] - q) / twoa;
-
-		outline_look[0] = look_array[0] + s1 * sin(angle_f1);
-		outline_azimuth[0] = azimuth_array[0] + s1 * cos(angle_f1);
-		outline_look[1] = look_array[0] + s2 * sin(angle_f1);
-		outline_azimuth[1] = azimuth_array[0] + s2 * cos(angle_f1);
+		return(0);
 	}
 
-	//------------------------------------------------------//
-	// determine target -3 db gain location for frequency 2 //
-	//------------------------------------------------------//
+	//------------------------------//
+	// find target gain for corners //
+	//------------------------------//
 
-	// just solve the quadratic for the desired gain
-	qr = c_f2[1]*c_f2[1] - 4.0 * c_f2[2] * (c_f2[0] - target_gain);
+	float target_gain = peak_gain / pow(10.0, 0.3);
 
-	if (qr < 0.0)
+	//------------------------------//
+	// find corners for frequency 1 //
+	//------------------------------//
+
+	float c_look_1[2];
+	float c_azim_1[2];
+	if (! FindSliceCorners(antenna_frame_to_gc, spacecraft, instrument,
+		look_1, azim_1, target_gain, c_look_1, c_azim_1))
 	{
-		// desired gain not on pattern, use best point
-		outline_look[3] = look_array[2];
-		outline_azimuth[3] = azimuth_array[2];
-		outline_look[2] = look_array[2];
-		outline_azimuth[2] = azimuth_array[2];
-	}
-	else
-	{
-		q = sqrt(qr);
-		twoa = 2.0 * c_f2[2];
-		s1 = (-c_f2[1] + q) / twoa;
-		s2 = (-c_f2[1] - q) / twoa;
-
-		outline_look[3] = look_array[2] + s1 * sin(angle_f2);
-		outline_azimuth[3] = azimuth_array[2] + s1 * cos(angle_f2);
-		outline_look[2] = look_array[2] + s2 * sin(angle_f2);
-		outline_azimuth[2] = azimuth_array[2] + s2 * cos(angle_f2);
+		return(0);
 	}
 
-	//--------------------//
-	// create the outline //
-	//--------------------//
+	//------------------------------//
+	// find corners for frequency 2 //
+	//------------------------------//
+
+	float c_look_2[2];
+	float c_azim_2[2];
+	if (! FindSliceCorners(antenna_frame_to_gc, spacecraft, instrument,
+		look_2, azim_2, target_gain, c_look_2, c_azim_2))
+	{
+		return(0);
+	}
+
+	//----------------------//
+	// generate the outline //
+	//----------------------//
+
+	float c_look[4], c_azim[4];
+
+	c_look[0] = c_look_1[0];
+	c_look[1] = c_look_1[1];
+	c_look[2] = c_look_2[1];
+	c_look[3] = c_look_2[0];
+
+	c_azim[0] = c_azim_1[0];
+	c_azim[1] = c_azim_1[1];
+	c_azim[2] = c_azim_2[1];
+	c_azim[3] = c_azim_2[0];
 
 	EarthPosition sum;
 	sum.SetPosition(0.0, 0.0, 0.0);
 	for (int i = 0; i < 4; i++)
 	{
 		Vector3 rlook_antenna;
-		rlook_antenna.SphericalSet(1.0, outline_look[i], outline_azimuth[i]);
+		rlook_antenna.SphericalSet(1.0, c_look[i], c_azim[i]);
 		Vector3 rlook_gc = antenna_frame_to_gc->Forward(rlook_antenna);
 		EarthPosition* spot_on_earth = new EarthPosition();
 		*spot_on_earth =
 			earth_intercept(spacecraft->orbitState.rsat, rlook_gc);
 		if (! outline->Append(spot_on_earth))
 			return(0);
-		sum = sum + *spot_on_earth;
+		sum += *spot_on_earth;
 	}
 
-	//-------------------//
-	// find the centroid //
-	//-------------------//
+	//------------------------//
+	// determine the centroid //
+	//------------------------//
 
 	EarthPosition earth_center;
 	earth_center.SetPosition(0.0, 0.0, 0.0);
 	*centroid = earth_intercept(earth_center, sum);
-
-	//--------------------------------------------//
-	// determine the look vector for the centroid //
-	//--------------------------------------------//
-
-	*look_vector = *centroid - spacecraft->orbitState.rsat;
-
-	return(1);
-}
-
-//------------//
-// JumpToFreq //
-//------------//
-
-int
-JumpToFreq(
-	CoordinateSwitch*	antenna_frame_to_gc,
-	Spacecraft*			spacecraft,
-	Instrument*			instrument,
-	float*				look,
-	float*				azimuth,
-	float				grad_angle,
-	float				target_freq,
-	float				freq_tol)
-{
-	Vector3 vector;
-	do	
-	{
-		//-------------------------//
-		// evalulate the frequency //
-		//-------------------------//
-
-		vector.SphericalSet(1.0, *look, *azimuth);
-		TargetInfoPackage tip;
-		if (! TargetInfo(vector, antenna_frame_to_gc, spacecraft, instrument,
-			&tip))
-		{
-			return(0);
-		}
-
-		//---------------//
-		// check if done //
-		//---------------//
-
-		if (fabs(target_freq - tip.basebandFreq) < freq_tol)
-			break;
-
-		//----------------------------------//
-		// calculate the frequency gradient //
-		//----------------------------------//
-
-		float df_dlook, df_dazim;
-		if (! FreqGradient(antenna_frame_to_gc, spacecraft, instrument,
-			*look, *azimuth, grad_angle, &df_dlook, &df_dazim))
-		{
-			return(0);
-		}
-
-		//-----------------------------------------------------//
-		// calculate look and azimuth for the target frequency //
-		//-----------------------------------------------------//
-
-/* not needed I think
-		if (! TargetInfo(vector, antenna_frame_to_gc, spacecraft, instrument,
-			&tip))
-		{
-			return(0);
-		}
-*/
-		float delta_look, delta_azim;
-		if (df_dazim == 0.0)
-			delta_azim = 0.0;
-		else
-		{
-			delta_azim = (target_freq - tip.basebandFreq) /
-				(df_dlook * df_dlook / df_dazim + df_dazim);
-		}
-
-		if (df_dlook == 0.0)
-			delta_look = 0.0;
-		else
-		{
-			delta_look = (target_freq - tip.basebandFreq) /
-				(df_dazim * df_dazim / df_dlook + df_dlook);
-		}
-
-		//------------------------------//
-		// jump to the look and azimuth //
-		//------------------------------//
-
-		*look += delta_look;
-		*azimuth += delta_azim;
-
-	} while (1);
-
-	return(1);
-}
-
-//--------------//
-// FreqGradient //
-//--------------//
-
-int
-FreqGradient(
-	CoordinateSwitch*	antenna_frame_to_gc,
-	Spacecraft*			spacecraft,
-	Instrument*			instrument,
-	float				look,
-	float				azimuth,
-	float				grad_angle,
-	float*				df_dlook,
-	float*				df_dazim)
-{
-	TargetInfoPackage tip1, tip2;
-
-	// calculate angle deltas
-	float half_grad_angle = grad_angle / 2.0;
-
-	// calculate look angles
-	float look1 = look - half_grad_angle;
-	float look2 = look + half_grad_angle;
-
-	// convert to vectors
-	Vector3 vector_look1;
-	vector_look1.SphericalSet(1.0, look1, azimuth);
-
-	Vector3 vector_look2;
-	vector_look2.SphericalSet(1.0, look2, azimuth);
-
-	// calculate baseband frequency
-	if (! TargetInfo(vector_look1, antenna_frame_to_gc, spacecraft, instrument,
-			&tip1) ||
-		! TargetInfo(vector_look2, antenna_frame_to_gc, spacecraft, instrument,
-			&tip2))
-	{
-		return(0);
-	}
-
-	// calculate look gradient
-	*df_dlook = (tip2.basebandFreq - tip1.basebandFreq) / (look2 - look1);
-
-	// calculate azimuth angles
-	float azim1 = azimuth - half_grad_angle;
-	float azim2 = azimuth + half_grad_angle;
-
-	// convert to look angles
-	Vector3 vector_azim1;
-	vector_azim1.SphericalSet(1.0, look, azim1);
-
-	Vector3 vector_azim2;
-	vector_azim2.SphericalSet(1.0, look, azim2);
-
-	// calculate baseband frequency
-	if (! TargetInfo(vector_azim1, antenna_frame_to_gc, spacecraft, instrument,
-			&tip1) ||
-		! TargetInfo(vector_azim2, antenna_frame_to_gc, spacecraft, instrument,
-			&tip2))
-	{
-		return(0);
-	}
-
-	// calculate azimuth gradient
-	*df_dazim = (tip2.basebandFreq - tip1.basebandFreq) / (azim2 - azim1);
-
-	return(1);
-}
-
-//-------------------//
-// RangeAndRoundTrip //
-//-------------------//
-// Calculates the range and round trip time
-
-int
-RangeAndRoundTrip(
-	Vector3				vector,
-	CoordinateSwitch*	antenna_frame_to_gc,
-	Spacecraft*			spacecraft,
-	TargetInfoPackage*	tip)
-{
-	// dereference
-	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
-
-	// Compute earth intercept point and range.
-	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
-	tip->rTarget = earth_intercept(sc_orbit_state->rsat, ulook_gc);
-	tip->slantRange = (sc_orbit_state->rsat - tip->rTarget).Magnitude();
-	tip->roundTripTime = 2.0 * tip->slantRange / speed_light_kps;
 
 	return(1);
 }
@@ -484,10 +192,10 @@ RangeAndRoundTrip(
 
 int
 DopplerAndDelay(
-	Vector3				vector,
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
-	Instrument*			instrument)
+	Instrument*			instrument,
+	Vector3				vector)
 {
 	//-----------------------------------------------------//
 	// calculate receiver gate delay to put echo in center //
@@ -540,24 +248,24 @@ DopplerAndDelay(
 //------------//
 // Compute some useful numbers for the target on the earth's surface
 // intercepted by a particular direciton in the antenna frame.
-
+ 
 int
 TargetInfo(
-	Vector3				vector,
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
+	Vector3				vector,
 	TargetInfoPackage*	tip)
 {
 	// dereference
 	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
 
-	// Compute earth intercept point and range.
+	// Compute earth intercept point and range
 	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
 	tip->rTarget = earth_intercept(sc_orbit_state->rsat, ulook_gc);
 	EarthPosition* rspot = &(tip->rTarget);
 	tip->slantRange = (sc_orbit_state->rsat - *rspot).Magnitude();
-
+ 
 	// Compute doppler shift for the earth intercept point.
 	double actual_xmit_frequency = instrument->baseTransmitFreq +
 		instrument->commandedDoppler;
@@ -565,7 +273,7 @@ TargetInfo(
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
 	double lambda = speed_light / actual_xmit_frequency;
 	tip->dopplerFreq = 2.0 * 1000.0 * (vrel % ulook_gc) / lambda;
-
+ 
 	// Compute baseband frequency shift due to range
 	int current_beam_idx = instrument->antenna.currentBeamIdx;
 	float pulse_width = instrument->antenna.beam[current_beam_idx].pulseWidth;
@@ -579,79 +287,581 @@ TargetInfo(
 		(instrument->receiverGateDelay - echo_center);
 	tip->basebandFreq = tip->rangeFreq - (tip->dopplerFreq +
 		instrument->commandedDoppler);
+ 
+return(1);
+}
+
+//--------------------//
+// FindPeakGainAtFreq //
+//--------------------//
+// Finds the look, azimuth, and gain value for the peak gain at
+// a given baseband frequency
+
+#define LOOK_OFFSET			0.01
+#define AZIMUTH_OFFSET		0.01
+#define ANGLE_OFFSET		0.01
+#define ANGLE_TOL			0.001
+
+int
+FindPeakGainAtFreq(
+	CoordinateSwitch*	antenna_frame_to_gc,
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
+	float				target_freq,
+	float				freq_tol,
+	float*				look,
+	float*				azim,
+	float*				gain)
+{
+	float dif;
+	Vector3 vector;
+	TargetInfoPackage tip;
+	do
+	{
+		//--------------------//
+		// find the frequency //
+		//--------------------//
+
+		if (! FindFreq(antenna_frame_to_gc, spacecraft, instrument,
+			target_freq, freq_tol, look, azim))
+		{
+			return(0);
+		}
+
+		//------------------------------------//
+		// determine the iso-frequency deltas //
+		//------------------------------------//
+
+		float df_dlook, df_dazim;
+		if (! FreqGradient(antenna_frame_to_gc, spacecraft, instrument, *look,
+			LOOK_OFFSET, *azim, AZIMUTH_OFFSET, &df_dlook, &df_dazim))
+		{
+			return(0);
+		}
+		// rotate gradient 90 degrees for iso-frequency deltas
+		float delta_look = df_dazim;
+		float delta_azim = -df_dlook;
+
+		//----------------------//
+		// locate the peak gain //
+		//----------------------//
+
+		if (! FindPeakGainUsingDeltas(antenna_frame_to_gc, spacecraft,
+			instrument, delta_look, delta_azim, ANGLE_OFFSET, ANGLE_TOL,
+			look, azim, gain))
+		{
+			return(0);
+		}
+
+		//--------------------------------------//
+		// check if still on iso-frequency line //
+		//--------------------------------------//
+
+		vector.SphericalSet(1.0, *look, *azim);
+		if (! TargetInfo(antenna_frame_to_gc, spacecraft, instrument, vector,
+			&tip))
+		{
+			return(0);
+		}
+		dif = fabs(tip.basebandFreq - target_freq);
+	} while (dif > freq_tol);
+
+	return(1);
+}
+
+//----------//
+// FindFreq //
+//----------//
+// Finds the look and azimuth of a point with the given frequency
+
+int
+FindFreq(
+	CoordinateSwitch*	antenna_frame_to_gc,
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
+	float				target_freq,
+	float				freq_tol,
+	float*				look,
+	float*				azim)
+{
+	Vector3 vector;
+	TargetInfoPackage tip;
+	do
+	{
+		//-------------------------------------//
+		// get the starting baseband frequency //
+		//-------------------------------------//
+
+		vector.SphericalSet(1.0, *look, *azim);
+		TargetInfoPackage tip;
+		if (! TargetInfo(antenna_frame_to_gc, spacecraft, instrument, vector,
+			&tip))
+		{
+			return(0);
+		}
+
+		//---------------//
+		// check if done //
+		//---------------//
+
+		if (fabs(target_freq - tip.basebandFreq) < freq_tol)
+			break;
+
+		//------------------------//
+		// calculate the gradient //
+		//------------------------//
+
+		float df_dlook, df_dazim;
+		if (! FreqGradient(antenna_frame_to_gc, spacecraft, instrument, *look,
+			LOOK_OFFSET, *azim, AZIMUTH_OFFSET, &df_dlook, &df_dazim))
+		{
+			return(0);
+		}
+
+		//---------------------------------------//
+		// calculate the target look and azimuth //
+		//---------------------------------------//
+
+		float delta_look, delta_azim;
+		if (df_dazim == 0.0)
+			delta_azim = 0.0;
+		else
+		{
+			delta_azim = (target_freq - tip.basebandFreq) /
+				(df_dlook * df_dlook / df_dazim + df_dazim);
+		}
+ 
+		if (df_dlook == 0.0)
+			delta_look = 0.0;
+		else
+		{
+			delta_look = (target_freq - tip.basebandFreq) /
+				(df_dazim * df_dazim / df_dlook + df_dlook);
+		}
+ 
+		//------------------------------//
+		// jump to the look and azimuth //
+		//------------------------------//
+ 
+		*look += delta_look;
+		*azim += delta_azim;
+
+	} while (1);
 
 	return(1);
 }
 
 //--------------//
-// IsoFreqAngle //
+// FreqGradient //
 //--------------//
+// Calculate the baseband frequency gradient
 
 int
-IsoFreqAngle(
+FreqGradient(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
-	float*				look,
-	float*				azimuth,
-	float				grad_angle,
-	float*				angle)
+	float				look,
+	float				look_offset,
+	float				azim,
+	float				azim_offset,
+	float*				df_dlook,
+	float*				df_dazim)
 {
+	TargetInfoPackage tip_1, tip_2;
+
 	//------------------------//
-	// calculate the gradient //
+	// calculate look vectors //
 	//------------------------//
 
-	float df_dlook, df_dazim;
-	if (! FreqGradient(antenna_frame_to_gc, spacecraft, instrument, *look,
-		*azimuth, grad_angle, &df_dlook, &df_dazim))
+	float look_1 = look - look_offset;
+	float look_2 = look + look_offset;
+	Vector3 vector_look_1, vector_look_2;
+	vector_look_1.SphericalSet(1.0, look_1, azim);
+	vector_look_2.SphericalSet(1.0, look_2, azim);
+
+	//------------------------------//
+	// calculate baseband frequency //
+	//------------------------------//
+
+	if (! TargetInfo(antenna_frame_to_gc, spacecraft, instrument,
+		vector_look_1, &tip_1) ||
+		! TargetInfo(antenna_frame_to_gc, spacecraft, instrument,
+		vector_look_2, &tip_2))
 	{
 		return(0);
 	}
 
-	//--------------------------------------------//
-	// determine the iso-frequency gradient angle //
-	//--------------------------------------------//
+	//-------------------------//
+	// calculate look gradient //
+	//-------------------------//
 
-	*angle = atan2(df_dlook, df_dazim);		// max grad angle
-	*angle += pi / 2.0;						// iso freq angle
+	*df_dlook = (tip_2.basebandFreq - tip_1.basebandFreq) / (look_2 - look_1);
+
+	//---------------------------//
+	// calculate azimuth vectors //
+	//---------------------------//
+
+	float azim_1 = azim - azim_offset;
+	float azim_2 = azim + azim_offset;
+	Vector3 vector_azim_1, vector_azim_2;
+	vector_azim_1.SphericalSet(1.0, look, azim_1);
+	vector_azim_2.SphericalSet(1.0, look, azim_2);
+
+	//------------------------------//
+	// calculate baseband frequency //
+	//------------------------------//
+
+	if (! TargetInfo(antenna_frame_to_gc, spacecraft, instrument,
+		vector_azim_1, &tip_1) ||
+		! TargetInfo(antenna_frame_to_gc, spacecraft, instrument,
+		vector_azim_2, &tip_2))
+	{
+		return(0);
+	}
+
+	//----------------------------//
+	// calculate azimuth gradient //
+	//----------------------------//
+
+	*df_dazim = (tip_2.basebandFreq - tip_1.basebandFreq) / (azim_2 - azim_1);
 
 	return(1);
 }
 
-//-----------//
-// SetPoints //
-//-----------//
+//-------------------------//
+// FindPeakGainUsingDeltas //
+//-------------------------//
+
+#define R	0.61803399
+#define C	(1.0-R)
 
 int
-SetPoints(
-	float		look_0,
-	float		azim_0,
-	float		distance,
-	float		angle,
-	float		look[3],
-	float		azim[3])
+FindPeakGainUsingDeltas(
+	CoordinateSwitch*	antenna_frame_to_gc,
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
+	float				delta_look,
+	float				delta_azim,
+	float				angle_offset,
+	float				angle_tol,
+	float*				look,
+	float*				azim,
+	float*				gain)
 {
-	//----------------------------------------//
-	// calculate two outer points on the line //
-	//----------------------------------------//
+	//------------------------//
+	// scale to radian deltas //
+	//------------------------//
 
-	float delta_look = distance * sin(angle);
-	look[0] = look_0 - delta_look;
-	look[2] = look_0 + delta_look;
+	float scale = sqrt(delta_look * delta_look + delta_azim * delta_azim);
+	delta_look /= scale;
+	delta_azim /= scale;
 
-	float delta_azim = distance * cos(angle);
-	azim[0] = azim_0 - delta_azim;
-	azim[2] = azim_0 + delta_azim;
+	//--------------------------------//
+	// golden section search for peak //
+	//--------------------------------//
+
+	float ax = -angle_offset;
+	float cx = angle_offset;
+	float bx = ax + (cx - ax) * R;
+
+	//--------------------//
+	// widen if necessary //
+	//--------------------//
+
+	float again, bgain, cgain;
+
+	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+		*look + ax * delta_look, *azim + ax * delta_azim, &again);
+	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+		*look + bx * delta_look, *azim + bx * delta_azim, &bgain);
+	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+		*look + cx * delta_look, *azim + cx * delta_azim, &cgain);
+
+	do
+	{
+		if (again > bgain)
+		{
+			ax -= angle_offset;
+			PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+				*look + ax * delta_look, *azim + ax * delta_azim, &again);
+			continue;
+		}
+
+		if (cgain > bgain)
+		{
+			cx += angle_offset;
+			PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+				*look + cx * delta_look, *azim + cx * delta_azim, &cgain);
+			continue;
+		}
+
+		break;
+	} while (1);
+
+	//---------------//
+	// do the search //
+	//---------------//
+
+	float x0, x1, x2, x3;
+	x0 = ax;
+	x3 = cx;
+	if (cx - bx > bx - ax)
+	{
+		x1 = bx;
+		x2 = bx + C * (cx - bx);
+	}
+	else
+	{
+		x2 = bx;
+		x1 = bx - C * (bx - ax);
+	}
+
+	float f1, f2;
+	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+		*look + x1 * delta_look, *azim + x1 * delta_azim, &f1);
+	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+		*look + x2 * delta_look, *azim + x2 * delta_azim, &f2);
+
+	while (x3 - x0 > angle_tol)
+	{
+		if (f2 > f1)
+		{
+			x0 = x1;
+			x1 = x2;
+			x2 = x2 + C * (x3 - x2);
+			f1 = f2;
+			PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+				*look + x2 * delta_look, *azim + x2 * delta_azim, &f2);
+		}
+		else
+		{
+			x3 = x2;
+			x2 = x1;
+			x1 = x1 - C * (x1 - x0);
+			f2 = f1;
+			PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+				*look + x1 * delta_look, *azim + x1 * delta_azim, &f1);
+		}
+	}
+
+	if (f1 > f2)
+	{
+		*look += x1 * delta_look;
+		*azim += x1 * delta_azim;
+		*gain = f1;
+	}
+	else
+	{
+		*look += x2 * delta_look;
+		*azim += x2 * delta_azim;
+		*gain = f2;
+	}
 
 	return(1);
 }
 
-//-----------//
-// GainSlice //
-//-----------//
+//----------------------//
+// FindPeakGainForSlice //
+//----------------------//
+// Finds the peak gain in a slice
 
 int
-GainSlice(
+FindPeakGainForSlice(
+	CoordinateSwitch*	antenna_frame_to_gc,
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
+	float				look_1,
+	float				azim_1,
+	float				gain_1,
+	float				look_2,
+	float				azim_2,
+	float				gain_2,
+	float*				peak_gain)
+{
+	float mid_look = (look_1 + look_2) / 2.0;
+	float mid_azim = (azim_1 + azim_2) / 2.0;
+
+	float mid_gain;
+	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument, mid_look,
+		mid_azim, &mid_gain);
+
+	if (gain_1 > mid_gain && gain_1 > gain_2)
+	{
+		*peak_gain = gain_1;
+		return(1);
+	}
+	else if (gain_2 > mid_gain && gain_2 > gain_1)
+	{
+		*peak_gain = gain_2;
+		return(1);
+	}
+	else if (mid_gain > gain_1 && mid_gain > gain_2)
+	{
+		float look_array[3], azim_array[3];
+		look_array[0] = look_1;
+		look_array[1] = mid_look;
+		look_array[2] = look_2;
+		azim_array[0] = azim_1;
+		azim_array[1] = mid_azim;
+		azim_array[2] = azim_2;
+
+		double s[3], c[3];
+		QuadFit(antenna_frame_to_gc, spacecraft, instrument, look_array,
+			azim_array, s, c);
+		PeakFit(c, peak_gain);
+		return(1);
+	}
+	return(0);
+}
+
+//------------------//
+// FindSliceCorners //
+//------------------//
+
+#define PEAK_ANGLE_OFFSET		0.009
+#define LOCAL_ANGLE_OFFSET		0.004
+
+int
+FindSliceCorners(
+	CoordinateSwitch*	antenna_frame_to_gc,
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
+	float				look,
+	float				azim,
+	float				target_gain,
+	float				corner_look[2],
+	float				corner_azim[2])
+{
+	//------------------------------------//
+	// determine the iso-frequency deltas //
+	//------------------------------------//
+ 
+	float df_dlook, df_dazim;
+	if (! FreqGradient(antenna_frame_to_gc, spacecraft, instrument, look,
+		LOOK_OFFSET, azim, AZIMUTH_OFFSET, &df_dlook, &df_dazim))
+	{
+		return(0);
+	}
+	// rotate gradient 90 degrees for iso-frequency deltas
+	float delta_look = df_dazim;
+	float delta_azim = -df_dlook;
+
+	//------------------------//
+	// scale to radian deltas //
+	//------------------------//
+ 
+	float scale = sqrt(delta_look * delta_look + delta_azim * delta_azim);
+	delta_look /= scale;
+	delta_azim /= scale;
+
+	//-----------------//
+	// fit a quadratic //
+	//-----------------//
+
+	float look_array[3];
+	look_array[0] = look - PEAK_ANGLE_OFFSET * delta_look;
+	look_array[1] = look;
+	look_array[2] = look + PEAK_ANGLE_OFFSET * delta_look;
+
+	float azim_array[3];
+	azim_array[0] = azim - PEAK_ANGLE_OFFSET * delta_azim;
+	azim_array[1] = azim;
+	azim_array[2] = azim + PEAK_ANGLE_OFFSET * delta_azim;
+
+	double s[3], c[3];
+	QuadFit(antenna_frame_to_gc, spacecraft, instrument, look_array,
+		azim_array, s, c);
+
+	//-------------------------//
+	// check out the quadratic //
+	//-------------------------//
+
+	double qr = c[1] * c[1] - 4.0 * c[2] * (c[0] - target_gain);
+	if (qr < 0.0)
+	{
+		corner_look[0] = look;
+		corner_azim[0] = azim;
+		corner_look[1] = look;
+		corner_azim[1] = azim;
+		return(1);
+	}
+
+	//-------------------//
+	// for each point... //
+	//-------------------//
+
+	double q = sqrt(qr);
+	double twoa = 2.0 * c[2];
+
+	static const float coef[2] = { -1.0, 1.0 };
+	for (int i = 0; i < 2; i++)
+	{
+		//--------------------------//
+		// estimate using quadratic //
+		//--------------------------//
+
+		double target_s = (-c[1] + coef[i] * q) / twoa;
+		float local_look = look + target_s * delta_look;
+		float local_azim = azim + target_s * delta_azim;
+
+corner_look[i] = local_look;
+corner_azim[i] = local_azim;
+
+/*
+		//-----------------------//
+		// fit a local quadratic //
+		//-----------------------//
+
+		float local_look_array[3];
+		local_look_array[0] = local_look - LOCAL_ANGLE_OFFSET * delta_look;
+		local_look_array[1] = local_look;
+		local_look_array[2] = local_look + LOCAL_ANGLE_OFFSET * delta_look;
+
+		float local_azim_array[3];
+		local_azim_array[0] = local_azim - LOCAL_ANGLE_OFFSET * delta_azim;
+		local_azim_array[1] = local_azim;
+		local_azim_array[2] = local_azim + LOCAL_ANGLE_OFFSET * delta_azim;
+
+		double local_s[3], local_c[3];
+		QuadFit(antenna_frame_to_gc, spacecraft, instrument, local_look_array,
+			local_azim_array, local_s, local_c);
+
+		//-------------------------//
+		// check out the quadratic //
+		//-------------------------//
+
+		qr = local_c[1] * local_c[1] - 4.0 * local_c[2] *
+			(local_c[0] - target_gain);
+		if (qr < 0.0)
+		{
+			corner_look[i] = look;
+			corner_azim[i] = azim;
+			continue;
+		}
+
+		//----------------------//
+		// find the target gain //
+		//----------------------//
+
+		q = sqrt(qr);
+		twoa = 2.0 * c[2];
+		s = (-c[1] + coef[i] * q) / twoa;
+		local_look = look + s * delta_look;
+		local_azim = azim + s * delta_azim;
+*/
+	}
+
+	return(1);
+}
+
+//---------//
+// QuadFit //
+//---------//
+// Generates coefficients for a quadratic fit of a beam pattern
+
+int
+QuadFit(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
@@ -660,17 +870,10 @@ GainSlice(
 	double				s[3],
 	double				c[3])
 {
-	//------------------------//
-	// calculate center point //
-	//------------------------//
-
-	look[1] = (look[0] + look[2]) / 2.0;
-	azim[1] = (azim[0] + azim[2]) / 2.0;
-
 	//-------------------------------//
 	// calculate projected distances //
 	//-------------------------------//
-
+ 
 	s[1] = 0.0;
 	float dl, da;
 	dl = (look[1] - look[0]);
@@ -683,7 +886,7 @@ GainSlice(
 	//-------------------//
 	// for each point... //
 	//-------------------//
-
+ 
 	TargetInfoPackage tip;
 	Vector3 vector;
 	double gain[3];
@@ -691,17 +894,17 @@ GainSlice(
 	for (int i = 0; i < 3; i++)
 	{
 		vector.SphericalSet(1.0, look[i], azim[i]);
-
+ 
 		//---------------------------//
 		// calculate round trip time //
 		//---------------------------//
-
-		RangeAndRoundTrip(vector, antenna_frame_to_gc, spacecraft, &tip);
-
+ 
+		RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, vector, &tip);
+ 
 		//----------------//
 		// calculate gain //
 		//----------------//
-
+ 
 		if (! instrument->antenna.beam[idx].GetPowerGainProduct(look[i],
 			azim[i], tip.roundTripTime, instrument->antenna.spinRate,
 			&(gain[i])))
@@ -709,82 +912,87 @@ GainSlice(
 			return(0);
 		}
 	}
-
+ 
 	//-----------------//
 	// fit a quadratic //
 	//-----------------//
-
+ 
 	if (! polcoe(s, gain, 2, c))
 		return(0);
+ 
+	return(1);
+}
+
+//---------//
+// PeakFit //
+//---------//
+// Finds the peak gain for a given gain slice fit
+
+int
+PeakFit(
+	double		c[3],
+	float*		peak_gain)
+{
+	if (c[2] == 0.0)
+		return(0);
+
+//	float dlook_ds = (look_array[2] - look_array[0]) / (s[2] - s[0]);
+//	float dazim_ds = (azim_array[2] - azim_array[0]) / (s[2] - s[0]);
+
+	double s_peak = -c[1] / (2.0 * c[2]);
+//	*peak_look = look_array[1] + s_peak * dlook_ds;
+//	*peak_azim = azim_array[1] + s_peak * dazim_ds;
+	*peak_gain = ((c[2] * s_peak) + c[1]) * s_peak + c[0];
 
 	return(1);
 }
 
-//-------------------//
-// DetailedGainSlice //
-//-------------------//
-
+//------------------//
+// PowerGainProduct //
+//------------------//
+ 
 int
-DetailedGainSlice(
-	Instrument*		instrument,
-	float			look[3],
-	float			azim[3],
-	double			s[3],
-	double			c[3])
+PowerGainProduct(
+	CoordinateSwitch*	antenna_frame_to_gc,
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
+	float				look,
+	float				azim,
+	float*				gain)
 {
-	//------------------------//
-	// calculate center point //
-	//------------------------//
-
-	look[1] = (look[0] + look[2]) / 2.0;
-	azim[1] = (azim[0] + azim[2]) / 2.0;
-
-	//-------------------------------//
-	// calculate projected distances //
-	//-------------------------------//
-
-	s[1] = 0.0;
-	float dl, da;
-	dl = (look[1] - look[0]);
-	da = (azim[1] - azim[0]);
-	s[0] = -sqrt(dl*dl + da*da);
-	dl = (look[2] - look[1]);
-	da = (azim[2] - azim[1]);
-	s[2] = sqrt(dl*dl + da*da);
-
+	Vector3 vector;
+	vector.SphericalSet(1.0, look, azim);
+	TargetInfoPackage tip;
+	RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, vector, &tip);
 	int idx = instrument->antenna.currentBeamIdx;
-	double angle = atan2(dl, da);
-	angle += pi / 2.0;						// iso freq angle
-	double xgain;
-	for (float xs = -0.1; xs < 0.1; xs += 0.001)
-	{
-		float xlook = xs * cos(angle) + look[1];
-		float xazim = xs * sin(angle) + azim[1];
-		if (instrument->antenna.beam[idx].GetPowerGain(xlook, xazim, &xgain))
-			printf("%g %g\n", xs, xgain);
-	}
-
-	//---------------------------------//
-	// get gain for those three points //
-	//---------------------------------//
-
-	double gain[3];
-	if (! instrument->antenna.beam[idx].GetPowerGain(look[0], azim[0],
-			&gain[0]) ||
-		! instrument->antenna.beam[idx].GetPowerGain(look[1], azim[1],
-			&gain[1]) ||
-		! instrument->antenna.beam[idx].GetPowerGain(look[2], azim[2],
-			&gain[2]))
+	if (! instrument->antenna.beam[idx].GetPowerGainProduct(look, azim,
+		tip.roundTripTime, instrument->antenna.spinRate, gain))
 	{
 		return(0);
 	}
+	return(1);
+}
 
-	//-----------------//
-	// fit a quadratic //
-	//-----------------//
-
-	if (! polcoe(s, gain, 2, c))
-		return(0);
-
+//-------------------//
+// RangeAndRoundTrip //
+//-------------------//
+// Calculates the range and round trip time
+ 
+int
+RangeAndRoundTrip(
+	CoordinateSwitch*	antenna_frame_to_gc,
+	Spacecraft*			spacecraft,
+	Vector3				vector,
+	TargetInfoPackage*	tip)
+{
+	// dereference
+	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
+ 
+	// Compute earth intercept point and range.
+	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
+	tip->rTarget = earth_intercept(sc_orbit_state->rsat, ulook_gc);
+	tip->slantRange = (sc_orbit_state->rsat - tip->rTarget).Magnitude();
+	tip->roundTripTime = 2.0 * tip->slantRange / speed_light_kps;
+ 
 	return(1);
 }

@@ -143,8 +143,8 @@ L10ToL15::Convert(
 			Vector3 vector;
 			TargetInfoPackage tip;
 			vector.SphericalSet(1.0, look, azimuth);		// boresight
-			if (! TargetInfo(vector, &antenna_frame_to_gc, &spacecraft,
-				instrument, &tip))
+			if (! TargetInfo(&antenna_frame_to_gc, &spacecraft, instrument,
+				vector, &tip))
 			{
 				return(0);
 			}

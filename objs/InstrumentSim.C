@@ -164,12 +164,12 @@ InstrumentSim::LocateSlices(
 		return(0);
 
 	vector.SphericalSet(1.0, look, azimuth);		// boresight
-	DopplerAndDelay(vector, &antenna_frame_to_gc, spacecraft, instrument);
+	DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument, vector);
 
 // try it
 TargetInfoPackage tip;
-if (! TargetInfo(vector, &antenna_frame_to_gc, spacecraft,
-	instrument, &tip))
+if (! TargetInfo(&antenna_frame_to_gc, spacecraft,
+	instrument, vector, &tip))
 {
 	return(0);
 }
@@ -548,18 +548,21 @@ InstrumentSim::ScatSim(
 	//-----------------------------//
 
 	Antenna* antenna = &(instrument->antenna);
+
+	//---------------------//
+	// fill in other stuff //
+	//---------------------//
+
+	if (! SetL00Spacecraft(spacecraft))
+		return(0);
+
+	if (! SetL00Science(spacecraft))
+		return(0);
+
 	if (_spotNumber >= l00.frame.beamCyclesPerFrame * antenna->numberOfBeams)
 	{
-		//---------------------//
-		// fill in other stuff //
-		//---------------------//
-
-		if (! SetL00Spacecraft(spacecraft))
-			return(0);
-
 		l00FrameReady = 1;	// indicate frame is ready
 		_spotNumber = 0;	// prepare to start a new frame
-
 	}
 	else
 	{
