@@ -265,9 +265,11 @@ IntegrateSlices(
 				  box_center, &tip))
 		      return(0);
 
-		    if((look_scan_dir == 1 && tip.basebandFreq < low_gain_freq)
-		                           ||
-		      (look_scan_dir==-1 && tip.basebandFreq > low_gain_freq))
+//		    if((look_scan_dir == 1 && tip.basebandFreq < low_gain_freq)
+//		                           ||
+//	      (look_scan_dir==-1 && tip.basebandFreq > low_gain_freq))
+
+		    if(look_num>=num_look_steps_per_slice)
 		      break;
 
 //		    if(debug) printf("Look=%g Freq=%g \n",(look1+look2)/2.0,
