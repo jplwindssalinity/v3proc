@@ -117,16 +117,6 @@ Kprs::Accumulate(MeasSpotList* quiet, MeasSpotList* noisy)
     int beam_number=spot_number%_numBeams;
     int slice_number=0;
 
-    // geocentric to spacecraft velocity //
-    Vector3 sc_xv, sc_yv, sc_zv;
-    velocity_frame(quiet_spot->scOrbitState.rsat, 
-		   quiet_spot->scOrbitState.vsat,
-		   &sc_xv, &sc_yv, &sc_zv);
-  
-    CoordinateSwitch gc_to_scv(sc_xv,sc_yv,sc_zv);
-
-
-    
     Meas* noisy_slice=noisy_spot->GetHead();
     Meas* quiet_slice=quiet_spot->GetHead();
 
@@ -141,18 +131,8 @@ Kprs::Accumulate(MeasSpotList* quiet, MeasSpotList* noisy)
 	fprintf(stderr,"Kprs::Accumulate-- Too many slices.\n");
 	return(0);
       }
-      //------------------------------------------------------//
-      // Calculate Azimuth (relative to spacecraft velocity   //
-      //------------------------------------------------------//
 
-      Vector3 gc_look_vector= quiet_slice->centroid - 
-	                    quiet_spot->scOrbitState.rsat;
-
-      Vector3 scv_look_vector=gc_to_scv.Forward(gc_look_vector);
-      double r, look, azimuth;
-      scv_look_vector.SphericalGet(&r, &look, &azimuth);
-
-      if(!Accumulate(quiet_slice,noisy_slice,beam_number,slice_number,azimuth))
+      if(!Accumulate(quiet_slice,noisy_slice,beam_number,slice_number,quiet_slice->scanAngle))
 	return(0);
       noisy_slice=noisy_spot->GetNext();
       quiet_slice=quiet_spot->GetNext();
