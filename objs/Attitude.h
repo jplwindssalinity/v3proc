@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef ATTITUDE_H
 #define ATTITUDE_H
@@ -40,10 +40,11 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	int		SetOrder(int order_1, int order_2, int order_3);
-	int		SetRPY(float roll, float pitch, float yaw);
-	int		Set(float roll, float pitch, float yaw, int order_1, int order_2,
-				int order_3);
+    int     SetOrder(int order_1, int order_2, int order_3);
+    int     SetRPY(float roll, float pitch, float yaw);
+    int     GetRPY(float* roll, float* pitch, float* yaw);
+    int     Set(float roll, float pitch, float yaw, int order_1, int order_2,
+                int order_3);
 
 	float	GetRoll() { return(_roll); };
 	void	SetRoll(float roll) { _roll = roll; };

@@ -71,6 +71,22 @@ Attitude::SetRPY(
 	return(1);
 }
 
+//------------------//
+// Attitude::GetRPY //
+//------------------//
+
+int
+Attitude::GetRPY(
+    float*  roll,
+    float*  pitch,
+    float*  yaw)
+{
+    *roll = _roll;
+    *pitch = _pitch;
+    *yaw = _yaw;
+    return(1);
+}
+
 //---------------//
 // Attitude::Set //
 //---------------//
