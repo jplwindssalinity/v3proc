@@ -345,9 +345,25 @@ process_orbit_step(
     double p = -atan2(imag[1], real[1]);
     double c = real[0] / (double)g_count[beam_idx];
 
-    //-------------------------//
-    // report the fit sinusoid //
-    //-------------------------//
+    //-----------------------------//
+    // estimate the standard error //
+    //-----------------------------//
+
+    double sum_sqr_dif = 0.0;
+    for (int i = 0; i < g_count[beam_idx]; i++)
+    {
+        double dif = g_bb[beam_idx][i] -
+            (a * cos(g_azimuth[beam_idx][i] + p) + c);
+        sum_sqr_dif += dif*dif;
+    }
+    double std_dev = sqrt(sum_sqr_dif / (double)g_count[beam_idx]);
+    double std_err = std_dev / sqrt((double)g_count[beam_idx]);
+
+    fprintf(ofp, "# standard error = %g Hz\n", std_err);
+
+    //--------------------------------------------//
+    // report the fit sinusoid and standard error //
+    //--------------------------------------------//
 
     double step = two_pi / 360.0;
     for (double azim = 0; azim < two_pi + step / 2.0; azim += step)
