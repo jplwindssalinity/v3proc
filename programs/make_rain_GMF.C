@@ -565,13 +565,14 @@ main(
                 meas = meas_list->GetNext())
             {
                 float chi = dir - meas->eastAzimuth + pi;
+		chi=chi*rtd;
 		while (chi < 0.0)
-		  chi += two_pi;
-		while (chi >= two_pi)
-		  chi -= two_pi;
-                chi=chi*rtd;
+		  chi += 360;
+		while (chi >= 360)
+		  chi -= 360;
 
-                int ichi=int(floor(chi*rtd/CHI_STEP));
+
+                int ichi=int(floor(chi/CHI_STEP));
                 int ibeam=meas->beamIdx;
                 float s0=meas->value;
                 if(ibeam<0 || ibeam >1 || ispd <0 || ispd>19 || ichi<0 ||
