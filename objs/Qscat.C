@@ -537,12 +537,11 @@ CdsBeamInfo::~CdsBeamInfo()
 //==========//
 
 QscatCds::QscatCds()
-:   priDn(0), txPulseWidthDn(0), rxGateDelayDn(0), txDopplerDn(0),
-    spinRate(LOW_SPIN_RATE),
-    useRgc(0), useDtc(0), useBYUDop(0), useBYURange(0), useSpectralDop(0),
-    useSpectralRange(0), azimuthIntegrationRange(0), azimuthStepSize(0),
-    orbitTicksPerOrbit(0), orbitTime(0), orbitStep(0), eqxTime(0.0),
-    rawEncoder(0), heldEncoder(0)
+:   turnOnTime(0.0), priDn(0), txPulseWidthDn(0), rxGateDelayDn(0),
+    txDopplerDn(0), spinRate(LOW_SPIN_RATE), useRgc(0), useDtc(0),
+    useBYUDop(0), useBYURange(0), useSpectralDop(0), useSpectralRange(0),
+    azimuthIntegrationRange(0), azimuthStepSize(0), orbitTicksPerOrbit(0),
+    orbitTime(0), orbitStep(0), eqxTime(0.0), rawEncoder(0), heldEncoder(0)
 {
     return;
 }
@@ -560,8 +559,15 @@ int
 QscatCds::SetTime(
     double  new_time)
 {
+    if (turnOnTime < 0.0)
+    {
+        // this is the first time the time is getting set
+        // we will boldly assume this is the turn on time
+        turnOnTime = new_time;
+    }
     time = new_time;
-    instrumentTime = (unsigned int)(time * INSTRUMENT_TICKS_PER_SECOND);
+    double run_time = time - turnOnTime;
+    instrumentTime = (unsigned int)(run_time * INSTRUMENT_TICKS_PER_SECOND);
 
     double time_since_eqx = time - eqxTime;
     orbitTime = (unsigned int)(time_since_eqx * ORBIT_TICKS_PER_SECOND);
@@ -578,19 +584,6 @@ QscatCds::SetEqxTime(
     double  eqx_time)
 {
     eqxTime = eqx_time;
-    return(1);
-}
-
-//-------------------------------------//
-// QscatCds::SetTimeWithInstrumentTime //
-//-------------------------------------//
-
-int
-QscatCds::SetTimeWithInstrumentTime(
-    unsigned int  ticks)
-{
-    instrumentTime = ticks;
-    time = ((double)ticks + 0.5) / INSTRUMENT_TICKS_PER_SECOND;
     return(1);
 }
 

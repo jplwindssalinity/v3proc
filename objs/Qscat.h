@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef QSCAT_H
 #define QSCAT_H
@@ -237,7 +237,6 @@ public:
 
     int  SetTime(double new_time);
     int  SetEqxTime(double eqx_time);
-    int  SetTimeWithInstrumentTime(unsigned int ticks);
 
     double          OrbitFraction();
     unsigned short  SetAndGetOrbitStep();
@@ -262,6 +261,8 @@ public:
     //-----------//
     // variables //
     //-----------//
+
+    double          turnOnTime;
 
     unsigned char   priDn;
     unsigned char   txPulseWidthDn;
@@ -357,10 +358,10 @@ public:
 
     int  SetEncoderAzimuth(unsigned short encoder, int pri_delay);
     int  SetEncoderAzimuthUnquantized(double angle)
-             { 
-                 sas.antenna.SetEncoderAzimuthAngle(angle);
-                 return(1);
-             }
+         {
+             sas.antenna.SetEncoderAzimuthAngle(angle);
+             return(1);
+         }
 
     int  SetAllAzimuthsUsingGroundImpact(Spacecraft* spacecraft, double angle);
     int  GroundImpactToTxCenterAzimuth(Spacecraft* spacecraft);
