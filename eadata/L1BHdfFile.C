@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.10  1999/10/26 23:12:10  sally
+// need to re-open the h file when getting the time parameter (GetTime())
+//
 // 
 //    Rev 1.4   26 Oct 1999 16:08:30   sally
 // need to reopen file when get the time parameter (GetTime())
@@ -133,7 +136,7 @@ int32     index,    // dataset index
 Itime*    recTime)  // OUT: record time
 {
     // open the file if it has been opened yet
-    if (_hFileID = FAIL)
+    if (_hFileID == FAIL)
     {
         if ((_status = OpenFile()) != HdfFile::OK)
             return _status;
