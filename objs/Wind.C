@@ -395,7 +395,7 @@ WVC::WriteL2B(
 	//----------------------//
         // Write directionRanges//
         //----------------------//
-	directionRanges.Write(fp);
+	if(!directionRanges.Write(fp))return(0);
 	return(1);
 }
 
@@ -457,7 +457,7 @@ WVC::ReadL2B(
 	//----------------------//
         // Read directionRanges //
         //----------------------//
-	directionRanges.Read(fp);
+	if(!directionRanges.Read(fp)) return(0);
 	return(1);
 }
 
