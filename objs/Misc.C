@@ -9,6 +9,7 @@ static const char rcs_id_misc_c[] =
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "Misc.h"
 
 //---------//
 // no_path //
