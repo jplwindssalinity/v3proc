@@ -168,23 +168,25 @@ QscatSes::GetSliceFreqBw(
 //-------------------//
 
 int
-QscatSes::GetQRel(int rel_slice_idx, float* q_slice)
+QscatSes::GetQRel(
+    int     rel_slice_idx,
+    float*  q_slice)
 {
-
-	//-------------------------------------------------------------------//
+    //-------------------------------------------------------------------//
     // Get the noise energy ratio q from a table. (ref. IOM-3347-98-043) //
-	//-------------------------------------------------------------------//
+    //-------------------------------------------------------------------//
+    // the Q table has 12 entries, so 12 should be used as the number
+    // of slices in rel_to_abs_idx
 
     int i;
-    if (! rel_to_abs_idx(rel_slice_idx, GetTotalSliceCount(), &i))
+    if (! rel_to_abs_idx(rel_slice_idx, 12, &i))
     {
-      fprintf(stderr,"GetQRel: Error converting relative slice index\n");
-      return(0);
+        fprintf(stderr, "GetQRel: Error converting relative slice index\n");
+        return(0);
     }
 
     *q_slice = Qtable[i];
     return(1);
-
 }
 
 //-----------------------------//
