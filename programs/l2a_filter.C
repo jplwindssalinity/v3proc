@@ -8,7 +8,7 @@
 //    l2a_filter
 //
 // SYNOPSIS
-//    l2a_filter [ -f filter ] [ -h ] <input_file> <output_file>
+//    l2a_filter [ -f filter ] [ -hl ] <input_file> <output_file>
 //
 // DESCRIPTION
 //    Filters a l2a file based on the filters specified.
@@ -16,6 +16,7 @@
 // OPTIONS
 //    [ - filter ]  Use the specified filter.
 //    [ -h ]        Help. Displays the list of filters.
+//    [ -l ]        Land Map to use to filter land (default is use landflag)
 //
 // OPERANDS
 //    The following operands are supported:
@@ -62,6 +63,7 @@ static const char rcs_id[] =
 #include "BufferedList.C"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "LandMap.h"
 
 //-----------//
 // TEMPLATES //
@@ -81,7 +83,7 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "f:h"
+#define OPTSTRING  "f:hl:"
 
 #define NO_COPOL_STRING         "copol0"
 #define NO_START_FRAMES_STRING  "start0"
@@ -90,8 +92,7 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -f filter ]", "[ -h ]", "<input_file>",
-    "<output_file>", 0 };
+const char* usage_array[] = { "[ -f filter ]", "[ -h ]","[ -l landmap_file]", "<input_file>","<output_file>", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -115,6 +116,9 @@ main(
     int opt_no_outer_beam = 0;
     int opt_no_HHVH=0;
     int opt_no_VVHV=0;
+    int opt_no_land=0;
+
+    SimpleLandMap* land=NULL;
 
     //------------------------//
     // parse the command line //
@@ -166,6 +170,11 @@ main(
             {
                 opt_no_VVHV = 1;
             }
+            else if (strcasecmp(optarg, "LAND0") == 0)
+            {
+                opt_no_land = 1;
+            }
+            
             else
             {
                 fprintf(stderr, "%s: error parsing filter %s\n", command,
@@ -186,7 +195,12 @@ main(
             printf("  outer0 : Remove outer beam  measurements\n");
             printf("  HHVH0 : Remove HHVH  measurements\n");
             printf("  VVHV0 : Remove VVHV  measurements\n");
+            printf("  LAND0 : Remove land  measurements\n");
             exit(0);
+            break;
+        case 'l':
+            land=new SimpleLandMap;
+            land->Read(optarg);
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -266,6 +280,15 @@ main(
                 (meas->measType == Meas::HH_VH_CORR_MEAS_TYPE));
             remove = remove || ( opt_no_VVHV &&
                 (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE));
+            
+            int landflag=meas->landFlag;
+            if(land){ 
+               double alt,lon,lat;
+	       meas->centroid.GetAltLonGCLat(&alt,&lon,&lat);
+               landflag= landflag || land->IsLand(lon,lat);
+	    }
+            remove = remove || (opt_no_land && landflag);
+
             if(remove)
             {
                 meas = frame->measList.RemoveCurrent();

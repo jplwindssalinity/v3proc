@@ -97,6 +97,8 @@ public:
 
            // return 1 if OK, 0 if no data, -1 if error or EOF
     int    ReadL2AHdfCell(void);        // get data at next index
+    int    ConvertRow();        // get data for next along track index
+                                // and write to file
     int    currentRowNo;
     int    currentCellNo;
 
@@ -104,3 +106,4 @@ public:
 };
 
 #endif
+

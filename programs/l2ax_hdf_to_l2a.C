@@ -217,14 +217,11 @@ main(
 	//-----------------------//
     // return 1 if OK, 0 if no data, -1 if error or EOF
     int rc;
-    while ((rc = l2aHdf.ReadL2AHdfCell()) != -1)
+    int count=0;
+    while ((rc = l2aHdf.ConvertRow()) != -1)
     {
-        if (rc == 1 && ! l2aHdf.WriteDataRec())
-        {
-            fprintf(stderr, "%s: writing to %s failed.\n",
-                               argv[0], output_file);
-            exit(1);
-        }
+      count=count+1;
+      printf("%d\n",count); 
     }
 
     status = l2aHdf.HdfFile::GetStatus();
@@ -238,3 +235,12 @@ main(
 	return (0);
 
 } // main
+
+
+
+
+
+
+
+
+
