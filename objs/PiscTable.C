@@ -8,11 +8,10 @@ static const char rcs_id_pisctable_c[] =
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <malloc.h>
 #include "PiscTable.h"
 #include "Interpolate.h"
 #include "Constants.h"
-
+#include "Array.h"
 
 //===========//
 // PiscTable //
@@ -243,59 +242,12 @@ PiscTable::_Allocate()
 	// allocate the primary pointer array //
 	//------------------------------------//
 
-	_value = (double ****)malloc(_polCount * sizeof(double ***));
+	_value = (double****)make_array(sizeof(double), 4, _polCount,
+		_incCount, _spdCount, _chiCount);
+
 	if (_value == NULL)
 		return(0);
 
-	//-----------------------------//
-	// for each primary pointer... //
-	//-----------------------------//
-
-	for (int i = 0; i < _polCount; i++)
-	{
-		//---------------------------------------//
-		// ...allocate a secondary pointer array //
-		//---------------------------------------//
-
-		double*** dppp = (double ***)malloc(_incCount * sizeof(double **));
-		if (dppp == NULL)
-			return(0);
-		*(_value + i) = dppp;
-
-		//-------------------------------//
-		// for each secondary pointer... //
-		//-------------------------------//
-
-		for (int j = 0; j < _incCount; j++)
-		{
-
-			//--------------------------------------//
-			// ...allocate a tertiary pointer array //
-			//--------------------------------------//
-
-			double** dpp = (double **)malloc(_spdCount * sizeof(double *));
-			if (dpp == NULL)
-				return(0);
-			*(*(_value + i) + j) = dpp;
-
-			//------------------------------//
-			// for each tertiary pointer... //
-			//------------------------------//
-
-			for (int k = 0; k < _spdCount; k++)
-			{
-
-				//---------------------------------//
-				// ...allocate an array of doubles //
-				//---------------------------------//
-
-				double* dp = (double *)malloc(_chiCount * sizeof(double));
-				if (dp == NULL)
-					return(0);
-				*(*(*(_value + i) + j) + k) = dp;
-			}
-		}
-	}
 	return(1);
 }
 
@@ -309,19 +261,8 @@ PiscTable::_Deallocate()
 	if (_value == NULL)
 		return(1);
 
-	for (int i = 0; i < _polCount; i++)
-	{
-		for (int j = 0; j < _incCount; j++)
-		{
-			for (int k = 0; k < _spdCount; k++)
-			{
-				free(*(*(*(_value + i) + j) + k));
-			}
-			free(*(*(_value + i) + j));
-		}
-		free(*(_value + i));
-	}
-	free(_value);
+	free_array((void *)_value, 4, _polCount, _incCount, _spdCount, _chiCount);
+
 	_value = NULL;
 	return(1);
 }
