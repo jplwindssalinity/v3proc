@@ -12,6 +12,8 @@ static const char rcs_id_l1aframe_h[] =
 #include "Attitude.h"
 #include "L1AGSFrame.h"
 
+class L1AHdf;
+
 //======================================================================
 // CLASSES
 //    L1AFrame
@@ -49,6 +51,10 @@ public:
     int  Pack(char* buffer);
     int  Unpack(char* buffer);
     int  WriteAscii(FILE* ofp);
+
+    int  UnpackHdf(L1AHdf* l1aHdf);
+
+    static void DoubleToVTCW(double vtcw_time, char* vtcw6Bytes);
 
     //-------------------//
     // product variables //
@@ -127,6 +133,12 @@ public:
 	int		spotsPerFrame;
 	int		slicesPerSpot;
 	int		slicesPerFrame;
+
+protected:
+    void    UnpackL1AStatus(L1AHdf* l1aHdf);
+    void    UnpackL1AEngData(L1AHdf* l1aHdf);
+    void    UnpackL1AEu(L1AHdf* l1aHdf);
+    
 };
 
 #endif
