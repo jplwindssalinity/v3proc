@@ -105,7 +105,6 @@ template class List<AngleInterval>;
 #define ORBIT_STEPS              256
 #define SECTOR_COUNT             2
 #define MIN_POINTS_PER_SECTOR    20
-// MIN_SECTORS should be 6
 #define MIN_SECTORS              4
 
 //--------//
@@ -123,15 +122,9 @@ template class List<AngleInterval>;
 int     process_orbit_step(int beam_idx, int orbit_step,
             const char* fit_base);
 int     accumulate(int beam_idx, double azimuth, double meas_spec_peak);
-int     fit_terms(const char* fit_base, int beam_idx, int fit_missing_only,
-            double** terms);
 int     plot_fit(const char* base, int beam_idx, int term_idx, double** terms,
             double** p, int term_count);
-double  ds_evaluate_3(double* x, void* ptr);
-double  ds_evaluate_5(double* x, void* ptr);
-double  evaluate_35(int* good, double* coef, double* x, int count);
 
-int     fit_terms_plus(const char* fit_base, int beam_idx, double** terms);
 int     plot_fit_spec(const char* base, int beam_idx, int term_idx,
             double** terms, double* new_term);
 
@@ -148,6 +141,8 @@ const char* usage_array[] = { "[ -mr ]", "[ -f fit_base ]",
 
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
 double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
+char      g_good[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
+int       g_good_count;
 int       g_sector_count[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
 
 // the following are allocated dynamically
@@ -558,44 +553,50 @@ main(
     free_array(g_azimuth, 2, NUMBER_OF_QSCAT_BEAMS, max_count);
     free_array(g_meas_spec_peak, 2, NUMBER_OF_QSCAT_BEAMS, max_count);
 
-    //--------------//
-    // fit to terms //
-    //--------------//
+    //-------------------//
+    // set up good array //
+    //-------------------//
+    // this indicates whether to use the coefficient for this orbit step
 
+    g_good_count = 0;
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
-//        fit_terms_plus(fit_base, beam_idx, opt_fit_for_missing_only,
-//            g_terms[beam_idx]);
-        fit_terms_plus(fit_base, beam_idx, g_terms[beam_idx]);
+        for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+        {
+            if (g_sector_count[beam_idx][orbit_step] >= MIN_SECTORS)
+            {
+                g_good[beam_idx][orbit_step] = 1;
+                g_good_count++;
+            }
+            else
+                g_good[beam_idx][orbit_step] = 0;
+        }
     }
 
-    //-------------//
-    // set Doppler //
-    //-------------//
+    //---------------------------------------------------------//
+    // write out raw terms and good array for later processing //
+    //---------------------------------------------------------//
 
-    DopplerTracker doppler_tracker;
-    if (! doppler_tracker.Allocate(ORBIT_STEPS))
+    char filename[1024];
+    sprintf(filename, "%s.raw", dtc_base);
+    FILE* term_fp = fopen(filename, "w");
+    if (term_fp == NULL)
     {
-        fprintf(stderr, "%s: error allocating Doppler tracker\n", command);
+        fprintf(stderr, "%s: error opening raw term file %s\n", command,
+            filename);
         exit(1);
     }
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
-        doppler_tracker.SetTerms(g_terms[beam_idx]);
-        char filename[1024];
-        sprintf(filename, "%s.%d", dtc_base, beam_idx + 1);
-        if (! doppler_tracker.WriteBinary(filename))
+        for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
         {
-            fprintf(stderr, "%s: error writing DTC file %s\n", command,
-                filename);
-            exit(1);
+            fwrite((void *)g_terms[beam_idx][orbit_step], sizeof(double), 3,
+                term_fp);
+            fwrite((void *)&(g_good[beam_idx][orbit_step]), sizeof(char), 1,
+                term_fp);
         }
     }
-
-    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
-    {
-        free_array(g_terms[beam_idx], 2, ORBIT_STEPS, 3);
-    }
+    fclose(term_fp);
 
     return(0);
 }
@@ -648,31 +649,6 @@ process_orbit_step(
         if (offset[sector_idx] >= MIN_POINTS_PER_SECTOR)
             g_sector_count[beam_idx][orbit_step]++;
     }
-
-/*
-    //---------------------------//
-    // determine sector coverage //
-    //---------------------------//
-
-    int sector[SECTOR_COUNT];
-    for (int sector_idx = 0; sector_idx < SECTOR_COUNT; sector_idx++)
-    {
-        sector[sector_idx] = 0;
-    }
-    for (int i = 0; i < g_count[beam_idx]; i++)
-    {
-        int sector_idx = (int)(SECTOR_COUNT * g_azimuth[beam_idx][i] / two_pi);
-        sector[sector_idx]++;
-    }
-    g_sector_count[beam_idx][orbit_step] = 0;
-    for (int sector_idx = 0; sector_idx < SECTOR_COUNT; sector_idx++)
-    {
-        if (sector[sector_idx] >= MIN_POINTS_PER_SECTOR)
-        {
-            g_sector_count[beam_idx][orbit_step]++;
-        }
-    }
-*/
 
     //------------------------------------------//
     // subtract the sinusoid from the constants //
@@ -794,153 +770,6 @@ accumulate(
     return(1);
 }
 
-//-----------//
-// fit_terms //
-//-----------//
-
-int
-fit_terms(
-    const char*  fit_base,
-    int          beam_idx,
-    int          fit_for_missing_only,
-    double**     terms)
-{
-    //-------------------//
-    // set up good array //
-    //-------------------//
-    // this indicates whether to use the coefficient for this orbit step
-
-    int good[ORBIT_STEPS];
-    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-    {
-        if (g_sector_count[beam_idx][orbit_step] >= MIN_SECTORS)
-            good[orbit_step] = 1;
-        else
-            good[orbit_step] = 0;
-    }
-
-    double sum;
-    int n;
-
-    //------------------------------//
-    // fit a curve to the amplitude //
-    //------------------------------//
-
-    int amp_count = 5;
-    double amp_init[] = { 432000.0, 500.0, -90.0 * dtr, 500.0, 0.0 * dtr };
-    double amp_lambda[] = { 1000.0,  50.0,   5.0 * dtr,  50.0, 5.0 * dtr };
-
-    double coef[ORBIT_STEPS];
-    sum = 0.0;
-    n = 0;
-    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-    {
-        coef[orbit_step] = *(*(terms + orbit_step) + 0);
-        if (good[orbit_step])
-        {
-            sum += coef[orbit_step];
-            n++;
-        }
-    }
-    amp_init[0] = sum / (double)n;
-    double** amp_p = make_p(amp_count, amp_init, amp_lambda);
-    if (amp_p == NULL)
-        return(0);
-    char* ptr[2];
-    ptr[0] = (char *)good;
-    ptr[1] = (char *)coef;
-    downhill_simplex(amp_p, amp_count, amp_count, 1E-6, ds_evaluate_5, ptr);
-
-    //--------------------------//
-    // fit a curve to the phase //
-    //--------------------------//
-
-    int phase_count = 3;
-    double phase_init[] = { 0.0, 4.0, 0.0 * dtr };
-    double phase_lambda[] = { 1.0, 1.0, 10.0 * dtr };
-    sum = 0.0;
-    n = 0;
-    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-    {
-        coef[orbit_step] = *(*(terms + orbit_step) + 1);
-        if (good[orbit_step])
-        {
-            sum += coef[orbit_step];
-            n++;
-        }
-    }
-    phase_init[0] = sum / (double)n;
-    double** phase_p = make_p(phase_count, phase_init, phase_lambda);
-    if (phase_p == NULL)
-        return(0);
-    downhill_simplex(phase_p, phase_count, phase_count, 1E-6, ds_evaluate_3,
-        ptr);
-
-    //-------------------------//
-    // fit a curve to the bias //
-    //-------------------------//
-
-    int bias_count = 5;
-    double bias_init[] = { 0.0, 0.0, 0.0 * dtr, 0.0, 0.0 * dtr };
-    double bias_lambda[] = { 5.0, 5.0, 5.0 * dtr, 5.0, 5.0 * dtr };
-    sum = 0.0;
-    n = 0;
-    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-    {
-        coef[orbit_step] = *(*(terms + orbit_step) + 2);
-        if (good[orbit_step])
-        {
-            sum += coef[orbit_step];
-            n++;
-        }
-    }
-    bias_init[0] = sum / (double)n;
-    double** bias_p = make_p(bias_count, bias_init, bias_lambda);
-    if (bias_p == NULL)
-        return(0);
-    downhill_simplex(bias_p, bias_count, bias_count, 1E-6, ds_evaluate_5, ptr);
-
-    //--------------------//
-    // generate fit plots //
-    //--------------------//
-
-    if (fit_base)
-    {
-        plot_fit(fit_base, beam_idx, 0, terms, amp_p, 5);
-        plot_fit(fit_base, beam_idx, 1, terms, phase_p, 3);
-        plot_fit(fit_base, beam_idx, 2, terms, bias_p, 5);
-    }
-
-    //---------------//
-    // plug in terms //
-    //---------------//
-
-    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-    {
-        if (fit_for_missing_only && good[orbit_step])
-            continue;
-     
-        double angle = two_pi * (double)orbit_step / (double)ORBIT_STEPS;
-
-        *(*(terms + orbit_step) + 0) = amp_p[0][0] +
-            amp_p[0][1] * cos(angle + amp_p[0][2]) +
-            amp_p[0][3] * cos(2.0 * angle + amp_p[0][4]);
-
-        *(*(terms + orbit_step) + 1) = phase_p[0][0] +
-            phase_p[0][1] * cos(angle + phase_p[0][2]);
-
-        *(*(terms + orbit_step) + 2) = bias_p[0][0] +
-            bias_p[0][1] * cos(angle + bias_p[0][2]) +
-            bias_p[0][3] * cos(2.0 * angle + bias_p[0][4]);
-    }
-
-    free_p(amp_p, amp_count);
-    free_p(phase_p, phase_count);
-    free_p(bias_p, bias_count);
-
-    return(1);
-}
-
 //----------//
 // plot_fit //
 //----------//
@@ -989,238 +818,6 @@ plot_fit(
         if (term_count == 5)
             value += p[0][3] * cos(2.0 * angle + p[0][4]);
         fprintf(ofp, "%d %g\n", orbit_step, value);
-    }
-    fclose(ofp);
-    return(1);
-}
-
-//---------------//
-// ds_evaluate_3 //
-//---------------//
-
-double
-ds_evaluate_3(
-    double*  x,
-    void*    ptr)
-{
-    char** ptr2 = (char **)ptr;
-    int* good = (int *)ptr2[0];   // 0 = ignore, 1 = use
-    double* coef = (double *)ptr2[1];    // the coefficients
-
-    return (evaluate_35(good, coef, x, 3));
-}
-
-//---------------//
-// ds_evaluate_5 //
-//---------------//
-
-double
-ds_evaluate_5(
-    double*  x,
-    void*    ptr)
-{
-    char** ptr2 = (char **)ptr;
-    int* good = (int *)ptr2[0];   // 0 = ignore, 1 = use
-    double* coef = (double *)ptr2[1];    // the coefficients
-
-    return (evaluate_35(good, coef, x, 5));
-}
-
-//-------------//
-// evaluate_35 //
-//-------------//
-// evaluate a three parameter A + B * cos(phi + C)
-// or a five parameter A + B * cos(phi + C) + D * cos(2*phi + E)
-
-double
-evaluate_35(
-    int*     good,
-    double*  coef,
-    double*  x,
-    int      count)
-{
-    double sse = 0.0;
-    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-    {
-        if (! good[orbit_step])
-            continue;
-
-        double angle = two_pi * (double)orbit_step / (double)ORBIT_STEPS;
-        double fit = x[0] + x[1] * cos(angle + x[2]);
-        if (count == 5)
-        {
-            fit += x[3] * cos(2.0 * angle + x[4]);
-        }
-        double dif = fit - coef[orbit_step];
-        sse += (dif * dif);
-    }
-    return(sse);
-}
-
-//----------------//
-// fit_terms_plus //
-//----------------//
-// uses spectral analysis
-
-#define TERM_COUNT  3
-
-int
-fit_terms_plus(
-    const char*  fit_base,
-    int          beam_idx,
-    double**     terms)
-{
-    //-------------------//
-    // set up good array //
-    //-------------------//
-
-    int good[ORBIT_STEPS];
-    int good_count = 0;
-    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-    {
-        if (g_sector_count[beam_idx][orbit_step] >= MIN_SECTORS)
-        {
-            good[orbit_step] = 1;
-            good_count++;
-        }
-        else
-            good[orbit_step] = 0;
-    }
-
-    //-------------------//
-    // create data array //
-    //-------------------//
-
-    double* azimuth = (double *)make_array(sizeof(double), 1, good_count);
-    double* data = (double *)make_array(sizeof(double), 1, good_count);
-
-    double threshold[3] = { 500.0, 0.05, 500.0 };    // amp, phase, bias
-    double new_coefs[ORBIT_STEPS];
-
-    //----------------------//
-    // for each coefficient //
-    //----------------------//
-
-    for (int coef_idx = 0; coef_idx < 3; coef_idx++)
-    {
-        //------------------//
-        // fill in the data //
-        //------------------//
-
-        int sample_count = 0;
-        for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-        {
-            if (good[orbit_step])
-            {
-                azimuth[sample_count] = two_pi * (double)orbit_step /
-                    (double)ORBIT_STEPS;
-                data[sample_count] = *(*(terms + orbit_step) + coef_idx);
-                sample_count++;
-            }
-        }
-
-        //--------------------//
-        // solve for spectrum //
-        //--------------------//
-
-        double amplitude[TERM_COUNT], phase[TERM_COUNT];
-        specfit(azimuth, data, NULL, sample_count, TERM_COUNT, amplitude,
-            phase);
-
-        //-----------------//
-        // threshold terms //
-        //-----------------//
-
-        for (int term_idx = 0; term_idx < TERM_COUNT; term_idx++)
-        {
-            if (amplitude[term_idx] < threshold[coef_idx])
-                amplitude[term_idx] = 0.0;
-        }
-
-        //---------------//
-        // calculate DTC //
-        //---------------//
-
-        for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-        {
-            double angle = two_pi * (double)orbit_step / (double)ORBIT_STEPS;
-
-            new_coefs[orbit_step] = 0.0;
-            for (int i = 0; i < TERM_COUNT; i++)
-            {
-                new_coefs[orbit_step] += amplitude[i] *
-                    cos((double)i * angle + phase[i]);
-            }
-        }
-
-        //--------------------//
-        // generate fit plots //
-        //--------------------//
-
-        if (fit_base)
-        {
-            plot_fit_spec(fit_base, beam_idx, coef_idx, terms, new_coefs);
-        }
-
-        //---------------//
-        // plug in terms //
-        //---------------//
-
-        for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-        {
-            *(*(terms + orbit_step) + coef_idx) = new_coefs[orbit_step];
-        }
-
-    }
-    free_array(data, 1, good_count);
-    free_array(azimuth, 1, good_count);
-
-    return(1);
-}
-
-//---------------//
-// plot_fit_spec //
-//---------------//
-
-int
-plot_fit_spec(
-    const char*  base,
-    int          beam_idx,
-    int          term_idx,
-    double**     terms,
-    double*      new_term)
-{
-    static char* term_string[3] = { "amp", "phase", "bias" };
-    static char* title_string[3] = { "Amplitude", "Phase", "Bias" };
-    static char* unit_string[3] = { "Frequency (Hz)", "Angle (radians)",
-        "Frequency (Hz)" };
-
-    char filename[1024];
-    sprintf(filename, "%s.b%1d.%s", base, beam_idx + 1,
-        term_string[term_idx]);
-    FILE* ofp = fopen(filename, "w");
-    if (ofp == NULL)
-        return(0);
-
-    fprintf(ofp, "@ subtitle %cBeam %d, %s%c\n", QUOTE,
-        beam_idx + 1, title_string[term_idx], QUOTE);
-    fprintf(ofp, "@ xaxis label %cOrbit Step%c\n", QUOTE, QUOTE);
-    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, unit_string[term_idx],
-        QUOTE);
-
-    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-    {
-        if (g_sector_count[beam_idx][orbit_step] < MIN_SECTORS)
-            continue;
-
-        fprintf(ofp, "%d %g\n", orbit_step,
-            *(*(terms + orbit_step) + term_idx));
-    }
-    fprintf(ofp, "&\n");
-
-    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-    {
-        fprintf(ofp, "%d %g\n", orbit_step, new_term[orbit_step]);
     }
     fclose(ofp);
     return(1);

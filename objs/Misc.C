@@ -1295,8 +1295,6 @@ sinfit(
 // Cn*cos(n*w) + Sn*sin(n*w) = An*cos(n*w + Pn)
 // where An = sqrt(Cn*Cn + Sn*Sn) and Pn = atan2(-Sn/Cn)
 // points with variances less than 0.0 are not fit
-// if the constrain flag is set, additional equations will be added
-// to keep adjacted coefficients equal.
 
 int
 specfit(
@@ -1304,27 +1302,23 @@ specfit(
     double*  value,
     double*  variance,
     int      sample_count,
-    int      term_count,
+    int      start_term,
+    int      end_term,    // really end_term + 1
     double*  amplitude,
-    double*  phase,
-    int      constrain)
+    double*  phase)
 {
     //-----------------------------------//
     // set up matrix and solution vector //
     //-----------------------------------//
 
+    int term_count = end_term - start_term;
+
     Matrix A;
-    if (constrain)
-        A.Allocate(sample_count + 2 * term_count, 2 * term_count);
-    else
-        A.Allocate(sample_count, 2 * term_count);
+    A.Allocate(sample_count, 2 * term_count);
     A.Fill(0.0);
 
     Vector Y;
-    if (constrain)
-        Y.Allocate(sample_count + 2 * term_count);
-    else
-        Y.Allocate(sample_count);
+    Y.Allocate(sample_count);
     Y.Fill(0.0);
 
     double use_var = 1.0;
@@ -1338,26 +1332,11 @@ specfit(
         }
         for (int j = 0; j < term_count; j++)
         {
-            A.SetElement(i, 2*j, cos((double)j * azimuth[i]) / use_var);
-            A.SetElement(i, 2*j + 1, sin((double)j * azimuth[i]) / use_var);
+            int use_j = j + start_term;
+            A.SetElement(i, 2*j, cos((double)use_j * azimuth[i]) / use_var);
+            A.SetElement(i, 2*j + 1, sin((double)use_j * azimuth[i]) / use_var);
         }
         Y.SetElement(i, value[i] / use_var);
-    }
-    if (constrain)
-    {
-        // put in the rest of the Cn-Cn+1 terms
-        for (int i = 0; i < 2 * term_count; i++)
-        {
-            double cn, cn_plus;
-            int use_idx_n = i;
-            int use_idx_n_plus = (i + 1) % sample_count;
-            for (int j = 0; j < 2*term_count; j++)
-            {
-                A.GetElement(use_idx_n, j, &cn);
-                A.GetElement(use_idx_n_plus, j, &cn_plus);
-                A.SetElement(i + sample_count, j, cn - cn_plus);
-            }
-        }
     }
 
     //-------//
@@ -1376,14 +1355,12 @@ specfit(
     //-------------------------//
 
     double cos_coef, sin_coef;
-    X.GetElement(0, &cos_coef);
-    amplitude[0] = cos_coef;
-    phase[0] = 0.0;
-    for (int j = 1; j < term_count; j++)
+    for (int j = 0; j < term_count; j++)
     {
         X.GetElement(2*j, &cos_coef);
         X.GetElement(2*j + 1, &sin_coef);
         amplitude[j] = sqrt(cos_coef*cos_coef + sin_coef*sin_coef);
+printf("%d %g %g\n", j, cos_coef, sin_coef);
         phase[j] = atan2(-sin_coef, cos_coef);
     }
 

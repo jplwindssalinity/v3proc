@@ -108,8 +108,8 @@ int          sinfit(double* azimuth, double* value, double* variance,
 
 // full up spectral fit
 int          specfit(double* azimuth, double* value, double* variance,
-                 int sample_count, int term_count, double* amplitude,
-                 double* phase, int constrain);
+                 int sample_count, int start_term, int end_term,
+                 double* amplitude, double* phase);
 
 // sort an array
 void         heapsort(int n, double* data_array, int* idx_array);
