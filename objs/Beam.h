@@ -6,6 +6,8 @@
 #ifndef BEAM_H
 #define BEAM_H
 
+#include "GenericFile.h"
+
 static const char rcs_id_beam_h[] =
 	"@(#) $Id$";
 
@@ -21,7 +23,8 @@ static const char rcs_id_beam_h[] =
 // DESCRIPTION
 //		The Beam object contains beam state information and fixed
 //		coordinate transforms related to the beam "mounting" on the
-//		antenna.
+//		antenna.  The beam antenna pattern is also held by this object.
+//		The beam pattern has to be loaded from an external file.
 //======================================================================
 
 #include "CoordinateSwitch.h"
@@ -41,6 +44,9 @@ public:
 
 	int		SetBeamGeometry(double look_angle, double azimuth_angle);
 
+	int		LoadBeamPattern(GenericFile patternfile,
+			 double out_of_range_value);
+
 	//---------//
 	// getting //
 	//---------//
@@ -49,6 +55,7 @@ public:
 							{ return(_antFrameToBeamFrame); };
 	CoordinateSwitch	GetBeamFrameToAntFrame()
 							{ return(_beamFrameToAntFrame); };
+	double	GetPowerGain(double unitx, double unity);
 
 	//-----------//
 	// variables //
@@ -66,8 +73,19 @@ protected:
 	double	_lookAngle;
 	double	_azimuthAngle;
 
+	// Beam pattern info
+	int		_Nx;
+	int		_Ny;
+	int		_ix_zero;
+	int		_iy_zero;
+	double	_x_spacing;
+	double	_y_spacing;
+	double	_out_of_range_value;
+	float**	_power_gain;
+
 	CoordinateSwitch	_antFrameToBeamFrame;
 	CoordinateSwitch	_beamFrameToAntFrame;
+
 };
 
 #endif
