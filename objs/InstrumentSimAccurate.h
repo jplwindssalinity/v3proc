@@ -33,8 +33,7 @@ public:
 				MeasSpot* meas_spot, WindField* windfield,
 				GMF* gmf);
 
-	int		ScatSim(double time, Spacecraft* spacecraft,
-				Instrument* instrument, WindField* windfield, GMF* gmf,
-				L00Frame* l00_frame);
+	int		ScatSim(Spacecraft* spacecraft, Instrument* instrument,
+				WindField* windfield, GMF* gmf, L00Frame* l00_frame);
 
 };

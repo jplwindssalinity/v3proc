@@ -21,13 +21,12 @@ static const char rcs_id_accurategeom_c[] =
 #include "Array.h"
 #include "Misc.h"
 
-//--------------//
+//-----------------//
 // IntegrateSlices //
-//--------------//
+//-----------------//
 
 int
 IntegrateSlices(
-	double			time,
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	int				slices_per_spot,
@@ -48,7 +47,7 @@ IntegrateSlices(
 	//------------------//
 
 	meas_spot->FreeContents();
-	meas_spot->time = time;
+	meas_spot->time = instrument->time;
 	meas_spot->scOrbitState = *orbit_state;
 	meas_spot->scAttitude = *attitude;
 
@@ -438,7 +437,3 @@ FindLookAtFreq(CoordinateSwitch* antenna_frame_to_gc,
   *look=mid_look;
   return(1);
 }
-
-
-
-

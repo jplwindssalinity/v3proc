@@ -33,11 +33,9 @@ InstrumentSimAccurate::~InstrumentSimAccurate()
 	return;
 }
 
-
-
-//--------------------------------//
+//----------------------------------------//
 // InstrumentSimAccurate::SetMeasurements //
-//--------------------------------//
+//---------------------------------------//
 
 int
 InstrumentSimAccurate::SetMeasurements(
@@ -101,12 +99,12 @@ InstrumentSimAccurate::SetMeasurements(
 	return(1);
 }
 
-//----------------------------------------//
-// InstrumentSimAccurate::ScatSim         //
-//----------------------------------------//
+//--------------------------------//
+// InstrumentSimAccurate::ScatSim //
+//--------------------------------//
+
 int
 InstrumentSimAccurate::ScatSim(
-	double			time,
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	WindField*		windfield,
@@ -124,7 +122,7 @@ InstrumentSimAccurate::ScatSim(
 	{
 		if (! SetL00Spacecraft(spacecraft,l00_frame))
 			return(0);
-		l00_frame->time = time;
+		l00_frame->time = instrument->time;
 	}
 	//------------------------//
 	// calculate measurements //
@@ -137,14 +135,13 @@ InstrumentSimAccurate::ScatSim(
 	}
 	else
 	{
-		if (! IntegrateSlices(time, spacecraft, instrument, 
+		if (! IntegrateSlices(spacecraft, instrument,
 				     slicesPerSpot, &meas_spot))
 		{
 			return(0);
 		}
 		if(XMGROUT) printf("%g ",instrument->antenna.azimuthAngle/dtr);
-		
-	}	
+	}
 
 	//------------------------//
 	// set measurement values //
@@ -183,8 +180,4 @@ InstrumentSimAccurate::ScatSim(
 	}
 
 	return(1);
-
-
 }
-
-
