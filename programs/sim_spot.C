@@ -156,7 +156,7 @@ main(
     ant_att.Set(0,0,0,1,2,3);	// antenna frame equals s/c frame
     EarthPosition rspot;        // beam spot on the ground
     Vector3 rspot_geodetic;     // beam spot on ground in alt,lat,lon terms
-    Vector3 rlook_ant;  // beam look direction in antenna frame
+    Vector3 rlook_beam;  // beam look direction in beam frame
     Vector3 rlook_geo;  // beam look direction in geocentric frame
     EarthPosition rsat;
 	EarthPosition rspot_prev[2];	// holds last spot position for both beams
@@ -169,33 +169,51 @@ main(
 	#define BEAM_WIDTH_LOOK	0.008552
 	#define BEAM_WIDTH_AZIMUTH 0.007269
 
-    double look_delta[NPTS+1];
-    double azimuth_delta[NPTS+1][2];
-
 	//
-	// Setup for drawing an ellipse
+	// Open various output files.
 	//
 
-	double theta,r;
+	FILE *checkfile = fopen("sim_spot.check","w");
+	FILE *spotfile = fopen("spotdata.dat","w");
+	FILE *cgsfile1 = fopen("cgshits1.dat","w");
+	FILE *cgsfile2 = fopen("cgshits2.dat","w");
+	if ((checkfile == NULL) || (spotfile == NULL) || (cgsfile1 == NULL) ||
+		(cgsfile2 == NULL))
+	{
+		printf("Error opening output files\n");
+		exit(-1);
+	}
+
+	//
+	// Setup for drawing an ellipse. Output in the CGS hit files.
+	//
+
+	double theta[NPTS+1],phi[NPTS+1];
 	double a2 = BEAM_WIDTH_LOOK*BEAM_WIDTH_LOOK;
 	double b2 = BEAM_WIDTH_AZIMUTH*BEAM_WIDTH_AZIMUTH;
 	for (int j=0; j <= NPTS; j++)
 	{
-		theta = j*two_pi/NPTS;
-		r = sqrt(a2*b2/(a2*sin(theta)*sin(theta) + b2*cos(theta)*cos(theta)));
-		look_delta[j] = r*cos(theta);
-		azimuth_delta[j][0] = r*sin(theta) /
-				sin(instrument.antenna.beam[0].lookAngle);
-		azimuth_delta[j][1] = r*sin(theta) /
-				sin(instrument.antenna.beam[1].lookAngle);
+		phi[j] = j*two_pi/NPTS;
+		theta[j] = sqrt(a2*b2 /
+			(a2*sin(phi[j])*sin(phi[j]) + b2*cos(phi[j])*cos(phi[j])));
+		// CGS uses 1-way 3-db beam widths
+		double phi_cgs = phi[j];
+		double theta_cgs = sqrt(4*a2*b2 /
+			(2*a2*sin(phi[j])*sin(phi[j]) + 2*b2*cos(phi[j])*cos(phi[j])));
+		// convert to rectangular angle space for plotting by xmgr
+		double beam_x = theta_cgs*sin(phi_cgs)*rtd;
+		double beam_y = theta_cgs*cos(phi_cgs)*rtd;
+		fprintf(cgsfile1,"%g %g\n",beam_x,beam_y);
+		fprintf(cgsfile2,"%g %g\n",beam_x,beam_y);
 	}
+	fprintf(cgsfile1,"&\n");
+	fprintf(cgsfile2,"&\n");
 
-	FILE *checkfile = fopen("sim_spot.check","w");
-	if (checkfile == NULL)
-	{
-		printf("Error opening sim_spot.check\n");
-		exit(-1);
-	}
+	//
+	// Identify a ground location to study potential hits on a SeaWinds CGS.
+	//
+
+	EarthPosition rcgs(10*dtr,12*dtr,EarthPosition::GEODETIC);
 
 	//----------------------//
 	// cycle through events //
@@ -205,7 +223,7 @@ main(
 	GMF gmf;
 
 	Event event;
-	while (event.time < 12.00)
+	while (event.time < 220.00)
 	{
 		sim.DetermineNextEvent(&event);
         sim.spacecraftSim.UpdateOrbit(event.time,
@@ -225,54 +243,62 @@ main(
 			continue;
 			break;
 		}
+
+        Spacecraft *sc = &(instrument.spacecraft);
+		Antenna *antenna =&(instrument.antenna);
+		Beam *beam = &(antenna->beam[beam_idx]);
+
+		// Determine location of CGS in beam pattern, and output if
+		// sufficiently close to the gain peak.
+		rlook_beam = beam_look(sc->gcVector,sc->velocityVector,rcgs,
+			sc_att,antenna->antennaFrame,beam->beamFrame);
+		double r,theta_cgs,phi_cgs;
+		rlook_beam.SphericalGet(&r,&theta_cgs,&phi_cgs);
+		// convert to rectangular angle space for plotting by xmgr
+		double beam_x = theta_cgs*sin(phi_cgs)*rtd;
+		double beam_y = theta_cgs*cos(phi_cgs)*rtd;
+		if (theta_cgs < 2*BEAM_WIDTH_LOOK)
+		{
+			if (beam_idx == 0) fprintf(cgsfile1,"%g %g\n",beam_x,beam_y);
+			if (beam_idx == 1) fprintf(cgsfile2,"%g %g\n",beam_x,beam_y);
+		}
+		// check for correct reversal
+       	rspot = earth_intercept(sc->gcVector,sc->velocityVector,
+			sc_att,antenna->antennaFrame,beam->beamFrame,rlook_beam);
+		double distance = rspot.surface_distance(rcgs);
+		if (distance > 0.01)
+		{
+			printf("reversal check: distance = %g\n",distance);
+		}
+
 		double ang = instrument.antenna.beam[beam_idx].azimuthAngle +
 			instrument.antenna.azimuthAngle;
 		ang = fmod(ang, two_pi);
 		if (ang > 0.3491 && ang < 5.9341)
 			continue;
-        Spacecraft *sc = &(instrument.spacecraft);
 
 		// compute distance between successive spots (of same beam)
-      	rlook_ant.SphericalSet(1.0,
-           	instrument.antenna.beam[beam_idx].lookAngle,
-            instrument.antenna.beam[beam_idx].azimuthAngle +
-			instrument.antenna.azimuthAngle);
+		rlook_beam.Set(0,0,1);
        	rspot = earth_intercept(sc->gcVector,sc->velocityVector,
-                             	 sc_att,ant_att,rlook_ant);
-		double distance = rspot.surface_distance(rspot_prev[beam_idx]);
+			sc_att,antenna->antennaFrame,beam->beamFrame,rlook_beam);
+		distance = rspot.surface_distance(rspot_prev[beam_idx]);
 
 		// update previous spot position
 		rspot_prev[beam_idx] = rspot;
 
 		// compute size of ellipse on the surface
-        rlook_ant.SphericalSet(1.0,
-           	instrument.antenna.beam[beam_idx].lookAngle + BEAM_WIDTH_LOOK,
-            instrument.antenna.beam[beam_idx].azimuthAngle +
-			instrument.antenna.azimuthAngle);
+		rlook_beam.SphericalSet(1.0,BEAM_WIDTH_LOOK,0);
        	rspot_look1 = earth_intercept(sc->gcVector,sc->velocityVector,
-                             	 sc_att,ant_att,rlook_ant);
-        rlook_ant.SphericalSet(1.0,
-           	instrument.antenna.beam[beam_idx].lookAngle - BEAM_WIDTH_LOOK,
-            instrument.antenna.beam[beam_idx].azimuthAngle +
-			instrument.antenna.azimuthAngle);
+			sc_att,antenna->antennaFrame,beam->beamFrame,rlook_beam);
+		rlook_beam.SphericalSet(1.0,-BEAM_WIDTH_LOOK,0);
        	rspot_look2 = earth_intercept(sc->gcVector,sc->velocityVector,
-                             	 sc_att,ant_att,rlook_ant);
-        rlook_ant.SphericalSet(1.0,
-           	instrument.antenna.beam[beam_idx].lookAngle,
-            instrument.antenna.beam[beam_idx].azimuthAngle +
-			BEAM_WIDTH_AZIMUTH /
-				sin(instrument.antenna.beam[beam_idx].lookAngle) +
-			instrument.antenna.azimuthAngle);
+			sc_att,antenna->antennaFrame,beam->beamFrame,rlook_beam);
+		rlook_beam.SphericalSet(1.0,BEAM_WIDTH_AZIMUTH,90*dtr);
        	rspot_azi1 = earth_intercept(sc->gcVector,sc->velocityVector,
-                             	 sc_att,ant_att,rlook_ant);
-        rlook_ant.SphericalSet(1.0,
-           	instrument.antenna.beam[beam_idx].lookAngle,
-            instrument.antenna.beam[beam_idx].azimuthAngle -
-			BEAM_WIDTH_AZIMUTH /
-				sin(instrument.antenna.beam[beam_idx].lookAngle) +
-			instrument.antenna.azimuthAngle);
+			sc_att,antenna->antennaFrame,beam->beamFrame,rlook_beam);
+		rlook_beam.SphericalSet(1.0,-BEAM_WIDTH_AZIMUTH,90*dtr);
        	rspot_azi2 = earth_intercept(sc->gcVector,sc->velocityVector,
-                             	 sc_att,ant_att,rlook_ant);
+			sc_att,antenna->antennaFrame,beam->beamFrame,rlook_beam);
 
 		double look_width = rspot_look1.surface_distance(rspot_look2);
 		double azi_width = rspot_azi1.surface_distance(rspot_azi2);
@@ -294,18 +320,19 @@ main(
 
 		for (int i=0; i <= NPTS; i++)
 		{
-        	rlook_ant.SphericalSet(1.0,
-            	instrument.antenna.beam[beam_idx].lookAngle + look_delta[i],
-                instrument.antenna.beam[beam_idx].azimuthAngle +
-				azimuth_delta[i][beam_idx] + instrument.antenna.azimuthAngle);
-        	rspot = earth_intercept(sc->gcVector,sc->velocityVector,
-                                sc_att,ant_att,rlook_ant);
+			rlook_beam.SphericalSet(1.0,theta[i],phi[i]);
+       		rspot = earth_intercept(sc->gcVector,sc->velocityVector,
+				sc_att,antenna->antennaFrame,beam->beamFrame,rlook_beam);
         	rspot_geodetic = rspot.get_alt_lat_lon(EarthPosition::GEODETIC);
-        	printf("%g %g ",rspot_geodetic.get(1),rspot_geodetic.get(2));
+        	fprintf(spotfile,"%g %g ",
+				rspot_geodetic.get(1),rspot_geodetic.get(2));
 		}
-       	printf("\n");
+       	fprintf(spotfile,"\n");
 	}
 
 	fclose(checkfile);
+	fclose(spotfile);
+	fclose(cgsfile1);
+	fclose(cgsfile2);
 	return (0);
 }
