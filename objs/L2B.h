@@ -134,6 +134,7 @@ public:
     int  ReadDataRec() { return(frame.swath.ReadL2B(_inputFp)); };
 
     int  ReadPureHdf(const char* filename, int unnormalize_mle_flag = 1);
+    int  WriteHdf(const char* filename, int unnormalize_mle_flag = 1);
     int  InsertPureHdf(const char* input_filename,
              const char* output_filename, int unnormalize_mle_flag = 1);
 

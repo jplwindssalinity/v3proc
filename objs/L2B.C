@@ -559,6 +559,188 @@ L2B::ReadPureHdf(
     return(1);
 }
 
+//---------------//
+// L2B::WriteHdf //
+//---------------//
+
+// attributes
+Attribute* l2b_actual_wvc_rows = new Attribute("l2b_actual_wvc_rows", "int",
+    "1", "<missing>");
+
+// attribute table
+Attribute* g_l2b_attribute_table[] =
+{
+    l2b_actual_wvc_rows,
+    NULL
+};
+
+// dimension sizes
+int32 dim_sizes_frame[] = { SD_UNLIMITED, 76, 4 };
+
+// dimension names
+const char* dim_names_frame[] = { "Wind_Vector_Cell_Row",
+    "Wind_Vector_Cell" };
+
+// SDS's
+SdsInt16* wvc_row = new SdsInt16("wvc_row", 1, dim_sizes_frame, "counts",
+    1.0, 0.0, dim_names_frame, 1624, 1);
+SdsInt16* wvc_lat = new SdsInt16("wvc_lat", 2, dim_sizes_frame, "degrees",
+    0.01, 0.0, dim_names_frame, 90, -90);
+SdsUInt16* wvc_lon = new SdsUInt16("wvc_lon", 2, dim_sizes_frame, "degrees",
+    0.01, 0.0, dim_names_frame, 359.99, 0);
+SdsInt8* wvc_index = new SdsInt8("wvc_index", 2, dim_sizes_frame, "counts",
+    1.0, 0.0, dim_names_frame, 76, 1);
+
+// SDS table
+Sds* g_l2b_sds_table[] =
+{
+    wvc_row,
+    wvc_lat,
+    wvc_lon,
+    wvc_index,
+    NULL
+};
+
+int
+L2B::WriteHdf(
+    const char*  filename,
+    int          unnormalize_mle_flag)
+{
+    WindSwath* swath = &(frame.swath);
+
+    //----------------------//
+    // open sds for writing //
+    //----------------------//
+
+    int32 sds_output_file_id = SDstart(filename, DFACC_CREATE);
+    if (sds_output_file_id == FAIL)
+    {
+        fprintf(stderr, "L2B::WriteHdf: error with SDstart\n");
+        return(0);
+    }
+
+    //-----------------------//
+    // create the attributes //
+    //-----------------------//
+
+    for (int idx = 0; g_l2b_attribute_table[idx] != NULL; idx++)
+    {
+        if (! (g_l2b_attribute_table[idx])->Write(sds_output_file_id))
+        {
+            return(0);
+        }
+    }
+
+    //------------------//
+    // create the SDS's //
+    //------------------//
+
+    for (int idx = 0; g_l2b_sds_table[idx] != NULL; idx++)
+    {
+        Sds* sds = g_l2b_sds_table[idx];
+        if (! sds->Create(sds_output_file_id))
+        {
+            fprintf(stderr, "L2B::WriteHdf: error creating SDS %d\n", idx);
+            return(0);
+        }
+    }
+
+    //-----------------------//
+    // set up the attributes //
+    //-----------------------//
+
+    char buffer[1024];
+
+    int at_max = swath->GetAlongTrackBins();
+    sprintf(buffer, "%d", at_max);
+    l2b_actual_wvc_rows->ReplaceContents(buffer);
+
+    //----------------------//
+    // write the attributes //
+    //----------------------//
+
+    for (int idx = 0; g_l2b_attribute_table[idx] != NULL; idx++)
+    {
+        if (! (g_l2b_attribute_table[idx])->Write(sds_output_file_id))
+        {
+            return(0);
+        }
+    }
+
+    for (int ati = 0; ati < at_max; ati++)
+    {
+        //--------------------//
+        // set the swath data //
+        //--------------------//
+
+        int16 wvc_row_value = ati + 1;
+        wvc_row->SetWithInt16(&wvc_row_value);
+
+        float wvc_lat_value[HDF_ACROSS_BIN_NO];
+        float wvc_lon_value[HDF_ACROSS_BIN_NO];
+        int8 wvc_index_value[HDF_ACROSS_BIN_NO];
+        for (int cti = 0; cti < HDF_ACROSS_BIN_NO; cti++)
+        {
+            // init
+            wvc_lat_value[cti] = 0.0;
+            wvc_lon_value[cti] = 0.0;
+
+            // set the obvious
+            wvc_index_value[cti] = cti + 1;
+
+            // get the wvc
+            WVC* wvc = swath->GetWVC(cti, ati);
+            if (wvc == NULL)
+                continue;
+
+            // set the rest
+            wvc_lat_value[cti] = wvc->lonLat.latitude * rtd;
+            wvc_lon_value[cti] = wvc->lonLat.longitude * rtd;
+        }
+
+        // set the sds
+        wvc_lat->SetFromFloat(wvc_lat_value);
+        wvc_lon->SetFromFloat(wvc_lon_value);
+        wvc_index->SetWithChar(wvc_index_value);
+
+        //-----------------//
+        // write the SDS's //
+        //-----------------//
+
+        for (int idx = 0; g_l2b_sds_table[idx] != NULL; idx++)
+        {
+            Sds* sds = g_l2b_sds_table[idx];
+            if (! sds->Write(sds_output_file_id, ati))
+            {
+                fprintf(stderr, "L1AH::WriteSDSs: error writing SDS %s\n",
+                    sds->GetName());
+                return(0);
+            }
+        }
+    }
+
+    //----------------//
+    // end sds access //
+    //----------------//
+
+    for (int idx = 0; g_l2b_sds_table[idx] != NULL; idx++)
+    {
+        Sds* sds = g_l2b_sds_table[idx];
+        if (! sds->EndAccess())
+        {
+            fprintf(stderr, "L1AH::EndSDSOutput: error ending SDS access\n");
+            return(0);
+        }
+    }
+    if (SDend(sds_output_file_id) != SUCCEED)
+    {
+        fprintf(stderr, "L1AH::EndSDSOutput: error with SDend\n");
+        return(0);
+    }
+
+    return(1);
+}
+
 //--------------------//
 // L2B::InsertPureHdf //
 //--------------------//
