@@ -6,6 +6,18 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.6   26 Jul 1999 16:49:36   sally
+// Group flag for L1A is 1, Hk2 is 3
+// 
+//    Rev 1.5   26 Jul 1999 15:43:30   sally
+// add "Source Sequence Count" and "group flag" checking
+// 
+//    Rev 1.4   09 Jul 1999 16:07:14   sally
+// add error checkers for "Source Sequence Count" and "Group Flag" in header
+// 
+//    Rev 1.3   25 Jun 1999 10:30:40   sally
+// add some error conditions from Lee
+// 
 //    Rev 1.2   23 Jul 1998 16:13:14   sally
 // pass polynomial table to extractFunc()
 // 
@@ -37,6 +49,209 @@ static const char rcs_id[] =
 //------------------------------------------
 ErrorTabEntry HK2StateTable[] =
 {
+    // ERROR_MSSN_SERL_TLM
+    { "Mission or Serial TLM Error", ERROR_FORMAT, ErrorMssnSerlTlm,
+             { MTLM_STLM_ERR, UNIT_MAP } },
+
+    // ERROR_RELAY_CHANGE
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+
+    // ERROR_CDS_RESET
+    { "CDS System Reset", ERROR_FORMAT, ErrorCdsReset,
+             { CDS_ERR_RESET_FLAG, UNIT_MAP } },
+
+    // ERROR_A2D_TIMEOUT
+    { "A2D Timeout", ERROR_FORMAT, ErrorA2DTimeout,
+             { A2D_TIMEOUT_FLAG, UNIT_MAP } },
+
+    // ERROR_MISS_SC_TIME
+    { "Missing Spacecraft Time", ERROR_FORMAT, ErrorMissSCTime,
+             { MISS_SC_TIME_HLDC, UNIT_MAP } },
+
+    // ERROR_FAULT_PROTECT
+    { "Fault Protection Event", ERROR_FORMAT, ErrorFaultProtect,
+             { FAULT_PROTECT_EVENT, UNIT_MAP } },
+
+    // ERROR_WATCHDOG_TIMEOUT
+    { "Watchdog Timeout Reset Missed", ERROR_FORMAT, ErrorWatchdogTimeout,
+             { WATCHDOG_TIMEOUT, UNIT_MAP } },
+
+    // ERROR_POWER_ON_RESET
+    { "Power On Reset", ERROR_FORMAT, ErrorPowerOnReset,
+             { POWER_ON_RESET, UNIT_MAP } },
+
+
+    // ERROR_MSSN_TLM_TABLES_CHANGED
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_SERL_TLM_TABLES_CHANGED
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_DOPPLER_TABLES_CHANGED
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_RANGE_GATE_TABLES_CHANGED
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_SES_PARAM_TABLES_CHANGED
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_TWTA_MON_EN_DIS
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_TWTA_PWR_MON_FP_EN_DIS
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_SUPP_HTR_MODE_CHANGE
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_CDS_HARD_RESET
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_SAS_MULTI_DATA_LOSS
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_SES_MULTI_DATA_LOSS
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_SOFT_RESET
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_EQ_XING_MISSED
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_MODE_CHANGE
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+
+    // ERROR_MODULATION
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_TWT_TRIP_OVERRIDE
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+
+    // ERROR_PBI_UNEXPECTED_STATE
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_MEMORY_WRITE_FAIL
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_R2_MODIFIED
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_BCRTM_FAILURE
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_MEM_WRITE_PROT_VIOLATE
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_WATCH_DOG_TIMER_EXPIRED
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_TWT_1_CNVRT_OC_TRIP
+    { "TWT 1 Converter Overcurrent Trip", ERROR_FORMAT, ErrorTwt1CnvrtOcTrip,
+             { TWTA_1_CONV_OC, UNIT_MAP } },
+
+    // ERROR_TWT_1_UV_TRIP
+    { "TWT 1 Converter UnderVoltage Trip", ERROR_FORMAT, ErrorTwt1UvTrip,
+             { TWTA_1_CONV_OC, UNIT_MAP } },
+
+    // ERROR_TWT_1_BODY_OC_TRIP
+    { "TWT 1 Body Overcurrent Trip", ERROR_FORMAT, ErrorTwt1BodyOcTrip,
+             { TWTA_1_BODY_OC, UNIT_MAP } },
+
+    // ERROR_TWT_2_CNVRT_OC_TRIP
+    { "TWT 2 Converter Overcurrent Trip", ERROR_FORMAT, ErrorTwt2CnvrtOcTrip,
+             { TWTA_2_CONV_OC, UNIT_MAP } },
+
+    // ERROR_TWT_2_UV_TRIP
+    { "TWT 2 Undervoltage Trip", ERROR_FORMAT, ErrorTwt2UvTrip,
+             { TWTA_2_UNDER_VOLT, UNIT_MAP } },
+
+    // ERROR_TWT_2_BODY_OC_TRIP
+    { "TWT 2 Body Overcurrent Trip", ERROR_FORMAT, ErrorTwt2BodyOcTrip,
+             { TWTA_2_BODY_OC, UNIT_MAP } },
+
+    // ERROR_PLL_OUT_OF_LOCK
+    { "PLL Out of Lock", ERROR_FORMAT, ErrorPllOutOfLock,
+             { PLL_OUT_OF_LOCK, UNIT_MAP } },
+
+    // ERROR_TRS_CMD_SUCCESS
+    { "TRS Cmd Success", ERROR_FORMAT, ErrorTrsCmdSucc,
+             { SES_TRS_CMD_SUCC, UNIT_MAP } },
+
+    // ERROR_BODY_OC_TRIP_CNTL
+    { "TWT Body OC Trip Control", ERROR_FORMAT, ErrorBodyOcTripCntl,
+             { TWT_BODY_OC_TRIP, UNIT_MAP } },
+
+    // ERROR_SES_WATCH_DOG_TIMEOUT
+    { "SES Watch Dog Timer Event", ERROR_FORMAT, ErrorSesWatchDogTimeout,
+             { SES_WATCHDOG_TIMER_EVENT, UNIT_MAP } },
+
+    // ERROR_RAM_START_ERROR
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_SES_ROM_START_ERROR
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_SES_RESET
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_SES_PORT_PARITY_ERROR
+    { "SES Port Parity Error", ERROR_FORMAT, ErrorPortParityError,
+             { SES_SERIAL_PRT_PARITY, UNIT_MAP } },
+
+
+    // ERROR_K15_SES_A_B
+    { "K15 SES A/B", WARNING_FORMAT, ErrorK15SesAB,
+             { K15_SES_SELECT, UNIT_MAP } },
+
+    // ERROR_K12_TWTA_1_2
+    { "K12 TWTA 1/2", WARNING_FORMAT, ErrorK12Twta12,
+             { K12_TWTA_SELECT, UNIT_MAP } },
+
+    // ERROR_K11_TWTA_1_2
+    { "K11 TWTA 1/2", WARNING_FORMAT, ErrorK11Twta12,
+             { K11_TWTA_SELECT, UNIT_MAP } },
+
+    // ERROR_K10_TWTA_ON_OFF
+    { "K10 TWTA On/Off", WARNING_FORMAT, ErrorK10TwtaOnOff,
+             { K10_TWTA_POWER, UNIT_MAP } },
+
+    // ERROR_K9_TWTA_ON_OFF
+    { "K9 TWTA On/Off", WARNING_FORMAT, ErrorK9TwtaOnOff,
+             { K9_TWTA_POWER, UNIT_MAP } },
+
+    // ERROR_K20_SAS_A_B
+    { "K20 SAS A/B", WARNING_FORMAT, ErrorK20SasAB,
+             { K20_SAS_SELECT, UNIT_MAP } },
+
+    // ERROR_K19_SAS_A_B
+    { "K19 SAS A/B", WARNING_FORMAT, ErrorK19SasAB,
+             { K19_SAS_SELECT, UNIT_MAP } },
+
+    // ERROR_K16_SES_A_B
+    { "K16 SES A/B", WARNING_FORMAT, ErrorK16SesAB,
+             { K16_SES_SELECT, UNIT_MAP } },
+
+    // ERROR_SAS_B_SPIN_RATE
+    { "SAS-B Spin Rate", WARNING_FORMAT, ErrorSasBSpinRate,
+             { SAS_B_SPIN_RATE, UNIT_MAP } },
+
+    // ERROR_K22_SES_SUPP_HTR_ON_OFF
+    { "K22 SES Supl Heater On/Off", WARNING_FORMAT, ErrorK22SesSuppHtrOnOff,
+             { K22_SES_SUPP_HTR_PWR, UNIT_MAP } },
+
+    // ERROR_K21_SES_SUPP_HTR_ON_OFF
+    { "K21 SES Supl Heater On/Off", WARNING_FORMAT, ErrorK21SesSuppHtrOnOff,
+             { K21_SES_SUPP_HTR_PWR, UNIT_MAP } },
+
+    // ERROR_SAS_A_SPIN_RATE
+    { "SAS-A Spin Rate", WARNING_FORMAT, ErrorSasASpinRate,
+             { SAS_A_SPIN_RATE, UNIT_MAP } },
+
     // ERROR_MODE
     { "Invalid Mode", ERROR_FORMAT, ErrorCheckMode,
              { OPERATIONAL_MODE, UNIT_HEX_BYTES } },
@@ -49,59 +264,11 @@ ErrorTabEntry HK2StateTable[] =
     { "Grid Disable in wrong mode", ERROR_FORMAT, ErrorGridDisable,
              { GRID_INHIBIT, UNIT_MAP } },
 
-    // ERROR_TWT_1_BODY_OC_TRIP
-    { "TWTA 1 Body Overcurrent Trip", ERROR_FORMAT, ErrorTwta1BodyOcTrip,
-             { TWTA_1_BODY_OC, UNIT_MAP } },
-
-    // ERROR_TWT_2_BODY_OC_TRIP
-    { "TWTA 2 Body Overcurrent Trip", ERROR_FORMAT, ErrorTwta2BodyOcTrip,
-             { TWTA_2_BODY_OC, UNIT_MAP } },
-
-    // ERROR_TWT_1_CNVRT_OC_TRIP
-    { "TWTA 1 Converter Overcurrent Trip", ERROR_FORMAT, ErrorTwta1CnvrtOcTrip,
-             { TWTA_1_CONV_OC, UNIT_MAP } },
-
-    // ERROR_TWT_2_CNVRT_OC_TRIP
-    { "TWTA 2 Converter Overcurrent Trip", ERROR_FORMAT, ErrorTwta2CnvrtOcTrip,
-             { TWTA_2_CONV_OC, UNIT_MAP } },
-
-    // ERROR_TWT_1_UV_TRIP
-    { "TWTA 1 Undervoltage Trip", ERROR_FORMAT, ErrorTwta1UvTrip,
-             { TWTA_1_UNDER_VOLT, UNIT_MAP } },
-
-    // ERROR_TWT_2_UV_TRIP
-    { "TWTA 2 Undervoltage Trip", ERROR_FORMAT, ErrorTwta2UvTrip,
-             { TWTA_2_UNDER_VOLT, UNIT_MAP } },
-
-    // ERROR_ROM_START_ERROR
-    { 0, 0, 0,
-             { PARAM_UNKNOWN, UNIT_UNKNOWN } },
-
-    // ERROR_RAM_START_ERROR
-    { 0, 0, 0,
-             { PARAM_UNKNOWN, UNIT_UNKNOWN } },
-
     // ERROR_RUNNING_ERROR_COUNT
     { 0, 0, 0,
              { PARAM_UNKNOWN, UNIT_UNKNOWN } },
 
-    // ERROR_TWT_TRIP_OVERRIDE
-    { 0, 0, 0,
-             { PARAM_UNKNOWN, UNIT_UNKNOWN } },
-
-    // ERROR_TWTA_MONITOR_DISABLE
-    { 0, 0, 0,
-             { PARAM_UNKNOWN, UNIT_UNKNOWN } },
-
     // ERROR_TWT_SHUTDOWN_DISABLE
-    { 0, 0, 0,
-             { PARAM_UNKNOWN, UNIT_UNKNOWN } },
-
-    // ERROR_DOPPLER_ORBIT_STEP
-    { 0, 0, 0,
-             { PARAM_UNKNOWN, UNIT_UNKNOWN } },
-
-    // ERROR_MODE_CHANGE
     { 0, 0, 0,
              { PARAM_UNKNOWN, UNIT_UNKNOWN } },
 
@@ -114,16 +281,19 @@ ErrorTabEntry HK2StateTable[] =
              { INVALID_COMMAND_COUNT, UNIT_DN } },
 
     // ERROR_MODE_CHANGE_MISMATCHED
-    { 0, 0, 0,
-             { PARAM_UNKNOWN, UNIT_UNKNOWN } },
-
-    // ERROR_TRS_CMD_SUCCESS
-    { "TRS Cmd Success", ERROR_FORMAT, ErrorTrsCmdSucc,
-             { SES_TRS_CMD_SUCC, UNIT_MAP } },
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
 
     // ERROR_SAS_ANT_RELEASE_INTERLOCK
-    { 0, 0, 0,
-             { PARAM_UNKNOWN, UNIT_UNKNOWN } }
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_SRC_SEQ_COUNT
+    { "Unexpected Source Sequence Count", ERROR_FORMAT, ErrorHk2BadSrcSeq,
+             { DELTA_SRC_SEQ_COUNT, UNIT_COUNTS } },
+ 
+    // ERROR_HEADER_GROUP_FLAG
+    { "Unexpected Group Flag", ERROR_FORMAT, ErrorHk2BadGrpFlg,
+             { HEADER_GROUP_FLAG, UNIT_DN } }
+
 };
 
 const int HK2StateTableSize = ElementNumber(HK2StateTable);

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   23 Jun 1999 11:55:58   sally
+// Barry changed some entries
+// 
 //    Rev 1.6   03 May 1999 10:56:10   sally
 // dataset name changed per Rich West
 // 
@@ -55,8 +58,11 @@ const ParTabEntry L1BParTab[] =
     }
   },
 
+  //-----------------------
+  // Frame Inst Status
+  //-----------------------
   { FRAME_INST_STATUS, "Frame Inst Status Flags", SOURCE_L1B,
-            MEAS_MAP, "frame_inst_status", 2, {
+            MEAS_QUANTITY, "frame_inst_status", 2, {
       { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 },
       { UNIT_MAP, "binary", DATA_UINT4, 0, ExtractData1D, pr_binchar4 }
     }
@@ -158,9 +164,10 @@ const ParTabEntry L1BParTab[] =
       { UNIT_MAP, "0=No Change, 1=Change", DATA_UINT1, 0,Extract32Bit20, pr_bit}
     }
   },
-  { FRAME_INST_STATUS_21, "PRF Clock Reset (Frame Status)",
+  { FRAME_INST_STATUS_21, "CDS Internal PRF Clock (Frame Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_inst_status", 1, {
-      { UNIT_MAP, "0=No Reset, 1=Reset", DATA_UINT1, 0,Extract32Bit21, pr_bit}
+      { UNIT_MAP, "0=External (from SES), 1=Internal", DATA_UINT1,
+                                                  0,Extract32Bit21, pr_bit}
     }
   },
   { FRAME_INST_STATUS_22, "Hard Reset (Frame Status)",
@@ -198,9 +205,17 @@ const ParTabEntry L1BParTab[] =
       { UNIT_MAP, "0=No Change, 1=Change", DATA_UINT1, 0,Extract32Bit28, pr_bit}
     }
   },
+  { FRAME_INST_STATUS_29, "Resolution Mode Change (Frame Status)",
+            SOURCE_L1B, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=No Change, 1=Change", DATA_UINT1, 0,Extract32Bit29, pr_bit}
+    }
+  },
 
+  //-----------------------
+  // Frame Error Status
+  //-----------------------
   { FRAME_ERR_STATUS, "L1A Software Error Status Flags", SOURCE_L1B,
-            MEAS_MAP, "frame_err_status", 2, {
+            MEAS_QUANTITY, "frame_err_status", 2, {
       { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 },
       { UNIT_MAP, "binary", DATA_UINT4, 0, ExtractData1D, pr_binchar4 }
     }
@@ -251,9 +266,9 @@ const ParTabEntry L1BParTab[] =
       { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit8, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_09, "Discrete A2D Timeout (Error Status)",
+  { FRAME_ERR_STATUS_09, "Reset Event (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit9, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Event", DATA_UINT1, 0,Extract32Bit9, pr_bit}
     }
   },
   { FRAME_ERR_STATUS_10, "CDS Reset (Error Status)",
@@ -261,79 +276,75 @@ const ParTabEntry L1BParTab[] =
       { UNIT_MAP, "0=OK, 1=Reset", DATA_UINT1, 0,Extract32Bit10, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_11, "PLL Out of Lock (Error Status)",
+  { FRAME_ERR_STATUS_11, "TWTA Malfunction Flag (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Out of Lock", DATA_UINT1, 0,Extract32Bit11, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Malfunction", DATA_UINT1, 0,Extract32Bit11, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_12, "TWT2 OC Trip (Error Status)",
+  { FRAME_ERR_STATUS_12, "SES Data Overrun (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Tripped", DATA_UINT1, 0,Extract32Bit12, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Event", DATA_UINT1, 0,Extract32Bit12, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_13, "TWT2 UV Trip (Error Status)",
+  { FRAME_ERR_STATUS_13, "SES Data Underrun (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Tripped", DATA_UINT1, 0,Extract32Bit13, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Event", DATA_UINT1, 0,Extract32Bit13, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_14, "TWT2 Converter OC Trip (Error Status)",
+  { FRAME_ERR_STATUS_14, "Payload Bus Interface (PBI) State (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Tripped", DATA_UINT1, 0,Extract32Bit14, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Unexpected", DATA_UINT1, 0,Extract32Bit14, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_15, "TWT1 OC Trip (Error Status)",
+  { FRAME_ERR_STATUS_15, "PBI Watchdog Timer Event (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Tripped", DATA_UINT1, 0,Extract32Bit15, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Event", DATA_UINT1, 0,Extract32Bit15, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_16, "TWT1 UV Trip (Error Status)",
+  { FRAME_ERR_STATUS_16, "A to D Transformer Couple Voltage (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Tripped", DATA_UINT1, 0,Extract32Bit16, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Event", DATA_UINT1, 0,Extract32Bit16, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_17, "TWT1 Converter OC Trip (Error Status)",
+  { FRAME_ERR_STATUS_17,
+            "Excessive Interpolation of Antenna Position (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Tripped", DATA_UINT1, 0,Extract32Bit17, pr_bit}
+      { UNIT_MAP, "0: <50, 1: >=50", DATA_UINT1, 0,Extract32Bit17, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_18, "Serial Port Parity Error (Error Status)",
+  { FRAME_ERR_STATUS_18, "Ignored Orbit Step Change (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit18, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Ignored", DATA_UINT1, 0,Extract32Bit18, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_19, "Reset Event (Error Status)",
+  { FRAME_ERR_STATUS_19, "Spontaneous Orbit Step Change (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Event", DATA_UINT1, 0,Extract32Bit19, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Incremented", DATA_UINT1, 0,Extract32Bit19, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_20, "ROM Startup Error (Error Status)",
+  { FRAME_ERR_STATUS_20, "Inconsistent Resolution Mode Flag (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit20, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Inconsistent", DATA_UINT1, 0,Extract32Bit20, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_21, "RAM Startup Error (Error Status)",
+  { FRAME_ERR_STATUS_21, "Unexpected Grid Inhibit Condition (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit21, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Unexpected", DATA_UINT1, 0,Extract32Bit21, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_22, "TRS Cmd Success (Error Status)",
+  { FRAME_ERR_STATUS_22, "Unexpected Receive Protect Condition (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=Succeed, 1=Failed", DATA_UINT1, 0,Extract32Bit22, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Unexpected", DATA_UINT1, 0,Extract32Bit22, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_23, "SES Data Loss Detection (Error Status)",
+  { FRAME_ERR_STATUS_23, "Attitude Data Flag (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=detected", DATA_UINT1, 0,Extract32Bit23, pr_bit}
+      { UNIT_MAP, "0=OK, 1=No Data", DATA_UINT1, 0,Extract32Bit23, pr_bit}
     }
   },
-  { FRAME_ERR_STATUS_24, "SAS Data Loss Detection (Error Status)",
+  { FRAME_ERR_STATUS_24, "Ephemeris Data Flag (Error Status)",
             SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=detected", DATA_UINT1, 0,Extract32Bit24, pr_bit}
-    }
-  },
-  { FRAME_ERR_STATUS_25, "Payload Bus Interface (Error Status)",
-            SOURCE_L1B, MEAS_STATUS, "frame_err_status", 1, {
-      { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit25, pr_bit}
+      { UNIT_MAP, "0=OK, 1=Unacceptable", DATA_UINT1, 0,Extract32Bit24, pr_bit}
     }
   },
 

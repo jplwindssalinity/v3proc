@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.17   21 Jul 1999 11:11:02   sally
+// need to check error and pass it on
+// 
 //    Rev 1.16   25 May 1999 14:06:06   sally
 // add L2Ax for Bryan Stiles
 // 
@@ -117,8 +120,12 @@ const Itime     endTime)        // IN
             {
                 // add each file in the directory
                 if (*(dirEntry->d_name) != '.')
-                    _AddFileIfNeeded(tlm_type, startTime, endTime,
-                        string, dirEntry->d_name);
+                    if (_AddFileIfNeeded(tlm_type, startTime, endTime,
+                        string, dirEntry->d_name) != OK)
+                {
+                    returnStatus =_status =TlmFileList::ERROR_CREATING_TLM_FILE;
+                    return;
+                }
             }
             closedir(dir);
         }
@@ -128,7 +135,11 @@ const Itime     endTime)        // IN
             // string is a file 
             //------------------
 
-            _AddFileIfNeeded(tlm_type, startTime, endTime, 0, string);
+            if (_AddFileIfNeeded(tlm_type, startTime, endTime, 0, string)!= OK)
+            {
+                returnStatus =_status =TlmFileList::ERROR_CREATING_TLM_FILE;
+                return;
+            }
         }
     }
     free(tlm_filenames_copy);
@@ -301,10 +312,14 @@ const char*     filename)
     if (file == 0)
         return (_status = ERROR_CREATING_TLM_FILE);
 
-    if (file->GetStatus() != HdfFile::OK)
+    HdfFile::StatusE fileStatus  = file->GetStatus();
+    if (fileStatus != HdfFile::OK && fileStatus != HdfFile::NO_MORE_DATA)
     {
-        delete file;
-        return (_status);
+            delete file;
+        if (fileStatus == HdfFile::NO_MORE_DATA)
+            return (_status = OK);
+        else
+            return (_status = ERROR_CREATING_TLM_FILE);
     }
 
     _InsertSortedFile(*file);

@@ -6,6 +6,9 @@
 //
 // $Log$
 // 
+//    Rev 1.1   23 Jun 1999 11:50:44   sally
+// took out unused var "effectid"
+// 
 //    Rev 1.0   25 Mar 1999 13:57:56   daffer
 // Initial Revision
 // $Date$
@@ -156,7 +159,6 @@ Hk2EffDetector::DetectEffects(
     TlmFileList *tlmfilelist )
 {
     Command *effect = 0;
-    EffectE effectid;
     Itime effect_time;
 
     int nchars;

@@ -6,6 +6,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.3   07 Jul 1999 13:23:34   sally
+// add a few more extraction functions
+// 
 //    Rev 1.2   04 Nov 1998 10:09:50   sally
 // add "packet sequence count" parameter
 // 
@@ -137,6 +140,29 @@ PolynomialTable*)     // unused
                   stride, length, buffer, 0));
 
 } // ExtractData1D_int2_float_Even
+
+int
+ExtractData1D_int1_float_Even(
+TlmHdfFile* hk2File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // make sure this is an odd frame
+    unsigned char frameNo=0;
+    if (Hk2ExtractFrameNo(hk2File, sdsIDs, start, frameNo) < 0)
+        return -1;
+    if (EA_IS_ODD(frameNo)) return 0;
+
+    int32 newSdsIDs[1];
+    newSdsIDs[0] = sdsIDs[1];
+    return(ExtractData1D_int1_float(hk2File, newSdsIDs, start,
+                  stride, length, buffer, 0));
+
+} // ExtractData1D_int1_float_Even
 
 int
 ExtractData1D_uint1_float_Odd(
@@ -645,6 +671,29 @@ PolynomialTable*)     // unused
 }//Extract8Bit0_1_Odd
 
 int
+Extract8Bit2_3_Odd(
+TlmHdfFile* hk2File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // make sure this is an odd frame
+    unsigned char frameNo=0;
+    if (Hk2ExtractFrameNo(hk2File, sdsIDs, start, frameNo) < 0)
+        return -1;
+    if (EA_IS_EVEN(frameNo)) return 0;
+
+    int32 newSdsIDs[1];
+    newSdsIDs[0] = sdsIDs[1];
+    return(ExtractSomeOf8Bits(hk2File,newSdsIDs,start,stride,length,
+                                     3, 2, buffer, 0));
+ 
+}//Extract8Bit2_3_Odd
+
+int
 Extract8Bit6_7_Odd(
 TlmHdfFile* hk2File,
 int32*      sdsIDs,
@@ -804,3 +853,26 @@ PolynomialTable*)     // unused
                                      3,4,buffer, 0));
  
 }//Extract8Bit0_3_Even
+
+int
+Extract8Bit1_3_Even(
+TlmHdfFile* hk2File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // make sure this is an even frame
+    unsigned char frameNo=0;
+    if (Hk2ExtractFrameNo(hk2File, sdsIDs, start, frameNo) < 0)
+        return -1;
+    if (EA_IS_ODD(frameNo)) return 0;
+
+    int32 newSdsIDs[1];
+    newSdsIDs[0] = sdsIDs[1];
+    return(ExtractSomeOf8Bits(hk2File,newSdsIDs,start,stride,length,
+                                     3, 3, buffer, 0));
+ 
+}//Extract8Bit1_3_Even

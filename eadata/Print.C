@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.12   07 Jul 1999 16:18:34   sally
+// add some new parameters for L1A primary header
+// 
 //    Rev 1.11   25 May 1999 14:06:00   sally
 // add L2Ax for Bryan Stiles
 // 
@@ -455,11 +458,16 @@ void pr_100_8_float4_6(FILE *ofp, char *dataP)
             fprintf(ofp, "%.6g ", *ptr);
     return;
 }
+
 void pr_bit(FILE *ofp, char *dataP)
-
-
 {
     fprintf(ofp, "%u", *((unsigned char *)dataP));
+    return;
+}
+
+void pr_2bits(FILE *ofp, char *dataP)
+{
+    fprintf(ofp, "%02u", *((unsigned char *)dataP));
     return;
 }
 

@@ -6,6 +6,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.26   15 Jun 1999 14:20:58   sally
+// change minimum bandwidth frames from 400 to 800
+// 
 //    Rev 1.25   09 Jun 1999 16:35:32   sally
 // need to allocate space for dataBuf for local DerivedExtractResult
 // otherwise, "bad address alignment"
@@ -192,7 +195,7 @@ unsigned char _noiseLoadMap[] =
    0,  1,  1,  0,  0,  1,  1,  1,  1,  0
 };
 
-#define EA_MIN_BANDWIDTH_FRAMES    400
+#define EA_MIN_BANDWIDTH_FRAMES    800
 
 inline int
 _oneUint2TodB(

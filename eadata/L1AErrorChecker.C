@@ -6,6 +6,21 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.14   26 Jul 1999 16:49:38   sally
+// Group flag for L1A is 1, Hk2 is 3
+// 
+//    Rev 1.13   26 Jul 1999 15:43:32   sally
+// add "Source Sequence Count" and "group flag" checking
+// 
+//    Rev 1.12   13 Jul 1999 12:38:44   sally
+// comment out the first_header_packet parameter, LP is not ready
+// 
+//    Rev 1.11   09 Jul 1999 16:07:16   sally
+// add error checkers for "Source Sequence Count" and "Group Flag" in header
+// 
+//    Rev 1.10   25 Jun 1999 10:30:44   sally
+// add some error conditions from Lee
+// 
 //    Rev 1.9   08 Jun 1999 13:55:30   sally
 // took out "Unexpected Cycle Count" - wrong parameter
 // should be "packet sequence count"
@@ -52,6 +67,235 @@ static const char rcs_id[] =
 //------------------------------------------
 ErrorTabEntry L1aStateTable[] =
 {
+    // ERROR_MSSN_SERL_TLM
+    { "Mission or Serial TLM Error", ERROR_FORMAT, ErrorMssnSerlTlm,
+             { ERROR_FLAGS_03, UNIT_MAP } },
+
+    // ERROR_RELAY_CHANGE
+    { "Relay Set/Reset Changed", WARNING_FORMAT, ErrorRelayChanged,
+             { STATUS_TABLE_CHANGE_FLAGS_03, UNIT_MAP } },
+
+
+    // ERROR_CDS_RESET
+    { "CDS System Reset", ERROR_FORMAT, ErrorCdsReset,
+             { ERROR_FLAGS_07, UNIT_MAP } },
+
+    // ERROR_A2D_TIMEOUT
+    { "A2D Timeout", ERROR_FORMAT, ErrorA2DTimeout,
+             { ERROR_FLAGS_05, UNIT_MAP } },
+
+    // ERROR_MISS_SC_TIME
+    { "Missing Spacecraft Time", ERROR_FORMAT, ErrorMissSCTime,
+             { ERROR_FLAGS_04, UNIT_MAP } },
+
+    // ERROR_FAULT_PROTECT
+    { "Fault Protection Event", ERROR_FORMAT, ErrorFaultProtect,
+             { ERROR_FLAGS_02, UNIT_MAP } },
+
+    // ERROR_WATCHDOG_TIMEOUT
+    { "Watchdog Timeout Reset Missed", ERROR_FORMAT, ErrorWatchdogTimeout,
+             { ERROR_FLAGS_01, UNIT_MAP } },
+
+    // ERROR_POWER_ON_RESET
+    { "Power On Reset", ERROR_FORMAT, ErrorPowerOnReset,
+             { ERROR_FLAGS_00, UNIT_MAP } },
+
+
+    // ERROR_MSSN_TLM_TABLES_CHANGED
+    { "Mission TLM Tables Changed", WARNING_FORMAT, ErrorMssnTlmTablesChanged,
+             { STATUS_TABLE_CHANGE_FLAGS_15, UNIT_MAP } },
+
+    // ERROR_SERL_TLM_TABLES_CHANGED
+    { "Serial TLM Tables Changed", WARNING_FORMAT, ErrorSerlTlmTablesChanged,
+             { STATUS_TABLE_CHANGE_FLAGS_14, UNIT_MAP } },
+
+    // ERROR_DOPPLER_TABLES_CHANGED
+    { "Doppler Tables Changed", WARNING_FORMAT, ErrorDopplerTablesChanged,
+             { STATUS_TABLE_CHANGE_FLAGS_13, UNIT_MAP } },
+
+    // ERROR_RANGE_GATE_TABLES_CHANGED
+    { "Range Gate Tables Changed", WARNING_FORMAT, ErrorRangeGateTablesChanged,
+             { STATUS_TABLE_CHANGE_FLAGS_12, UNIT_MAP } },
+
+    // ERROR_SES_PARAM_TABLES_CHANGED
+    { "SES Param Tables Changed", WARNING_FORMAT, ErrorSESParamTablesChanged,
+             { STATUS_TABLE_CHANGE_FLAGS_11, UNIT_MAP } },
+
+    // ERROR_TWTA_MON_EN_DIS
+    { "TWTA monitor En/Dis", ERROR_FORMAT, ErrorTwtaMonEnDis,
+             { STATUS_TABLE_CHANGE_FLAGS_10, UNIT_MAP } },
+
+    // ERROR_TWTA_PWR_MON_FP_EN_DIS
+    { "TWTA Power monitor FP En/Dis", ERROR_FORMAT, ErrorPwrMonFPEndis,
+             { STATUS_TABLE_CHANGE_FLAGS_09, UNIT_MAP } },
+
+    // ERROR_SUPP_HTR_MODE_CHANGE
+    { "SES Suppl Htr Mode Chg En/Dis", ERROR_FORMAT, ErrorSesSuppHtrMode,
+             { STATUS_TABLE_CHANGE_FLAGS_08, UNIT_MAP } },
+
+    // ERROR_CDS_HARD_RESET
+    { "CDS Hard Reset", ERROR_FORMAT, ErrorCdsHardReset,
+             { STATUS_TABLE_CHANGE_FLAGS_07, UNIT_MAP } },
+
+    // ERROR_SAS_MULTI_DATA_LOSS
+    { "SAS Multi Data Loss FP En/Dis", ERROR_FORMAT, ErrorSasMultiDataLoss,
+             { STATUS_TABLE_CHANGE_FLAGS_06, UNIT_MAP } },
+
+    // ERROR_SES_MULTI_DATA_LOSS
+    { "SES Multi Data Loss FP En/Dis", ERROR_FORMAT, ErrorSesMultiDataLoss,
+             { STATUS_TABLE_CHANGE_FLAGS_05, UNIT_MAP } },
+
+    // ERROR_SOFT_RESET
+    { "Soft Reset", ERROR_FORMAT, ErrorSoftReset,
+             { STATUS_TABLE_CHANGE_FLAGS_02, UNIT_MAP } },
+
+    // ERROR_EQ_XING_MISSED
+    { "Equator Crossing Missed", ERROR_FORMAT, ErrorEqXingMissed,
+             { STATUS_TABLE_CHANGE_FLAGS_01, UNIT_MAP } },
+
+    // ERROR_MODE_CHANGE
+    { "Mode Change", NOTIFY_FORMAT, ErrorModeChange,
+             { STATUS_TABLE_CHANGE_FLAGS_00, UNIT_MAP } },
+
+    // ERROR_MODULATION
+    { "Modulation", WARNING_FORMAT, ErrorModulation,
+             { SES_CONFIG_FLAGS_03, UNIT_MAP } },
+
+    // ERROR_TWT_TRIP_OVERRIDE
+    { "TWT Trip Override", WARNING_FORMAT, ErrorTwtTripOverride,
+             { SES_CONFIG_FLAGS_02, UNIT_MAP } },
+
+
+    // ERROR_PBI_UNEXPECTED_STATE
+    { "Payload in Unexpected State", ERROR_FORMAT, ErrorUnexpectedState,
+             { PBI_FLAG_05, UNIT_MAP } },
+
+    // ERROR_MEMORY_WRITE_FAIL
+    { "Memory Write Test Failed", ERROR_FORMAT, ErrorWriteTestFailed,
+             { PBI_FLAG_04, UNIT_MAP } },
+
+    // ERROR_R2_MODIFIED
+    { "R2 Modified", ERROR_FORMAT, ErrorR2Modified,
+             { PBI_FLAG_03, UNIT_MAP } },
+
+    // ERROR_BCRTM_FAILURE
+    { "BCRTM (Build-in-Test) Failure", ERROR_FORMAT, ErrorBCRTMFailure,
+             { PBI_FLAG_02, UNIT_MAP } },
+
+    // ERROR_MEM_WRITE_PROT_VIOLATE
+    { "Memory Write Protect Violation", ERROR_FORMAT, ErrorMemWriteProtViolate,
+             { PBI_FLAG_01, UNIT_MAP } },
+
+    // ERROR_WATCH_DOG_TIMER_EXPIRED
+    { "Watch Dog Timer Expired", ERROR_FORMAT, ErrorWatchDogTimerExpired,
+             { PBI_FLAG_00, UNIT_MAP } },
+
+
+    // ERROR_TWT_1_CNVRT_OC_TRIP
+    { "TWT 1 Converter Overcurrent Trip", ERROR_FORMAT, ErrorTwt1CnvrtOcTrip,
+             { DISCRETE_STATUS_1_07, UNIT_MAP } },
+
+    // ERROR_TWT_1_UV_TRIP
+    { "TWT 1 Undervoltage Trip", ERROR_FORMAT, ErrorTwt1UvTrip,
+             { DISCRETE_STATUS_1_06, UNIT_MAP } },
+
+    // ERROR_TWT_1_BODY_OC_TRIP
+    { "TWT 1 Body Overcurrent Trip", ERROR_FORMAT, ErrorTwt1BodyOcTrip,
+             { DISCRETE_STATUS_1_05, UNIT_MAP } },
+
+    // ERROR_TWT_2_CNVRT_OC_TRIP
+    { "TWT 2 Converter Overcurrent Trip", ERROR_FORMAT, ErrorTwt2CnvrtOcTrip,
+             { DISCRETE_STATUS_1_04, UNIT_MAP } },
+
+    // ERROR_TWT_2_UV_TRIP
+    { "TWT 2 Undervoltage Trip", ERROR_FORMAT, ErrorTwt2UvTrip,
+             { DISCRETE_STATUS_1_03, UNIT_MAP } },
+
+    // ERROR_TWT_2_BODY_OC_TRIP
+    { "TWT 2 Body Overcurrent Trip", ERROR_FORMAT, ErrorTwt2BodyOcTrip,
+             { DISCRETE_STATUS_1_02, UNIT_MAP } },
+
+    // ERROR_PLL_OUT_OF_LOCK
+    { "PLL Out of Lock", ERROR_FORMAT, ErrorPllOutOfLock,
+             { DISCRETE_STATUS_1_01, UNIT_MAP } },
+
+    // ERROR_TRS_CMD_SUCCESS
+    { "TRS Cmd Success", ERROR_FORMAT, ErrorTrsCmdSucc,
+             { DISCRETE_STATUS_2_04, UNIT_MAP } },
+
+    // ERROR_BODY_OC_TRIP_CNTL
+    { "TWT Body OC Trip Control", ERROR_FORMAT, ErrorBodyOcTripCntl,
+             { DISCRETE_STATUS_2_00, UNIT_MAP } },
+
+    // ERROR_SES_WATCH_DOG_TIMEOUT
+    { "SES Watch Dog Timer Event", ERROR_FORMAT, ErrorSesWatchDogTimeout,
+             { DISCRETE_STATUS_3_04, UNIT_MAP } },
+
+    // ERROR_RAM_START_ERROR
+    { "RAM Start Up Error", ERROR_FORMAT, ErrorRamStartError,
+             { DISCRETE_STATUS_3_03, UNIT_MAP } },
+
+    // ERROR_SES_ROM_START_ERROR
+    { "SES ROM Start Up Error", ERROR_FORMAT, ErrorSesRomStartError,
+             { DISCRETE_STATUS_3_02, UNIT_MAP } },
+
+    // ERROR_SES_RESET
+    { "SES Reset Event", WARNING_FORMAT, ErrorSesReset,
+             { DISCRETE_STATUS_3_01, UNIT_MAP } },
+
+    // ERROR_SES_PORT_PARITY_ERROR
+    { "SES Port Parity Error", ERROR_FORMAT, ErrorPortParityError,
+             { DISCRETE_STATUS_3_00, UNIT_MAP } },
+
+    // ERROR_K15_SES_A_B
+    { "K15 SES A/B", WARNING_FORMAT, ErrorK15SesAB,
+             { K15_SES_SELECT, UNIT_MAP } },
+
+    // ERROR_K12_TWTA_1_2
+    { "K12 TWTA 1/2", WARNING_FORMAT, ErrorK12Twta12,
+             { K12_TWTA_SELECT, UNIT_MAP } },
+
+    // ERROR_K11_TWTA_1_2
+    { "K11 TWTA 1/2", WARNING_FORMAT, ErrorK11Twta12,
+             { K11_TWTA_SELECT, UNIT_MAP } },
+
+    // ERROR_K10_TWTA_ON_OFF
+    { "K10 TWTA On/Off", WARNING_FORMAT, ErrorK10TwtaOnOff,
+             { K10_TWTA_POWER, UNIT_MAP } },
+
+    // ERROR_K9_TWTA_ON_OFF
+    { "K9 TWTA On/Off", WARNING_FORMAT, ErrorK9TwtaOnOff,
+             { K9_TWTA_POWER, UNIT_MAP } },
+
+    // ERROR_K20_SAS_A_B
+    { "K20 SAS A/B", WARNING_FORMAT, ErrorK20SasAB,
+             { K20_SAS_SELECT, UNIT_MAP } },
+
+    // ERROR_K19_SAS_A_B
+    { "K19 SAS A/B", WARNING_FORMAT, ErrorK19SasAB,
+             { K19_SAS_SELECT, UNIT_MAP } },
+
+    // ERROR_K16_SES_A_B
+    { "K16 SES A/B", WARNING_FORMAT, ErrorK16SesAB,
+             { K16_SES_SELECT, UNIT_MAP } },
+
+    // ERROR_SAS_B_SPIN_RATE
+    { "SAS-B Spin Rate", WARNING_FORMAT, ErrorSasBSpinRate,
+             { SAS_B_SPIN_RATE, UNIT_MAP } },
+
+    // ERROR_K22_SES_SUPP_HTR_ON_OFF
+    { "K22 SES Supl Heater On/Off", WARNING_FORMAT, ErrorK22SesSuppHtrOnOff,
+             { K22_SES_SUPP_HTR_PWR, UNIT_MAP } },
+
+    // ERROR_K21_SES_SUPP_HTR_ON_OFF
+    { "K21 SES Supl Heater On/Off", WARNING_FORMAT, ErrorK21SesSuppHtrOnOff,
+             { K21_SES_SUPP_HTR_PWR, UNIT_MAP } },
+
+    // ERROR_SAS_A_SPIN_RATE
+    { "SAS-A Spin Rate", WARNING_FORMAT, ErrorSasASpinRate,
+             { SAS_A_SPIN_RATE, UNIT_MAP } },
+
+
     // ERROR_MODE
     { "Invalid Mode", ERROR_FORMAT, ErrorCheckMode,
              { OPERATIONAL_MODE, UNIT_HEX_BYTES } },
@@ -64,62 +308,14 @@ ErrorTabEntry L1aStateTable[] =
     { "Grid Disable in wrong mode", ERROR_FORMAT, ErrorGridDisable,
              { SES_CONFIG_FLAGS_00, UNIT_MAP } },
 
-    // ERROR_TWT_1_BODY_OC_TRIP
-    { "TWTA 1 Body Overcurrent Trip", ERROR_FORMAT, ErrorTwta1BodyOcTrip,
-             { DISCRETE_STATUS_1_05, UNIT_MAP } },
-
-    // ERROR_TWT_2_BODY_OC_TRIP
-    { "TWTA 2 Body Overcurrent Trip", ERROR_FORMAT, ErrorTwta2BodyOcTrip,
-             { DISCRETE_STATUS_1_02, UNIT_MAP } },
-
-    // ERROR_TWT_1_CNVRT_OC_TRIP
-    { "TWTA 1 Converter Overcurrent Trip", ERROR_FORMAT, ErrorTwta1CnvrtOcTrip,
-             { DISCRETE_STATUS_1_07, UNIT_MAP } },
-
-    // ERROR_TWT_2_CNVRT_OC_TRIP
-    { "TWTA 2 Converter Overcurrent Trip", ERROR_FORMAT, ErrorTwta2CnvrtOcTrip,
-             { DISCRETE_STATUS_1_04, UNIT_MAP } },
-
-    // ERROR_TWT_1_UV_TRIP
-    { "TWTA 1 Undervoltage Trip", ERROR_FORMAT, ErrorTwta1UvTrip,
-             { DISCRETE_STATUS_1_06, UNIT_MAP } },
-
-    // ERROR_TWT_2_UV_TRIP
-    { "TWTA 2 Undervoltage Trip", ERROR_FORMAT, ErrorTwta2UvTrip,
-             { DISCRETE_STATUS_1_03, UNIT_MAP } },
-
-    // ERROR_ROM_START_ERROR
-    { "ROM Start Up Error", ERROR_FORMAT, ErrorRomStartError,
-             { DISCRETE_STATUS_3_02, UNIT_MAP } },
-
-    // ERROR_RAM_START_ERROR
-    { "RAM Start Up Error", ERROR_FORMAT, ErrorRamStartError,
-             { DISCRETE_STATUS_3_03, UNIT_MAP } },
-
     // ERROR_RUNNING_ERROR_COUNT
     { "Error Count Changed", ERROR_FORMAT, ErrorRunningErrors,
              { RUNNING_ERROR_COUNT, UNIT_COUNTS } },
-
-    // ERROR_TWT_TRIP_OVERRIDE
-    { "TWT Trip Override", WARNING_FORMAT, ErrorTwtTripOvrd,
-             { SES_CONFIG_FLAGS_02, UNIT_MAP } },
-
-    // ERROR_TWTA_MONITOR_DISABLE
-    { "TWTA Monitor", WARNING_FORMAT, ErrorTwtaMonitor,
-             { STATUS_TABLE_CHANGE_FLAGS_10, UNIT_MAP } },
 
     // ERROR_TWT_SHUTDOWN_DISABLE
     { "TWT Shutdown", WARNING_FORMAT, ErrorTwtShutdown,
              { STATUS_TABLE_CHANGE_FLAGS_09, UNIT_MAP } },
 
-    // ERROR_DOPPLER_ORBIT_STEP
-// Lee said this is not the right parameter to check 6/6/99
-//    { "Unexpected Cycle Count", WARNING_FORMAT, ErrorUnexpectedCycle,
-//             { DOPPLER_ORBIT_STEP, UNIT_COUNTS } },
-
-    // ERROR_MODE_CHANGE
-    { "Mode Change", NOTIFY_FORMAT, ErrorModeChange,
-             { STATUS_TABLE_CHANGE_FLAGS_00, UNIT_MAP } },
 
     // ERROR_VALID_COMMAND_COUNT
     { "Valid Command Count", NOTIFY_FORMAT, ErrorValidCmdCnt,
@@ -130,16 +326,18 @@ ErrorTabEntry L1aStateTable[] =
              { INVALID_COMMAND_COUNT, UNIT_COUNTS } },
 
     // ERROR_MODE_CHANGE_MISMATCHED
-    { 0, 0, 0,
-             { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
  
-    // ERROR_TRS_CMD_SUCCESS
-    { "TRS Cmd Success", ERROR_FORMAT, ErrorTrsCmdSucc,
-             { DISCRETE_STATUS_2_04, UNIT_MAP } },
-
     // ERROR_SAS_ANT_RELEASE_INTERLOCK
-    { 0, 0, 0,
-             { PARAM_UNKNOWN, UNIT_UNKNOWN } }
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+
+    // ERROR_SRC_SEQ_COUNT
+    { "Unexpected Source Sequence Count", ERROR_FORMAT, ErrorL1ABadSrcSeq,
+             { DELTA_SRC_SEQ_COUNT, UNIT_COUNTS } },
+
+    // ERROR_HEADER_GROUP_FLAG
+    { "Unexpected Group Flag", ERROR_FORMAT, ErrorL1ABadGrpFlg,
+             { HEADER_GROUP_FLAG, UNIT_DN } }
 };
 
 const int L1aStateTableSize = ElementNumber(L1aStateTable);

@@ -6,9 +6,12 @@
 //
 // CM Log
 // $Log$
-// Revision 1.7  1999/06/10 17:50:51  sally
-// add "leap second table"
-//
+// 
+//    Rev 1.6   06 Jul 1999 10:58:40   sally
+// corrected cut and paste error in kp_beta
+// 
+//    Rev 1.5   14 Jun 1999 13:36:32   sally
+// add NUM_SIGMA0_PER_CELL
 // 
 //    Rev 1.4   26 Mar 1999 15:40:50   sally
 // added "L1 Time" unit
@@ -47,10 +50,10 @@ static const char rcs_id_L2AParTab_C[] = "@(#) $Header$";
 const ParTabEntry L2AParTab[] =
 {
   { WVC_ROW_TIME, "WVC Row Time", SOURCE_L2A, MEAS_TIME, "v:wvc_row_time", 6, {
-      { UNIT_AUTOTIME, "(auto)", DATA_ITIME, 0, ExtractL1Time, NULL },
-      { UNIT_CODE_A,   "Code A", DATA_ITIME,0,ExtractL1Time,pr_itime_codea},
-      { UNIT_DAYS,     "days", DATA_ITIME, 0, ExtractL1Time, pr_itime_d },
-      { UNIT_HOURS,    "hours", DATA_ITIME, 0, ExtractL1Time, pr_itime_h },
+      { UNIT_AUTOTIME, "(auto)",  DATA_ITIME, 0, ExtractL1Time, NULL },
+      { UNIT_CODE_A,   "Code A",  DATA_ITIME, 0, ExtractL1Time, pr_itime_codea},
+      { UNIT_DAYS,     "days",    DATA_ITIME, 0, ExtractL1Time, pr_itime_d },
+      { UNIT_HOURS,    "hours",   DATA_ITIME, 0, ExtractL1Time, pr_itime_h },
       { UNIT_MINUTES,  "minutes", DATA_ITIME, 0, ExtractL1Time, pr_itime_m },
       { UNIT_SECONDS,  "seconds", DATA_ITIME, 0, ExtractL1Time, pr_itime_s }
     }
@@ -61,6 +64,11 @@ const ParTabEntry L2AParTab[] =
   },
   { NUM_SIGMA0, "Number of Sigma0's", SOURCE_L2A, MEAS_DATA, "num_sigma0", 1, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D, pr_int2 }
+    }
+  },
+  { NUM_SIGMA0_PER_CELL, "Number of Sigma0's Per Cell", SOURCE_L2A,
+                                   MEAS_DATA, "num_sigma0_per_cell", 1, {
+      { UNIT_DN, "dn", DATA_UINT1_76, 0, ExtractData2D_76, pr_uint1_76 }
     }
   },
   { CELL_LAT, "Cell Latitude", SOURCE_L2A, MEAS_DATA, "cell_lat", 2, {
@@ -116,7 +124,7 @@ const ParTabEntry L2AParTab[] =
   },
   { KP_BETA, "KP Beta", SOURCE_L2A, MEAS_DATA, "kp_beta", 1, {
       { UNIT_DN, "dn", DATA_FLOAT4_3240,
-                          0, ExtractData2D_3240_int2_float, pr_3240float4_6 }
+                          0, ExtractData2D_3240_uint2_float, pr_3240float4_6 }
     }
   },
   { KP_GAMMA, "KP Gamma", SOURCE_L2A, MEAS_DATA, "kp_gamma", 1, {

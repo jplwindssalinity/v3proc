@@ -7,6 +7,10 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.10   26 Jul 1999 15:43:54   sally
+// adapt to ball's new changes
+// adapt to ball's new changes   
+// 
 //    Rev 1.9   07 Dec 1998 15:40:30   sally
 // add FrameReadBits0_13() for "Source Sequence Count"
 // 
@@ -57,8 +61,9 @@ static const char Hk2HdfMap_C_id[] =
 const Hk2HdfMapEntry Hk2HdfMapTable[] =
 {
     { "hk2_time", "TAITIME", DATA_FLOAT8, 1.0, 0, FrameRead8Bytes },
+    { "hk2_prime_hdr","PRIMEHDR", DATA_UINT2, 1.0, 8, FrameRead2Bytes},
     { "hk2_pckt_seq_cntl","PACKETSEQ", DATA_UINT2, 1.0, 10, FrameRead2Bytes},
-    { "hk2_src_seq_cnt","SOURCESEQ", DATA_UINT2, 1.0, 10, FrameReadBits0_13},
+    { "hk2_pckt_len","PACKETLEN", DATA_UINT2, 1.0, 12, FrameRead2Bytes},
     { "torque_rod_status", "SBW13", DATA_UINT1, 1.0, 14, FrameRead1Byte },
     { "SBW05", "SBW05", DATA_UINT1, 1.0, 15, FrameRead1Byte },
     { "fltsw_cmd_acc_cnt", "SWACPT", DATA_UINT1, 1.0, 16, FrameRead1Byte },
@@ -105,9 +110,9 @@ const Hk2HdfMapEntry Hk2HdfMapTable[] =
     { "sasb_eab_spin_rate","SCSASBSPIN", DATA_UINT1, 1.0, 57,FrameRead1Byte},
     { "sasa_eaa_saa_sec_volt","SCEAAP14V", DATA_UINT1, 1.0, 58,FrameRead1Byte},
     { "sasb_eab_saa_sec_volt","SCEABP14V", DATA_UINT1, 1.0, 59,FrameRead1Byte},
-    { "cds_psu_3_temp","SCPSU3T", DATA_UINT1, 1.0, 60, FrameRead1Byte },
-    { "cds_idp_a_temp","SCIDPAT", DATA_UINT1, 1.0, 61, FrameRead1Byte },
-    { "cds_idp_b_temp","SCIDPBT", DATA_UINT1, 1.0, 62, FrameRead1Byte },
+    { "cds_psu_3_temp","SCCDSPSU3T", DATA_UINT1, 1.0, 60, FrameRead1Byte },
+    { "cds_sfc_a_temp","SCCDSSFCAT", DATA_UINT1, 1.0, 61, FrameRead1Byte },
+    { "cds_sfc_b_temp","SCCDSSFCBT", DATA_UINT1, 1.0, 62, FrameRead1Byte },
     { "twta_1_hvps_chas_temp","SCTW1HVPST",DATA_UINT1, 1.0, 63, FrameRead1Byte},
     { "twta_2_hvps_chas_temp","SCTW2HVPST",DATA_UINT1, 1.0, 64, FrameRead1Byte},
     { "twta_1_base_temp","SCTW1BASET",DATA_UINT1, 1.0, 65, FrameRead1Byte},
@@ -270,48 +275,48 @@ const Hk2HdfMapEntry Hk2HdfMapTable[] =
     { "sun_sensor6_intensity", "ADSS6INT",
                                  DATA_UINT2, 1.0, 302, FrameRead2Bytes },//odd
     { "SBW04", "SBW04", DATA_UINT1, 1.0, 303, FrameRead1Byte },
-    { "star_1_ccd_temp", "ADST1CCDT", DATA_UINT2, 1.0, 304, FrameRead2Bytes },
+    { "star_1_ccd_temp", "ADST1CCDT", DATA_INT2, 1.0, 304, FrameRead2Bytes },
     { "sun_sensor7_intensity", "ADSS7INT",
                                  DATA_UINT2, 1.0, 304, FrameRead2Bytes },
-    { "star_1_base_temp", "ADSS8INT", DATA_UINT2, 1.0, 306, FrameRead2Bytes },
+    { "star_1_base_temp", "ADST1BPT", DATA_INT2, 1.0, 306, FrameRead2Bytes },
     { "sun_sensor8_intensity", "ADSS8INT",
                                  DATA_UINT2, 1.0, 306, FrameRead2Bytes },
-    { "star_1_lens_temp", "ADST1LT", DATA_UINT2, 1.0, 308, FrameRead2Bytes },
+    { "star_1_lens_temp", "ADST1LT", DATA_INT2, 1.0, 308, FrameRead2Bytes },
     { "sun_sensor9_intensity", "ADSS9INT",
                                  DATA_UINT2, 1.0, 308, FrameRead2Bytes },
-    { "star_1_p2_volt", "ADST1P2V", DATA_UINT1, 1.0, 310, FrameRead1Byte },
+    { "star_1_p2_volt", "ADST1P2V", DATA_INT1, 1.0, 310, FrameRead1Byte },
     { "sun_sensor10_intensity", "ADSS10INT",
                                  DATA_UINT2, 1.0, 310, FrameRead2Bytes },//odd
-    { "star_1_m8_volt", "ADST1M8V", DATA_UINT1, 1.0, 311, FrameRead1Byte },
-    { "star_1_p5_volt", "ADST1P5V", DATA_UINT1, 1.0, 312, FrameRead1Byte },
+    { "star_1_m8_volt", "ADST1M8V", DATA_INT1, 1.0, 311, FrameRead1Byte },
+    { "star_1_p5_volt", "ADST1P5V", DATA_INT1, 1.0, 312, FrameRead1Byte },
     { "sun_sensor11_intensity", "ADSS11INT",
                                  DATA_UINT2, 1.0, 312, FrameRead2Bytes },//odd
-    { "star_1_m5_volt", "ADST1M5V", DATA_UINT1, 1.0, 313, FrameRead1Byte },
+    { "star_1_m5_volt", "ADST1M5V", DATA_INT1, 1.0, 313, FrameRead1Byte },
     { "star_1_bg_read", "ADST1BG", DATA_UINT2, 1.0, 314, FrameRead2Bytes },
     { "sun_sensor12_intensity", "ADSS12INT",
-                                 DATA_UINT2, 1.0, 314, FrameRead2Bytes },
+                                 DATA_UINT2, 1.0, 314, FrameRead2Bytes },//odd
     { "star_1_ff_cnt", "ADST1FFCNT", DATA_UINT1, 1.0, 316, FrameRead1Byte },
     { "star_1_falalrm_cnt", "ADST1FACNT", DATA_UINT1, 1.0,317,FrameRead1Byte },
     { "sun_sensor13_intensity", "ADSS13INT",
                                  DATA_UINT2, 1.0, 316, FrameRead2Bytes },//odd
     { "star_1_tlm_offset", "ADST1TOFF", DATA_UINT2, 1.0, 318, FrameRead2Bytes },
     { "sun_sensor14_intensity", "ADSS14INT",
-                                 DATA_UINT2, 1.0, 318, FrameRead2Bytes },
-    { "star_2_ccd_temp", "ADST2CCDT", DATA_UINT2, 1.0, 320, FrameRead2Bytes },
+                                 DATA_UINT2, 1.0, 318, FrameRead2Bytes },//odd
+    { "star_2_ccd_temp", "ADST2CCDT", DATA_INT2, 1.0, 320, FrameRead2Bytes },
     { "measured_mag_field_x", "ADMMFX",
                                  DATA_INT2, 1.0, 320, FrameRead2Bytes },//odd
-    { "star_2_base_temp", "ADST2BPT", DATA_UINT2, 1.0, 322, FrameRead2Bytes },
+    { "star_2_base_temp", "ADST2BPT", DATA_INT2, 1.0, 322, FrameRead2Bytes },
     { "measured_mag_field_y", "ADMMFY",
                                  DATA_INT2, 1.0, 322, FrameRead2Bytes },//odd
-    { "star_2_lens_temp", "ADST2LT", DATA_UINT2, 1.0, 324, FrameRead2Bytes },
+    { "star_2_lens_temp", "ADST2LT", DATA_INT2, 1.0, 324, FrameRead2Bytes },
     { "measured_mag_field_z", "ADMMFZ",
                                  DATA_INT2, 1.0, 324, FrameRead2Bytes },//odd
-    { "star_2_p2_volt", "ADST2P2V", DATA_UINT1, 1.0, 326, FrameRead1Byte },
-    { "star_2_m8_volt", "ADST2M8V", DATA_UINT1, 1.0, 327, FrameRead1Byte },
+    { "star_2_p2_volt", "ADST2P2V", DATA_INT1, 1.0, 326, FrameRead1Byte },
+    { "star_2_m8_volt", "ADST2M8V", DATA_INT1, 1.0, 327, FrameRead1Byte },
     { "measured_sun_vector_x", "ADMSUNVX",
                                  DATA_INT2, 1.0, 326, FrameRead2Bytes },//odd
-    { "star_2_p5_volt", "ADST2P5V", DATA_UINT1, 1.0, 328, FrameRead1Byte },
-    { "star_2_m5_volt", "ADST2M5V", DATA_UINT1, 1.0, 329, FrameRead1Byte },
+    { "star_2_p5_volt", "ADST2P5V", DATA_INT1, 1.0, 328, FrameRead1Byte },
+    { "star_2_m5_volt", "ADST2M5V", DATA_INT1, 1.0, 329, FrameRead1Byte },
     { "measured_sun_vector_y", "ADMSUNVY",
                                  DATA_INT2, 1.0, 328, FrameRead2Bytes },//odd
     { "star_2_bg_read", "ADST2BG", DATA_UINT2, 1.0, 330, FrameRead2Bytes },
@@ -323,16 +328,22 @@ const Hk2HdfMapEntry Hk2HdfMapTable[] =
                                  DATA_UINT2, 1.0, 332, FrameRead2Bytes },//odd
     { "star_2_tlm_offset", "ADST2TOFF", DATA_UINT2, 1.0, 334, FrameRead2Bytes },
     { "fft_target_id", "ADFFTID", DATA_UINT2, 1.0, 334, FrameRead2Bytes },
-    { "rate_sen_att_q1", "ADRSAQ1", DATA_INT2, 1.0, 336, FrameRead2Bytes },
+
+    //--------------------------
+    // Attitude Control & Pointing Geometry
+    //--------------------------
+    { "att_err_x", "ADATTERRX", DATA_INT2, 1.0, 336, FrameRead2Bytes },
     { "desired_att_q1", "ADDATTQ1", DATA_INT2, 1.0, 336, FrameRead2Bytes },
-    { "rate_sen_att_q2", "ADRSAQ2", DATA_INT2, 1.0, 338, FrameRead2Bytes },
+    { "att_err_y", "ADATTERRY", DATA_INT2, 1.0, 338, FrameRead2Bytes },
     { "desired_att_q2", "ADDATTQ2", DATA_INT2, 1.0, 338, FrameRead2Bytes },
-    { "rate_sen_att_q3", "ADRSAQ3", DATA_INT2, 1.0, 340, FrameRead2Bytes },
+    { "att_err_z", "ADATTERRZ", DATA_INT2, 1.0, 340, FrameRead2Bytes },
     { "desired_att_q3", "ADDATTQ3", DATA_INT2, 1.0, 340, FrameRead2Bytes },
-    { "rate_sen_att_q4", "ADRSAQ4", DATA_INT2, 1.0, 342, FrameRead2Bytes },
+    { "scat_tlm_tbl_offset", "SCTOFFSET", DATA_UINT2,1.0,342, FrameRead2Bytes },
     { "desired_att_q4", "ADDATTQ4", DATA_INT2, 1.0, 342, FrameRead2Bytes },
 
+    //--------------------------
     // Attitude Determination
+    //--------------------------
     { "control_frame_att_q1", "ADCFAQ1", DATA_INT2, 1.0, 344, FrameRead2Bytes },
     { "next_orbit_pos_x", "ADNPOSX", DATA_INT2, 1.0, 344, FrameRead2Bytes },
     { "control_frame_att_q2", "ADCFAQ2", DATA_INT2, 1.0, 346, FrameRead2Bytes },
@@ -347,13 +358,12 @@ const Hk2HdfMapEntry Hk2HdfMapTable[] =
     { "next_orbit_vel_z", "ADNVELZ", DATA_INT2, 1.0, 354, FrameRead2Bytes },
     { "control_frame_rate_z", "ADCFRZ", DATA_INT2, 1.0, 356, FrameRead2Bytes },
     { "model_mag_field_vx", "ADMMFVX", DATA_INT2, 1.0, 356, FrameRead2Bytes },
-    { "measured_att_q1", "ADMATTQ1", DATA_INT2, 1.0, 358, FrameRead2Bytes },
+    { "prop_rate_x", "ADPRPRX", DATA_INT2, 1.0, 358, FrameRead2Bytes },
     { "model_mag_field_vy", "ADMMFVY", DATA_INT2, 1.0, 358, FrameRead2Bytes },
-    { "measured_att_q2", "ADMATTQ2", DATA_INT2, 1.0, 360, FrameRead2Bytes },
+    { "prop_rate_y", "ADPRPRY", DATA_INT2, 1.0, 360, FrameRead2Bytes },
     { "model_mag_field_vz", "ADMMFVZ", DATA_INT2, 1.0, 360, FrameRead2Bytes },
-    { "measured_att_q3", "ADMATTQ3", DATA_INT2, 1.0, 362, FrameRead2Bytes },
+    { "prop_rate_z", "ADPRPRZ", DATA_INT2, 1.0, 362, FrameRead2Bytes },
     { "model_sun_vx", "ADMSVX", DATA_INT2, 1.0, 362, FrameRead2Bytes },
-    { "measured_att_q4", "ADMATTQ4", DATA_INT2, 1.0, 364, FrameRead2Bytes },
     { "model_sun_vy", "ADMSVY", DATA_INT2, 1.0, 364, FrameRead2Bytes },
     { "total_momentum_1", "ADMOMENT1", DATA_INT2, 1.0, 366, FrameRead2Bytes },
     { "model_sun_vz", "ADMSVZ", DATA_INT2, 1.0, 366, FrameRead2Bytes },
@@ -373,6 +383,7 @@ const Hk2HdfMapEntry Hk2HdfMapTable[] =
                                  DATA_UINT2, 1.0, 374, FrameRead2Bytes },
     { "active_cdu", "SWACDU", DATA_UINT1, 1.0, 376, FrameRead1Byte},
     { "SBW12", "SBW12", DATA_UINT1, 1.0, 376, FrameRead1Byte},
+    { "flt_sw_ver_no", "SWVERSION", DATA_UINT1, 1.0, 377, FrameRead1Byte},
     { "meas_mag_field+meas_sun_vector", "ADMMFST+ADMSST",
                             DATA_UINT1, 1.0, 377, FrameRead1Byte },
 

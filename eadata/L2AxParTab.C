@@ -6,9 +6,9 @@
 //
 // CM Log
 // $Log$
-// Revision 1.1  1999/05/28 16:29:58  sally
-// Initial revision
-//
+// 
+//    Rev 1.1   06 Jul 1999 10:58:54   sally
+// corrected cut and paste error in kp_beta
 // 
 //    Rev 1.0   25 May 1999 14:05:30   sally
 // Initial revision.

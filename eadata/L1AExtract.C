@@ -7,8 +7,23 @@
 // CM Log
 // $Log$
 // 
-//    Rev 1.33   08 Jun 1999 16:26:06   sally
-// make mWatts = 0.0, dB = -1000 when dn = 0.0
+//    Rev 1.39   26 Jul 1999 15:44:46   sally
+// add new extraction function for HK2 group flag
+// 
+//    Rev 1.38   09 Jul 1999 16:07:20   sally
+// add error checkers for "Source Sequence Count" and "Group Flag" in header
+// 
+//    Rev 1.37   07 Jul 1999 16:17:38   sally
+// add some new function for primary header
+// 
+//    Rev 1.36   07 Jul 1999 13:22:20   sally
+// add ExtractData1D_int1_float()
+// 
+//    Rev 1.35   23 Jun 1999 11:55:30   sally
+// Barry changed some entries
+// 
+//    Rev 1.34   14 Jun 1999 13:32:32   sally
+// add ExtractSrcSeqCnt()
 // 
 //    Rev 1.32   02 Jun 1999 16:20:56   sally
 // add leap second adjustment
@@ -134,6 +149,7 @@
 #include <memory.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdio.h>
 
 #include "L1AExtract.h"
 #include "Parameter.h"
@@ -151,6 +167,7 @@ static const char rcs_id_L1AExtract_C[] = "@(#) $Header$";
 #define RX_BEAM_CYCLE_ANY       -1
 #define BAD_GAIN                -10.0
 #define BAD_NOISE_FIGURE        10.0
+#define MAX_SRC_SEQUENCE_CNT    16384
 
 static const float bk = 1.38e-23; // boltzman constant
 static const float chBandwidth[]={ 194645.28, 105719.20, 54478.76, 49192.80 };
@@ -353,6 +370,46 @@ PolynomialTable*)     // unused
     return(length);
 
 }//ExtractData1D_int2_float
+
+//----------------------------------------------------------------------
+// Function:    ExtractData1D_int1_float ([])
+// Extracts:    one dimensional data (char -> float)
+//----------------------------------------------------------------------
+int
+ExtractData1D_int1_float(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold char integers
+    char* tmpBuffer = (char*) calloc(length, sizeof(char));
+    assert( tmpBuffer != 0);
+
+    // get the array of short integers
+    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
+                    (VOIDP)tmpBuffer) != HDF_SUCCEED)
+        return -1;
+
+    // get the scale factor
+    float64  scaleFactor;
+    if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
+        return -1;
+
+    // convert the short integers to floats, and return
+    float* floatP = (float*)buffer;
+    for (int i=0; i < length; i++, floatP++)
+    {
+        *floatP = (float) (scaleFactor * tmpBuffer[i]);
+    }
+    free((void*) tmpBuffer);
+    return(length);
+
+}//ExtractData1D_int1_float
 
 //----------------------------------------------------------------------
 // Function:    ExtractData1D_uint1_float ([])
@@ -2330,7 +2387,7 @@ PolynomialTable*)     // unused
                               length, tempBuffer) != HDF_SUCCEED)
         return -1;
 
-    // extract bit 0_14 only and return the buffer
+    // extract bit 0_13 only and return the buffer
     (void)memset(buffer, 0, length);
     unsigned short* shortP = (unsigned short*)buffer;
     for (int i=0; i < length; i++)
@@ -2343,11 +2400,47 @@ PolynomialTable*)     // unused
 }//Extract16Bit0_13
 
 //----------------------------------------------------------------------
-// Function:    ExtractDeltaSrcSeqCnt ([])
+// Function:    Extract16Bit14_15 ([])
+// Extracts:    one dimensional data (Bit 14-15 only)
+//----------------------------------------------------------------------
+int
+Extract16Bit14_15(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold short integers
+    unsigned short* tempBuffer =
+              (unsigned short*) calloc(length, sizeof(unsigned short));
+    assert(tempBuffer != 0);
+
+    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
+                              length, tempBuffer) != HDF_SUCCEED)
+        return -1;
+
+    // extract bit 14_15 only and return the buffer
+    (void)memset(buffer, 0, length);
+    unsigned char* charP = (unsigned char*)buffer;
+    for (int i=0; i < length; i++)
+    {
+        charP[i] = EXTRACT_GET_BITS(tempBuffer[i], 15, 2);
+    }
+    free((void*) tempBuffer);
+    return(length);
+
+}//Extract16Bit14_15
+
+//----------------------------------------------------------------------
+// Function:    ExtractHk2DeltaSrcSeqCnt ([])
 // Extracts:    one dimensional data
 //----------------------------------------------------------------------
 int
-ExtractDeltaSrcSeqCnt(
+ExtractHk2DeltaSrcSeqCnt(
 TlmHdfFile* l1File,
 int32*     sdsIDs,
 int32      start,
@@ -2363,12 +2456,70 @@ PolynomialTable*)     // unused
         return 0;
     
     short* delta = (short*) buffer;
-    *delta = newSrcSequenceCnt - lastSrcSequenceCnt;
+    if (newSrcSequenceCnt > lastSrcSequenceCnt)
+        *delta = newSrcSequenceCnt - lastSrcSequenceCnt;
+    else
+        *delta = newSrcSequenceCnt + MAX_SRC_SEQUENCE_CNT - lastSrcSequenceCnt;
     lastSrcSequenceCnt = newSrcSequenceCnt;
 
     return 1;
 
-} // ExtractDeltaSrcSeqCnt
+} // ExtractDeltaHk2SrcSeqCnt
+
+//----------------------------------------------------------------------
+// Function:    ExtractSrcSeqCnt ([])
+// Extracts:    one dimensional data
+//----------------------------------------------------------------------
+int
+ExtractL1ASrcSeqCnt(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold (3 * short) integers
+    unsigned short* tempBuffer =
+              (unsigned short*) calloc(length, sizeof(unsigned short) * 3);
+    assert(tempBuffer != 0);
+
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 3;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+
+    // extract bit 0_13 of the middle short int only and return the buffer
+    (void)memset(buffer, 0, length);
+    unsigned short* shortP = (unsigned short*)buffer;
+    unsigned short* tempBufferPtr = tempBuffer + 1;
+    for (int i=0; i < length; i++)
+    {
+        shortP[i] = EXTRACT_GET_BITS(*tempBufferPtr, 13, 14);
+        tempBufferPtr += 3;
+    }
+    free((void*) tempBuffer);
+    return(length);
+
+} // ExtractL1ASrcSeqCnt
 
 //----------------------------------------------------------------------
 // Function:    ExtractSomeOf8Bits ([])
@@ -3223,6 +3374,25 @@ PolynomialTable*)     // unused
 }//Extract32Bit28
 
 //----------------------------------------------------------------------
+// Function:    Extract32Bit29 ([])
+// Extracts:    one dimensional data (Bit 29 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit29(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                             29, buffer, 0));
+ 
+}//Extract32Bit29
+
+//----------------------------------------------------------------------
 // Function:    Extract32Bit0_1 ([])
 // Extracts:    one dimensional data (Bit 0-1 only)
 //----------------------------------------------------------------------
@@ -3924,7 +4094,7 @@ ExtractDeltaInstTime(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -3988,7 +4158,7 @@ ExtractPowerDnSlice1(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -4009,7 +4179,7 @@ ExtractPowerDnSlice2(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -4030,7 +4200,7 @@ ExtractPowerDnSlice3(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -4051,7 +4221,7 @@ ExtractPowerDnSlice4(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -4072,7 +4242,7 @@ ExtractPowerDnSlice5(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -4093,7 +4263,7 @@ ExtractPowerDnSlice6(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -4114,7 +4284,7 @@ ExtractPowerDnSlice7(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -4135,7 +4305,7 @@ ExtractPowerDnSlice8(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -4156,7 +4326,7 @@ ExtractPowerDnSlice9(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -4177,7 +4347,7 @@ ExtractPowerDnSlice10(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -4198,7 +4368,7 @@ ExtractPowerDnSlice11(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -4219,7 +4389,7 @@ ExtractPowerDnSlice12(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
 VOIDP       buffer,
 PolynomialTable*)     // unused
@@ -4525,3 +4695,206 @@ PolynomialTable* polyTable)
     return 1;
 
 } // ExtractAntSpinRateRotMin
+
+//----------------------------------------------------------------------
+// Function:    ExtractHdrPcktID ([]) (first 2 bytes)
+// Extracts:    one dimensional data
+//----------------------------------------------------------------------
+int
+ExtractHdrPcktID(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold (3 * short) integers
+    unsigned short* tempBuffer =
+              (unsigned short*) calloc(length, sizeof(unsigned short) * 3);
+    assert(tempBuffer != 0);
+
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 3;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+
+    // extract the first short int only and return the buffer
+    (void)memset(buffer, 0, length);
+    unsigned short* shortP = (unsigned short*)buffer;
+    unsigned short* tempBufferPtr = tempBuffer;
+    for (int i=0; i < length; i++)
+    {
+        memcpy(shortP, tempBufferPtr, 2);
+        // next header
+        shortP++;
+        tempBufferPtr += 3;
+    }
+    free((void*) tempBuffer);
+    return(length);
+
+} // ExtractHdrPcktID
+
+//----------------------------------------------------------------------
+// Function:    ExtractHdrPcktLen ([]) (last 2 bytes)
+// Extracts:    one dimensional data
+//----------------------------------------------------------------------
+int
+ExtractHdrPcktLen(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold (3 * short) integers
+    unsigned short* tempBuffer =
+              (unsigned short*) calloc(length, sizeof(unsigned short) * 3);
+    assert(tempBuffer != 0);
+
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 3;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+
+    // extract the first short int only and return the buffer
+    (void)memset(buffer, 0, length);
+    unsigned short* shortP = (unsigned short*)buffer;
+    // skip to the last two bytes
+    unsigned short* tempBufferPtr = tempBuffer + 2;
+    for (int i=0; i < length; i++)
+    {
+        memcpy(shortP, tempBufferPtr, 2);
+        // next header
+        shortP++;
+        tempBufferPtr += 3;
+    }
+    free((void*) tempBuffer);
+    return(length);
+
+} // ExtractHdrPcktLen
+
+//----------------------------------------------------------------------
+// Function:    ExtractHdrGroupFlag ([])
+// Extracts:    one dimensional data
+//----------------------------------------------------------------------
+int
+ExtractHdrGroupFlag(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold (3 * short) integers
+    unsigned short* tempBuffer =
+              (unsigned short*) calloc(length, sizeof(unsigned short) * 3);
+    assert(tempBuffer != 0);
+
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 3;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+
+    // extract bit 14_15 of the middle short int only and return the buffer
+    (void)memset(buffer, 0, length);
+    unsigned char* charP = (unsigned char*)buffer;
+    unsigned short* tempBufferPtr = tempBuffer + 1;
+    for (int i=0; i < length; i++)
+    {
+        //charP[i] = (*tempBufferPtr & 0x0c00) >> 14;
+        charP[i] = EXTRACT_GET_BITS(*tempBufferPtr, 15, 2);
+        tempBufferPtr += 3;
+    }
+    free((void*) tempBuffer);
+    return(length);
+
+} // ExtractHdrGroupFlag
+
+//----------------------------------------------------------------------
+// Function:    ExtractL1ADeltaSrcSeqCnt ([])
+// Extracts:    one dimensional data
+//----------------------------------------------------------------------
+int
+ExtractL1ADeltaSrcSeqCnt(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      ,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    static unsigned short lastSrcSequenceCnt=0;
+    if (length != 1) return 0;
+    unsigned short newSrcSequenceCnt;
+    if (ExtractL1ASrcSeqCnt(l1File, sdsIDs, start, 1, 1,
+                             &newSrcSequenceCnt) <= 0)
+        return -1;
+    
+    short* delta = (short*) buffer;
+    if (newSrcSequenceCnt > lastSrcSequenceCnt)
+        *delta = newSrcSequenceCnt - lastSrcSequenceCnt;
+    else
+        *delta = newSrcSequenceCnt + MAX_SRC_SEQUENCE_CNT - lastSrcSequenceCnt;
+    lastSrcSequenceCnt = newSrcSequenceCnt;
+
+    return 1;
+
+} // ExtractL1ADeltaSrcSeqCnt

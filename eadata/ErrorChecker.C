@@ -6,6 +6,18 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.9   26 Jul 1999 16:49:16   sally
+// Group flag for L1A is 1, Hk2 is 3
+// 
+//    Rev 1.8   26 Jul 1999 15:43:02   sally
+// add "Source Sequence Count" and "group flag" checking
+// 
+//    Rev 1.7   09 Jul 1999 16:06:00   sally
+// add error checkers for "Source Sequence Count" and "Group Flag" in header
+// 
+//    Rev 1.6   25 Jun 1999 10:30:14   sally
+// add some error conditions from Lee
+// 
 //    Rev 1.5   20 May 1998 11:19:28   sally
 // handles dummy error checker (place holders)
 // 
@@ -331,326 +343,6 @@ FILE*           ofp)
 } // ErrorGridDisable
 
 int
-ErrorTwta1BodyOcTrip(
-ErrorChecker*   obj,
-char*           name,
-char*           format,
-FILE*           ofp)
-{
-    StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_TWT_1_BODY_OC_TRIP]);
-    StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_TWT_1_BODY_OC_TRIP]);
-
-    if (currentElement->condition != StateElement::CURRENT)
-        return 1;
-
-    unsigned char currentTrip = *(unsigned char*) currentElement->value;
-    unsigned char prevTrip = *(unsigned char*) prevElement->value;
-
-    // changed
-    if (prevTrip != currentTrip ||
-            (currentTrip == 1 &&
-                   prevElement->condition == StateElement::UNINITIALIZED))
-    {
-        fprintf(ofp, format, name);
-        char* tripString;
-        if (currentTrip == 1)
-            tripString = "tripped";
-        else
-            tripString = "cleared";
-        fprintf(ofp, "  %s   TWTA 1 Body OC = %d (%s)\n",
-            obj->current->time_string, currentTrip, tripString);
-        obj->ReportBasicInfo(ofp);
-        fflush(ofp);
-        return 0;
-    }
-
-    return 1;
-
-} // ErrorTwta1BodyOcTrip
-
-int
-ErrorTwta2BodyOcTrip(
-ErrorChecker*   obj,
-char*           name,
-char*           format,
-FILE*           ofp)
-{
-    StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_TWT_2_BODY_OC_TRIP]);
-    StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_TWT_2_BODY_OC_TRIP]);
-
-    if (currentElement->condition != StateElement::CURRENT)
-        return 1;
-
-    unsigned char currentTrip = *(unsigned char*) currentElement->value;
-    unsigned char prevTrip = *(unsigned char*) prevElement->value;
-
-    // changed
-    if (prevTrip != currentTrip ||
-            (currentTrip == 1 &&
-                   prevElement->condition == StateElement::UNINITIALIZED))
-    {
-        fprintf(ofp, format, name);
-        char* tripString;
-        if (currentTrip == 1)
-            tripString = "tripped";
-        else
-            tripString = "cleared";
-        fprintf(ofp, "  %s   TWTA 2 Body OC = %d (%s)\n",
-            obj->current->time_string, currentTrip, tripString);
-        obj->ReportBasicInfo(ofp);
-        fflush(ofp);
-        return 0;
-    }
-
-    return 1;
-
-} // ErrorTwta2BodyOcTrip
-
-int
-ErrorTwta1CnvrtOcTrip(
-ErrorChecker*   obj,
-char*           name,
-char*           format,
-FILE*           ofp)
-{
-    StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_TWT_1_CNVRT_OC_TRIP]);
-    StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_TWT_1_CNVRT_OC_TRIP]);
-
-    if (currentElement->condition != StateElement::CURRENT)
-        return 1;
-
-    unsigned char currentTrip = *(unsigned char*) currentElement->value;
-    unsigned char prevTrip = *(unsigned char*) prevElement->value;
-
-    // changed
-    if (prevTrip != currentTrip ||
-            (currentTrip == 1 &&
-                   prevElement->condition == StateElement::UNINITIALIZED))
-    {
-        fprintf(ofp, format, name);
-        char* tripString;
-        if (currentTrip == 1)
-            tripString = "tripped";
-        else
-            tripString = "cleared";
-        fprintf(ofp, "  %s   TWTA 1 Converter OC = %d (%s)\n",
-            obj->current->time_string, currentTrip, tripString);
-        obj->ReportBasicInfo(ofp);
-        fflush(ofp);
-        return 0;
-    }
-
-    return 1;
-
-} // ErrorTwta1CnvrtOcTrip
-
-int
-ErrorTwta2CnvrtOcTrip(
-ErrorChecker*   obj,
-char*           name,
-char*           format,
-FILE*           ofp)
-{
-    StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_TWT_2_CNVRT_OC_TRIP]);
-    StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_TWT_2_CNVRT_OC_TRIP]);
-
-    if (currentElement->condition != StateElement::CURRENT)
-        return 1;
-
-    unsigned char currentTrip = *(unsigned char*) currentElement->value;
-    unsigned char prevTrip = *(unsigned char*) prevElement->value;
-
-    // changed
-    if (prevTrip != currentTrip ||
-            (currentTrip == 1 &&
-                   prevElement->condition == StateElement::UNINITIALIZED))
-    {
-        fprintf(ofp, format, name);
-        char* tripString;
-        if (currentTrip == 1)
-            tripString = "tripped";
-        else
-            tripString = "cleared";
-        fprintf(ofp, "  %s   TWTA 2 Converter OC = %d (%s)\n",
-            obj->current->time_string, currentTrip, tripString);
-        obj->ReportBasicInfo(ofp);
-        fflush(ofp);
-        return 0;
-    }
-
-    return 1;
-
-} // ErrorTwta2CnvrtOcTrip
-
-int
-ErrorTwta1UvTrip(
-ErrorChecker*   obj,
-char*           name,
-char*           format,
-FILE*           ofp)
-{
-    StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_TWT_1_UV_TRIP]);
-    StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_TWT_1_UV_TRIP]);
-
-    if (currentElement->condition != StateElement::CURRENT)
-        return 1;
-
-    unsigned char currentTrip = *(unsigned char*) currentElement->value;
-    unsigned char prevTrip = *(unsigned char*) prevElement->value;
-
-    // changed
-    if (prevTrip != currentTrip ||
-            (currentTrip == 1 &&
-                   prevElement->condition == StateElement::UNINITIALIZED))
-    {
-        fprintf(ofp, format, name);
-        char* tripString;
-        if (currentTrip == 1)
-            tripString = "tripped";
-        else
-            tripString = "cleared";
-        fprintf(ofp, "  %s   TWTA 1 Undervoltage = %d (%s)\n",
-            obj->current->time_string, currentTrip, tripString);
-        obj->ReportBasicInfo(ofp);
-        fflush(ofp);
-        return 0;
-    }
-
-    return 1;
-
-} // ErrorTwta1UvTrip
-
-int
-ErrorTwta2UvTrip(
-ErrorChecker*   obj,
-char*           name,
-char*           format,
-FILE*           ofp)
-{
-    StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_TWT_2_UV_TRIP]);
-    StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_TWT_2_UV_TRIP]);
-
-    if (currentElement->condition != StateElement::CURRENT)
-        return 1;
-
-    unsigned char currentTrip = *(unsigned char*) currentElement->value;
-    unsigned char prevTrip = *(unsigned char*) prevElement->value;
-
-    // changed
-    if (prevTrip != currentTrip ||
-            (currentTrip == 1 &&
-                   prevElement->condition == StateElement::UNINITIALIZED))
-    {
-        fprintf(ofp, format, name);
-        char* tripString;
-        if (currentTrip == 1)
-            tripString = "tripped";
-        else
-            tripString = "cleared";
-        fprintf(ofp, "  %s   TWTA 2 Undervoltage = %d (%s)\n",
-            obj->current->time_string, currentTrip, tripString);
-        obj->ReportBasicInfo(ofp);
-        fflush(ofp);
-        return 0;
-    }
-
-    return 1;
-
-} // ErrorTwta2UvTrip
-
-int
-ErrorRomStartError(
-ErrorChecker*   obj,
-char*           name,
-char*           format,
-FILE*           ofp)
-{
-    StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_ROM_START_ERROR]);
-    StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_ROM_START_ERROR]);
-
-    if (currentElement->condition != StateElement::CURRENT)
-        return 1;
-
-    unsigned char currentTrip = *(unsigned char*) currentElement->value;
-    unsigned char prevTrip = *(unsigned char*) prevElement->value;
-
-    // changed
-    if (prevTrip != currentTrip ||
-            (currentTrip == 1 &&
-                   prevElement->condition == StateElement::UNINITIALIZED))
-    {
-        fprintf(ofp, format, name);
-        char* tripString;
-        if (currentTrip == 1)
-            tripString = "tripped";
-        else
-            tripString = "cleared";
-        fprintf(ofp, "  %s   ROM Start Up Error = %d (%s)\n",
-            obj->current->time_string, currentTrip, tripString);
-        obj->ReportBasicInfo(ofp);
-        fflush(ofp);
-        return 0;
-    }
-
-    return 1;
-
-} // ErrorRomStartError
-
-int
-ErrorRamStartError(
-ErrorChecker*   obj,
-char*           name,
-char*           format,
-FILE*           ofp)
-{
-    StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_RAM_START_ERROR]);
-    StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_RAM_START_ERROR]);
-
-    if (currentElement->condition != StateElement::CURRENT)
-        return 1;
-
-    unsigned char currentTrip = *(unsigned char*) currentElement->value;
-    unsigned char prevTrip = *(unsigned char*) prevElement->value;
-
-    // changed
-    if (prevTrip != currentTrip ||
-            (currentTrip == 1 &&
-                   prevElement->condition == StateElement::UNINITIALIZED))
-    {
-        fprintf(ofp, format, name);
-        char* tripString;
-        if (currentTrip == 1)
-            tripString = "tripped";
-        else
-            tripString = "cleared";
-        fprintf(ofp, "  %s   RAM Start Up Error = %d (%s)\n",
-            obj->current->time_string, currentTrip, tripString);
-        obj->ReportBasicInfo(ofp);
-        fflush(ofp);
-        return 0;
-    }
-
-    return 1;
-
-} // ErrorRamStartError
-
-int
 ErrorRunningErrors(
 ErrorChecker*   obj,
 char*           name,
@@ -685,17 +377,18 @@ FILE*           ofp)
 
 } // ErrorRunningErrors
 
+#if 0
 int
-ErrorTwtTripOvrd(
+ErrorTwtaMonEnDis(
 ErrorChecker*   obj,
 char*           name,
 char*           format,
 FILE*           ofp)
 {
     StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_TWT_TRIP_OVERRIDE]);
+            &(obj->prev->stateElements[ERROR_TWTA_MON_EN_DIS]);
     StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_TWT_TRIP_OVERRIDE]);
+            &(obj->current->stateElements[ERROR_TWTA_MON_EN_DIS]);
 
     if (currentElement->condition != StateElement::CURRENT)
         return 1;
@@ -705,16 +398,16 @@ FILE*           ofp)
 
     // changed
     if (prevTrip != currentTrip ||
-            (currentTrip == 1 &&
+            (currentTrip == 0 &&
                    prevElement->condition == StateElement::UNINITIALIZED))
     {
         fprintf(ofp, format, name);
         char* tripString;
         if (currentTrip == 1)
-            tripString = "tripped";
+            tripString = "enabled";
         else
-            tripString = "cleared";
-        fprintf(ofp, "  %s   TWT Trip Override Enabled = %d (%s)\n",
+            tripString = "disabled";
+        fprintf(ofp, "  %s   TWT Monitor En/Dis = %d (%s)\n",
             obj->current->time_string, currentTrip, tripString);
         obj->ReportBasicInfo(ofp);
         fflush(ofp);
@@ -723,47 +416,8 @@ FILE*           ofp)
 
     return 1;
 
-} // ErrorTwtTripOvrd
-
-int
-ErrorTwtaMonitor(
-ErrorChecker*   obj,
-char*           name,
-char*           format,
-FILE*           ofp)
-{
-    StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_TWTA_MONITOR_DISABLE]);
-    StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_TWTA_MONITOR_DISABLE]);
-
-    if (currentElement->condition != StateElement::CURRENT)
-        return 1;
-
-    unsigned char currentTrip = *(unsigned char*) currentElement->value;
-    unsigned char prevTrip = *(unsigned char*) prevElement->value;
-
-    // changed
-    if (prevTrip != currentTrip ||
-            (currentTrip == 1 &&
-                   prevElement->condition == StateElement::UNINITIALIZED))
-    {
-        fprintf(ofp, format, name);
-        char* tripString;
-        if (currentTrip == 1)
-            tripString = "tripped";
-        else
-            tripString = "cleared";
-        fprintf(ofp, "  %s   TWT Monitor Disabled = %d (%s)\n",
-            obj->current->time_string, currentTrip, tripString);
-        obj->ReportBasicInfo(ofp);
-        fflush(ofp);
-        return 0;
-    }
-
-    return 1;
-
-} // ErrorTwtaMonitor
+} // ErrorTwtaMonEnDis
+#endif
 
 int
 ErrorTwtShutdown(
@@ -806,31 +460,31 @@ FILE*           ofp)
 } // ErrorTwtShutdown
 
 int
-ErrorUnexpectedCycle(
+ErrorBadSrcSeq(
 ErrorChecker*   obj,
 char*           name,
 char*           format,
-FILE*           ofp)
+FILE*           ofp,
+int             delta)
 {
     StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_DOPPLER_ORBIT_STEP]);
+            &(obj->prev->stateElements[ERROR_SRC_SEQ_COUNT]);
     StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_DOPPLER_ORBIT_STEP]);
+            &(obj->current->stateElements[ERROR_SRC_SEQ_COUNT]);
 
-    if (currentElement->condition != StateElement::CURRENT ||
-                 prevElement->condition != StateElement::CURRENT)
+    // if this is the first extracted value, ignore this (the value will be bad)
+    if (prevElement->condition != StateElement::CURRENT || 
+           currentElement->condition != StateElement::CURRENT)
         return 1;
 
-    unsigned char currentCycle = *(unsigned char*) currentElement->value;
-    unsigned char prevCycle = *(unsigned char*) prevElement->value;
+    unsigned short currentSrcSeq = *(unsigned short*) currentElement->value;
 
-    // changed (the orbit step is btwn 0 and 255)
-    if ( ! (prevCycle == 255 && currentCycle == 0 ) &&
-                              currentCycle != prevCycle + 1)
+    // the value must be == delta
+    if (currentSrcSeq != delta)
     {
         fprintf(ofp, format, name);
-        fprintf(ofp, "  %s   Unexpected Cycle = %d, previous was = %d\n",
-            obj->current->time_string, currentCycle, prevCycle);
+        fprintf(ofp, "  %s   Delta Source Sequence Count = %d\n",
+            obj->current->time_string, currentSrcSeq);
         obj->ReportBasicInfo(ofp);
         fflush(ofp);
         return 0;
@@ -838,39 +492,52 @@ FILE*           ofp)
 
     return 1;
 
-} // ErrorUnexpectedCycle
+} // ErrorBadSrcSeq
 
 int
-ErrorModeChange(
+ErrorHk2BadSrcSeq(
 ErrorChecker*   obj,
 char*           name,
 char*           format,
 FILE*           ofp)
 {
-    StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_MODE_CHANGE]);
+    return(ErrorBadSrcSeq(obj, name, format, ofp, 1));
+
+} // ErrorHk2BadSrcSeq
+
+int
+ErrorL1ABadSrcSeq(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    return(ErrorBadSrcSeq(obj, name, format, ofp, 3));
+
+} // ErrorL1ABadSrcSeq
+
+int
+ErrorBadGrpFlg(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp,
+int             delta)
+{
     StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_MODE_CHANGE]);
+            &(obj->current->stateElements[ERROR_HEADER_GROUP_FLAG]);
 
     if (currentElement->condition != StateElement::CURRENT)
         return 1;
 
-    unsigned char currentTrip = *(unsigned char*) currentElement->value;
-    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+    unsigned char currentGrpFlg = *(unsigned char*) currentElement->value;
 
-    // changed
-    if (prevTrip != currentTrip ||
-            (currentTrip == 1 &&
-                   prevElement->condition == StateElement::UNINITIALIZED))
+    // the value must be == delta
+    if (currentGrpFlg != delta)
     {
         fprintf(ofp, format, name);
-        char* tripString;
-        if (currentTrip == 1)
-            tripString = "changed";
-        else
-            tripString = "same";
-        fprintf(ofp, "  %s   Mode Change = %d (%s)\n",
-            obj->current->time_string, currentTrip, tripString);
+        fprintf(ofp, "  %s   Group Flag = %d\n",
+                          obj->current->time_string, currentGrpFlg);
         obj->ReportBasicInfo(ofp);
         fflush(ofp);
         return 0;
@@ -878,7 +545,30 @@ FILE*           ofp)
 
     return 1;
 
-} // ErrorModeChange
+} // ErrorBadGrpFlg
+
+int
+ErrorL1ABadGrpFlg(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    return(ErrorBadGrpFlg(obj, name, format, ofp, 1));
+
+} // ErrorL1ABadGrpFlg
+
+int
+ErrorHk2BadGrpFlg(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    return(ErrorBadGrpFlg(obj, name, format, ofp, 3));
+ 
+} // ErrorHk2BadGrpFlg
+ 
 
 int
 ErrorValidCmdCnt(
@@ -998,37 +688,147 @@ FILE*           ofp)
 
 } // ErrorModeChange
 
+// general function for error if bit value == 1
 int
-ErrorTrsCmdSucc(
-ErrorChecker*   obj,
-char*           name,
-char*           format,
-FILE*           ofp)
+ErrorValueSet(
+ErrorChecker*        obj,
+char*                name,
+char*                format,
+FILE*                ofp,
+ERROR_CHECK_PARAM_E  errorIndex,
+unsigned char        goodValue)
 {
-    StateElement* prevElement =
-            &(obj->prev->stateElements[ERROR_TRS_CMD_SUCCESS]);
-    StateElement* currentElement =
-            &(obj->current->stateElements[ERROR_TRS_CMD_SUCCESS]);
+    unsigned char flag = 
+          *(unsigned char*)obj->current->stateElements[errorIndex].value;
+    if (flag == goodValue)
+        // pass
+        return 1;
+    else
+    {
+        // event occured
+        fprintf(ofp, format, name);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+    
+} //ErrorValueSet
+
+int ErrorCdsReset(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_CDS_RESET, 0)); }
+
+int ErrorA2DTimeout(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_A2D_TIMEOUT, 0)); }
+
+int ErrorMissSCTime(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_MISS_SC_TIME, 0)); }
+
+int ErrorMssnSerlTlm(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_MSSN_SERL_TLM, 0)); }
+
+int ErrorFaultProtect(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_FAULT_PROTECT, 0)); }
+
+int ErrorWatchdogTimeout(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_WATCHDOG_TIMEOUT,0)); }
+
+int ErrorPowerOnReset(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_POWER_ON_RESET, 0)); }
+
+int ErrorMssnTlmTablesChanged(ErrorChecker* obj, char* name,
+                                     char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format,
+                                     ofp, ERROR_MSSN_TLM_TABLES_CHANGED, 0)); }
+int ErrorSerlTlmTablesChanged(ErrorChecker* obj, char* name,
+                                     char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format,
+                                     ofp, ERROR_SERL_TLM_TABLES_CHANGED, 0)); }
+int ErrorDopplerTablesChanged(ErrorChecker* obj, char* name,
+                                     char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format,
+                                     ofp, ERROR_DOPPLER_TABLES_CHANGED, 0)); }
+int ErrorRangeGateTablesChanged(ErrorChecker* obj, char* name,
+                                     char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format,
+                                     ofp, ERROR_RANGE_GATE_TABLES_CHANGED,0)); }
+int ErrorSESParamTablesChanged(ErrorChecker* obj, char* name,
+                                     char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format,
+                                     ofp, ERROR_SES_PARAM_TABLES_CHANGED, 0)); }
+
+int ErrorCdsHardReset(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_CDS_HARD_RESET, 0)); }
+
+int ErrorRelayChanged(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_RELAY_CHANGE, 0)); }
+
+int ErrorSoftReset(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_SOFT_RESET, 0)); }
+
+int ErrorModeChange(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_MODE_CHANGE, 0)); }
+
+int ErrorWriteTestFailed(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_MEMORY_WRITE_FAIL,0));}
+
+int ErrorMemWriteProtViolate(ErrorChecker* obj, char* name,
+                                         char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format,
+                                         ofp, ERROR_MEM_WRITE_PROT_VIOLATE,0));}
+
+int ErrorTrsCmdSucc(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_TRS_CMD_SUCCESS,1));}
+
+int ErrorSesWatchDogTimeout(ErrorChecker* obj, char* name,
+                                           char* format, FILE* ofp)
+{ return(ErrorValueSet(obj, name, format, ofp, ERROR_SES_WATCH_DOG_TIMEOUT,0));}
+
+int ErrorRamStartError(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueSet(obj, name, format, ofp, ERROR_RAM_START_ERROR,0));}
+
+int ErrorSesRomStartError(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+  { return(ErrorValueSet(obj, name, format, ofp, ERROR_SES_ROM_START_ERROR,0));}
+
+int ErrorSesReset(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+{ return(ErrorValueSet(obj, name, format, ofp, ERROR_SES_RESET,0));}
+
+int ErrorPortParityError(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+{ return(ErrorValueSet(obj, name, format, ofp, ERROR_SES_PORT_PARITY_ERROR,0));}
+
+// general function for error if value changes from previous
+int
+ErrorValueChanged(
+ErrorChecker*        obj,
+char*                name,
+char*                format,
+FILE*                ofp,
+ERROR_CHECK_PARAM_E  errorIndex,
+unsigned char        defaultValue,
+const char*          defaultString,
+const char*          badString)
+{
+    StateElement* prevElement = &(obj->prev->stateElements[errorIndex]);
+    StateElement* currentElement = &(obj->current->stateElements[errorIndex]);
 
     if (currentElement->condition != StateElement::CURRENT)
         return 1;
 
-    unsigned char currentValue = *(unsigned char*) currentElement->value;
-    unsigned char prevValue = *(unsigned char*) prevElement->value;
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
 
-    // changed
-    if (prevValue != currentValue ||
-            (currentValue == 0 &&
-                   prevElement->condition == StateElement::UNINITIALIZED))
+    // changed or initial value is the default
+    if (prevTrip != currentTrip ||
+            (prevElement->condition == StateElement::UNINITIALIZED &&
+                                    currentTrip != defaultValue))
     {
         fprintf(ofp, format, name);
-        char* valueString;
-        if (currentValue == 1)
-            valueString = "normal";
+        const char* valueString;
+        if (currentTrip == defaultValue)
+            valueString = defaultString;
         else
-            valueString = "failure";
-        fprintf(ofp, "  %s   TRS Command = %d (%s)\n",
-            obj->current->time_string, currentValue, valueString);
+            valueString = badString;
+        fprintf(ofp, "  %s   %s = %d (%s)\n",
+            obj->current->time_string, name, currentTrip, valueString);
         obj->ReportBasicInfo(ofp);
         fflush(ofp);
         return 0;
@@ -1036,4 +836,178 @@ FILE*           ofp)
 
     return 1;
 
-} // ErrorTrsCmdSucc
+} // ErrorValueChanged
+
+int ErrorTwtaMonEnDis(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_TWTA_MON_EN_DIS, 1, "Enabled", "Disabled")); }
+
+int ErrorPwrMonFPEndis(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_TWTA_MON_EN_DIS, 0, "Enabled", "Disabled")); }
+
+int ErrorSesSuppHtrMode(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_SUPP_HTR_MODE_CHANGE, 0, "Disabled", "Enabled")); }
+
+int ErrorSasMultiDataLoss(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_SAS_MULTI_DATA_LOSS, 1, "Enabled", "Disabled")); }
+
+int ErrorSesMultiDataLoss(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_SES_MULTI_DATA_LOSS, 1, "Enabled", "Disabled")); }
+
+int ErrorEqXingMissed(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_EQ_XING_MISSED, 0, "Received", "Missed")); }
+
+int ErrorModulation(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_MODULATION, 1, "On", "Off")); }
+
+int ErrorTwtTripOverride(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_TWT_TRIP_OVERRIDE, 0, "Off", "On")); }
+
+int ErrorUnexpectedState(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_PBI_UNEXPECTED_STATE, 0, "Expected","Unexpected"));}
+
+int ErrorR2Modified(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_R2_MODIFIED, 0, "Not Modified","Modified"));}
+
+int ErrorBCRTMFailure(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_BCRTM_FAILURE, 0, "No Failure","Failure"));}
+
+int ErrorWatchDogTimerExpired(ErrorChecker* obj, char* name,
+                                        char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                  ERROR_WATCH_DOG_TIMER_EXPIRED, 0, "Not Expired","Expired"));}
+
+int ErrorTwt1CnvrtOcTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_TWT_1_CNVRT_OC_TRIP, 0, "Not Tripped","Tripped"));}
+
+int ErrorTwt1UvTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_TWT_1_UV_TRIP, 0, "Not Tripped","Tripped"));}
+
+int ErrorTwt1BodyOcTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_TWT_1_BODY_OC_TRIP, 0, "Not Tripped","Tripped"));}
+
+int ErrorTwt2CnvrtOcTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_TWT_2_CNVRT_OC_TRIP, 0, "Not Tripped","Tripped"));}
+
+int ErrorTwt2UvTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_TWT_2_UV_TRIP, 0, "Not Tripped","Tripped"));}
+
+int ErrorTwt2BodyOcTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_TWT_2_BODY_OC_TRIP, 0, "Not Tripped","Tripped"));}
+
+int ErrorPllOutOfLock(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_PLL_OUT_OF_LOCK, 0, "Normal","Out of Lock"));}
+
+int ErrorBodyOcTripCntl(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueChanged(obj, name, format, ofp,
+                      ERROR_BODY_OC_TRIP_CNTL, 0, "Normal","Disabled"));}
+
+//-----------------------------------------------------------
+// general function for error if value toggles, no default
+//-----------------------------------------------------------
+int
+ErrorValueToggled(
+ErrorChecker*        obj,
+char*                name,
+char*                format,
+FILE*                ofp,
+ERROR_CHECK_PARAM_E  errorIndex,
+unsigned char        thisValue,
+const char*          thisString,
+const char*          otherString)
+{
+    StateElement* prevElement = &(obj->prev->stateElements[errorIndex]);
+    StateElement* currentElement = &(obj->current->stateElements[errorIndex]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed or initial value is the default
+    if (prevTrip != currentTrip &&
+            prevElement->condition != StateElement::UNINITIALIZED)
+    {
+        fprintf(ofp, format, name);
+        const char* valueString;
+        if (currentTrip == thisValue)
+            valueString = thisString;
+        else
+            valueString = otherString;
+        fprintf(ofp, "  %s   %s = %d (%s)\n",
+            obj->current->time_string, name, currentTrip, valueString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorValueToggled
+
+int ErrorK15SesAB(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueToggled(obj, name, format, ofp,
+                      ERROR_K15_SES_A_B, 0, "Set","Reset"));}
+
+int ErrorK12Twta12(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueToggled(obj, name, format, ofp,
+                      ERROR_K12_TWTA_1_2, 0, "Set","Reset"));}
+
+int ErrorK11Twta12(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueToggled(obj, name, format, ofp,
+                      ERROR_K11_TWTA_1_2, 0, "Set","Reset"));}
+
+int ErrorK10TwtaOnOff(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueToggled(obj, name, format, ofp,
+                      ERROR_K10_TWTA_ON_OFF, 0, "Set","Reset"));}
+
+int ErrorK9TwtaOnOff(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueToggled(obj, name, format, ofp,
+                      ERROR_K9_TWTA_ON_OFF, 0, "Set","Reset"));}
+
+int ErrorK20SasAB(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueToggled(obj, name, format, ofp,
+                      ERROR_K20_SAS_A_B, 0, "Set","Reset"));}
+
+int ErrorK19SasAB(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueToggled(obj, name, format, ofp,
+                      ERROR_K19_SAS_A_B, 0, "Set","Reset"));}
+
+int ErrorK16SesAB(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueToggled(obj, name, format, ofp,
+                      ERROR_K16_SES_A_B, 0, "Set","Reset"));}
+
+int ErrorSasBSpinRate(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueToggled(obj, name, format, ofp,
+                      ERROR_SAS_B_SPIN_RATE, 0, "19.8 RPM","18.0 RPM"));}
+
+int ErrorK22SesSuppHtrOnOff(ErrorChecker* obj,char* name,char* format,FILE* ofp)
+    { return(ErrorValueToggled(obj, name, format, ofp,
+                      ERROR_K22_SES_SUPP_HTR_ON_OFF, 0, "Set","Reset"));}
+
+int ErrorK21SesSuppHtrOnOff(ErrorChecker* obj,char* name,char* format,FILE* ofp)
+    { return(ErrorValueToggled(obj, name, format, ofp,
+                      ERROR_K21_SES_SUPP_HTR_ON_OFF, 0, "Set","Reset"));}
+
+int ErrorSasASpinRate(ErrorChecker* obj, char* name, char* format,FILE* ofp)
+    { return(ErrorValueToggled(obj, name, format, ofp,
+                      ERROR_SAS_A_SPIN_RATE, 0, "19.8 RPM","18.0 RPM"));}
+

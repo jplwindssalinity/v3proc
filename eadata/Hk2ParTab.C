@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.17   26 Jul 1999 15:44:26   sally
+// adapt to ball's new changes   
+// 
+//    Rev 1.15   14 Jun 1999 13:31:14   sally
+// change HK2_SRC_SEQ_COUNT to SRC_SEQ_COUNT
+// 
 //    Rev 1.14   26 Mar 1999 15:40:12   sally
 // added "L1 Time" unit
 // 
@@ -90,19 +96,36 @@ const ParTabEntry HK2ParTab[] =
                                                ExtractData1D, pr_float8_10 },
     }
   },
+  { HEADER_PACKET_ID, "Packet ID in Primary Header", SOURCE_HK2,
+                              MEAS_ID, "hk2_prime_hdr", 2, {
+      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D, pr_uint2 },
+      { UNIT_HEX_BYTES, "binary", DATA_UINT2, 0, ExtractData1D, pr_binchar2 },
+    }
+  },
+  { HEADER_GROUP_FLAG, "Group Flag in Primary Header", SOURCE_HK2,
+                              MEAS_QUANTITY, "hk2_pckt_seq_cntl", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, Extract16Bit14_15, pr_uint1 },
+      { UNIT_HEX_BYTES, "binary", DATA_UINT1, 0, Extract16Bit14_15, pr_2bits},
+    }
+  },
   { HK2_FRAME_COUNT, "Hk2 Minor Frame Count", SOURCE_HK2,
                               MEAS_TIME, "hk2_pckt_seq_cntl", 1, {
       { UNIT_COUNTS, "dn", DATA_UINT1, 0, Extract16Bit0_3, pr_uint1 },
     }
   },
-  { HK2_SRC_SEQ_COUNT, "Source Sequence Count", SOURCE_HK2,
+  { SRC_SEQ_COUNT, "Source Sequence Count", SOURCE_HK2,
                               MEAS_TIME, "hk2_pckt_seq_cntl", 1, {
       { UNIT_COUNTS, "dn", DATA_UINT2, 0, Extract16Bit0_13, pr_uint2 },
     }
   },
-  { HK2_DELTA_SRC_SEQ_COUNT, "Delta Source Sequence Count", SOURCE_HK2,
+  { DELTA_SRC_SEQ_COUNT, "Delta Source Sequence Count", SOURCE_HK2,
                               MEAS_TIME, "hk2_pckt_seq_cntl", 1, {
-      { UNIT_COUNTS, "dn", DATA_INT2, 0, ExtractDeltaSrcSeqCnt, pr_int2 },
+      { UNIT_COUNTS, "dn", DATA_INT2, 0, ExtractHk2DeltaSrcSeqCnt, pr_int2 },
+    }
+  },
+  { HEADER_PACKET_LEN, "Packet Length in Primary Header", SOURCE_HK2,
+                              MEAS_QUANTITY, "hk2_pckt_len", 1, {
+      { UNIT_COUNTS, "dn", DATA_UINT2, 0, ExtractData1D, pr_uint2 },
     }
   },
   { TORQUE_ROD_1_STATUS, "Torque Rod 1 Status", SOURCE_HK2,
@@ -192,7 +215,7 @@ const ParTabEntry HK2ParTab[] =
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
     }
   },
-  { AUTO_WAIT_STATUS, "Autonomous Wait Transition Status",
+  { SC_SEP_STATUS, "Spacecraft Separation Status",
                      SOURCE_HK2, MEAS_STATUS, "SBW02", 1, {
       { UNIT_MAP, "0=Enbl, 1=Dsbl", DATA_UINT1, 0, Extract8Bit7, pr_bit },
     }
@@ -470,14 +493,14 @@ const ParTabEntry HK2ParTab[] =
     }
   },
   { CDS_IDP_A_TEMP, "CDS IDP-A (SFC-A) Temperature",
-                  SOURCE_HK2, MEAS_TEMPERATURE, "cds_idp_a_temp", 2, {
+                  SOURCE_HK2, MEAS_TEMPERATURE, "cds_sfc_a_temp", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4, 1,
                            ExtractData1D_uint1_float, pr_float4_6 },
     }
   },
   { CDS_IDP_B_TEMP, "CDS IDP-B (SFC-B) Temperature",
-                  SOURCE_HK2, MEAS_TEMPERATURE, "cds_idp_b_temp", 2, {
+                  SOURCE_HK2, MEAS_TEMPERATURE, "cds_sfc_b_temp", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4, 1,
                            ExtractData1D_uint1_float, pr_float4_6 },
@@ -1113,7 +1136,7 @@ const ParTabEntry HK2ParTab[] =
   },
   { STATUS_CODE, "Status Code", SOURCE_HK2, MEAS_STATUS, "status_code", 1, {
       { UNIT_MAP,"0=OK, 1=CSUMerr/bad, 2=SWerr/bad, 3=REQerr/bad, 4/HWerr/bad", 
-                           DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+                           DATA_UINT1, 0, Extract8Bit0_3, pr_uint1 }
     }
   },
   { COMMAND_ID, "Command ID", SOURCE_HK2, MEAS_ID, "command_id", 1, {
@@ -1121,7 +1144,7 @@ const ParTabEntry HK2ParTab[] =
     }
   },
   { TLM_FORMAT, "Telemetry Format", SOURCE_HK2, MEAS_ID, "tlm_format", 1, {
-      { UNIT_MAP, "0=Fmt0, 1=Fmt1", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+      { UNIT_MAP, "0=Fmt0, 1=Fmt1", DATA_UINT1, 0, Extract8Bit0, pr_uint1 }
     }
   },
   { INIT_COMPLETE, "Initialization Complete", SOURCE_HK2,
@@ -1184,24 +1207,54 @@ const ParTabEntry HK2ParTab[] =
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
     }
   },
-  { SSR1_RX_STATUS, "SSR Receiver Status", SOURCE_HK2,
+  { SSR1_RX_STATUS_FIFO_FAULT, "SSR Receiver Status - FIFO Fault", SOURCE_HK2,
                    MEAS_STATUS, "ssr1_rx_status", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+      { UNIT_MAP, "0=OK, 1=Fault", DATA_UINT1, 0, Extract8Bit7, pr_bit }
     }
   },
-  { SSR1_XMIT_STATUS, "SSR Transmitter Status", SOURCE_HK2,
-                   MEAS_STATUS, "ssr1_xmit_status", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+  { SSR1_RX_STATUS_IF_ENB, "SSR Receiver Status - I/F Enabled", SOURCE_HK2,
+                   MEAS_STATUS, "ssr1_rx_status", 1, {
+      { UNIT_MAP, "0=Dsbl, 1=Enbl", DATA_UINT1, 0, Extract8Bit6, pr_bit }
     }
   },
-  { SSR2_RX_STATUS, "SSR2 Receiver Status", SOURCE_HK2,
+  { SSR1_RX_STATUS_IF_RX, "SSR Receiver Status - I/F Receiving", SOURCE_HK2,
+                   MEAS_STATUS, "ssr1_rx_status", 1, {
+      { UNIT_MAP, "0=Active, 1=Inactive", DATA_UINT1, 0, Extract8Bit5, pr_bit }
+    }
+  },
+  { SSR1_XMIT_STATUS_FIFO_FAULT, "SSR Transmitter Status - FIFO Fault",
+                   SOURCE_HK2, MEAS_STATUS, "ssr1_xmit_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Fault", DATA_UINT1, 0, Extract8Bit7, pr_bit }
+    }
+  },
+  { SSR1_XMIT_STATUS_IF_ENB, "SSR Transmitter Status - I/F Enabled",
+                   SOURCE_HK2, MEAS_STATUS, "ssr1_xmit_status", 1, {
+      { UNIT_MAP, "0=Dsbl, 1=Enbl", DATA_UINT1, 0, Extract8Bit6, pr_bit }
+    }
+  },
+  { SSR2_RX_STATUS_FIFO_FAULT, "SSR2 Receiver Status - FIFO Fault", SOURCE_HK2,
                    MEAS_STATUS, "ssr2_rx_status", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+      { UNIT_DN, "dn", DATA_UINT1, 0, Extract8Bit7, pr_bit }
     }
   },
-  { SSR2_XMIT_STATUS, "SSR2 Transmitter Status", SOURCE_HK2,
-                   MEAS_STATUS, "ssr2_xmit_status", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+  { SSR2_RX_STATUS_IF_ENB, "SSR2 Receiver Status - I/F Enabled", SOURCE_HK2,
+                   MEAS_STATUS, "ssr2_rx_status", 1, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, Extract8Bit6, pr_bit }
+    }
+  },
+  { SSR2_RX_STATUS_IF_RX, "SSR2 Receiver Status - I/F Receiving", SOURCE_HK2,
+                   MEAS_STATUS, "ssr2_rx_status", 1, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, Extract8Bit5, pr_bit }
+    }
+  },
+  { SSR2_XMIT_STATUS_FIFO_FAULT, "SSR2 Transmitter Status - FIFO Fault",
+                   SOURCE_HK2, MEAS_STATUS, "ssr2_xmit_status", 1, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, Extract8Bit7, pr_bit }
+    }
+  },
+  { SSR2_XMIT_STATUS_IF_ENB, "SSR2 Transmitter Status - I/F Enabled",
+                   SOURCE_HK2, MEAS_STATUS, "ssr2_xmit_status", 1, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, Extract8Bit6, pr_bit }
     }
   },
   { PART_0_SSR1_REC_ADDR, "Partition 0, SSR Record Pointer Address",
@@ -1611,9 +1664,9 @@ const ParTabEntry HK2ParTab[] =
   { STAR_TRACK_1_CCD_TEMP, "Star Tracker #1 CCD Temperature",
           SOURCE_HK2, MEAS_TEMPERATURE, 
           "hk2_pckt_seq_cntl,star_1_ccd_temp", 2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
+      { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
-                             1, ExtractData1D_uint2_float_Even, pr_float4_6 }
+                             1, ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { SUN_SENSOR7_INTENSITY, "Sun Sensor 7 Raw Intensity",
@@ -1625,9 +1678,9 @@ const ParTabEntry HK2ParTab[] =
   { STAR_TRACK_1_BASE_TEMP, "Star Tracker #1 Baseplate Temperature",
           SOURCE_HK2, MEAS_TEMPERATURE,
           "hk2_pckt_seq_cntl,star_1_base_temp", 2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
+      { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
-                             1, ExtractData1D_uint2_float_Even, pr_float4_6 }
+                             1, ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { SUN_SENSOR8_INTENSITY, "Sun Sensor 8 Raw Intensity",
@@ -1639,9 +1692,9 @@ const ParTabEntry HK2ParTab[] =
   { STAR_TRACK_1_LENS_TEMP, "Star Tracker #1 Lens Temperature",
          SOURCE_HK2, MEAS_TEMPERATURE,
          "hk2_pckt_seq_cntl,star_1_lens_temp", 2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
+      { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
-                             1, ExtractData1D_uint2_float_Even, pr_float4_6 }
+                             1, ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { SUN_SENSOR9_INTENSITY, "Sun Sensor 9 Raw Intensity",
@@ -1653,9 +1706,9 @@ const ParTabEntry HK2ParTab[] =
   { STAR_1_P2_VOLT, "Star Tracker #1 +2 Volt Supply",
           SOURCE_HK2, MEAS_VOLTAGE,
           "hk2_pckt_seq_cntl,star_1_p2_volt", 2, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
+      { UNIT_DN, "dn", DATA_INT1, 0, ExtractData1D_Even, pr_int1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
-                             1, ExtractData1D_uint1_float_Even, pr_float4_6 }
+                             1, ExtractData1D_int1_float_Even, pr_float4_6 }
     }
   },
   { SUN_SENSOR10_INTENSITY, "Sun Sensor 10 Raw Intensity",
@@ -1666,16 +1719,16 @@ const ParTabEntry HK2ParTab[] =
   },
   { STAR_1_M8_VOLT, "Star Tracker #1 -8 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
                "hk2_pckt_seq_cntl,star_1_m8_volt", 2, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
+      { UNIT_DN, "dn", DATA_INT1, 0, ExtractData1D_Even, pr_int1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
-                             1, ExtractData1D_uint1_float_Even, pr_float4_6 }
+                             1, ExtractData1D_int1_float_Even, pr_float4_6 }
     }
   },
   { STAR_1_P5_VOLT, "Star Tracker #1 +5 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
                "hk2_pckt_seq_cntl,star_1_p5_volt", 2, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
+      { UNIT_DN, "dn", DATA_INT1, 0, ExtractData1D_Even, pr_int1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
-                             1, ExtractData1D_uint1_float_Even, pr_float4_6 }
+                             1, ExtractData1D_int1_float_Even, pr_float4_6 }
     }
   },
   { SUN_SENSOR11_INTENSITY, "Sun Sensor 11 Raw Intensity",
@@ -1686,9 +1739,9 @@ const ParTabEntry HK2ParTab[] =
   },
   { STAR_1_M5_VOLT, "Star Tracker #1 -5 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
                "hk2_pckt_seq_cntl,star_1_m5_volt", 2, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
+      { UNIT_DN, "dn", DATA_INT1, 0, ExtractData1D_Even, pr_int1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
-                             1, ExtractData1D_uint1_float_Even, pr_float4_6 }
+                             1, ExtractData1D_int1_float_Even, pr_float4_6 }
     }
   },
   { STAR_1_BG_READ, "Star Tracker #1 Background Reading",
@@ -1736,9 +1789,9 @@ const ParTabEntry HK2ParTab[] =
   { STAR_2_CCD_TEMP, "Star Tracker #2 CCD Temperature",
                 SOURCE_HK2, MEAS_TEMPERATURE,
                 "hk2_pckt_seq_cntl,star_2_ccd_temp", 2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
+      { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4, 1,
-                               ExtractData1D_uint2_float_Even, pr_float4_6 }
+                               ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { MEASURED_MAG_FIELD_X, "Measured Mag Field X", SOURCE_HK2, MEAS_QUANTITY,
@@ -1751,9 +1804,9 @@ const ParTabEntry HK2ParTab[] =
   { STAR_2_BASE_TEMP, "Star Tracker #2 Baseplate Temperature",
                      SOURCE_HK2, MEAS_TEMPERATURE,
                      "hk2_pckt_seq_cntl,star_2_base_temp", 2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
+      { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4, 1,
-                               ExtractData1D_uint2_float_Even, pr_float4_6 }
+                               ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { MEASURED_MAG_FIELD_Y, "Measured Mag Field Y", SOURCE_HK2, MEAS_QUANTITY,
@@ -1766,9 +1819,9 @@ const ParTabEntry HK2ParTab[] =
   { STAR_2_LENS_TEMP, "Star Tracker #2 Lens Temperature",
                  SOURCE_HK2, MEAS_TEMPERATURE,
                  "hk2_pckt_seq_cntl,star_2_lens_temp", 2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
+      { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4, 1,
-                               ExtractData1D_uint2_float_Even, pr_float4_6 }
+                               ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { MEASURED_MAG_FIELD_Z, "Measured Mag Field Z", SOURCE_HK2, MEAS_QUANTITY,
@@ -1780,16 +1833,16 @@ const ParTabEntry HK2ParTab[] =
   },
   { STAR_2_P2_VOLT, "Star Tracker #2 +2 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
                  "hk2_pckt_seq_cntl,star_2_p2_volt", 2, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
+      { UNIT_DN, "dn", DATA_INT1, 0, ExtractData1D_Even, pr_int1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
-                             1, ExtractData1D_uint1_float_Even, pr_float4_6 }
+                             1, ExtractData1D_int1_float_Even, pr_float4_6 }
     }
   },
   { STAR_2_M8_VOLT, "Star Tracker #2 -8 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
                   "hk2_pckt_seq_cntl,star_2_m8_volt", 2, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
+      { UNIT_DN, "dn", DATA_INT1, 0, ExtractData1D_Even, pr_int1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
-                             1, ExtractData1D_uint1_float_Even, pr_float4_6 }
+                             1, ExtractData1D_int1_float_Even, pr_float4_6 }
     }
   },
   { MEASURED_SUN_VECTOR_X, "Measured Sun Vector X", SOURCE_HK2, MEAS_QUANTITY,
@@ -1801,16 +1854,16 @@ const ParTabEntry HK2ParTab[] =
   },
   { STAR_2_P5_VOLT, "Star Tracker #2 +5 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
                   "hk2_pckt_seq_cntl,star_2_p5_volt", 2, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
+      { UNIT_DN, "dn", DATA_INT1, 0, ExtractData1D_Even, pr_int1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
-                             1, ExtractData1D_uint1_float_Even, pr_float4_6 }
+                             1, ExtractData1D_int1_float_Even, pr_float4_6 }
     }
   },
   { STAR_2_M5_VOLT, "Star Tracker #2 -5 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
                   "hk2_pckt_seq_cntl,star_2_m5_volt", 2, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
+      { UNIT_DN, "dn", DATA_INT1, 0, ExtractData1D_Even, pr_int1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
-                             1, ExtractData1D_uint1_float_Even, pr_float4_6 }
+                             1, ExtractData1D_int1_float_Even, pr_float4_6 }
     }
   },
   { MEASURED_SUN_VECTOR_Y, "Measured Sun Vector Y", SOURCE_HK2, MEAS_QUANTITY,
@@ -1861,10 +1914,10 @@ const ParTabEntry HK2ParTab[] =
       { UNIT_ID, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
-  { RATE_SEN_ATT_Q1, "Rate Sensor Attitude Q1", SOURCE_HK2, MEAS_QUANTITY,
-             "hk2_pckt_seq_cntl,rate_sen_att_q1", 2, {
+  { ATT_ERROR_X, "Attitude Error X", SOURCE_HK2, MEAS_QUANTITY,
+             "hk2_pckt_seq_cntl,att_err_x", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
-      { UNIT_EU, "eu", DATA_FLOAT4, 1,
+      { UNIT_DEGREES, "degrees", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
@@ -1875,10 +1928,10 @@ const ParTabEntry HK2ParTab[] =
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
-  { RATE_SEN_ATT_Q2, "Rate Sensor Attitude Q2", SOURCE_HK2, MEAS_QUANTITY,
-           "hk2_pckt_seq_cntl,rate_sen_att_q2", 2, {
+  { ATT_ERROR_Y, "Attitude Error Y", SOURCE_HK2, MEAS_QUANTITY,
+           "hk2_pckt_seq_cntl,att_err_y", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
-      { UNIT_EU, "eu", DATA_FLOAT4, 1,
+      { UNIT_DEGREES, "degrees", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
@@ -1889,10 +1942,10 @@ const ParTabEntry HK2ParTab[] =
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
-  { RATE_SEN_ATT_Q3, "Rate Sensor Attitude Q3", SOURCE_HK2, MEAS_QUANTITY,
-           "hk2_pckt_seq_cntl,rate_sen_att_q3", 2, {
+  { ATT_ERROR_Z, "Attitude Error Z", SOURCE_HK2, MEAS_QUANTITY,
+           "hk2_pckt_seq_cntl,att_err_z", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
-      { UNIT_EU, "eu", DATA_FLOAT4, 1,
+      { UNIT_DEGREES, "degrees", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
@@ -1903,11 +1956,11 @@ const ParTabEntry HK2ParTab[] =
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
-  { RATE_SEN_ATT_Q4, "Rate Sensor Attitude Q4", SOURCE_HK2, MEAS_QUANTITY,
-           "hk2_pckt_seq_cntl,rate_sen_att_q4", 2, {
-      { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
+  { SCAT_TLM_TBL_OFFSET, "Scatterometer Telemetry Table Offset",
+      SOURCE_HK2, MEAS_QUANTITY, "hk2_pckt_seq_cntl,scat_tlm_tbl_offset", 2, {
+      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
-                               ExtractData1D_int2_float_Even, pr_float4_6 }
+                               ExtractData1D_uint2_float_Even, pr_float4_6 }
     }
   },
   { DESIRED_ATT_Q4, "Desired Attitude Q4", SOURCE_HK2, MEAS_QUANTITY,
@@ -2019,10 +2072,10 @@ const ParTabEntry HK2ParTab[] =
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
-  { MEASURED_ATT_Q1, "Measured Attitude Q1", SOURCE_HK2, MEAS_RATE,
-           "hk2_pckt_seq_cntl,measured_att_q1", 2, {
+  { PROP_RATE_X, "Propagated Rate X", SOURCE_HK2, MEAS_RATE,
+           "hk2_pckt_seq_cntl,prop_rate_x", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
-      { UNIT_EU, "eu", DATA_FLOAT4, 1,
+      { UNIT_DEG_SEC, "degrees/sec", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
@@ -2033,10 +2086,10 @@ const ParTabEntry HK2ParTab[] =
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
-  { MEASURED_ATT_Q2, "Measured Attitude Q2", SOURCE_HK2, MEAS_RATE,
-          "hk2_pckt_seq_cntl,measured_att_q2", 2, {
+  { PROP_RATE_Y, "Propagated Rate Y", SOURCE_HK2, MEAS_RATE,
+          "hk2_pckt_seq_cntl,prop_rate_y", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
-      { UNIT_EU, "eu", DATA_FLOAT4, 1,
+      { UNIT_DEG_SEC, "degrees/sec", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
@@ -2047,10 +2100,10 @@ const ParTabEntry HK2ParTab[] =
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
-  { MEASURED_ATT_Q3, "Measured Attitude Q3", SOURCE_HK2, MEAS_RATE,
-              "hk2_pckt_seq_cntl,measured_att_q3", 2, {
+  { PROP_RATE_Z, "Propagated Rate Z", SOURCE_HK2, MEAS_RATE,
+              "hk2_pckt_seq_cntl,prop_rate_z", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
-      { UNIT_EU, "eu", DATA_FLOAT4, 1,
+      { UNIT_DEG_SEC, "degrees/sec", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
@@ -2059,13 +2112,6 @@ const ParTabEntry HK2ParTab[] =
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
-    }
-  },
-  { MEASURED_ATT_Q4, "Measured Attitude Q4", SOURCE_HK2, MEAS_RATE,
-            "hk2_pckt_seq_cntl,measured_att_q4", 2, {
-      { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
-      { UNIT_EU, "eu", DATA_FLOAT4, 1,
-                               ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { MODEL_SUN_VY, "Modeled Sun Vy", SOURCE_HK2, MEAS_RATE,
@@ -2209,6 +2255,12 @@ const ParTabEntry HK2ParTab[] =
                                Extract8Bit4_5_Even, pr_uint1 }
     }
   },
+  { WHEEL_TORQ_DIST_MATRIX, "Wheel Torque Distribution Matrix Selected",
+                SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW10", 1, {
+      { UNIT_MAP, "0=Invalid/bad, 1=M1, 2=M2/bad, 3=M3/bad", DATA_UINT1, 0,
+                               Extract8Bit1_3_Even, pr_uint1 }
+    }
+  },
   { SOLUTION_STATUS, "Solution Status",
                 SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW200", 1, {
       { UNIT_MAP, "0=Both, 1=OneEach, 2=V12R, 3=V14R,...", DATA_UINT1, 0,
@@ -2262,6 +2314,11 @@ const ParTabEntry HK2ParTab[] =
                                Extract8Bit0_1_Odd, pr_uint1 }
     }
   },
+  { FLT_SW_VER_NO, "FltSw Version Number", SOURCE_HK2, MEAS_STATUS,
+                          "hk2_pckt_seq_cntl,flt_sw_ver_no", 1, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 }
+    }
+  },
   { MEAS_MAG_FIELD, "Measured Mag Field Status", SOURCE_HK2, MEAS_STATUS,
                "hk2_pckt_seq_cntl,meas_mag_field+meas_sun_vector", 1, {
       { UNIT_MAP, "0=Good, 1=Coarse, 2=Bad", DATA_UINT1, 0,
@@ -2272,6 +2329,20 @@ const ParTabEntry HK2ParTab[] =
                "hk2_pckt_seq_cntl,meas_mag_field+meas_sun_vector", 1, {
       { UNIT_MAP, "0=Good, 1=Coarse, 2=Bad", DATA_UINT1, 0,
                                Extract8Bit4_5_Odd, pr_uint1 }
+    }
+  },
+  { OUTPUT_STATUS_QUEST, "Output Status of QUEST Algorithm",
+               SOURCE_HK2, MEAS_STATUS,
+               "hk2_pckt_seq_cntl,meas_mag_field+meas_sun_vector", 1, {
+      { UNIT_MAP, "0=Good, 1=Coarse, 2=Bad", DATA_UINT1, 0,
+                               Extract8Bit2_3_Odd, pr_uint1 }
+    }
+  },
+  { OUTPUT_STATUS_TWO_GUIDE, "Output Status of Two Guide Algorithm",
+               SOURCE_HK2, MEAS_STATUS,
+               "hk2_pckt_seq_cntl,meas_mag_field+meas_sun_vector", 1, {
+      { UNIT_MAP, "0=Good, 1=Coarse, 2=Bad", DATA_UINT1, 0,
+                               Extract8Bit0_1_Odd, pr_uint1 }
     }
   },
 

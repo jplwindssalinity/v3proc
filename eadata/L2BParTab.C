@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.3   14 Jun 1999 13:37:04   sally
+// add WVC_ROW_TIME
+// 
 //    Rev 1.2   20 Apr 1998 10:22:04   sally
 // change for WindSwatch
 // 
@@ -37,6 +40,15 @@ static const char rcs_id_L2BParTab_C[] = "@(#) $Header$";
 
 const ParTabEntry L2BParTab[] =
 {
+  { WVC_ROW_TIME, "WVC Row Time", SOURCE_L2B, MEAS_TIME, "v:wvc_row_time", 6, {
+      { UNIT_AUTOTIME, "(auto)",  DATA_ITIME, 0, ExtractL1Time, NULL },
+      { UNIT_CODE_A,   "Code A",  DATA_ITIME, 0, ExtractL1Time, pr_itime_codea},
+      { UNIT_DAYS,     "days",    DATA_ITIME, 0, ExtractL1Time, pr_itime_d },
+      { UNIT_HOURS,    "hours",   DATA_ITIME, 0, ExtractL1Time, pr_itime_h },
+      { UNIT_MINUTES,  "minutes", DATA_ITIME, 0, ExtractL1Time, pr_itime_m },
+      { UNIT_SECONDS,  "seconds", DATA_ITIME, 0, ExtractL1Time, pr_itime_s }
+    }
+  },
   { WVC_ROW, "WVC Row", SOURCE_L2B, MEAS_DATA, "wvc_row", 1, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D, pr_int2 }
     }

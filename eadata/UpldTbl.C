@@ -8,6 +8,9 @@
 //
 // $Log$
 // 
+//    Rev 1.2   23 Jun 1999 11:54:52   sally
+// fixed * = const*
+// 
 //    Rev 1.1   26 Apr 1999 15:50:00   sally
 // port to GNU compiler
 // 
@@ -911,7 +914,7 @@ UpldTbl::CompareTable(UpldTbl *tbl, int *num_matched) {
             numlocs=TableCompareMaskMap[i].numlocations;
             break;
         }
-    Ignorable *ignore_these=0;
+    const Ignorable *ignore_these=0;
     ignore_these= TableCompareMaskMap[i].locations;
 
     if (_tot_num_entries != tbl->GetNumEntries())
