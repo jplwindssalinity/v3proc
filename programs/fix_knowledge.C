@@ -572,6 +572,12 @@ process_orbit_step(
 
     if (g_all_opt)
     {
+        double zatt[3];
+        zatt[0] = 0.0;
+        zatt[1] = 0.0;
+        zatt[2] = 0.0;
+        evaluate(spacecraft, qscat, byux, zatt, ofp, 1);
+        fprintf(ofp, "&\n");
         evaluate(spacecraft, qscat, byux, att, ofp, 1);
         fprintf(ofp, "&\n");
     }
