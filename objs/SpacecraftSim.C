@@ -33,8 +33,10 @@ static const double rm_2 = rm * rm;
 
 SpacecraftSim::SpacecraftSim()
 {
-	// set attitude control error model to default (no error)
+	// set attitude control/knowledge error models to default (no error)
 	_attcntl_dist=NULL;
+	_attknow_dist=NULL;
+
 	return;
 }
 
@@ -319,8 +321,6 @@ SpacecraftSim::UpdateAttitude(
 	Spacecraft*		spacecraft)
 {
 	
-	// Eventually we should take care of knowledge error.
-        // Now we do not.
         if(_attcntl_dist != NULL){
 	  spacecraft->attitude.SetRoll(_attcntl_dist->roll->GetNumber(time));
 	  spacecraft->attitude.SetPitch(_attcntl_dist->pitch->GetNumber(time));
@@ -341,6 +341,42 @@ void
 SpacecraftSim::SetAttCntlModel(AttDist* attdist)
 {
 	_attcntl_dist=attdist;
+	return;
+}
+
+//-------------------------------//
+// SpaceCraftSim::SetAttKnowModel//
+//-------------------------------//
+void 
+SpacecraftSim::SetAttKnowModel(AttDist* attdist)
+{
+	_attknow_dist=attdist;
+	return;
+}
+
+//-----------------------------------//
+// SpacecraftSim::ReportAttitude     //
+//-----------------------------------//
+
+/**** This method reports attitude + knowledge error ****/
+void 
+SpacecraftSim::ReportAttitude(double time, Spacecraft* spacecraft, 
+				Attitude* attitude)
+{
+	float roll,pitch,yaw;
+	unsigned char* order;
+	roll=spacecraft->attitude.GetRoll();
+	pitch=spacecraft->attitude.GetRoll();
+	yaw=spacecraft->attitude.GetRoll();
+
+	if( _attknow_dist != NULL){
+	  roll+=_attknow_dist->roll->GetNumber(time);
+	  pitch+=_attknow_dist->pitch->GetNumber(time);
+	  yaw+=_attknow_dist->yaw->GetNumber(time);
+	}
+
+	order=spacecraft->attitude.GetOrderIndices();
+	attitude->Set(roll,pitch,yaw,order[0],order[1],order[2]);
 	return;
 }
 

@@ -63,7 +63,6 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	void	SetAttCntlModel(AttDist* attdist);
 
 	void	SetEphemerisPeriod(double period) { _ephemerisPeriod = period; };
 	double		GetLongitudeOfAscendingNode() { return (_bigOmega * rtd); };
@@ -73,7 +72,21 @@ public:
 	// events //
 	//--------//
 
-	int			DetermineNextEvent(SpacecraftEvent* spacecraft_event);
+	int			DetermineNextEvent(SpacecraftEvent* 
+spacecraft_event);
+
+	//----------------------------------------------//
+        // Attitude Error Model Initialization Routines //
+	//----------------------------------------------//
+	void	SetAttCntlModel(AttDist* attdist);
+        void	SetAttKnowModel(AttDist* attdist);
+
+        //----------------------------------------------//
+	// Attitude Reporting Routine                   //
+	//----------------------------------------------//
+
+	void ReportAttitude(double time, Spacecraft* spacecraft, 
+				Attitude* attitude);
 
 protected:
 
