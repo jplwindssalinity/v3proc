@@ -85,6 +85,8 @@ int
 ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list)
 {
+	GenericDist *roll, *pitch, *yaw;
+	AttDist* ACEM;
 
 	char* string;
 
@@ -99,15 +101,30 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 	else if(strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
 	   || strcmp(string,"gaussian")==0)
 	{
-	        if(! ConfigAttitudeGaussian(spacecraft_sim,config_list))
+	        if(! ConfigGaussian(roll,ROLL_CONTROL_VARIANCE_KEYWORD,
+			ROLL_CONTROL_MEAN_KEYWORD, config_list))
 		   return(0);
+	        if(! ConfigGaussian(pitch,PITCH_CONTROL_VARIANCE_KEYWORD,
+			PITCH_CONTROL_MEAN_KEYWORD, config_list))
+		   return(0);
+	        if(! ConfigGaussian(yaw,YAW_CONTROL_VARIANCE_KEYWORD,
+			YAW_CONTROL_MEAN_KEYWORD, config_list))
+		   return(0);
+
 	}
 
 
 	else if(strcmp(string,"Uniform")==0 || strcmp(string,"UNIFORM")==0
 	   || strcmp(string,"uniform")==0)
 	{
-	        if(! ConfigAttitudeUniform(spacecraft_sim,config_list))
+	        if(! ConfigUniform(roll,ROLL_CONTROL_RADIUS_KEYWORD,
+			ROLL_CONTROL_MEAN_KEYWORD, config_list))
+		   return(0);
+	        if(! ConfigUniform(pitch,PITCH_CONTROL_RADIUS_KEYWORD,
+			PITCH_CONTROL_MEAN_KEYWORD, config_list))
+		   return(0);
+	        if(! ConfigUniform(yaw,YAW_CONTROL_RADIUS_KEYWORD,
+			YAW_CONTROL_MEAN_KEYWORD, config_list))
 		   return(0);
 	}
 
@@ -116,16 +133,38 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
            || strcmp(string,"GAUSSIAN_RANDOM_VELOCITY")==0
 	   || strcmp(string,"gaussian_random_velocity")==0)
 	{
-	        if(! ConfigAttitudeGaussianRandomVelocity(spacecraft_sim,
+	        if(! ConfigGaussianRandomVelocity(roll,
+		CONTROL_SAMPLE_RATE_KEYWORD, ROLL_CONTROL_BOUND_KEYWORD,
+		ROLL_CONTROL_MEAN_KEYWORD, ROLL_CONTROL_VARIANCE_KEYWORD,
 			config_list)) return(0);
+	        if(! ConfigGaussianRandomVelocity(pitch,
+		CONTROL_SAMPLE_RATE_KEYWORD, PITCH_CONTROL_BOUND_KEYWORD,
+		PITCH_CONTROL_MEAN_KEYWORD, PITCH_CONTROL_VARIANCE_KEYWORD,
+			config_list)) return(0);
+	        if(! ConfigGaussianRandomVelocity(yaw,
+		CONTROL_SAMPLE_RATE_KEYWORD, YAW_CONTROL_BOUND_KEYWORD,
+		YAW_CONTROL_MEAN_KEYWORD, YAW_CONTROL_VARIANCE_KEYWORD,
+			config_list)) return(0);
+
 	}
 
 	else if(strcmp(string,"Uniform_Random_Velocity")==0
            || strcmp(string,"UNIFORM_RANDOM_VELOCITY")==0
 	   || strcmp(string,"uniform_random_velocity")==0)
 	{
-	        if(! ConfigAttitudeUniformRandomVelocity(spacecraft_sim,
+	        if(! ConfigUniformRandomVelocity(roll,
+		CONTROL_SAMPLE_RATE_KEYWORD, ROLL_CONTROL_BOUND_KEYWORD,
+		ROLL_CONTROL_MEAN_KEYWORD, ROLL_CONTROL_RADIUS_KEYWORD,
 			config_list)) return(0);
+	        if(! ConfigUniformRandomVelocity(pitch,
+		CONTROL_SAMPLE_RATE_KEYWORD, PITCH_CONTROL_BOUND_KEYWORD,
+		PITCH_CONTROL_MEAN_KEYWORD, PITCH_CONTROL_RADIUS_KEYWORD,
+			config_list)) return(0);
+	        if(! ConfigUniformRandomVelocity(yaw,
+		CONTROL_SAMPLE_RATE_KEYWORD, YAW_CONTROL_BOUND_KEYWORD,
+		YAW_CONTROL_MEAN_KEYWORD, YAW_CONTROL_RADIUS_KEYWORD,
+			config_list)) return(0);
+
 	}
 
 
@@ -136,207 +175,228 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 	   fprintf(stderr,"UNIFORM_RANDOM_VELOCITY, and NONE. \n");
 	   return(0);
 	}
+
+        ACEM=new AttDist(roll,pitch,yaw);
+        spacecraft_sim->SetAttCntlModel(ACEM);
+
+
 	return(1);
 }
 
+//----------------------------------//
+// ConfigAttitudeKnowledgeModel     //
+//----------------------------------//
+
+int 
+ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
+	ConfigList* config_list)
+{
+	GenericDist *roll, *pitch, *yaw;
+	AttDist* AKEM;
+
+	char* string;
+
+        string=config_list->Get(ATTITUDE_KNOWLEDGE_MODEL_KEYWORD);
+        if(! string)
+		return(0);
+
+	if(strcmp(string,"NONE")==0 || strcmp(string,"None")==0
+	   || strcmp(string,"none")==0) return(1);
+
+
+	else if(strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
+	   || strcmp(string,"gaussian")==0)
+	{
+	        if(! ConfigGaussian(roll,ROLL_KNOWLEDGE_VARIANCE_KEYWORD,
+			ROLL_KNOWLEDGE_MEAN_KEYWORD, config_list))
+		   return(0);
+	        if(! ConfigGaussian(pitch,PITCH_KNOWLEDGE_VARIANCE_KEYWORD,
+			PITCH_KNOWLEDGE_MEAN_KEYWORD, config_list))
+		   return(0);
+	        if(! ConfigGaussian(yaw,YAW_KNOWLEDGE_VARIANCE_KEYWORD,
+			YAW_KNOWLEDGE_MEAN_KEYWORD, config_list))
+		   return(0);
+
+	}
+
+
+	else if(strcmp(string,"Uniform")==0 || strcmp(string,"UNIFORM")==0
+	   || strcmp(string,"uniform")==0)
+	{
+	        if(! ConfigUniform(roll,ROLL_KNOWLEDGE_RADIUS_KEYWORD,
+			ROLL_KNOWLEDGE_MEAN_KEYWORD, config_list))
+		   return(0);
+	        if(! ConfigUniform(pitch,PITCH_KNOWLEDGE_RADIUS_KEYWORD,
+			PITCH_KNOWLEDGE_MEAN_KEYWORD, config_list))
+		   return(0);
+	        if(! ConfigUniform(yaw,YAW_KNOWLEDGE_RADIUS_KEYWORD,
+			YAW_KNOWLEDGE_MEAN_KEYWORD, config_list))
+		   return(0);
+	}
+
+	
+	else if(strcmp(string,"Gaussian_Random_Velocity")==0
+           || strcmp(string,"GAUSSIAN_RANDOM_VELOCITY")==0
+	   || strcmp(string,"gaussian_random_velocity")==0)
+	{
+	        if(! ConfigGaussianRandomVelocity(roll,
+		KNOWLEDGE_SAMPLE_RATE_KEYWORD, ROLL_KNOWLEDGE_BOUND_KEYWORD,
+		ROLL_KNOWLEDGE_MEAN_KEYWORD, ROLL_KNOWLEDGE_VARIANCE_KEYWORD,
+			config_list)) return(0);
+	        if(! ConfigGaussianRandomVelocity(pitch,
+		KNOWLEDGE_SAMPLE_RATE_KEYWORD, PITCH_KNOWLEDGE_BOUND_KEYWORD,
+		PITCH_KNOWLEDGE_MEAN_KEYWORD, PITCH_KNOWLEDGE_VARIANCE_KEYWORD,
+			config_list)) return(0);
+	        if(! ConfigGaussianRandomVelocity(yaw,
+		KNOWLEDGE_SAMPLE_RATE_KEYWORD, YAW_KNOWLEDGE_BOUND_KEYWORD,
+		YAW_KNOWLEDGE_MEAN_KEYWORD, YAW_KNOWLEDGE_VARIANCE_KEYWORD,
+			config_list)) return(0);
+
+	}
+
+	else if(strcmp(string,"Uniform_Random_Velocity")==0
+           || strcmp(string,"UNIFORM_RANDOM_VELOCITY")==0
+	   || strcmp(string,"uniform_random_velocity")==0)
+	{
+	        if(! ConfigUniformRandomVelocity(roll,
+		KNOWLEDGE_SAMPLE_RATE_KEYWORD, ROLL_KNOWLEDGE_BOUND_KEYWORD,
+		ROLL_KNOWLEDGE_MEAN_KEYWORD, ROLL_KNOWLEDGE_RADIUS_KEYWORD,
+			config_list)) return(0);
+	        if(! ConfigUniformRandomVelocity(pitch,
+		KNOWLEDGE_SAMPLE_RATE_KEYWORD, PITCH_KNOWLEDGE_BOUND_KEYWORD,
+		PITCH_KNOWLEDGE_MEAN_KEYWORD, PITCH_KNOWLEDGE_RADIUS_KEYWORD,
+			config_list)) return(0);
+	        if(! ConfigUniformRandomVelocity(yaw,
+		KNOWLEDGE_SAMPLE_RATE_KEYWORD, YAW_KNOWLEDGE_BOUND_KEYWORD,
+		YAW_KNOWLEDGE_MEAN_KEYWORD, YAW_KNOWLEDGE_RADIUS_KEYWORD,
+			config_list)) return(0);
+
+	}
+
+
+	else{
+           fprintf(stderr,"No such Attitude Control Model. \n");
+	   fprintf(stderr,"Implemented models are GAUSSIAN, UNIFORM, \n");
+	   fprintf(stderr,"GAUSSIAN_RANDOM_VELOCITY,\n");
+	   fprintf(stderr,"UNIFORM_RANDOM_VELOCITY, and NONE. \n");
+	   return(0);
+	}
+
+        AKEM=new AttDist(roll,pitch,yaw);
+        spacecraft_sim->SetAttKnowModel(AKEM);
+
+
+	return(1);
+}
+
+
 //------------------------------------------//
 // Configuration Routines for Specific      //
-// Attitude Control Models                  //
+// Noise Distributions                      //
 //------------------------------------------//
 
 	//----------------------------------//
-	// ConfigAttitudeGaussian           //
+	// ConfigGaussian                   //
 	//----------------------------------//
 
 int 
-ConfigAttitudeGaussian(SpacecraftSim* spacecraft_sim,
+ConfigGaussian(GenericDist* dist, const char* variance_keyword,
+	const char* mean_keyword,
 	ConfigList* config_list)
 {
-	GenericDist *roll, *pitch, *yaw;
-	AttDist* ACEM;
 	double variance, mean;
 
- 	if(! config_list->GetDouble(ROLL_CONTROL_VARIANCE_KEYWORD,
+ 	if(! config_list->GetDouble(variance_keyword,
 	   &variance)) return(0);
- 	if(! config_list->GetDouble(ROLL_CONTROL_MEAN_KEYWORD,
+ 	if(! config_list->GetDouble(mean_keyword,
 	   &mean)) return(0);
-	roll=new Gaussian((float)variance,(float)mean);
-
- 	if(! config_list->GetDouble(PITCH_CONTROL_VARIANCE_KEYWORD,
-	   &variance)) return(0);
- 	if(! config_list->GetDouble(PITCH_CONTROL_MEAN_KEYWORD,
-	   &mean)) return(0);
-	pitch=new Gaussian((float)variance,(float)mean);
-
- 	if(! config_list->GetDouble(YAW_CONTROL_VARIANCE_KEYWORD,
-	   &variance)) return(0);
- 	if(! config_list->GetDouble(YAW_CONTROL_MEAN_KEYWORD,
-	   &mean)) return(0);
-	yaw=new Gaussian((float)variance,(float)mean);
-
-        ACEM=new AttDist(roll,pitch,yaw);
-        spacecraft_sim->SetAttCntlModel(ACEM);
-
+	dist=new Gaussian((float)variance,(float)mean);
 
         return(1);
 }
 
 	//----------------------------------//
-	// ConfigAttitudeUniform            //
+	// ConfigUniform                    //
 	//----------------------------------//
 
 int 
-ConfigAttitudeUniform(SpacecraftSim* spacecraft_sim,
+ConfigUniform(GenericDist* dist, const char* radius_keyword,
+	const char* mean_keyword,
 	ConfigList* config_list)
 {
-	GenericDist *roll, *pitch, *yaw;
-	AttDist* ACEM;
 	double radius, mean;
 
-	if(! config_list->GetDouble(ROLL_CONTROL_RADIUS_KEYWORD,
+	if(! config_list->GetDouble(radius_keyword,
 	  &radius)) return(0);
-	if(! config_list->GetDouble(ROLL_CONTROL_MEAN_KEYWORD,
+	if(! config_list->GetDouble(mean_keyword,
 	  &mean)) return(0);
-	roll=new Uniform((float)radius,float(mean));
-
-	if(! config_list->GetDouble(PITCH_CONTROL_RADIUS_KEYWORD,
-		&radius)) return(0);
-	if(! config_list->GetDouble(PITCH_CONTROL_MEAN_KEYWORD,
-	   &mean)) return(0);
-	pitch=new Uniform((float)radius,float(mean));
-
-	if(! config_list->GetDouble(YAW_CONTROL_RADIUS_KEYWORD,
-	   &radius)) return(0);
-	if(! config_list->GetDouble(YAW_CONTROL_MEAN_KEYWORD,
-	   &mean)) return(0);
-	yaw=new Uniform((float)radius,float(mean));
-
-        ACEM=new AttDist(roll,pitch,yaw);
-        spacecraft_sim->SetAttCntlModel(ACEM);
-
+	dist=new Uniform((float)radius,float(mean));
 
         return(1);
 }
 
 	//--------------------------------------------//
-	// ConfigAttitudeGaussianRandomVelocity       //
+	// ConfigGaussianRandomVelocity               //
 	//--------------------------------------------//
 
 int 
-ConfigAttitudeGaussianRandomVelocity(SpacecraftSim* spacecraft_sim,
+ConfigGaussianRandomVelocity(GenericDist* dist, const char* samprate_keyword,
+	const char* bound_keyword, const char* mean_keyword, 
+	const char* variance_keyword,
 	ConfigList* config_list)
 {
-	GenericDist *roll, *pitch, *yaw;
-	AttDist* ACEM;
 	double variance, mean, sample_rate, bound;
-	GenericTimelessDist *roll_velocity, *pitch_velocity;
-	GenericTimelessDist *yaw_velocity;
+	GenericTimelessDist *velocity;
 
-	if(! config_list->GetDouble(VELOCITY_SAMPLE_RATE_KEYWORD,
+	if(! config_list->GetDouble(samprate_keyword,
 	   &sample_rate)) return(0);
 
 
- 	if(! config_list->GetDouble(ROLL_CONTROL_VARIANCE_KEYWORD,
+ 	if(! config_list->GetDouble(variance_keyword,
 	   &variance)) return(0);
- 	if(! config_list->GetDouble(ROLL_CONTROL_MEAN_KEYWORD,
+ 	if(! config_list->GetDouble(mean_keyword,
 	   &mean)) return(0);
- 	if(! config_list->GetDouble(ROLL_CONTROL_BOUND_KEYWORD,
+ 	if(! config_list->GetDouble(bound_keyword,
 	   &bound)) return(0);
-	roll_velocity=new Gaussian((float)variance,0.0);
-	roll=new RandomVelocity(roll_velocity, (float)sample_rate,
+	velocity=new Gaussian((float)variance,0.0);
+	dist=new RandomVelocity(velocity, (float)sample_rate,
 		(float)bound, (float)mean);
-
-
- 	if(! config_list->GetDouble(PITCH_CONTROL_VARIANCE_KEYWORD,
-	   &variance)) return(0);
- 	if(! config_list->GetDouble(PITCH_CONTROL_MEAN_KEYWORD,
-	   &mean)) return(0);
- 	if(! config_list->GetDouble(PITCH_CONTROL_BOUND_KEYWORD,
-	   &bound)) return(0);
-	pitch_velocity=new Gaussian((float)variance,0.0);
-	pitch=new RandomVelocity(pitch_velocity, (float)sample_rate,
-		(float)bound, (float)mean);
-
-
-
- 	if(! config_list->GetDouble(YAW_CONTROL_VARIANCE_KEYWORD,
-	   &variance)) return(0);
- 	if(! config_list->GetDouble(YAW_CONTROL_MEAN_KEYWORD,
-	   &mean)) return(0);
- 	if(! config_list->GetDouble(YAW_CONTROL_BOUND_KEYWORD,
-	   &bound)) return(0);
-	yaw_velocity=new Gaussian((float)variance,0.0);
-	yaw=new RandomVelocity(yaw_velocity, (float)sample_rate,
-		(float)bound, (float)mean);
-
-        ACEM=new AttDist(roll,pitch,yaw);
-        spacecraft_sim->SetAttCntlModel(ACEM);
-
 
         return(1);
 }
 
 
 	//------------------------------------------//
-	// ConfigAttitudeUniformRandomVelocity      //
+	// ConfigUniformRandomVelocity              //
 	//------------------------------------------//
 
 int 
-ConfigAttitudeUniformRandomVelocity(SpacecraftSim* spacecraft_sim,
+ConfigUniformRandomVelocity(GenericDist* dist, const char* samprate_keyword,
+	const char* bound_keyword, const char* mean_keyword, 
+	const char* radius_keyword,
 	ConfigList* config_list)
 {
-	GenericDist *roll, *pitch, *yaw;
-	AttDist* ACEM;
 	double radius, mean, sample_rate, bound;
-	GenericTimelessDist *roll_velocity, *pitch_velocity;
-	GenericTimelessDist *yaw_velocity;
+	GenericTimelessDist *velocity;
 
-
-	if(! config_list->GetDouble(VELOCITY_SAMPLE_RATE_KEYWORD,
+	if(! config_list->GetDouble(samprate_keyword,
 	   &sample_rate)) return(0);
 
 
-	if(! config_list->GetDouble(ROLL_CONTROL_RADIUS_KEYWORD,
+ 	if(! config_list->GetDouble(radius_keyword,
 	   &radius)) return(0);
-	if(! config_list->GetDouble(ROLL_CONTROL_MEAN_KEYWORD,
+ 	if(! config_list->GetDouble(mean_keyword,
 	   &mean)) return(0);
-	if(! config_list->GetDouble(ROLL_CONTROL_BOUND_KEYWORD,
+ 	if(! config_list->GetDouble(bound_keyword,
 	   &bound)) return(0);
-	roll_velocity=new Uniform((float)radius,0.0);
-	roll=new RandomVelocity(roll_velocity, (float)sample_rate,
+	velocity=new Uniform((float)radius,0.0);
+	dist=new RandomVelocity(velocity, (float)sample_rate,
 		(float)bound, (float)mean);
-
-
-	if(! config_list->GetDouble(PITCH_CONTROL_RADIUS_KEYWORD,
-	   &radius)) return(0);
-	if(! config_list->GetDouble(PITCH_CONTROL_MEAN_KEYWORD,
-	   &mean)) return(0);
-	if(! config_list->GetDouble(PITCH_CONTROL_BOUND_KEYWORD,
-	   &bound)) return(0);
-	pitch_velocity=new Uniform((float)radius,0.0);
-	pitch=new RandomVelocity(pitch_velocity, (float)sample_rate,
-		(float)bound, (float)mean);
-
-		
-
-
-	if(! config_list->GetDouble(YAW_CONTROL_RADIUS_KEYWORD,
-	   &radius)) return(0);
-	if(! config_list->GetDouble(YAW_CONTROL_MEAN_KEYWORD,
-	   &mean)) return(0);
-	if(! config_list->GetDouble(YAW_CONTROL_BOUND_KEYWORD,
-	   &bound)) return(0);
-	yaw_velocity=new Uniform((float)radius,0.0);
-	yaw=new RandomVelocity(yaw_velocity, (float)sample_rate,
-		(float)bound, (float)mean);
-
-
-        ACEM=new AttDist(roll,pitch,yaw);
-        spacecraft_sim->SetAttCntlModel(ACEM);
-
 
         return(1);
 }
+
+
 
 
 //------------------//

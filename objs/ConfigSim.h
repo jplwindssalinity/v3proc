@@ -49,7 +49,7 @@ int ConfigSpacecraftSim(SpacecraftSim* spacecraft_sim,
 //--------------------------------//
 
 #define ATTITUDE_CONTROL_MODEL_KEYWORD  "ATTITUDE_CONTROL_MODEL"
-#define VELOCITY_SAMPLE_RATE_KEYWORD    "VELOCITY_SAMPLE_RATE"
+#define CONTROL_SAMPLE_RATE_KEYWORD    "CONTROL_SAMPLE_RATE"
 #define ROLL_CONTROL_MEAN_KEYWORD 	"ROLL_CONTROL_MEAN"
 #define PITCH_CONTROL_MEAN_KEYWORD 	"PITCH_CONTROL_MEAN"
 #define YAW_CONTROL_MEAN_KEYWORD 	"YAW_CONTROL_MEAN"
@@ -65,13 +65,51 @@ int ConfigSpacecraftSim(SpacecraftSim* spacecraft_sim,
 
 int ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list);
-int ConfigAttitudeGaussian(SpacecraftSim* spacecraft_sim,
+
+//--------------------------------//
+// Attitude Knowledge Error Model   //
+//--------------------------------//
+
+#define ATTITUDE_KNOWLEDGE_MODEL_KEYWORD   	"ATTITUDE_KNOWLEDGE_MODEL"
+#define KNOWLEDGE_SAMPLE_RATE_KEYWORD    	"KNOWLEDGE_SAMPLE_RATE"
+#define ROLL_KNOWLEDGE_MEAN_KEYWORD 		"ROLL_KNOWLEDGE_MEAN"
+#define PITCH_KNOWLEDGE_MEAN_KEYWORD 		"PITCH_KNOWLEDGE_MEAN"
+#define YAW_KNOWLEDGE_MEAN_KEYWORD 		"YAW_KNOWLEDGE_MEAN"
+#define ROLL_KNOWLEDGE_BOUND_KEYWORD 		"ROLL_KNOWLEDGE_BOUND"
+#define PITCH_KNOWLEDGE_BOUND_KEYWORD 		"PITCH_KNOWLEDGE_BOUND"
+#define YAW_KNOWLEDGE_BOUND_KEYWORD 		"YAW_KNOWLEDGE_BOUND"
+#define ROLL_KNOWLEDGE_VARIANCE_KEYWORD 	"ROLL_KNOWLEDGE_VARIANCE"
+#define PITCH_KNOWLEDGE_VARIANCE_KEYWORD 	"PITCH_KNOWLEDGE_VARIANCE"
+#define YAW_KNOWLEDGE_VARIANCE_KEYWORD 		"YAW_KNOWLEDGE_VARIANCE"
+#define ROLL_KNOWLEDGE_RADIUS_KEYWORD 		"ROLL_KNOWLEDGE_RADIUS"
+#define PITCH_KNOWLEDGE_RADIUS_KEYWORD 		"PITCH_KNOWLEDGE_RADIUS"
+#define YAW_KNOWLEDGE_RADIUS_KEYWORD 		"YAW_KNOWLEDGE_RADIUS"
+
+int ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list);
-int ConfigAttitudeUniform(SpacecraftSim* spacecraft_sim,
+
+//---------------------------------//
+// Generic Noise Model Config      //
+// 	Routines                   //
+//---------------------------------//
+
+int  ConfigGaussian(GenericDist* dist, const char* variance_keyword,
+	const char* mean_keyword,
 	ConfigList* config_list);
-int ConfigAttitudeGaussianRandomVelocity(SpacecraftSim* spacecraft_sim,
+
+int ConfigUniform(GenericDist* dist, const char* radius_keyword,
+	const char* mean_keyword,
 	ConfigList* config_list);
-int ConfigAttitudeUniformRandomVelocity(SpacecraftSim* spacecraft_sim,
+
+int ConfigGaussianRandomVelocity(GenericDist* dist, const char* 	
+	samprate_keyword,
+	const char* bound_keyword, const char* mean_keyword, 
+	const char* variance_keyword,
+	ConfigList* config_list);
+
+int ConfigUniformRandomVelocity(GenericDist* dist, const char* samprate_keyword,
+	const char* bound_keyword, const char* mean_keyword, 
+	const char* radius_keyword,
 	ConfigList* config_list);
 
 
