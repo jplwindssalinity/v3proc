@@ -18,7 +18,7 @@ static const char rcs_id_measurement_c[] =
 
 Meas::Meas()
 :	value(0.0), pol(NONE), eastAzimuth(0.0), incidenceAngle(0.0),
-	estimatedKp(0.0)
+	estimatedKp(1.0)
 {
 	return;
 }
