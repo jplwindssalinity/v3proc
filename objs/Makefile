@@ -113,7 +113,7 @@ BufferedList.o: BufferedList.C BufferedList.h List.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
 ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h WindField.h ConfigList.h Instrument.h AntennaSim.h L00Frame.h GMF.h Ephemeris.h CoordinateSwitch.h Spacecraft.h GenericFile.h L10Frame.h L15Frame.h WindVector.h List.h Antenna.h Attitude.h PiscTable.h WVC.h Meas.h Matrix3.h BufferedList.h Constants.h Beam.h LonLat.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
-Ephemeris.o: Ephemeris.C Ephemeris.h List.h Matrix3.h BufferedList.h
+Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Matrix3.h BufferedList.h
 GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h WVC.h Meas.h CoordinateSwitch.h List.h WindVector.h LonLat.h Ephemeris.h Attitude.h Matrix3.h BufferedList.h
 GenericFile.o: GenericFile.C GenericFile.h
 GenericGeom.o: GenericGeom.C GenericGeom.h CoordinateSwitch.h Constants.h Matrix3.h Attitude.h
@@ -128,7 +128,7 @@ L00Frame.o: L00Frame.C L00Frame.h Attitude.h
 L00ToL10.o: L00ToL10.C L00ToL10.h L00.h L10.h GenericFile.h L00Frame.h L10Frame.h Attitude.h
 L10.o: L10.C L10.h GenericFile.h L10Frame.h Attitude.h
 L10Frame.o: L10Frame.C L10Frame.h Attitude.h
-L10ToL15.o: L10ToL15.C L10ToL15.h Antenna.h Ephemeris.h InstrumentGeom.h L10.h L15.h Beam.h Attitude.h Matrix3.h BufferedList.h GenericFile.h L10Frame.h L15Frame.h CoordinateSwitch.h List.h Meas.h LonLat.h
+L10ToL15.o: L10ToL15.C L10ToL15.h Antenna.h Ephemeris.h InstrumentGeom.h GenericGeom.h L10.h L15.h Beam.h Attitude.h Matrix3.h BufferedList.h CoordinateSwitch.h GenericFile.h L10Frame.h L15Frame.h List.h Meas.h LonLat.h
 L15.o: L15.C L15.h GenericFile.h L15Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 L15Frame.o: L15Frame.C L15Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 List.o: List.C List.h

@@ -10,6 +10,7 @@ static const char rcs_id_l10tol15_c[] =
 #include "Antenna.h"
 #include "Ephemeris.h"
 #include "InstrumentGeom.h"
+#include "GenericGeom.h"
 
 
 //==========//
@@ -43,12 +44,24 @@ L10ToL15::Convert(
 
 	l10->frame.Unpack(l10->buffer);
 
+	//----------------------------//
+	// ...free residual MeasSpots //
+	//----------------------------//
+
+	l15->frame.spotList.FreeContents();
+
 	//------------------//
 	// for each spot... //
 	//------------------//
 
 	for (int i = 0; i < SPOTS_PER_L10_FRAME; i++)
 	{
+		//------------------------//
+		// ...generate a MeasSpot //
+		//------------------------//
+
+		MeasSpot* meas_spot = new MeasSpot;
+
 		//-----------------------//
 		// ...determine the beam //
 		//-----------------------//
@@ -60,7 +73,7 @@ L10ToL15::Convert(
 		// ...calculate the time //
 		//-----------------------//
 
-		double spot_time = l10->frame.time + (i / antenna->numberOfBeams) *
+		meas_spot->time = l10->frame.time + (i / antenna->numberOfBeams) *
 			antenna->priPerBeam + beam->timeOffset;
 
 		//------------------------------------------------------//
@@ -68,40 +81,54 @@ L10ToL15::Convert(
 		//------------------------------------------------------//
 
 		OrbitState sc_orbit_state;
-		if (! ephemeris->GetOrbitState(spot_time, &sc_orbit_state))
+		if (! ephemeris->GetOrbitState(l10->frame.time, &sc_orbit_state))
 			return(0);
 		Attitude sc_attitude;
 		sc_attitude = l10->frame.attitude;
 
-		//------------------------//
-		// ...free residual spots //
-		//------------------------//
+		//-----------------------------//
+		// ...do geometry for the spot //
+		//-----------------------------//
 
-		l15->frame.spotList.FreeContents();
-
-		//--------------------------//
-		// ...add spot measurements //
-		//--------------------------//
-		// for now there is just one
-		// eventually a slice loop will be needed
-
-		// set antenna azimuth angle using encoder value
 		antenna->SetAzimuthWithEncoder(l10->frame.antennaPosition[i]);
 
 		CoordinateSwitch beam_frame_to_gc = BeamFrameToGC(&sc_orbit_state,
 			&sc_attitude, antenna, beam);
-		
+
+		//----------------------------------//
+		// ...add measurements to spot list //
+		//----------------------------------//
+
+		Vector3 rlook_beam;
+		rlook_beam.SphericalSet(1.0, 0.0, 0.0);
+		Vector3 rlook_gc = beam_frame_to_gc.Forward(rlook_beam);
+
+		EarthPosition spot_on_earth = earth_intercept(rlook_gc,
+			sc_orbit_state.rsat);
+
+		Vector3 alt_lat_lon =
+			spot_on_earth.get_alt_lat_lon(EarthPosition::GEODETIC);
+
 		Meas* meas = new Meas();
 		meas->value = l10->frame.sigma0[i];
-//		meas->outline =
-//		meas->center = 
+		meas->center.longitude = alt_lat_lon.get(2);
+		meas->center.latitude = alt_lat_lon.get(1);
+//		meas->outline = 
 		meas->pol = antenna->beam[beam_idx].polarization;
-//		meas->eastAzimuth =
-//		meas->scAzimuth =
-//		meas->incidenceAngle =
+
+		// get local measurement azimuth
+		CoordinateSwitch gc_to_surface =
+			spot_on_earth.SurfaceCoordinateSystem();
+		Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);
+		double r, theta, phi;
+		rlook_surface.SphericalGet(&r, &theta, &phi);
+		meas->eastAzimuth = phi;
+
+		meas->incidenceAngle = spot_on_earth.IncidenceAngle(rlook_gc);
 		meas->estimatedKp = 0.0;
 
-//		l15->frame.spotList.Append(meas);
+		meas_spot->slices.Append(meas);
+		l15->frame.spotList.Append(meas_spot);
 	}
 
 	return(1);
