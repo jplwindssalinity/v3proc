@@ -49,14 +49,14 @@ public:
 	// adding measurements //
 	//---------------------//
 
-	int		Add(Meas *meas, double meas_time, long spot_id);
+	int		Add(Meas *meas, double meas_time, long spot_id, int do_composite);
 
 	//--------------//
 	// input/output //
 	//--------------//
 
-	int		ShiftForward();
-	int		Flush();
+	int		ShiftForward(int do_composite);
+	int		Flush(int do_composite);
 
 	//-----------//
 	// variables //

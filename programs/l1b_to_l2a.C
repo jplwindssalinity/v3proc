@@ -87,6 +87,8 @@ template class List<OffsetList>;
 // CONSTANTS //
 //-----------//
 
+#define	DO_COMPOSITE_KEYWORD		"DO_COMPOSITE"
+
 //--------//
 // MACROS //
 //--------//
@@ -142,6 +144,14 @@ main(
 		exit(1);
 	}
 
+	//----------------------//
+	// Get compositing flag //
+	//----------------------//
+
+    int do_composite;
+    if (! config_list.GetInt(DO_COMPOSITE_KEYWORD, &do_composite))
+        return(0);
+ 
 	//-----------------------//
 	// create spacecraft sim //
 	//-----------------------//
@@ -232,7 +242,7 @@ main(
 		// Group //
 		//-------//
 
-		if (! l15_to_l17.Group(&grid))
+		if (! l15_to_l17.Group(&grid,do_composite))
 		{
 			fprintf(stderr, "%s: error converting Level 1.5 to Level 1.7\n",
 				command);
@@ -245,7 +255,7 @@ main(
 	// Write out data in the grid that hasn't been written yet.
 	//
 
-	grid.Flush();
+	grid.Flush(do_composite);
 
 	grid.l15.Close();
 	grid.l17.file.Close();

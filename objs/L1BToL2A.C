@@ -33,7 +33,8 @@ L15ToL17::~L15ToL17()
 
 int
 L15ToL17::Group(
-	Grid*		grid)
+	Grid*		grid,
+	int			do_composite)
 {
 	static long spot_id = 0;
 
@@ -59,7 +60,7 @@ L15ToL17::Group(
 			// ...add Meas to Grid //
 			//---------------------//
 
-			grid->Add(meas, meas_time, spot_id);
+			grid->Add(meas, meas_time, spot_id, do_composite);
 		}
 		spot_id++;
 	}

@@ -45,7 +45,7 @@ public:
 	// conversion //
 	//------------//
 
-	int		Group(Grid* grid);
+	int		Group(Grid* grid, int do_composite);
 };
 
 #endif

@@ -102,12 +102,15 @@ Grid::Allocate(
 // Add the measurement to the grid using an offset list.
 // meas = pointer to the Meas object to grid
 // meas_time = time at which the measurement was made
+// spot_id = unique integer for each measurement spot - used for compositing.
+// do_composite = 1 if slices should be composited, 0 if not.
 
 int
 Grid::Add(
 	Meas*		meas,
 	double		meas_time,
-	long		spot_id)
+	long		spot_id,
+	int			do_composite)
 {
 	//----------------------------------//
 	// calculate the subtrack distances //
@@ -169,7 +172,7 @@ Grid::Add(
 	while (vati - _ati_offset >= _alongtrack_bins)
 	{
 		// vati is beyond latest row, so need to shift the grid buffer
-		ShiftForward();
+		ShiftForward(do_composite);
 	}
 
 	//
@@ -184,29 +187,47 @@ Grid::Add(
 	long* offset = new long;
 	*offset = meas->offset;
 
-    // Scan for an offset list with the same spot id.
-
     OffsetList* offsetlist = _grid[cti][ati].GetHead();
-    while (offsetlist != NULL)
-    {
-        if (offsetlist->spotId == spot_id)
-        {
-            break;
-        }
-        offsetlist = _grid[cti][ati].GetNext();
-    }
 
-    if (offsetlist == NULL)
-    {
-        // Append a new offsetlist (with the new offset) for the new spot
-		offsetlist = new OffsetList;
-		offsetlist->Append(offset);
-		offsetlist->spotId = spot_id;
-		_grid[cti][ati].Append(offsetlist);
-    }
+	if (do_composite == 1)
+	{	// Composite slices that fall in the same grid location and spot.
+
+	    // Scan for an offset list with the same spot id.
+    	while (offsetlist != NULL)
+    	{
+        	if (offsetlist->spotId == spot_id)
+        	{
+            	break;
+        	}
+        	offsetlist = _grid[cti][ati].GetNext();
+    	}
+
+    	if (offsetlist == NULL)
+    	{
+        	// Append a new offsetlist (with the new offset) for the new spot
+			offsetlist = new OffsetList;
+			offsetlist->Append(offset);
+			offsetlist->spotId = spot_id;
+			_grid[cti][ati].Append(offsetlist);
+    	}
+		else
+		{
+			// Append the offset in the list with the matching spot id.
+			offsetlist->Append(offset);
+		}
+	}
 	else
-	{
-		// Append the offset in the list with the matching spot id.
+	{	// Put all slices in the first (and only) offset list at this grid loc.
+    	if (offsetlist == NULL)
+    	{	// Need to create a sublist and attach to the grid square
+			offsetlist = new OffsetList;
+			if (offsetlist == NULL)
+			{
+				printf("Error allocating memory in Grid::Add\n");
+				exit(-1);
+			}
+			_grid[cti][ati].Append(offsetlist);
+    	}
 		offsetlist->Append(offset);
 	}
 
@@ -222,10 +243,15 @@ Grid::Add(
 // is reset to receive another row.  The circular buffer tracking indices
 // are updated appropriately so that the newly freed row is mapped to
 // the next along track index.
+// If requested, slices are composited before output.
+// The slices to be composited should all be together in a sublist of their
+// grid location.
 //
+// Inputs:
+//	do_composite = flag set to 1 if compositing is desired, 0 otherwise.
 
 int
-Grid::ShiftForward()
+Grid::ShiftForward(int do_composite)
 {
 	//---------------------------//
 	// remember the l15 location //
@@ -246,22 +272,33 @@ Grid::ShiftForward()
 		//----------------------------------------//
 
 		l17.frame.measList.FreeContents();
-        for (OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
-             offsetlist;
-             offsetlist = _grid[i][_ati_start].GetNext())
-        {   // each sublist is composited before output
-            offsetlist->MakeMeasList(fp, &spot_measList);
-			Meas* meas = new Meas;
-			composite(&spot_measList,meas);
-			spot_measList.FreeContents();
-			if (! l17.frame.measList.Append(meas))
+
+		if (do_composite == 1)
+		{
+        	for (OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
+             	offsetlist;
+             	offsetlist = _grid[i][_ati_start].GetNext())
+        	{   // each sublist is composited before output
+            	offsetlist->MakeMeasList(fp, &spot_measList);
+				Meas* meas = new Meas;
+				composite(&spot_measList,meas);
+				spot_measList.FreeContents();
+				if (! l17.frame.measList.Append(meas))
+				{
+					printf("Error forming list for output in Grid::ShiftForward\n");
+					delete meas;
+					return(0);
+				}
+        	}
+		}
+		else
+		{
+        	OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
+			if (offsetlist != NULL)
 			{
-				printf("Error forming list for output in Grid::ShiftForward\n");
-				delete meas;
-				return(0);
+            	offsetlist->MakeMeasList(fp, &(l17.frame.measList));
 			}
-//            offsetlist->MakeMeasList(fp, &(l17.frame.measList));
-        }
+		}
 
 		//----------------------------------//
 		// complete and write the l17 frame //
@@ -303,11 +340,11 @@ Grid::ShiftForward()
 //
 
 int
-Grid::Flush()
+Grid::Flush(int do_composite)
 {
 	for (int i = 0; i < _alongtrack_bins; i++)
 	{
-		ShiftForward();
+		ShiftForward(do_composite);
 	}
 
 	return(1);
