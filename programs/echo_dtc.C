@@ -709,11 +709,14 @@ process_orbit_step(
     double P = *(*(terms + orbit_step) + 1);
     double C = *(*(terms + orbit_step) + 2);
 
-//    double newA = sqrt(A*A*cos(2.0*P) + a*a*cos(2.0*p) - cos(P+p));
-    double newA = sqrt(A*A - 2.0*A*a*cos(P+p) + a*a);
-    double newC = C - c;
-    double y = A*sin(P) - a*sin(p);
-    double x = A*cos(P) - a*cos(p);
+//    double newA = sqrt(A*A*cos(2.0*P) + a*a*cos(2.0*p) - cos(P+p));  // (1)
+//    double newA = sqrt(A*A - 2.0*A*a*cos(P+p) + a*a);  // (2)
+    a = -a;   // change the sign before adding
+    c = -c;
+    double newA = sqrt(A*A + 2.0*A*a*cos(P-p) + a*a);  // (3)
+    double newC = C + c;
+    double y = A*sin(P) + a*sin(p);
+    double x = A*cos(P) + a*cos(p);
     double newP = atan2(y, x);
 
 /*
