@@ -107,6 +107,7 @@ public:
 			      int level=0, float* tmp_peak_dir=NULL);
     int     GetMinEstimateMSE(float* peak_dir, int num_peaks, float* mse,
 			      int num=0);
+    int     DeleteBadPeaks(WVC* wvc, float* peak_dir, int* num_peaks, float mse);
     float   EstimateDirMSE(float* peak_dir, int num_peaks);
     int     ConvertObjToPdf();
 

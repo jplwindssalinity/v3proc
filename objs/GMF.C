@@ -3321,7 +3321,8 @@ GMF::RetrieveWinds_H2(
 //-----------------------//
 #define S2_INIT_BISECT  2
 #define S2_USE_BRUTE_FORCE 0
-#define S2_DIR_MSE_THRESHOLD 100.0     // degrees squared
+#define S2_REPLACE_BAD_PEAKS 0
+#define S2_DIR_MSE_THRESHOLD 25.0     // degrees squared
 int
 GMF::RetrieveWinds_S2(
     MeasList*  meas_list,
@@ -3401,14 +3402,34 @@ GMF::RetrieveWinds_S2(
     }
 
     int final_num_peaks=ambiguities;
-    if (ambiguities >= DEFAULT_MAX_SOLUTIONS)
+    int initial_num_peaks=ambiguities;
+
+    // For now assume that extra ambiguities implies 
+    // DeleteBadPeaks is not needed but only deleting the lowest obj.
+    if (ambiguities > DEFAULT_MAX_SOLUTIONS){
         goto wrap_it_up_S2;
+    }
+
 
     float mse_est;
     mse_est=EstimateDirMSE(peak_dir, ambiguities);
     if(mse_est<S2_DIR_MSE_THRESHOLD*dtr*dtr)
         goto wrap_it_up_S2;
     if(ambiguities==0) return(0);
+
+    //----------------------------------------//
+    //  If enabled delete peaks thst result in//
+    // lower estimated mse values when replaced//
+    //-----------------------------------------//
+    if(S2_REPLACE_BAD_PEAKS){
+      if(!DeleteBadPeaks(wvc,peak_dir,&ambiguities,mse_est))return(0);
+    }
+
+    final_num_peaks=ambiguities;
+    if (ambiguities >= DEFAULT_MAX_SOLUTIONS){
+        goto wrap_it_up_S2;
+    }
+
     //-----------------------------------------//
     // Select extra ambiguities to minimize    //
     // Estimated Direction Mean Square Error   //
@@ -3425,7 +3446,7 @@ GMF::RetrieveWinds_S2(
       WindVectorPlus* wvp = new WindVectorPlus();
       if (! wvp)
 	return(0);
-      int peak_idx = int(0.5+peak_dir[c]/_phiStepSize);
+      int peak_idx = int(0.5+peak_dir[c]/_phiStepSize)%_phiCount;
       wvp->spd = _bestSpd[peak_idx];
       wvp->dir = peak_dir[c];
       wvp->obj = _ObjectiveFunction(meas_list,wvp->spd,wvp->dir,kp);
@@ -3481,8 +3502,8 @@ GMF::RetrieveWinds_S2(
 	fprintf(ofpp,"%g %g\n",wvp->dir*rtd,_bestObj[int((wvp->dir)/_phiStepSize)]);
       }
       fprintf(ofpp,"&\n"); 
-      fprintf(ofpp,"%g 0\n&\n%g 0\n&\n%d\n&\n",sqrt(mse_est*rtd*rtd),
-	      sqrt(mse_est_new*rtd*rtd),ambiguities);   
+      fprintf(ofpp,"%g 0\n&\n%g 0\n&\n%d\n&\n%d\n&\n",sqrt(mse_est*rtd*rtd),
+	      sqrt(mse_est_new*rtd*rtd),initial_num_peaks,ambiguities);   
       fclose(ofpp);
       printf("%s ",file);
     }
@@ -3713,6 +3734,59 @@ GMF::GetMinEstimateMSE(
   return(1);
 }
 
+//----------------------------------//
+// DeleteBadPeaks                   //
+//----------------------------------//
+int 
+GMF::DeleteBadPeaks(
+     WVC* wvc,
+     float* peak_dir,
+     int* num_peaks,
+     float mse){
+  float tmp_dir[DEFAULT_MAX_SOLUTIONS];
+  float tmp_mse[DEFAULT_MAX_SOLUTIONS];
+  float repl_dir[DEFAULT_MAX_SOLUTIONS];
+  float max_mse=0;
+  int max_idx=-1;
+  if(*num_peaks==1) return(1); // for now always keep one original peak
+  int num_avail=DEFAULT_MAX_SOLUTIONS-*num_peaks;
+  WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+  for(int idx=0;idx<*num_peaks;idx++){
+    for(int c=0;c<*num_peaks-1;c++){
+      if(c<idx) tmp_dir[c+num_avail]=peak_dir[c];
+      else tmp_dir[c+num_avail]=peak_dir[c+1];
+    }
+    for(int c=0;c<num_avail;c++){
+      tmp_dir[c]=tmp_dir[num_avail];
+    }
+    tmp_mse[idx]=mse;
+    if(!GetMinEstimateMSE(tmp_dir,DEFAULT_MAX_SOLUTIONS-1,&tmp_mse[idx]))
+      return(0);
+
+    // calculate best peak and keep it no matter what
+    // best is the one with the highest MSE when removed
+    if(tmp_mse[idx]>max_mse){
+      max_mse=tmp_mse[idx];
+      max_idx=idx;
+    }
+    repl_dir[idx]=tmp_dir[DEFAULT_MAX_SOLUTIONS-1];
+    wvp=wvc->ambiguities.GetNext();
+  }
+  wvp=wvc->ambiguities.GetHead();
+  int num_removed=0;
+  for(int idx=0;idx<*num_peaks;idx++){
+    if(idx!=max_idx && mse>tmp_mse[idx] && ANGDIF(repl_dir[idx],peak_dir[idx])>_phiStepSize){
+      wvp=wvc->ambiguities.RemoveCurrent();
+      delete wvp;
+      (*num_peaks)--;
+    }
+    else{
+      peak_dir[idx-num_removed]=peak_dir[idx];
+      wvp=wvc->ambiguities.GetNext();
+    }									      
+  }
+  return(1);
+}
 
 //---------------------------------------------------------------------//
 // Estimated Direction MSE (only works after ConvertObjToPdf is run.)  //
