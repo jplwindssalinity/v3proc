@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 2001, California Institute of Technology. //
+// Copyright (C) 2001-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -9,8 +9,9 @@
 static const char rcs_id_wind_grad_h[] =
     "@(#) $Id$";
 
-#include"Wind.h"
-#include"Array.h"
+#include "Wind.h"
+#include "WindSwath.h"
+#include "Array.h"
 
 enum windTypeE {NCEP, DIRTH, SELECTED, FIRSTRANK};
 
@@ -25,7 +26,7 @@ enum windTypeE {NCEP, DIRTH, SELECTED, FIRSTRANK};
 //
 // DESCRIPTION
 //    The WGC object represents a wind gradient cell.  It contains a
-//    center point and 4 derivatives, 
+//    center point and 4 derivatives
 //======================================================================
 
 class WGC
