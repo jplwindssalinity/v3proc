@@ -207,6 +207,44 @@ GMF::GetCoefs(
 
 	return(1);
 }
+//--------------------------//
+// GMF::WriteSolutionCurves //
+//--------------------------//
+
+int
+GMF::WritePdf(
+	FILE*		ofp,
+	MeasList*	meas_list,
+	Kp*			kp)
+{
+  //---------------------------------//
+  // Set objective function values   //
+  //---------------------------------//
+
+  WVC* wvc = new WVC();
+  if(! RetrieveWinds(meas_list, kp, wvc)) return(0);
+
+  //----------------------------------------------//
+  // Determine Maximum Objective Function value   //
+  //----------------------------------------------//
+
+  double scale=0;
+  WindVectorPlus* head=wvc->ambiguities.GetHead();
+  if(head!=NULL) scale=head->obj;
+  else return(0);
+
+  //---------------------------------------------//
+  // Calculate and print out probabilities       //
+  //---------------------------------------------//
+  for (int i = 0; i < _phiCount; i++)
+    { float prob=exp((_bestObj[i]-scale)/2);
+      fprintf(ofp, "%g %g\n", (float)i * _phiStepSize * rtd,
+	      prob);
+    }
+  fprintf(ofp,"&\n");
+  delete wvc;
+  return(1);
+}
 
 //--------------------------//
 // GMF::WriteSolutionCurves //

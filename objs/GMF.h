@@ -71,6 +71,7 @@ public:
 				float* A1_phase, float* A2, float* A2_phase, float* A3,
 				float* A3_phase, float* A4, float* A4_phase);
 	int		WriteSolutionCurves(FILE* ofp, MeasList* meas_list, Kp* kp);
+	int		WritePdf(FILE* ofp, MeasList* meas_list, Kp* kp);
 
 	//----------------//
 	// wind retrieval //
