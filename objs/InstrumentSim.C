@@ -21,7 +21,7 @@ static const char rcs_id_instrumentsim_c[] =
 
 InstrumentSim::InstrumentSim()
 :	startTime(0.0), l00FrameReady(0), uniformSigmaField(0),
-	outputPrToStdout(0), useKfactor(0), createXtable(0), _spotNumber(0)
+	outputXToStdout(0), useKfactor(0), createXtable(0), _spotNumber(0)
 {
 	return;
 }
@@ -137,37 +137,37 @@ InstrumentSim::SetMeasurements(
 		lon_lat.longitude = lon;
 		lon_lat.latitude = lat;
 
-		//-----------------//
-		// get wind vector //
-		//-----------------//
-
-		WindVector wv;
-		if (! windfield->InterpolatedWindVector(lon_lat, &wv))
-		{
-			wv.spd = 0.0;
-			wv.dir = 0.0;
-		}
-
-		//-------------------------------------------------------------------//
-		// Get the Kpm value appropriate for the current beam and wind speed //
-		//-------------------------------------------------------------------//
-
-		double Kpm = GetKpm(instrument,&wv);
-
-		//--------------------------------//
-		// convert wind vector to sigma-0 //
-		//--------------------------------//
-
-		// chi is defined so that 0.0 means the wind is blowing towards
-		// the s/c (the opposite direction as the look vector)
-		float chi = wv.dir - meas->eastAzimuth + pi;
 		float sigma0;
 		if (uniformSigmaField)
 		{
 			sigma0=1;
 		}
-		else
-		{
+		else{
+		        //-----------------//
+		        // get wind vector //
+		        //-----------------//
+
+		        WindVector wv;
+			if (! windfield->InterpolatedWindVector(lon_lat, &wv))
+			  {
+			    wv.spd = 0.0;
+			    wv.dir = 0.0;
+			  }
+			
+			//-------------------------------------------------------------------//
+			// Get the Kpm value appropriate for the current beam and wind speed //
+			//-------------------------------------------------------------------//
+		  
+			double Kpm = GetKpm(instrument,&wv);
+		      
+			//--------------------------------//
+			// convert wind vector to sigma-0 //
+			//--------------------------------//
+
+			// chi is defined so that 0.0 means the wind is blowing towards
+			// the s/c (the opposite direction as the look vector)
+			float chi = wv.dir - meas->eastAzimuth + pi;
+
 			gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
 				chi, &sigma0);
 
@@ -211,11 +211,17 @@ InstrumentSim::SetMeasurements(
 
 		// Kfactor: either 1.0 or taken from table
 		float Kfactor=1.0;
+
 		if (useKfactor)
 		{
+		        float orbit_position=
+			  (instrument->time - instrument->GetEqxTime())/
+			  spacecraft->orbitPeriod;
+
 			Kfactor = kfactorTable.RetrieveByRelativeSliceNumber(
 				instrument->antenna.currentBeamIdx,
-				instrument->antenna.azimuthAngle, sliceno);
+				instrument->antenna.azimuthAngle, 
+				orbit_position, sliceno);
 		}
 
 		if (! sigma0_to_Psn(&gc_to_antenna, spacecraft, instrument, meas,
@@ -359,7 +365,7 @@ InstrumentSim::ScatSim(
 		if (! LocateSliceCentroids(spacecraft, instrument, &meas_spot))
 			return(0);
 
-		if (outputPrToStdout)
+		if (outputXToStdout)
 			printf("%g ",instrument->antenna.azimuthAngle/dtr);
 	}
 
@@ -371,14 +377,14 @@ InstrumentSim::ScatSim(
 		return(0);
 
 	//--------------------------------//
-	// Output Pr to Stdout if enabled //
+	// Output X to Stdout if enabled //
 	//--------------------------------//
 
-	if (outputPrToStdout)
+	if (outputXToStdout)
 	{
 		for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
 		{
-			printf("%g ",slice->value);
+			printf("%g ",slice->XK);
 		}
 		if (instrument->antenna.currentBeamIdx==1)
 			printf("\n");
@@ -393,9 +399,14 @@ InstrumentSim::ScatSim(
 		int sliceno = 0;
 		for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
 		{
-			if (!xTable.AddEntry(slice->value,
+		        float orbit_position=
+		          (instrument->time - instrument->GetEqxTime())/
+		          spacecraft->orbitPeriod;
+
+			if (!xTable.AddEntry(slice->XK,
 				instrument->antenna.currentBeamIdx,
-				instrument->antenna.azimuthAngle, sliceno))
+				instrument->antenna.azimuthAngle, 
+				orbit_position, sliceno))
 			{
 				return(0);
 			}

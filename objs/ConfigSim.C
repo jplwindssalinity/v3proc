@@ -670,13 +670,13 @@ ConfigInstrumentSim(
 	}
 	instrument_sim->uniformSigmaField=uniform_sigma_field;
 
-	int output_Pr_to_stdout;
-	if (! config_list->GetInt(OUTPUT_PR_TO_STDOUT_KEYWORD,
-		&output_Pr_to_stdout))
+	int output_X_to_stdout;
+	if (! config_list->GetInt(OUTPUT_X_TO_STDOUT_KEYWORD,
+		&output_X_to_stdout))
 	{
-		output_Pr_to_stdout=0; // default value
+		output_X_to_stdout=0; // default value
 	}
-	instrument_sim->outputPrToStdout=output_Pr_to_stdout;
+	instrument_sim->outputXToStdout=output_X_to_stdout;
 
 	int use_kfactor;
 	if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
@@ -1057,48 +1057,37 @@ ConfigXTable(
 
   char * xtable_filename= config_list->Get(XTABLE_FILENAME_KEYWORD);
   if (xtable_filename == NULL)
-	{
-	printf("Could not find XTable filename in config file\n");
-    return(0);
-	}
+	  return(0);
+
   xTable->SetFilename(xtable_filename);
 
 
   /**** Read header parameters for XTable object ****/
 
   int num_beams;
-  if(! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD,&num_beams))
-	{
-	printf("Could not find number of beams in config file\n");
+  if(! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD,&num_beams))	
     return(0);
-	}
+	
 
-  float pri_per_beam, antenna_spin_rate;
-  if(! config_list->GetFloat(PRI_PER_BEAM_KEYWORD,&pri_per_beam))
-	{
-	printf("Could not find PRI per beam in config file\n");
-    return(0);
-	}
-  if(! config_list->GetFloat(SPIN_RATE_KEYWORD,&antenna_spin_rate))
-	{
-	printf("Could not find spin rate in config file\n");
-    return(0);
-	}
-  int num_azimuths=int((60.0/antenna_spin_rate)/pri_per_beam);
 
   int num_science_slices;
   if(! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD,&num_science_slices))
-	{
-	printf("Could not find slices per spot in config file\n");
     return(0);
-	}
+
 
   int num_guard_slices_each_side;
   if(! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD,&num_guard_slices_each_side))
-	{
-	printf("Could not find guard slices per side in config file\n");
     return(0);
-	}
+
+
+  int num_azimuths;
+  if(! config_list->GetInt(XTABLE_NUM_AZIMUTHS_KEYWORD,&num_azimuths))
+    return(0);
+
+  int num_orbit_positions;
+  if(! config_list->GetInt(XTABLE_NUM_ORBIT_STEPS_KEYWORD,&num_orbit_positions))
+    return(0);
+
 
   float science_slice_bandwidth;
   if(! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD,&science_slice_bandwidth))
@@ -1141,13 +1130,14 @@ ConfigXTable(
   else{
     xTable->numBeams=num_beams;
     xTable->numAzimuthBins=num_azimuths;
+    xTable->numOrbitPositionBins=num_orbit_positions;
     xTable->numScienceSlices=num_science_slices;
     xTable->numGuardSlicesEachSide=num_guard_slices_each_side;
     xTable->scienceSliceBandwidth=science_slice_bandwidth;
     xTable->guardSliceBandwidth=guard_slice_bandwidth;
     xTable->numSlices=xTable->numScienceSlices+2*xTable->numGuardSlicesEachSide;
     if (!xTable->Allocate()){
-      fprintf(stderr,"Error allocating Xtable object/n");
+      fprintf(stderr,"ConfigXTable:Error allocating XTable object.\n");
       return(0);
     }
 

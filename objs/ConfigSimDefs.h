@@ -88,7 +88,7 @@ static const char rcs_id_configsimdefs_h[] =
 #define PTGR_NOISE_VARIANCE_KEYWORD		"PTGR_NOISE_VARIANCE"
 #define PTGR_NOISE_MEAN_KEYWORD			"PTGR_NOISE_MEAN"
 #define UNIFORM_SIGMA_FIELD_KEYWORD		"UNIFORM_SIGMA_FIELD"
-#define OUTPUT_PR_TO_STDOUT_KEYWORD		"OUTPUT_PR_TO_STDOUT"
+#define OUTPUT_X_TO_STDOUT_KEYWORD		"OUTPUT_X_TO_STDOUT"
 #define USE_KFACTOR_KEYWORD				"USE_KFACTOR"
 #define CREATE_XTABLE_KEYWORD			"CREATE_XTABLE"
 
@@ -140,7 +140,8 @@ static const char rcs_id_configsimdefs_h[] =
 //--------//
 
 #define XTABLE_FILENAME_KEYWORD				"XTABLE_FILENAME"
-
+#define XTABLE_NUM_AZIMUTHS_KEYWORD                     "XTABLE_NUM_AZIMUTHS"
+#define XTABLE_NUM_ORBIT_STEPS_KEYWORD                 "XTABLE_NUM_ORBIT_STEPS"
 //-----//
 // L00 //
 //-----//

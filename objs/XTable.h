@@ -34,14 +34,15 @@ class XTable
 public:
   
   XTable();
-  XTable(int num_beams, int num_azimuths, int num_science_slices,
+  XTable(int num_beams, int num_azimuths, int num_orbit_positions,
+	 int num_science_slices,
 	 int num_guard_slices_each_side, float science_bandwidth,
          float guard_bandwidth);
   ~XTable();
 
   int Allocate();
   int CopyBlank(XTable* copy); // copies header info and Allocates
-  int Copy(XTable* copy, int num_azimuth_bins);
+  int Copy(XTable* copy, int num_azimuth_bins, int num_orbit_positions);
   int CheckEmpty();   // Check to see if there are any empty entries in the
                       // table. Returns 0 if there is an empty entry 
                       // 1 otherwise
@@ -55,16 +56,16 @@ public:
   int SetFilename(const char* fname);
 
   float RetrieveBySliceNumber(int beam_number, float azimuth_angle, 
-			      int slice_number);
+			      float orbit_position, int slice_number);
   float RetrieveByRelativeSliceNumber(int beam_number, float azimuth_angle, 
-			      int slice_number);
+			      float orbit_position, int slice_number);
   float RetrieveBySliceFreq(int beam_number, float azimuth_angle, 
-			     float slice_min_freq,
+			     float orbit_position, float slice_min_freq,
 			     float slice_bandwidth);
 
   // write an entry to the table
   int AddEntry(float X, int beam_number, float azimuth_angle, 
-	       int slice_number); 
+	       float orbit_position, int slice_number); 
 
   float GetMinFreq(int slice_number);
   float GetBandwidth(int slice_number);
@@ -77,6 +78,7 @@ public:
 
   int numBeams;
   int numAzimuthBins;
+  int numOrbitPositionBins;
   int numScienceSlices;
   int numGuardSlicesEachSide;
   int numSlices;
@@ -97,8 +99,8 @@ protected:
   int _ReadHeader(FILE* ifp);
   int _ReadTable(FILE* ifp);
 
-  float*** _value;
-  int*** _empty;
+  float**** _value;
+  int**** _empty;
   char* _filename;
 };
 #endif

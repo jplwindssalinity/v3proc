@@ -62,29 +62,31 @@ InstrumentSimAccurate::SetMeasurements(
 		lon_lat.longitude = lon;
 		lon_lat.latitude = lat;
 
-		//-----------------//
-		// get wind vector //
-		//-----------------//
-
-		WindVector wv;
-		if (! windfield->InterpolatedWindVector(lon_lat, &wv))
-		{
-			wv.spd = 0.0;
-			wv.dir = 0.0;
-		}
-
-		//--------------------------------//
-		// convert wind vector to sigma-0 //
-		//--------------------------------//
-
-		// chi is defined so that 0.0 means the wind is blowing towards
-		// the s/c (the opposite direction as the look vector)
-		float chi = wv.dir - meas->eastAzimuth + pi;
 		float sigma0;
 		if (uniformSigmaField) sigma0=1;
                 else{
+		  //-----------------//
+		  // get wind vector //
+		  //-----------------//
+		  
+		  WindVector wv;
+		  if (! windfield->InterpolatedWindVector(lon_lat, &wv))
+		    {
+		      wv.spd = 0.0;
+		      wv.dir = 0.0;
+		    }
+		  
+		  //--------------------------------//
+		  // convert wind vector to sigma-0 //
+		  //--------------------------------//
+
+		  // chi is defined so that 0.0 means the wind is blowing towards
+		  // the s/c (the opposite direction as the look vector)
+		  float chi = wv.dir - meas->eastAzimuth + pi;
+
+                
 		  gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
-			chi, &sigma0);
+					    chi, &sigma0);
 		}
 
 
@@ -98,7 +100,8 @@ InstrumentSimAccurate::SetMeasurements(
 		double constants =instrument->transmitPower*
 			instrument->echo_receiverGain;
 		constants*=lambda*lambda/(64*pi*pi*pi*instrument->systemLoss);
-		meas->value*=sigma0*constants;
+		meas->XK=meas->value*constants;
+		meas->value*=sigma0;
 	}
 	return(1);
 }
@@ -146,7 +149,7 @@ InstrumentSimAccurate::ScatSim(
 		{
 			return(0);
 		}
-		if(outputPrToStdout) printf("%g ",instrument->antenna.azimuthAngle/dtr);
+		if(outputXToStdout) printf("%g ",instrument->antenna.azimuthAngle/dtr);
 	}
 
 	//------------------------//
@@ -160,14 +163,14 @@ InstrumentSimAccurate::ScatSim(
 
 
         //-----------------------------------------------//
-        //-------- Output Pr to Stdout if enabled--------//
+        //-------- Output X to Stdout if enabled--------//
         //-----------------------------------------------//
 
-	if(outputPrToStdout)
+	if(outputXToStdout)
 	{
 		for(Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
 		{
-			printf("%g ",slice->value);
+			printf("%g ",slice->XK);
 		}
 		if(instrument->antenna.currentBeamIdx==1)
 			printf("\n");
@@ -182,10 +185,14 @@ InstrumentSimAccurate::ScatSim(
 	        int sliceno=0;
 		for(Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
 		{
-			if(!xTable.AddEntry(slice->value,
+		        float orbit_position=
+		        (instrument->time - instrument->GetEqxTime())/
+		        spacecraft->orbitPeriod;
+
+			if(!xTable.AddEntry(slice->XK,
 					instrument->antenna.currentBeamIdx,
 					instrument->antenna.azimuthAngle,
-					sliceno)) return(0);
+					orbit_position, sliceno)) return(0);
 
 			sliceno++;
 		}
@@ -214,6 +221,9 @@ InstrumentSimAccurate::ScatSim(
 
 	return(1);
 }
+
+
+
 
 
 

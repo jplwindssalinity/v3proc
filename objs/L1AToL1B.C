@@ -180,10 +180,16 @@ L10ToL15::Convert(
 				float k_factor=1.0;
 				if (useKfactor)
 				{
+				       float orbit_position=
+					 (instrument->time - 
+					 instrument->GetEqxTime())/
+					 spacecraft->orbitPeriod;
+
 					k_factor=kfactorTable.RetrieveByRelativeSliceNumber(
 						instrument->antenna.currentBeamIdx,
 						instrument->antenna.azimuthAngle,
-						sliceno);
+
+						orbit_position, sliceno);
 				}
 
 				float Psn = l10->frame.science[total_slice_idx];

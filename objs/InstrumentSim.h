@@ -89,7 +89,7 @@ public:
 	//-------//
 
 	int			uniformSigmaField;	// set all sigma0 values to 1.0
-	int			outputPrToStdout;	// write Pr value to stdout
+	int			outputXToStdout;	// write X value to stdout
 	int			useKfactor;			// read and use K-factor table
 	int			createXtable;		// create an X table
 
@@ -115,3 +115,5 @@ protected:
 int		SetRangeAndDoppler(Spacecraft* spacecraft, Instrument* instrument);
 
 #endif
+
+

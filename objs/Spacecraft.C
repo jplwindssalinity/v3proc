@@ -69,7 +69,7 @@ Spacecraft::SetOrbitPeriod(
 	//-------------------------------------------------------------//
 
 	double a = sqrt(xmu / a_3);	// two-body mean motion
-	double pp = a * (1.0 - e_2);  // semi-latus rectum (nearly killed 'em!)
+	double pp = semi_major_axis * (1.0 - e_2);  // semi-latus rectum (nearly killed 'em!)
 	double pp_2 = pp * pp;
 	double gama = rj2 * rm_2 / pp_2;
 	double eta = sqrt(1.0 - e_2);
