@@ -401,6 +401,7 @@ CheckFrame::ReadDataRecFortran(
 
   for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
   {
+    float x,y,z;
     if (fread_f77((void *)&idx[slice_i],sizeof(int),1,fptr) != 1) return(0);
     if (fread_f77((void *)&sigma0[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fread_f77((void *)&(wv[slice_i].spd),sizeof(float),1,fptr) != 1) return(0);
@@ -408,7 +409,10 @@ CheckFrame::ReadDataRecFortran(
     if (fread_f77((void *)&XK[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fread_f77((void *)&azimuth[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fread_f77((void *)&incidence[slice_i],sizeof(float),1,fptr) != 1) return(0);
-    if (! centroid[slice_i].Read(fptr)) return(0);
+    if (fread_f77((void *)&x,sizeof(float),1,fptr) != 1) return(0);
+    if (fread_f77((void *)&y,sizeof(float),1,fptr) != 1) return(0);
+    if (fread_f77((void *)&z,sizeof(float),1,fptr) != 1) return(0);
+    centroid[slice_i].Set(x,y,z);
     if (fread_f77((void *)&var_esn_slice[slice_i],sizeof(float),1,fptr) != 1)
       return(0);
     if (fread_f77((void *)&Es[slice_i],sizeof(float),1,fptr) != 1)
@@ -422,12 +426,19 @@ CheckFrame::ReadDataRecFortran(
   }
 
   float roll,pitch,yaw;
+  double x,y,z;
   if (fread_f77((void *)&time,sizeof(double),1,fptr) != 1) return(0);
   if (fread_f77((void *)&roll,sizeof(float),1,fptr) != 1) return(0);
   if (fread_f77((void *)&pitch,sizeof(float),1,fptr) != 1) return(0);
   if (fread_f77((void *)&yaw,sizeof(float),1,fptr) != 1) return(0);
-  if (! rsat.Read(fptr)) return(0);
-  if (! vsat.Read(fptr)) return(0);
+  if (fread_f77((void *)&x,sizeof(double),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&y,sizeof(double),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&z,sizeof(double),1,fptr) != 1) return(0);
+  rsat.Set(x,y,z);
+  if (fread_f77((void *)&x,sizeof(double),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&y,sizeof(double),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&z,sizeof(double),1,fptr) != 1) return(0);
+  vsat.Set(x,y,z);
   if (fread_f77((void *)&beamNumber,sizeof(int),1,fptr) != 1) return(0);
   if (fread_f77((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
   if (fread_f77((void *)&orbitFrac,sizeof(float),1,fptr) != 1) return(0);

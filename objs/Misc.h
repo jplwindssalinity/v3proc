@@ -106,4 +106,8 @@ int sinfit(double* azimuth, double* value, double* variance, int count,
 // sort an array
 void  heapsort(int n, double* data_array, int* idx_array);
 
+// Read fortran unformatted records
+size_t
+fread_f77(void* dest, size_t size, size_t nitems, FILE* stream);
+
 #endif

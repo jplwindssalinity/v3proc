@@ -1265,3 +1265,43 @@ heapsort(
     }
     return;
 }
+
+//-----------//
+// fread_f77 //
+//-----------//
+
+// This function operates just like fread, except that it reads a fortran
+// unformatted binary file which includes record length fields (4 bytes)
+// before and after each element read.
+
+size_t
+fread_f77(void* dest, size_t size, size_t nitems, FILE* stream)
+{
+  int f77size;
+  if (fread(&f77size, sizeof(int), 1, stream) != 1)
+  {
+    return(0);
+  }
+  if (f77size != size*nitems)
+  {
+    fprintf(stderr,
+      "fread_f77: fortran record size doesn't match requested size\n");
+    return(0);
+  }
+  if (fread(dest, size, nitems, stream) != nitems)
+  {
+    return(0);
+  }
+  int f77size2;
+  if (fread(&f77size2, sizeof(int), 1, stream) != 1)
+  {
+    return(0);
+  }
+  if (f77size != f77size2)
+  {
+    fprintf(stderr,"fread_f77: Warning, fortran record is inconsistent\n");
+    return(nitems);
+  }
+  return(nitems);
+}
+    
