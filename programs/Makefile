@@ -91,7 +91,7 @@ PROGRAMS = \
 #	sim_accurate
 #	generate_kfactor
 STILES_PROGRAMS = \
-	l2b_25km_splice
+	l2b_25km_splice \
         l2b_remove_extra
 
 HUDD_PROGRAMS = \
@@ -154,6 +154,7 @@ DIAGNOSTIC_PROGRAMS = \
 
 default: $(PROGRAMS)
 hudd: $(HUDD_PROGRAMS)
+stiles: $(STILES_PROGRAMS)
 diag: $(DIAGNOSTIC_PROGRAMS)
 
 #----------------------------------------------------------------------
