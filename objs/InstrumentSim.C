@@ -232,7 +232,9 @@ InstrumentSim::ScatSim(
 	// convert wind vector to sigma-0 //
 	//--------------------------------//
 
-	double chi = meas.eastAzimuth - wv->dir;	// do the wrapping thing?
+	// the plus pi handles the way the model function is stored
+	// 0.0 means wind is blowing towards the s/c (opposite to look vector)
+	double chi = wv->dir - meas.eastAzimuth + pi;
 	double value;
 	gmf->GetInterpolatedValue(meas.pol, meas.incidenceAngle, wv->spd, chi,
 		&value);
