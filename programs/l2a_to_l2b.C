@@ -56,6 +56,8 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <signal.h>
 #include "List.h"
 #include "List.C"
 #include "BufferedList.h"
@@ -68,6 +70,7 @@ static const char rcs_id[] =
 #include "L2AToL2B.h"
 #include "Tracking.h"
 #include "Tracking.C"
+
 
 //-----------//
 // TEMPLATES //
@@ -111,6 +114,20 @@ template class TrackerBase<unsigned short>;
 
 const char* usage_array[] = { "<sim_config_file>", 0};
 
+//--------------------//
+// Report handler     //
+// runs if SIGUSR1 is //
+// recieved.          //
+//--------------------//
+
+int global_frame_number=0;
+
+void report(int sig_num){
+  fprintf(stderr,"l2a_to_l2b: Starting frame number %d\n",
+	  global_frame_number);
+  return;
+}
+
 //--------------//
 // MAIN PROGRAM //
 //--------------//
@@ -130,6 +147,14 @@ main(
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
+
+        //------------------------//
+        // tell how far you have  //
+        // gotten if you recieve  //
+        // the siguser1 signal    //
+        //------------------------//
+
+        sigset(SIGUSR1,&report);
 
 	//---------------------//
 	// read in config file //
@@ -235,6 +260,8 @@ main(
 
 	for (;;)
 	{
+	        global_frame_number++;
+
 		//-----------------------------//
 		// read a level 2A data record //
 		//-----------------------------//
