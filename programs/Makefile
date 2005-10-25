@@ -5,15 +5,17 @@
 
 SHELL =			/bin/csh
 INCDIR =		../../include
-HDFINCDIR =		/usr/local/hdf/include
+HDFINCDIR =		/sw/include
 
-EALIBS =		../../lib/libEAData.a /usr/local/lib/libtiff.a
-HDFLIBS =		-L/usr/local/hdf/lib -lmfhdf -ldf -ljpeg -lz
+EALIBS =		../../lib/libEAData.a /sw/lib/libtiff.a
+HDFLIBS =		-L/sw/lib -lmfhdf -ldf -ljpeg -lz
 LIBS =			../../lib/libSim.a
-LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lnsl -lstdc++ -lsocket -lm
+#OMITTED_LIBS = -lnsl -lsocket -lstdc++
+# using g++ should account for this
+LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm
 PURE =
 
-CCC =			$(PURE) gcc
+CCC =			$(PURE) g++
 DEBUGFLAGS =	-O2
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -DNOPM
 
