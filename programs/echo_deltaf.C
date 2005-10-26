@@ -56,6 +56,7 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <fcntl.h>
 #include <ieeefp.h>
+#include <unistd.h>
 #include <math.h>
 #include "Misc.h"
 #include "L1A.h"

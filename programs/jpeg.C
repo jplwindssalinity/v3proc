@@ -64,6 +64,7 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include "Jpeg.h"
 #include "Array.h"

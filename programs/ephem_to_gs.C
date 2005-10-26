@@ -48,6 +48,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ETime.h"

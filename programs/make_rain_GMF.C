@@ -85,6 +85,7 @@ static unsigned short  integrated_rain_rate[AT_WIDTH][CT_WIDTH];
 //----------//
 
 #include <stdio.h>
+#include <unistd.h>
 #include "L2AHdf.h"
 #include "Misc.h"
 #include "ParTab.h"

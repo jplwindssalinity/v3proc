@@ -70,6 +70,7 @@ static const char rcs_id[] =
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
 #include "List.h"
 #include "List.C"
 #include "BufferedList.h"

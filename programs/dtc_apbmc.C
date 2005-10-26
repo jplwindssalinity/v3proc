@@ -61,6 +61,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <math.h>
+#include <unistd.h>
 #include "Misc.h"
 #include "Array.h"
 #include "Tracking.h"

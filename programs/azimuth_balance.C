@@ -56,6 +56,7 @@ static const char rcs_id[] =
 //----------//
 
 #include <assert.h>
+#include <unistd.h>
 #include "L1AExtract.h"
 #include "PolyErrNo.h"
 #include "PolyTable.h"

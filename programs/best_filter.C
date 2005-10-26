@@ -58,6 +58,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <math.h>
+#include <unistd.h>
 #include "ConfigList.h"
 #include "L2AToL2B.h"
 #include "ConfigSim.h"

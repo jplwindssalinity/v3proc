@@ -68,6 +68,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
 #include "ConfigList.h"
@@ -201,13 +202,6 @@ main(
 
     const char* config_file = argv[optind++];
 
-    //-----------------------//
-    // tell how far you have //
-    // gotten if you recieve //
-    // the siguser1 signal   //
-    //-----------------------//
-
-    sigset(SIGUSR1, &report);
 
     //--------------------------------//
     // read in simulation config file //

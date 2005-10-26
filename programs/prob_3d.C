@@ -59,6 +59,7 @@ static const char rcs_id[] =
 //----------//
 
 #include <stdio.h>
+#include <unistd.h>
 #include "List.h"
 #include "List.C"
 #include "BufferedList.h"
