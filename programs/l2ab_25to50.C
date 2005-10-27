@@ -160,7 +160,7 @@ main(
         // the siguser1 signal    //
         //------------------------//
 
-        sigset(SIGUSR1,&report);
+        //sigset(SIGUSR1,&report);
 
 	//---------------------//
 	// read in config file //
