@@ -8,6 +8,7 @@ static const char rcs_id_morefiles_c[] =
 
 #include <stdio.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include "MoreFiles.h"
 #include "List.h"
 

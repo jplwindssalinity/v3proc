@@ -7,7 +7,7 @@ SHELL =			/bin/csh
 
 INCDIR =		../../include
 TARGET_LIB =	../../lib/libSim.a
-HDFINCDIR =     /usr/local/hdf/include
+HDFINCDIR =     /sw/include
 DEBUGFLAGS =    -O2
 INCFLAGS =      -I$(INCDIR) -I$(HDFINCDIR) -I.
 
@@ -175,7 +175,8 @@ install: $(TARGET_LIB)
 
 $(TARGET_LIB):	$(OBJS) $(C_OBJS)
 	- /bin/rm -f $(TARGET_LIB)
-	/usr/local/bin/ar -r $(TARGET_LIB) $(OBJS) $(C_OBJS)
+	ar -r $(TARGET_LIB) $(OBJS) $(C_OBJS)
+	ranlib $(TARGET_LIB)
 	- (set incfiles=($(INCS)); cd $(INCDIR); /bin/rm -f $$incfiles)
 	cp $(INCS) $(INCDIR)
 

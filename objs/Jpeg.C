@@ -7,6 +7,7 @@ static const char rcs_id_jpeg_c[] =
     "@(#) $Id$";
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <malloc.h>
 #include <jpeglib.h>
 #include "Jpeg.h"

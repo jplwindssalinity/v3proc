@@ -8,6 +8,7 @@ static const char rcs_id_matrix_c[] =
 
 #include <stdio.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include <math.h>
 #include "Matrix.h"
 #include "Misc.h"

@@ -8,6 +8,7 @@ static const char rcs_id_product_c[] =
 
 #include <stdio.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>

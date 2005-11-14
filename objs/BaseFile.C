@@ -8,6 +8,7 @@ static const char rcs_id_basefile_c[] =
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <malloc.h>
 #include "BaseFile.h"
 

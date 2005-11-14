@@ -7,6 +7,7 @@ static const char rcs_id_transform_c[] =
     "@(#) $Id$";
 
 #include <malloc.h>
+#include <stdlib.h>
 #include <math.h>
 #include "Transform.h"
 

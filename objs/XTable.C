@@ -11,6 +11,7 @@ static const char rcs_id_XTable_c[] =
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include "XTable.h"
 #include "Constants.h"
 #include "Misc.h"

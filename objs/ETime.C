@@ -45,6 +45,21 @@ int
 ETime::FromStructTm(
     struct tm*  tm_time)
 {
+
+# define MACHACK
+// stuck in here to force the code to work in MACOSX and probably LINUX
+// will fail on SUN unless the line above is commented out
+
+#ifdef MACHACK
+    _sec = timegm(tm_time);
+    if (_sec == (time_t)-1)
+        return 0;
+    else
+    {
+	_ms=0;
+	return 1;
+    }
+#else
     _sec = mktime(tm_time);
     if (_sec == (time_t)-1)
     {
@@ -58,6 +73,8 @@ ETime::FromStructTm(
         _ms = 0;
         return(1);
     }
+#endif
+
 }
 
 //------------------//

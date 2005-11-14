@@ -9,6 +9,7 @@ static const char rcs_id_l1aframe_c[] =
 #include <assert.h>
 #include <memory.h>
 #include <malloc.h>
+#include <stdlib.h>
 
 #include "Constants.h"
 #include "EarthPosition.h"

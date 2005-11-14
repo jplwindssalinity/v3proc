@@ -8,6 +8,7 @@ static const char rcs_id_pscatl1a_c[] =
 
 #include <memory.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include "Pscat.h"
 #include "PscatL1A.h"
 #include "Constants.h"

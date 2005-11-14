@@ -8,6 +8,7 @@ static const char rcs_id_l00frame_c[] =
 
 #include <memory.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include "L00Frame.h"
 
 

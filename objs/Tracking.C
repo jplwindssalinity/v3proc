@@ -8,6 +8,7 @@ static const char rcs_id_qtracking_c[] =
 
 #include <math.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include "Tracking.h"
 #include "Constants.h"
 #include "Array.h"

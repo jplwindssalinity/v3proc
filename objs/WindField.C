@@ -10,6 +10,7 @@ static const char rcs_id_windfield_c[] =
 #include <fcntl.h>
 #include <unistd.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include "WindField.h"
 
 

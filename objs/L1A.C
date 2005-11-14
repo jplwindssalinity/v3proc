@@ -8,6 +8,7 @@ static const char rcs_id_l1a_c[] =
 
 #include <memory.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include "L1A.h"
 #include "Misc.h"
 
