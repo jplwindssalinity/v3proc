@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.9  1999/09/30 23:01:39  sally
+// update 9/30/99
+//
 // 
 //    Rev 1.15   29 Jan 1999 15:04:42   sally
 // added LASP proc commands
@@ -68,6 +71,7 @@ static const char rcs_id_Rtcf_C[] =
     "@(#) $Header$";
 
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <memory.h>
 #include <strings.h>
