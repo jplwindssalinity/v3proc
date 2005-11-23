@@ -115,8 +115,8 @@ template class List<AngleInterval>;
 #define QUOTE             '"'
 #define REV_DIGITS        5
 
-#define DEFAULT_MUDH_DIR  "/mnt/phobia/3x/sws2b-s/imudh"
-#define DEFAULT_IMPACT_DIR "/Users/bstiles/scatterometer/windmetrics/data/kp3/impe"
+#define DEFAULT_MUDH_DIR  "/Volumes/bigger/data/3x/sws2b-s/imudh"
+#define DEFAULT_IMPACT_DIR "/Users/bstiles/scatterometer/windmetrics/data/kp3/impe_bws"
 #define DEFAULT_IRR_DIR "."
 
 //-----------------------//
