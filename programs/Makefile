@@ -1,220 +1,257 @@
 #======================================================================
 # @(#) $Id$
-# Makefile for RAS programs
+# Makefile for all SIM programs
 #======================================================================
 
-SHELL = /bin/csh
-INCDIR = ../../include
-INCFLAGS = -I$(INCDIR) -I$(SPICEDIR) -I.
-DEBUGFLAGS = -ggdb2  
+SHELL =			/bin/csh
+INCDIR =		../../include
+HDFINCDIR =		/sw/include
 
-SPICELIB = $(SPICEDIR)/../../lib/cspice.a
-LIBS = ../../lib/libsupport.a $(SPICELIB)
-LDLIBS = $(LIBS) -lm
-INSTALLDIR = ../../bin
+EALIBS =		../../lib/libEAData.a /sw/lib/libtiff.a
+HDFLIBS =		-L/sw/lib -lmfhdf -ldf -ljpeg -lz
+LIBS =			../../lib/libSim.a
+#OMITTED_LIBS = -lnsl -lsocket -lstdc++
+# using g++ should account for this
+LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm
+PURE =
 
-CPPFLAGS = $(SPECIAL_USER_FLAGS) $(DEBUGFLAGS) $(INCFLAGS) -Wall
-FFLAGS = -ffixed-line-length-none
-SYSLIBS = -lm
-CCC = g++
-CC = gcc
-FF = g77
+CCC =			$(PURE) g++
+DEBUGFLAGS =	-O2
+CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -DNOPM
 
-# core of uplink processing
-MAIN_UPLINK = \
-  dlap_generate \
-  ckernel_write \
-  config_merge \
-  wtk2seqsasf \
-  main_rmss\
-  set_latlon_target\
-  select_prf_csf 
+INSTALLDIR =	../../bin
 
-# LIVE UPDATE software
-LIVE_UPDATE = \
-  compare_spk_files \
-  live_ivp_update 
+PROGRAMS = \
+	sim \
+	l1a_to_l1b \
+	l1b_to_l2a \
+	l2a_to_l2b \
+	l2b_metrics \
+	l2b_super_metrics \
+	l1b_coverage \
+	l2a_hdf_to_l2a \
+	l2ax_hdf_to_l2a \
+	l2b_medianfilter \
+	l2a_filter \
+	l1b_ascii \
+	l2a_s0 \
+	l2b_to_vctr \
+	echo_deltaf \
+	sim_overlay \
+	modu \
+	echo_dtc \
+	fit_dtc \
+	get_att \
+	get_look_att \
+	echo_proc \
+	psim \
+	pl1a_to_l1b \
+	pl1a_to_ascii \
+	l1a_hdf_to_l1a \
+	plot_wr_curves \
+	new_files \
+	done_files \
+	l2ab_25to50 \
+	l2b_diff \
+	l2b_diff_from_truth \
+	test_hdf_l2b \
+	l2b_manyMet \
+	l2b_match_selected \
+	see_spot \
+	eqx \
+	generate_rgc \
+	generate_dtc \
+	rgc_delay_errors \
+	rgc_format \
+	dtc_format \
+	tc_info \
+	cds_tracking_check \
+	memfilter \
+	fake_vap \
+	l1b_hdf_to_l1b \
+	l1bhdf_sigma0_histo \
+	l1b_outlines \
+	l1b_to_kprtable \
+	make_kfactor \
+	make_kpmfield \
+	windfield_to_vctr \
+	l2a_centroids \
+	l2a_maps \
+	l2_kp \
+	l2a_s0l \
+	l2ags_s0l \
+	smooth_kprtable \
+	xtable_to_xmgr \
+	l1b_s0 \
+	kprtable_to_xmgr \
+	s0_to_noise_value \
+	log_cfg \
+	l2ags_s0 \
+	fix_ecmwf_speed \
+	gs_l1a_to_ascii \
+	l2b_to_flower \
+	l2a_dissect \
+	l2a_getcell \
+	l2b_spddif \
+	l2b_get_diffs \
+	prob_3d \
+	SNRandKpc \
+	plot_obj_curves \
+	l1b_to_half_egg \
+	l1a_to_gs_l1a\
+	l1a_to_ascii\
+	l1b_to_ascii \
+	checkframe_to_ascii \
+	checkframe_extract \
+	l2a_to_ascii \
+	l2b_to_ascii \
+	reformat_pattern \
+	test_pattern \
+	get_DopRan_scan \
+	get_X_scan \
+	expand_calpulse \
+	ephem_to_ascii \
+	fake_s0_data \
+	gmf_plot \
+	BYUX_vs_time \
+	calpulse_to_ascii \
+	make_timetlm \
+	l2b_extract_worst \
+	get_foff \
+    check_inst_tracking \
+	make_simple_land_map
+#	l00_to_l1a
+#   check_l1b 
+#   nof_and_qual
+#	gen_foff
+#	sim_accurate
+#	generate_kfactor
+#	hdf_l1a_echo_proc
+#	fix_knowledge
+#	sim_l1a_echo_proc
+#	echo_split
+#	baseband_errors
 
-# uplink testing software
-UPLINK_TEST = \
-  kernel_display \
-  ieb_param_display \
-  performance_cal \
-  performance_display \
-  check_5dB_contiguity \
-  amb_show \
-  compare_iebs \
-  doppler_profile \
-  compare_ckernels \
-  ieb_param_generate
+SVT_PROGRAMS = \
+	l1a_hdf_energy_map
 
-# Command Design tools
-DESIGN = \
-  amb_param_design \
-  amb_geom_cal \
-  amb_param_scan \
-  minimize_gap \
-  geom_cal_amb \
-  param_scan_script \
-  geom_cal_script \
-  prf_hop \
-  ras_noise_cal \
-  distant_scat\
- show_alt_track
+STILES_PROGRAMS = \
+	l2b_25km_splice \
+	l1b_to_slicebal \
+	l2b_remove_extra
 
-# Main downlink software
-MAIN_DOWNLINK = \
-  l0_l1b\
-  preproc \
-  sar_proc \
-  rad_proc \
-  scatt_proc\
-  alt_proc\
-  esb_cal \
-  generate_radio_map
+HUDD_PROGRAMS = \
+	sim \
+	l00_to_l1a \
+	l1a_to_l1b \
+	l1b_to_l2a \
+	l2a_to_l2b \
+	l2b_to_vctr \
+	l2b_super_metrics \
+	l1b_ascii \
+	see_spot \
+	eqx \
+	generate_rgc \
+	generate_dtc \
+	rgc_delay_errors \
+	baseband_errors \
+	rgc_format \
+	dtc_format \
+	fake_vap \
+	plot_solution_curves \
+	windfield_to_vctr \
+	log_cfg \
+	fix_ecmwf_speed \
+	l2b_to_flower
 
-# Downlink support software
-DOWNLINK_SUPPORT = \
-  generate_geometry_file \
-  get_gaincutoff_coeffs \
-  rad_cal \
-  mw_cal \
-  show_dop_centroid\
-  display_ypaz_fit\
-  track_int_doppler\
-  reconstruct_ckernel \
-  ras_sim \
-  clip_header \
-  lbdr_sim \
-  cut_binary_record \
-  sar_index_to_dopran \
-  find_pixel \
-  getint_from_bidr \
-  getfloat_from_bidr \
-  realtocomplex \
-  rowcol_from_backplane \
-  fix_incomplete_lbdr \
-  mean_std_from_bidr\
-  compare_lbdrs\
-  compute_noise \
-  compressed_scatt_proc\
-  show_histogram
+DIAGNOSTIC_PROGRAMS = \
+	l2ab_obj_comp \
+	check_l1b \
+	l2b_to_vctr \
+	l2b_metrics \
+	see_spot \
+	test_pattern \
+	l1b_ascii \
+	l1b_outlines \
+	plot_solution_curves \
+	windfield_to_vctr \
+	checkframe_to_ascii \
+	l2a_centroids \
+	l2a_maps \
+	l2_kp \
+	l2a_s0 \
+	l2a_s0l \
+	l2ags_s0l \
+	xtable_to_xmgr \
+	l1b_s0 \
+	kprtable_to_xmgr \
+	s0_to_noise_value \
+	log_cfg \
+	l2ags_s0 \
+	l2b_to_flower \
+	l2a_dissect \
+	l1b_to_ascii \
+	ephem_to_ascii \
+	l2a_to_ascii
 
-# Downlink testing software
-DOWNLINK_TEST = \
-  burst_data_extract \
-  point_target_sim \
-  monitor \
-  state_vector_extract \
-  compare_BODP_to_SIS \
-  echo_sim \
-  bidr_slide_show \
-  compare_l1b_echoes \
-  read_lbdr \
-  read_sbdr\
-  compute_spcal_debug \
-  compute_sys_temp \
-  collect_rad_data\
-  generate_map\
-  show_spectrum \
-  tdc_proc \
-  generate_map_file \
-  performance_evaluation 
+GS_CHECK_PROGRAMS = \
+	sim \
+	l1a_to_l1b \
+	l1a_to_gs_l1a \
+	l1b_hdf_to_l1b \
+	checkframe_extract \
+	checkframe_to_ascii \
+	gs_l1a_to_ascii \
+	l1a_to_ascii \
+	calpulse_to_ascii \
+	l1b_to_ascii
+#   check_l1b 
 
-# Radar analysis Software
-RAS = \
-  baqview \
-  parview \
-  rngview \
-  ras_check \
-  lbdr_check \
-  ras_echo_show \
-  l0_echo_plot \
-  lbdr_echo_show \
-  calview 
- 
-  
-# BEAM PATTERN GENERATION SOFTWARE
-BEAMPAT = \
-  convert_beam_file \
-  beam_test \
-  create_sunscan_file \
-  beam_to_beam_offset \
-  get_beam_profiles 
+#----------------------------------------------------------------------
+# default: make all executable programs
+#----------------------------------------------------------------------
 
-# Miscellaneous
-MISC = \
-  self_tests \
-  getClosestApproach \
-  doppler_plot \
-  sim_ephem_error \
-  plot_point_stats \
-  check_ckernel \
-  get_altitude \
-  target_rotation \
-  debug_spice \
-  contiguity \
-  generate_sim_range_doppler_file \
-  generate_range_doppler_file \
-  generate_ypaz_ck 
+default: $(PROGRAMS) $(GS_CHECK_PROGRAMS)
+svt: $(SVT_PROGRAMS)
+hudd: $(HUDD_PROGRAMS)
+stiles: $(STILES_PROGRAMS)
+diag: $(DIAGNOSTIC_PROGRAMS)
+gschk: $(GS_CHECK_PROGRAMS)
 
-  
-
-ALL = \
-         $(MAIN_UPLINK) $(LIVE_UPDATE) $(UPLINK_TEST) \
-         $(DESIGN) $(MAIN_DOWNLINK) $(DOWNLINK_SUPPORT) $(DOWNLINK_TEST) \
-         $(RAS) $(BEAMPAT) $(MISC)
-
-.PRECIOUS: %.cpp
-.PRECIOUS: %.F
-.SUFFIXES: .cpp
-.SUFFIXES: .F
-
-# Implicit rules
-
-.cpp.o:
-	$(CC) $(CPPFLAGS) $<
-
-.F.o:
-	$(FF) $(FFLAGS) $<
-
-# High level make targets
-
-default: getopt_special.h $(ALL)
-up: getopt_special.h $(MAIN_UPLINK) $(LIVE_UPDATE) $(UPLINK_TEST)
-up_main: getopt_special.h $(MAIN_UPLINK)
-up_live: getopt_special.h $(LIVE_UPDATE)
-up_test: getopt_special.h $(UPLINK_TEST)
-down: getopt_special.h $(MAIN_DOWNLINK) $(DOWNLINK_SUPPORT) $(DOWNLINK_TEST)
-ras: getopt_special.h $(RAS)
-other: getopt_special.h $(DESIGN) $(BEAMPAT) $(MISC)
-bad:  getopt_special.h $(BAD)
-
-# Explicit rules
-
-%.cpp: $(RAS_CENTRAL_TREE)/src/programs/RCS/%.cpp,v 
-	co $(RAS_CENTRAL_TREE)/src/programs/RCS/$@,v
-
-%.F: $(RAS_CENTRAL_TREE)/src/programs/RCS/%.F,v 
-	co $(RAS_CENTRAL_TREE)/src/programs/RCS/$@,v
-
-%.h: $(RAS_CENTRAL_TREE)/src/programs/RCS/%.h,v
-	co $(RAS_CENTRAL_TREE)/src/programs/RCS/$@,v
-
-%: %.cpp $(LIBS) 
-	$(CCC) $(CPPFLAGS) -o $@ $@.cpp $(LDLIBS)
-
-%: %.F  
-	$(FF) $(FFLAGS) -o $@ $@.F 
-
-#	$(FF) -force_flat_namespace -o $@ $@.o $(LDLIBS)
-
-install: 
-	mv -f $(ALL) $(INSTALLDIR)
+#----------------------------------------------------------------------
+# clean: remove all executable programs
+#----------------------------------------------------------------------
 
 clean:
-	- /bin/rm -f $(ALL)
-	- /bin/rm -f core
+	- /bin/rm -f $(PROGRAMS)
 
+#----------------------------------------------------------------------
+# install: make all object and executable programs and install
+#----------------------------------------------------------------------
 
+install: $(PROGRAMS)
+	cp $(PROGRAMS) $(INSTALLDIR)
 
+#----------------------------------------------------------------------
+# rules
+#----------------------------------------------------------------------
+
+.PRECIOUS: %.C
+
+%.C: $(SIM_CENTRAL_TREE)/src/programs/RCS/%.C,v
+	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
+
+%.h: $(SIM_CENTRAL_TREE)/src/programs/RCS/%.h,v
+	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
+
+%: %.C $(LIBS) $(EALIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
+
+fix_knowledge: fix_knowledge.C echo_funcs.h
+echo_deltaf: echo_deltaf.C echo_funcs.h
+echo_dtc: echo_dtc.C echo_funcs.h
+sim_l1a_echo_proc: sim_l1a_echo_proc.C echo_funcs.h
+new_files: new_files.C new_files.h
+modu: modu.C modu.h
+mudh_table: mudh_table.C mudh.h
+mudh_class: mudh_class.C mudh.h
