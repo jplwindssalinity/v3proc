@@ -227,12 +227,17 @@ BYUXTable::~BYUXTable()
 //-----------------//
 // BYUXTable::Read //
 //-----------------//
-
 int
 BYUXTable::Read(
     const char*  ibeam_file,
     const char*  obeam_file)
 {
+    // if filenames are the same it must be a Ground System format file
+    if(strcmp(ibeam_file,obeam_file)==0){
+      fprintf(stderr, "Warning BYUXTable: reading GS format.\n");
+      fprintf(stderr, "Warning (cont): Also assuming resolution mode 3 QuikSCAT nominal for 2005\n");
+      return(ReadGS(ibeam_file,3));
+    }
     FILE* ifp[2];
     ifp[0] = fopen(ibeam_file, "r");
     if (ifp[0] == NULL)
@@ -422,6 +427,137 @@ BYUXTable::Read(
             }
         }
     }
+    return(1);
+}
+
+//-----------------//
+// BYUXTable::ReadGS //
+//-----------------//
+int
+BYUXTable::ReadGS(
+    const char*  filename, int mode_idx)
+{
+    FILE* ifp;
+    ifp = fopen(filename, "r");
+    if (ifp == NULL)
+    {
+        fprintf(stderr, "BYUXTable::Read: error opening X Factor file %s\n",
+           filename);
+        return(0);
+    }
+
+    //------------------------------//
+    // for GS format the order is 5 //
+    //------------------------------//
+
+ 
+
+    int order = 5;
+
+
+    //---------------//
+    // Create Arrays //
+    //---------------//
+
+    if (! Allocate(order))
+        return(0);
+
+
+    //------------------------------//
+    // skip fortran header          //
+    // and best8 threshold table    //
+    //------------------------------//
+    int num_modes=8;
+    int byteskip=4+2*2*num_modes*sizeof(float);
+    fseek(ifp,byteskip,SEEK_SET);
+
+    //------ read in Xnom (df=0 xfactor) ---/
+
+    // skip to correct mode
+    byteskip=mode_idx*BYU_ORBIT_POSITION_BINS*BYU_AZIMUTH_BINS*BYU_NUM_BEAMS*(BYU_NUM_SCIENCE_SLICES+1)*sizeof(float);
+    fseek(ifp,byteskip,SEEK_CUR);
+
+
+    for(int o=0;o<BYU_ORBIT_POSITION_BINS;o++){
+      for(int ah=0;ah<BYU_AZIMUTH_BINS;ah++){
+	for(int bm=0;bm<BYU_NUM_BEAMS;bm++){
+	  for(int s=0;s<BYU_NUM_SCIENCE_SLICES+1;s++){
+	    float val=0;
+	    if(fread(&val,sizeof(float),1,ifp)!=1){
+	      fprintf(stderr,"BYUXTable::ReadGS read failed for filename %s\n",
+		      filename);
+	      exit(1);
+	    }
+            // egg
+	    if(s==BYU_NUM_SCIENCE_SLICES){
+	      xnomEgg[bm][o][ah]=val;
+	    }
+            //slices
+            else{
+              int sidx=s+BYU_NUM_GUARD_SLICES_PER_SIDE;
+	      xnom[bm][sidx][o][ah]=val;
+	    }
+	  }
+	}
+      }
+    }
+
+      
+    // skip the rest of the modes
+    byteskip=(num_modes-mode_idx-1)*BYU_ORBIT_POSITION_BINS*BYU_AZIMUTH_BINS*BYU_NUM_BEAMS*(BYU_NUM_SCIENCE_SLICES+1)*sizeof(float);
+    fseek(ifp,byteskip,SEEK_CUR);
+
+
+
+
+    //------ read in A,B,C,D,E,F ---/
+    unsigned int numcoeffs=6;
+    
+    // skip to correct mode
+    byteskip=mode_idx*BYU_ORBIT_POSITION_BINS*BYU_AZIMUTH_BINS*BYU_NUM_BEAMS*(BYU_NUM_SCIENCE_SLICES+1)*numcoeffs*sizeof(float);
+    fseek(ifp,byteskip,SEEK_CUR);
+
+
+    for(int o=0;o<BYU_ORBIT_POSITION_BINS;o++){
+      for(int ah=0;ah<BYU_AZIMUTH_BINS;ah++){
+	for(int bm=0;bm<BYU_NUM_BEAMS;bm++){
+	  for(int s=0;s<BYU_NUM_SCIENCE_SLICES+1;s++){
+	    float val[6]; 
+	    if(fread(&val[0],sizeof(float),numcoeffs,ifp)!=numcoeffs){
+	      fprintf(stderr,"BYUXTable::ReadGS read failed for filename %s\n",
+		      filename);
+	      exit(1);
+	    }
+            // egg
+	    if(s==BYU_NUM_SCIENCE_SLICES){
+	      aEgg[bm][o][ah]=val[0];
+	      bEgg[bm][o][ah]=val[1];
+	      cEgg[bm][o][ah]=val[2];
+	      dEgg[bm][o][ah]=val[3];
+	      eEgg[bm][o][ah]=val[4];
+	      fEgg[bm][o][ah]=val[5];
+	    }
+            //slices
+            else{
+              int sidx=s+BYU_NUM_GUARD_SLICES_PER_SIDE;
+	      a[bm][sidx][o][ah]=val[0];
+	      b[bm][sidx][o][ah]=val[1];
+	      c[bm][sidx][o][ah]=val[2];
+	      d[bm][sidx][o][ah]=val[3];
+	      e[bm][sidx][o][ah]=val[4];
+	      f[bm][sidx][o][ah]=val[5];
+	    }
+	  }
+	}
+      }
+    }
+
+      
+
+    // skip the rest of the modes
+    byteskip=(num_modes-mode_idx-1)*BYU_ORBIT_POSITION_BINS*BYU_AZIMUTH_BINS*BYU_NUM_BEAMS*(BYU_NUM_SCIENCE_SLICES+1)*numcoeffs*sizeof(float);
+    fseek(ifp,byteskip,SEEK_CUR);
+
     return(1);
 }
 

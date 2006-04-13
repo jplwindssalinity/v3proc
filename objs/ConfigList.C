@@ -6,6 +6,7 @@
 static const char rcs_id_configlist_c[] =
     "@(#) $Id$";
 
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
@@ -13,6 +14,8 @@ static const char rcs_id_configlist_c[] =
 #include <ctype.h>
 #include "ConfigList.h"
 
+using std::cerr;
+using namespace std;
 //============//
 // StringPair //
 //============//
@@ -130,17 +133,38 @@ ConfigList::~ConfigList()
     return;
 }
 
-//------------------//
-// ConfigList::Read //
-//------------------//
+
+//------------------------//
+// ConfigList::Read       // 
+//------------------------//
 
 int
 ConfigList::Read(
     const char*  filename)
 {
-    //---------------------------------------------//
-    // open the file or standard input for reading //
-    //---------------------------------------------//
+  // reads config file in RDF format
+  try{
+    options.parseFile(filename);
+  }
+  catch(Options::Exception& e){
+    e.print(cerr);
+    exit(1);
+  }
+  for(list<string>::iterator key = options.keys.begin(); key != options.keys.end(); key++){
+    StompOrAppend((*key).c_str(),(options.value[*key]).c_str());
+  }
+  return(1);
+}
+
+//------------------------//
+// ConfigList::ReadNative // 
+//------------------------//
+
+int
+ConfigList::ReadNative(
+    const char*  filename)
+{
+    //------------------------------------------------------------------------//    // open the file or standard input for reading in Native ConfigList format//    //------------------------------------------------------------------------//
 
     FILE* ifp = stdin;
     if (filename)
@@ -193,7 +217,7 @@ ConfigList::Read(
         case 2:
             if (isalnum(keyword[0]))
             {
-                if (strcmp(keyword, INCLUDE_FILE_KEYWORD) == 0)
+                if (strcasecmp(keyword, INCLUDE_FILE_KEYWORD) == 0)
                 {
                     if (! Read(value))
                     {
@@ -627,7 +651,7 @@ ConfigList::_Find(
 {
     for (StringPair* pair = GetHead(); pair; pair = GetNext())
     {
-        if (strcmp(pair->GetKeyword(), keyword) == 0)
+        if (strcasecmp(pair->GetKeyword(), keyword) == 0)
             return(pair);
     }
     return(NULL);

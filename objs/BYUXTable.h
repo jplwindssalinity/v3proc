@@ -51,6 +51,7 @@ public:
     int  Deallocate();
     int  Allocate(int order);
 
+    int    ReadGS(const char* filename, int mode_idx);
     int    Read(const char* ibeam_file, const char* obeam_file);
     float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
                Topo* topo, Stable* stable, CheckFrame* cf = NULL);

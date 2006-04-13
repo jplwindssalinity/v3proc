@@ -160,6 +160,8 @@ protected:
     double  _sini_2;
     double  _gama;
 
+#undef _G
+#undef _H
     double  _G;
     double  _H;
 

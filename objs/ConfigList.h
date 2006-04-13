@@ -11,6 +11,7 @@ static const char rcs_id_configlist_h[] =
 
 #include <stdio.h>
 #include "List.h"
+#include "Options.h"
 
 //======================================================================
 // CLASSES
@@ -106,7 +107,8 @@ public:
     // input/output //
     //--------------//
 
-    int   Read(const char* filename = NULL);
+    int   ReadNative(const char* filename = NULL);
+    int   Read(const char* filename);
     int   Write(const char* filename);
     int   Write(FILE* fp);
 
@@ -150,6 +152,8 @@ protected:
 
     enum LogE { EXIT, WARN, NOTHING };
 
+    Options options;
+
     //---------//
     // methods //
     //---------//
@@ -163,6 +167,8 @@ protected:
     FILE*  _errorFp;       // for error logging
     LogE   _logFlag;       // what to do
     LogE   _memLogFlag;    // remember the log flag for restoration
+
+ private:
 };
 
 #endif
