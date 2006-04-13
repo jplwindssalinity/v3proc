@@ -3,8 +3,8 @@
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
-#ifndef LIST_C
-#define LIST_C
+#ifndef BWS_LIST_C
+#define BWS_LIST_C
 
 static const char rcs_id_list_c[] =
     "@(#) $Id$";
