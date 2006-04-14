@@ -90,6 +90,8 @@ template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
 template class List<AngleInterval>;
+template list<string>;
+template map<string,string,Options::ltstr>;
 
 //-----------//
 // CONSTANTS //
@@ -166,8 +168,6 @@ main(
     // gotten if you recieve  //
     // the siguser1 signal    //
     //------------------------//
-
-    sigset(SIGUSR1, &report);
 
     //---------------------//
     // read in config file //
