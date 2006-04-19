@@ -20,6 +20,7 @@ static const char rcs_id_ovwmsim_h[] =
 #include "CheckFrame.h"
 #include "L1AFrame.h"
 #include "Sigma0Map.h"
+#include "L1B.h"
 
 //======================================================================
 // CLASSES
@@ -78,7 +79,7 @@ public:
     int  ScatSim(Spacecraft* spacecraft, Ovwm* ovwm, WindField* windfield,
              Sigma0Map* inner_map, Sigma0Map* outer_map, GMF* gmf, Kp* kp,
              KpmField* kpmField, Topo* topo, Stable* stable,
-             L1AFrame* l1a_frame);
+             L1AFrame* l1a_frame, L1B* l1b=NULL);
     int  CheckTiming(Ovwm* ovwm);
     int  LoopbackSim(Spacecraft* spacecraft, Ovwm* ovwm,
              L1AFrame* l1a_frame);
@@ -87,7 +88,7 @@ public:
     int  SetMeasurements(Spacecraft* spacecraft, Ovwm* ovwm,
              MeasSpot* meas_spot, WindField* windfield, Sigma0Map* inner_map,
              Sigma0Map* outer_map, GMF* gmf, Kp* kp, KpmField* kpmField,
-             Topo* topo, Stable* stable, CheckFrame* cf);
+             Topo* topo, Stable* stable, CheckFrame* cf, int sim_l1b_direct);
     int  SetL1AScience(MeasSpot* meas_spot, CheckFrame* cf, Ovwm* ovwm,
              L1AFrame* l1a_frame);
     int  SetL1ALoopback(Ovwm* ovwm, L1AFrame* l1a_frame);
@@ -101,7 +102,8 @@ public:
              float* var_Esn, float* X);
 
     int  GetSpotNumber()  { return (_spotNumber); };
-
+    int  AllocateIntermediateArrays();
+    
     //-----------//
     // variables //
     //-----------//
@@ -158,11 +160,22 @@ public:
     int    simKpriFlag;        // 0 = no Kpri, 1 = Kpri
     int    simHiRes;           // 0 = quickSim, 1 = high resolution sim
     float    integrationStepSize; // step size of high res sim km
+    float    integrationRangeWidthFactor; // multiple of range width to 
+                                          // integrate over
+    float    integrationAzimuthWidthFactor; // multiple of range width to 
+                                            // integrate over
+    float    minOneWayGain;    // lower gain pixels omitted for L1A/L1B
+    float    minSignalToAmbigRatio; // more ambiguous pixels omitted 
+                                    // from L1A/L1B
 
 protected:
     int  _spotNumber;
     int  _spinUpPulses;      // first two pulses just do tracking
     int  _calPending;        // A cal pulse is waiting to execute.
+    float** _ptr_array;      // point target response array
+    int  _max_int_range_bins; // first dim of _ptr_array
+    int  _max_int_azim_bins; // second dim of _ptr_array
+
 };
 
 #endif

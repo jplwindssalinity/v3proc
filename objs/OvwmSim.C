@@ -43,13 +43,39 @@ OvwmSim::OvwmSim()
     createXtable(0), computeXfactor(0), useBYUXfactor(0),
     rangeGateClipping(0), applyDopplerError(0), l1aFrameReady(0),
     simKpcFlag(0), simCorrKpmFlag(0), simUncorrKpmFlag(0), simKpriFlag(0),
-    _spotNumber(0), _spinUpPulses(2), _calPending(0)
+    _spotNumber(0), _spinUpPulses(2), _calPending(0), _ptr_array(NULL)
 {
     return;
 }
 
+
+
+// HACK should compute the defined terms
+// from OVWM parameters or even from PTR table
+#define MAX_RANGE_WIDTH 1.2
+#define MAX_AZIMUTH_WIDTH 8.0
+
+int OvwmSim::AllocateIntermediateArrays(){
+
+  _max_int_range_bins=(int)ceil(integrationRangeWidthFactor*MAX_RANGE_WIDTH/
+    integrationStepSize); 
+  _max_int_azim_bins=(int)ceil(integrationAzimuthWidthFactor*MAX_AZIMUTH_WIDTH/
+    integrationStepSize);  
+  _ptr_array=(float**)make_array(sizeof(float),2,_max_int_range_bins,
+				 _max_int_azim_bins);
+  if(_ptr_array==NULL){
+    fprintf(stderr,"Error: OvwmSim unable to allocate _ptr_array\n");
+    exit(1);
+  }
+  return(1);
+}
+
 OvwmSim::~OvwmSim()
 {
+  if(_ptr_array!=NULL){
+    free_array(_ptr_array,2,_max_int_range_bins);
+    _ptr_array=NULL;
+  }
     return;
 }
 
@@ -422,6 +448,8 @@ OvwmSim::L1AFrameInit(
 
 }
 
+
+
 //-------------------//
 // OvwmSim::ScatSim //
 //-------------------//
@@ -438,7 +466,8 @@ OvwmSim::ScatSim(
     KpmField*    kpmField,
     Topo*        topo,
     Stable*      stable,
-    L1AFrame*    l1a_frame)
+    L1AFrame*    l1a_frame,
+    L1B*         l1b)
 {
   // incomplete 
   CheckFrame cf;
@@ -528,13 +557,13 @@ OvwmSim::ScatSim(
     //------------------------//
     // set measurement values //
     //------------------------//
-
+    
     if (! SetMeasurements(spacecraft, ovwm, &meas_spot, windfield,
-        inner_map, outer_map, gmf, kp, kpmField, topo, stable, &cf))
+        inner_map, outer_map, gmf, kp, kpmField, topo, stable, &cf,(l1b!=NULL)))
     {
         return(0);
     }
-
+    
     //---------------------------------------//
     // Output X values to X table if enabled //
     //---------------------------------------//
@@ -673,6 +702,19 @@ OvwmSim::ScatSim(
         //             ovwm->ses.GetTotalSignalBandwidth();
         cf.WriteDataRec(fptr);
         fclose(fptr);
+    }
+
+
+    // output L1B directly if l1b is not NULL
+    if(l1b!=NULL){
+      MeasSpot* ms= new MeasSpot;
+      for (Meas* meas = meas_spot.GetHead(); meas; meas = meas_spot.GetNext())
+	{
+	  Meas* m = new Meas;
+	  *m=*meas;
+	  ms->Append(m);
+	}
+      l1b->frame.spotList.Append(ms);
     }
 
     pulseCount++;
@@ -1042,16 +1084,70 @@ OvwmSim::SetMeasurements(
     KpmField*    kpmField,
     Topo*        topo,
     Stable*      stable,
-    CheckFrame*  cf)
+    CheckFrame*  cf,
+    int sim_l1b_direct)
 {
+
+    //----------------------------------//
+    // generate the coordinate switches //
+    //----------------------------------//
+
+    // Antenna frame coordinate switch
+    CoordinateSwitch gc_to_antenna;
+    gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
+				   &(spacecraft->attitude), 
+				   &(ovwm->sas.antenna),
+				   ovwm->sas.antenna.txCenterAzimuthAngle);
+    CoordinateSwitch antenna_to_gc;
+    antenna_to_gc = gc_to_antenna;
+
+    gc_to_antenna=gc_to_antenna.ReverseDirection();
+
+
+    // set beam
+    Beam* beam=ovwm->GetCurrentBeam();
+    double borelook, boreazim;
+
+    // compute maximum gain
+    beam->GetElectricalBoresight(&borelook,&boreazim);
+    float maxgain;
+    beam->GetPowerGain(borelook,boreazim,&maxgain);
+    
+    // compute boresight position
+    Vector3 boresight;
+    boresight.SphericalSet(1.0,borelook,boreazim);
+
+    OvwmTargetInfo oti;
+    if(! ovwm->TargetInfo(&antenna_to_gc,spacecraft,boresight,&oti)){
+      fprintf(stderr,"Error:SetMeasurements cannot find boresight on surface\n");
+      exit(1);
+    }
+
+    EarthPosition spot_centroid=oti.rTarget;
+
+
+    // Compute range and azimuth coordinate switch
+    Vector3 zvec=oti.rTarget.Nadir();
+    Vector3 yvec=zvec & oti.gcLook;
+    Vector3 xvec=yvec & zvec;
+    CoordinateSwitch gc_to_rangeazim(xvec,yvec,zvec);
+
+    // Compute cross track/along track coordinate switch
+    CoordinateSwitch gc_to_crossalong;
+    //INCOMPLETE need to add to make ambig bias work right
+
+    int slice_i = 0;
+    Meas* meas = meas_spot->GetHead();
+
+
+
     //-------------------------//
     // for each measurement... //
     //-------------------------//
 
-    int slice_i = 0;
-    Meas* meas = meas_spot->GetHead();
     while (meas)
     {
+
         //----------------------------------------//
         // get lon and lat for the earth location //
         //----------------------------------------//
@@ -1083,6 +1179,9 @@ OvwmSim::SetMeasurements(
         }
 
         float sigma0;
+        float Es, En, var_esn_slice;
+
+
         if (uniformSigmaField)
         {
             sigma0=uniformSigmaValue;
@@ -1123,13 +1222,16 @@ OvwmSim::SetMeasurements(
                 cf->wv[slice_i].dir = 0.0;
             }
         }
-        else
+        else if(!simHiRes)
         {
             //-----------------//
             // get wind vector //
             //-----------------//
+ 
+	    WindVector wv;
 
-            WindVector wv;
+
+
             if (! windfield->InterpolatedWindVector(lon_lat, &wv))
             {
                 wv.spd = 0.0;
@@ -1154,156 +1256,354 @@ OvwmSim::SetMeasurements(
                 cf->wv[slice_i].dir = wv.dir;
             }
 
-            //---------------------------------------------------------------//
-            // Fuzz the sigma0 by Kpm to simulate the effects of model function
-            // error.  The resulting sigma0 is the 'true' value.
-            // It does not map back to the correct wind speed for the
-            // current beam and geometry because the model function is
-            // not perfect.
-            //---------------------------------------------------------------//
 
-            // Uncorrelated component.
-            if (simUncorrKpmFlag == 1)
-            {
-/* old gaussian pdf approach
-                double kpm_value;
-                if (! kp->kpm.GetKpm(meas->measType, wv.spd, &kpm_value))
-                {
-                    printf("Error: Bad Kpm value in OvwmSim::SetMeas\n");
-                    exit(1);
-                }
-                Gaussian gaussianRv(1.0,0.0);
-                float rv1 = gaussianRv.GetNumber();
-                float RV = rv1*kpm_value + 1.0;
-                if (RV < 0.0)
-                {
-                    RV = 0.0;   // Do not allow negative sigma0's.
-                }
-                sigma0 *= RV;
-*/
-                double kpm2;
-                if (! kp->GetKpm2(meas->measType, wv.spd, &kpm2))
-                {
-                    printf("Error: Bad Kpm value in OvwmSim::SetMeas\n");
-                    exit(-1);
-                }
-                Gamma gammaRv(sigma0*sigma0*kpm2,sigma0);
-                sigma0 = gammaRv.GetNumber();
-            }
+	    //---------------------------------------------------------------//
+	    // Fuzz the sigma0 by Kpm to simulate the effects of model function
+	    // error.  The resulting sigma0 is the 'true' value.
+	    // It does not map back to the correct wind speed for the
+	    // current beam and geometry because the model function is
+	    // not perfect.
+	    //---------------------------------------------------------------//
 
-            // Correlated component.
-            if (simCorrKpmFlag == 1)
-            {
-                sigma0 *= kpmField->GetRV(correlatedKpm, lon_lat);
-            }
-        }
-
-        //-------------------------//
-        // convert Sigma0 to Power //
-        //-------------------------//
-
-        // Kfactor: either 1.0, taken from table, or X is computed
-        // directly
-        float Xfactor = 0.0;
-        float Kfactor = 1.0;
-        float Es, En, var_esn_slice;
-        CoordinateSwitch gc_to_antenna;
-
-	if (computeXfactor)
-	  {
-	    if (! ComputeXfactor(spacecraft, ovwm, meas, &Xfactor))
+	    // Uncorrelated component.
+	    if (simUncorrKpmFlag == 1)
 	      {
-		meas = meas_spot->RemoveCurrent();
-		delete meas;
-		meas = meas_spot->GetCurrent();
-		slice_i++;
-		continue;
+		double kpm2;
+		if (! kp->GetKpm2(meas->measType, wv.spd, &kpm2))
+		  {
+		    printf("Error: Bad Kpm value in OvwmSim::SetMeas\n");
+		    exit(-1);
+		  }
+		Gamma gammaRv(sigma0*sigma0*kpm2,sigma0);
+		sigma0 = gammaRv.GetNumber();
 	      }
-	    
-	    if (! MeasToEsnX(ovwm, meas, Xfactor, sigma0, &(meas->value),
-			     &Es, &En, &var_esn_slice))
+
+	    // Correlated component.
+	    if (simCorrKpmFlag == 1)
 	      {
-		return(0);
+		sigma0 *= kpmField->GetRV(correlatedKpm, lon_lat);
 	      }
-	    meas->XK = Xfactor;
-	  }
-        else
-	  {
-            Kfactor = 1.0;  // default to use if no Kfactor specified.
-            if (useKfactor)
+	
+	    //-------------------------//
+	    // convert Sigma0 to Power //
+	    //-------------------------//
+	  
+	    // Kfactor: either 1.0, taken from table, or X is computed
+	    // directly
+	    float Xfactor = 0.0;
+	    float Kfactor = 1.0;
+	  
+	    if (computeXfactor)
 	      {
-                float orbit_position = ovwm->cds.OrbitFraction();
+		if (! ComputeXfactor(spacecraft, ovwm, meas, &Xfactor))
+		  {
+		    meas = meas_spot->RemoveCurrent();
+		    delete meas;
+		    meas = meas_spot->GetCurrent();
+		    slice_i++;
+		    continue;
+		  }
 		
-                Kfactor = kfactorTable.RetrieveByRelativeSliceNumber(
-		    ovwm->cds.currentBeamIdx,
-                    ovwm->sas.antenna.txCenterAzimuthAngle, orbit_position,
-                    meas->startSliceIdx);
-            }
+		if (! MeasToEsnX(ovwm, meas, Xfactor, sigma0, &(meas->value),
+				 &Es, &En, &var_esn_slice))
+		  {
+		    return(0);
+		  }
+		meas->XK = Xfactor;
+	      }
+	    else
+	      {
+		Kfactor = 1.0;  // default to use if no Kfactor specified.
+		if (useKfactor)
+		  {
+		    float orbit_position = ovwm->cds.OrbitFraction();
+		    
+		    Kfactor = 
+		      kfactorTable.RetrieveByRelativeSliceNumber(
+								 ovwm->cds.currentBeamIdx,
+								 ovwm->sas.antenna.txCenterAzimuthAngle, orbit_position,
+								 meas->startSliceIdx);
+		  }
+		
+		double Tp = ovwm->ses.txPulseWidth;
+		
+		if (! MeasToEsnK(spacecraft, ovwm, meas, Kfactor*Tp, sigma0,
+				 &(meas->value), &Es, &En, &var_esn_slice, &(meas->XK)))
+		  {
+		    return(0);
+		  }
+	      }
 
-            //--------------------------------//
-            // generate the coordinate switch //
-            //--------------------------------//
 
-            gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
-                &(spacecraft->attitude), &(ovwm->sas.antenna),
-                ovwm->sas.antenna.txCenterAzimuthAngle);
-            gc_to_antenna=gc_to_antenna.ReverseDirection();
-            double Tp = ovwm->ses.txPulseWidth;
+	    if (simVs1BCheckfile)
+	      {
+		Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
+		cf->R[slice_i] = (float)rlook.Magnitude();
+		if (computeXfactor)
+		  {
+		    // Antenna gain is not computed when computing X factor
+		    // because the X factor already includes the normalized
+		    // patterns.  Thus, to see what it actually is, we need
+		    // to do the geometry work here that is normally done
+		    // in radar_X() when using the K-factor approach.
+		    gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
+			    &(spacecraft->attitude), &(ovwm->sas.antenna),
+				 ovwm->sas.antenna.txCenterAzimuthAngle);
+		    gc_to_antenna=gc_to_antenna.ReverseDirection();
+		    double roundTripTime = 2.0 * cf->R[slice_i] / speed_light_kps;
 
-            if (! MeasToEsnK(spacecraft, ovwm, meas, Kfactor*Tp, sigma0,
-                &(meas->value), &Es, &En, &var_esn_slice, &(meas->XK)))
-            {
-                return(0);
-            }
-        }
+		    Beam* beam = ovwm->GetCurrentBeam();
+		    Vector3 rlook_antenna = gc_to_antenna.Forward(rlook);
+		    double r, theta, phi;
+		    rlook_antenna.SphericalGet(&r,&theta,&phi);
+		    if (! beam->GetPowerGainProduct(theta, phi, roundTripTime,
+						    ovwm->sas.antenna.spinRate, &(cf->GatGar[slice_i])))
+		      {
+			cf->GatGar[slice_i] = 1.0;    // set a dummy value.
+		      }
+		  }
+		else
+		  {
+		    double lambda = speed_light_kps / ovwm->ses.txFrequency;
+		    cf->GatGar[slice_i] = meas->XK / Kfactor * (64*pi*pi*pi *
+								cf->R[slice_i] * cf->R[slice_i]*cf->R[slice_i]*
+								cf->R[slice_i] * ovwm->systemLoss) /
+		      (ovwm->ses.transmitPower * ovwm->ses.rxGainEcho *
+		       lambda * lambda);
+		  }
+		
+		cf->idx[slice_i] = meas->startSliceIdx;
+		cf->measType[slice_i] = meas->measType;
+		cf->var_esn_slice[slice_i] = var_esn_slice;
+		cf->Es[slice_i] = Es;
+		cf->En[slice_i] = En;
+		cf->XK[slice_i] = meas->XK;
+		cf->centroid[slice_i] = meas->centroid;
+		cf->azimuth[slice_i] = meas->eastAzimuth;
+		cf->incidence[slice_i] = meas->incidenceAngle;
+	      }
 
-        if (simVs1BCheckfile)
-        {
-            Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
-            cf->R[slice_i] = (float)rlook.Magnitude();
-            if (computeXfactor)
-            {
-                // Antenna gain is not computed when computing X factor
-                // because the X factor already includes the normalized
-                // patterns.  Thus, to see what it actually is, we need
-                // to do the geometry work here that is normally done
-                // in radar_X() when using the K-factor approach.
-                gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
-                    &(spacecraft->attitude), &(ovwm->sas.antenna),
-                    ovwm->sas.antenna.txCenterAzimuthAngle);
-                gc_to_antenna=gc_to_antenna.ReverseDirection();
-                double roundTripTime = 2.0 * cf->R[slice_i] / speed_light_kps;
 
-                Beam* beam = ovwm->GetCurrentBeam();
-                Vector3 rlook_antenna = gc_to_antenna.Forward(rlook);
-                double r, theta, phi;
-                rlook_antenna.SphericalGet(&r,&theta,&phi);
-                if (! beam->GetPowerGainProduct(theta, phi, roundTripTime,
-                    ovwm->sas.antenna.spinRate, &(cf->GatGar[slice_i])))
-                {
-                    cf->GatGar[slice_i] = 1.0;    // set a dummy value.
-                }
-            }
-            else
-            {
-                double lambda = speed_light_kps / ovwm->ses.txFrequency;
-                cf->GatGar[slice_i] = meas->XK / Kfactor * (64*pi*pi*pi *
-                    cf->R[slice_i] * cf->R[slice_i]*cf->R[slice_i]*
-                    cf->R[slice_i] * ovwm->systemLoss) /
-                    (ovwm->ses.transmitPower * ovwm->ses.rxGainEcho *
-                    lambda * lambda);
-            }
+	} // end of low res case!
 
-            cf->idx[slice_i] = meas->startSliceIdx;
-            cf->measType[slice_i] = meas->measType;
-            cf->var_esn_slice[slice_i] = var_esn_slice;
-            cf->Es[slice_i] = Es;
-            cf->En[slice_i] = En;
-            cf->XK[slice_i] = meas->XK;
-            cf->centroid[slice_i] = meas->centroid;
-            cf->azimuth[slice_i] = meas->eastAzimuth;
-            cf->incidence[slice_i] = meas->incidenceAngle;
-        }
+        // high res simulation
+        else{
+
+
+	  Gaussian normrv(1.0,0.0); // setup normal distrib for kpc
+          // remove unusable measurement to save time
+          // strictly speaking this should be done in L1A_TO_L1B
+          // to allow attitude errors to effect selection, but
+          // for computational efficiency we do it here.
+          Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
+          Vector3 rlook_ant=gc_to_antenna.Forward(rlook);
+          double r,theta,phi;
+	  rlook_ant.SphericalGet(&r,&theta,&phi);
+          double gain;
+          if(!beam->GetPowerGain(theta,phi,&gain)){
+	    gain=0;
+	  }
+          gain/=maxgain;
+	  /* HACK put this part in when table reader works
+	  double amb1=ambTable.GetAmbRat1(xxxxxx);
+	  double amb2=ambTable.GetAmbRat2(xxxxxx);
+          */
+          // until then
+          double amb1=0;
+          double amb2=0;
+
+	  double amb=amb1+amb2;
+	  if(gain<minOneWayGain || amb> 1/minSignalToAmbigRatio){
+	    meas=meas_spot->RemoveCurrent();
+            delete meas;
+            meas=meas_spot->GetCurrent();
+	    slice_i++;
+            continue;
+	  }
+	   
+
+	  // compute point target response array for pixel
+          float rangewid, azimwid;
+          /* HACK put this in when table read works
+          rangewid=ptrTable.GetSemiMinor(xxx)
+          azimwid=ptrTable.GetSemiMajor(xxx)
+          */
+          // until then
+          rangewid=0.120;
+          azimwid=1.0;
+
+          // set up integration lengths
+	  int nL=ovwm->ses.numRangeLooksAveraged;
+          int nrsteps=(int)ceil(integrationRangeWidthFactor*rangewid*nL/integrationStepSize)+1;
+          int nasteps=(int)ceil(integrationAzimuthWidthFactor*azimwid/integrationStepSize)+1;
+
+          if(nrsteps>_max_int_range_bins || nasteps > _max_int_azim_bins){
+	    fprintf(stderr,"Error SetMeasurements too many integrations bins\n");
+	    exit(1);
+	  }
+	  if(nL%2!=0){
+	    fprintf(stderr,"Error SetMeasurements rangeLooksAveraged must be even\n");
+	    exit(1);
+	  }
+
+          // set up pixel center within integration window
+	  float center_azim_idx= (nasteps-1)/2.0;
+
+          // 1 range center for each look
+          // HACK assumes at most 10 looks average
+          float center_range_idx[10];
+          float center_range_idx_ave=(nrsteps-1)/2.0;
+          for(int n=0;n<nL;n++){
+	    int n2=n-nL/2;
+            //HACK Actual spacing of range looks on ground should be used
+            //     instead of rangewid
+	    center_range_idx[n]=(nrsteps-1)/2.0+(n2+0.5)*rangewid;
+	    
+	  }
+
+          // initialize ptresponse array
+         for(int i=0;i<nrsteps;i++){
+	    for(int j=0;j<nasteps;j++){
+	      _ptr_array[i][j]=0;
+	    }
+	 }
+
+	 // INCOMPLETE:= NEED to turn off azimuthal weighting when 
+	 // gain pattern is dominant (i.e., fore/aft)
+
+         double ptrsum=0;
+          for(int i=0;i<nrsteps;i++){
+            float ii=i;
+
+	    for(int j=0;j<nasteps;j++){
+	      float jj=j;
+
+	      float val2=(jj-center_azim_idx);
+	      val2/=azimwid;
+	      val2*=val2;
+
+	      for(int n=0;n<nL;n++){
+                float val1=(ii-center_range_idx[n]);
+                val1/=rangewid;
+                val1*=val1;
+
+       		_ptr_array[i][j]+=exp(val1+val2);
+	      }
+	      ptrsum+=_ptr_array[i][j];
+	    }
+	  }
+          // normalize ptresponse array
+	  for(int i=0;i<nrsteps;i++){
+	    for(int j=0;j<nasteps;j++){
+	      _ptr_array[i][j]/=ptrsum;
+	    }
+	  }
+
+
+          // mainloop for computing X and signal energy and noise energy
+          meas->XK=0;
+          Es=0;
+	  En=0;
+	  
+          
+          Vector3 center_ra=gc_to_rangeazim.Forward(meas->centroid);
+	  double r0=center_ra.Get(0);
+	  double a0=center_ra.Get(1);
+	  for(int i=0;i<nrsteps;i++){
+	    double r=r0+(i-center_range_idx_ave)*integrationStepSize;
+	    for(int j=0;j<nasteps;j++){
+	      double a=a0+(j-center_azim_idx)*integrationStepSize;
+	      Vector3 locra(r,a,0.0);
+	      EarthPosition locgc=gc_to_rangeazim.Backward(locra);
+              
+              //------------------------------
+	      // compute windvector and sigma0
+              //------------------------------
+	      double alt, lat, lon;
+	      if (! locgc.GetAltLonGDLat(&alt, &lon, &lat))
+		return(0);  
+	      LonLat lon_lat;
+	      lon_lat.longitude = lon;
+	      lon_lat.latitude = lat;
+	      WindVector wv;
+              float s0;
+	      if (! windfield->InterpolatedWindVector(lon_lat, &wv))
+		{
+		  wv.spd = 0.0;
+		  wv.dir = 0.0;
+		}
+
+	      // chi is defined so that 0.0 means the wind is blowing towards
+	      // the s/c (the opposite direction as the look vector)
+	      float chi = wv.dir - meas->eastAzimuth + pi;
+
+	      gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
+                wv.spd, chi, &s0); 
+              //-----------------------------        
+	      // compute gain and range
+              //-----------------------------
+	      Vector3 rl = locgc - spacecraft->orbitState.rsat;
+	      Vector3 rl_ant=gc_to_antenna.Forward(rl);
+	      double range,theta,phi;
+	      rl_ant.SphericalGet(&range,&theta,&phi);
+	      double gain;
+	      if(!beam->GetPowerGain(theta,phi,&gain)){
+		gain=0;
+	      }
+              double GatGar=gain*gain; // assumes 
+	                               // separate transmit and receive feeds
+              //----------------------------
+              // Integrate X and Es
+              //----------------------------
+	      float dX=GatGar*_ptr_array[i][j]*s0*integrationStepSize*
+		integrationStepSize/(range*range*range*range);
+	      meas->XK+=dX;
+	      Es+=dX*s0;
+
+	    }
+	  }
+          //------------------------------------------
+          // Put in constants to get values in Joules
+	  //------------------------------------------
+          double N0=bK*ovwm->systemTemperature;
+	  double lambda = speed_light_kps/ ovwm->ses.txFrequency;
+          double ksig=ovwm->ses.transmitPower*ovwm->ses.rxGainEcho*lambda*
+	    lambda*ovwm->ses.txPulseWidth*ovwm->ses.numPulses
+	    /(64*pi*pi*pi*ovwm->systemLoss);
+          double kSNR=ovwm->ses.transmitPower*lambda*
+	    lambda*ovwm->ses.txPulseWidth*ovwm->ses.numPulses
+	    /(64*pi*pi*pi*ovwm->systemLoss*N0);
+          meas->XK*=ksig;
+          Es*=ksig;
+          double SNR=Es*kSNR;
+          En=Es/SNR;
+        
+          //-----------------------
+          // compute variance
+          //-----------------------
+          double kpc2=(1/nL)*(1+2/SNR+1/(SNR*SNR));
+	  var_esn_slice=kpc2*(Es*Es/(meas->XK*meas->XK));
+	  
+          
+          // add noise and bias due to ambiguity
+          meas->value=Es+En;
+          // INCOMPLETE Need to Add Ambiguity Bias
+
+          //----------------------------
+          // fuzz using kpc
+          //----------------------------
+          double v=normrv.GetNumber()*sqrt(var_esn_slice); 
+          meas->value+=v;
+
+          // Noise subtract/calibrate to get s0 if L1B direct output is desired
+          // INCOMPLETE add sim_l1b_direct to parameter list of method
+	  if(sim_l1b_direct){
+	    meas->value-=En;
+	    meas->value/=meas->XK;
+	  }
+	}
+
+
 
         slice_i++;
         meas = meas_spot->GetNext();

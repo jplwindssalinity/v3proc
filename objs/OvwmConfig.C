@@ -702,21 +702,54 @@ ConfigOvwmSim(
 
 
 
-    float integration_step_size; // km
+    float integration_param; // km
     if(ovwm_sim->simHiRes){
       if (! config_list->GetFloat(INTEGRATION_STEP_SIZE_KEYWORD,
-				  &integration_step_size))
+				  &integration_param))
 	{
 	  return(0);
 	}
 
-      ovwm_sim->integrationStepSize=integration_step_size;
+      ovwm_sim->integrationStepSize=integration_param;
+// HACK FOR NOW until I check out the .h file
+#define INTEGRATION_RANGE_WIDTH_FACTOR_KEYWORD "INTEGRATION_RANGE_WIDTH_FACTOR"
+#define INTEGRATION_AZIMUTH_WIDTH_FACTOR_KEYWORD "INTEGRATION_AZIM_WIDTH_FACTOR"
+#define SIM_MIN_ONEWAY_GAIN_KEYWORD "SIM_MIN_ONE_WAY_GAIN"
+#define SIM_MIN_SIG_TO_AMB_RATIO_KEYWORD "SIM_MIN_SIG_TO_AMB"
+      if (! config_list->GetFloat(INTEGRATION_RANGE_WIDTH_FACTOR_KEYWORD,
+				  &integration_param))
+	{
+	  return(0);
+	}
+
+      ovwm_sim->integrationRangeWidthFactor=integration_param;
+
+      if (! config_list->GetFloat(INTEGRATION_AZIMUTH_WIDTH_FACTOR_KEYWORD,
+				  &integration_param))
+	{
+	  return(0);
+	}
+
+      ovwm_sim->integrationAzimuthWidthFactor=integration_param;
+      ovwm_sim->AllocateIntermediateArrays();
 
       // Read Ambiguity and PointTargetResponse Tables
       if(!ConfigAmbigTable(&(ovwm_sim->ambigTable),config_list)) return(0);
       if(!ConfigPointTargetResponseTable(&(ovwm_sim->ptrTable),config_list))
 	return(0);
     }
+    float dbvalue;
+    if (! config_list->GetFloat(SIM_MIN_ONEWAY_GAIN_KEYWORD,&dbvalue))
+    {
+      return(0);
+    }
+    ovwm_sim->minOneWayGain=pow(10.0,0.1*dbvalue);
+    if (! config_list->GetFloat(SIM_MIN_SIG_TO_AMB_RATIO_KEYWORD,&dbvalue))
+    {
+      return(0);
+    }
+    ovwm_sim->minSignalToAmbigRatio=pow(10.0,0.1*dbvalue);
+	ovwm_sim->minOneWayGain=pow(10.0,0.1*dbvalue);
     return(1);
 }
 
