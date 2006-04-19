@@ -7,7 +7,7 @@
 
 #define NBEAMS 4
 #define AUX_MAX_LINE 400
-#define DATA_MAX_LINE 20000
+#define DATA_MAX_LINE 200000
 
 class PointTargetResponseTable{
  public:

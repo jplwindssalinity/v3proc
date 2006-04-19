@@ -56,6 +56,9 @@ PointTargetResponseTable::PointTargetResponseTable()
 
 PointTargetResponseTable::~PointTargetResponseTable()
 {
+  delete [] nData;
+  delete [] nAux;
+
   int ii, jj;
 
   for (ii=0; ii<NBEAMS; ii++) {
