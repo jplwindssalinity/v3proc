@@ -72,6 +72,7 @@ static const char rcs_id[] =
 #include <fcntl.h>
 #include <signal.h>
 #include "ETime.h"
+#include "L1B.h"
 #include "ConfigList.h"
 #include "Meas.h"
 #include "Wind.h"
@@ -218,6 +219,28 @@ main(
         fprintf(stderr, "%s: error reading sim config file %s\n",
             command, config_file);
         exit(1);
+    }
+
+    // Handle L1B direct output if desired
+    int l1bdirect=0;
+    config_list.DoNothingForMissingKeywords();
+    if(!config_list.GetInt("OVWM_SIM_SKIP_L1A",&l1bdirect)){
+      l1bdirect=0;
+    }
+    config_list.ExitForMissingKeywords();
+    
+    L1B l1b; // construct even if not used
+    if(l1bdirect){
+      if(!ConfigL1B(&l1b,&config_list)){
+	fprintf(stderr,"Error:Cannot configure L1B file for direct output\n");
+	exit(1);
+      }
+      if (! l1b.OpenForWriting())
+	{
+	  fprintf(stderr, "%s: error opening L1B file %s for writing\n", command,
+		  l1b.GetOutputFilename());
+	  exit(1);
+	}
     }
 
     //----------------------------------------------//
@@ -654,7 +677,7 @@ main(
                     // simulate
                     ovwm_sim.ScatSim(&spacecraft, &ovwm, &windfield,
                         inner_map_ptr, outer_map_ptr, &gmf, &kp, &kpmField,
-                        topo_ptr, stable_ptr, frame);
+                        topo_ptr, stable_ptr, frame, &l1b);
 
                     // save the delta f
                     /******* Commenting this out for now
@@ -683,6 +706,16 @@ main(
                 }
             }
             
+            //-----------------------------------//
+            // write Level 1B data if necessary  //
+            //-----------------------------------//
+ 
+            if(l1bdirect && ovwm_sim.l1aFrameReady){
+	      l1b.WriteDataRec();
+	      l1b.frame.spotList.FreeContents();
+	    }
+
+
  
             //-----------------------------------//
             // write Level 1A data if necessary //
@@ -725,6 +758,10 @@ main(
     //----------------------//
 
     l1a.Close();
+
+    if(l1bdirect){
+      l1b.Close();
+    }
 
     if (true_att_fp != NULL)
         fclose(true_att_fp);
