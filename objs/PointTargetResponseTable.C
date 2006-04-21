@@ -180,182 +180,55 @@ int PointTargetResponseTable::ReadData(char* filename, int beam_num)
 }
 
 
-float PointTargetResponseTable::GetSemiMajorWidth(
-                        float range_km, float azimuth_km,
-                        float scan_angle_rad, float orbit_time_in_rev_s,
-                        int beam_num)
-{
-  int ii, timeIdx, angIdx, bn;
-  float pi;
-
-  pi = atan(1.)*4.;
-  bn = beam_num - 1;
-
-  /* search time from misc time data */
-
-  float offset, minTimeOffset;
-
-  timeIdx = -1000;
-  minTimeOffset = 1.e10;
-
-  for (ii=0; ii<nAux[bn]; ii++) {
-    offset = fabs(orbit_time_in_rev_s-time[bn][ii]);
-    if (offset<minTimeOffset) {
-      minTimeOffset = offset;
-      timeIdx = ii;
-    }
-  }
-  //cout << timeIdx << endl;
-  //cout << minTimeOffset << endl;
-
-  /* search angle from misc angle data                            */
-  /* searching area is around the index obtained from time search */
-
-  int angMinIdx, angMaxIdx;
-  float minAngOffset;
-
-  angMinIdx = timeIdx - 10;
-  angMaxIdx = timeIdx + 10;
-  if (angMinIdx < 0) angMinIdx = 0;
-  if (angMaxIdx > nAux[bn]) angMaxIdx = nAux[bn];
-
-  angIdx = -1000;
-  minAngOffset = 1.e10;
-
-  for (ii=angMinIdx; ii<angMaxIdx; ii++) {
-    offset = fabs(scan_angle_rad*180./pi-scanAngle[bn][ii]);
-    if (offset<minAngOffset) {
-      minAngOffset = offset;
-      angIdx = ii;
-    }
-  }
-  //cout << angIdx << endl;
-  //cout << minAngOffset << endl;
-
-  /* setup the index boundaries for seraching */
-
-  int minIdx, maxIdx;
-
-  minIdx = 0;
-  for (ii=0; ii<angIdx; ii++) {
-    minIdx += nRngPixel[bn][ii]*nAzPixel[bn][ii];
-  }
-
-  maxIdx = minIdx + nRngPixel[bn][angIdx]*nAzPixel[bn][angIdx];
-
-  //cout << minIdx << endl;
-  //cout << maxIdx << endl;
-
-  float minDistOffset;
-
-  minDistOffset = 1.e10;
-
-  int selectIdx;
-
-  selectIdx = -1;
-
-  for (ii=minIdx; ii<maxIdx; ii++) {
-    offset = (range_km-rngOffset[bn][ii])*(range_km-rngOffset[bn][ii]) +
-             (azimuth_km-azOffset[bn][ii])*(azimuth_km-azOffset[bn][ii]);
-    if (offset < minDistOffset) {
-      minDistOffset = offset;
-      selectIdx = ii;
-    }
-  }
-
-  //cout << minDistOffset << endl;
-  //cout << selectIdx << endl;
-
-  return semiMajorWidth[bn][selectIdx];
-}
-
-
 float PointTargetResponseTable::GetSemiMinorWidth(
                         float range_km, float azimuth_km,
                         float scan_angle_rad, float orbit_time_in_rev_s,
                         int beam_num)
 {
-  int ii, timeIdx, angIdx, bn;
-  float pi;
-  
-  pi = atan(1.)*4.;
+  int bn, timeIdx, angIdx, rngIdx, azIdx, selectIdx;
+
   bn = beam_num - 1;
-  
-  /* search time from misc time data */
-  
-  float offset, minTimeOffset;
-  
-  timeIdx = -1000;
-  minTimeOffset = 1.e10;
-    
-  for (ii=0; ii<nAux[bn]; ii++) {
-    offset = fabs(orbit_time_in_rev_s-time[bn][ii]);
-    if (offset<minTimeOffset) {
-      minTimeOffset = offset;
-      timeIdx = ii;
-    }
-  }
-  //cout << timeIdx << endl;
-  //cout << minTimeOffset << endl;
 
-  /* search angle from misc angle data                            */
-  /* searching area is around the index obtained from time search */
+  /* find index */
 
-  int angMinIdx, angMaxIdx;
-  float minAngOffset;
+  timeIdx = int(orbit_time_in_rev_s/TIME_STEP);
+  angIdx = int(scan_angle_rad*rtd/ANGLE_STEP);
+  rngIdx = int(range_km/RNG_STEP_SIZE)+N_RNG_BINS/2;
+  azIdx = int(azimuth_km/AZ_STEP_SIZE)+N_AZ_BINS/2;
 
-  angMinIdx = timeIdx - 10;
-  angMaxIdx = timeIdx + 10;
-  if (angMinIdx < 0) angMinIdx = 0;
-  if (angMaxIdx > nAux[bn]) angMaxIdx = nAux[bn];
+  selectIdx = timeIdx*N_ANG_STEPS*N_RNG_BINS*N_AZ_BINS
+              + angIdx*N_RNG_BINS*N_AZ_BINS
+              + rngIdx*N_AZ_BINS
+              + azIdx;
 
-  angIdx = -1000;
-  minAngOffset = 1.e10;
-
-  for (ii=angMinIdx; ii<angMaxIdx; ii++) {
-    offset = fabs(scan_angle_rad*180./pi-scanAngle[bn][ii]);
-    if (offset<minAngOffset) {
-      minAngOffset = offset;
-      angIdx = ii;
-    }
-  }
-  //cout << angIdx << endl;
-  //cout << minAngOffset << endl;
-
-  /* setup the index boundaries for seraching */
-
-  int minIdx, maxIdx;
-
-  minIdx = 0;
-  for (ii=0; ii<angIdx; ii++) {
-    minIdx += nRngPixel[bn][ii]*nAzPixel[bn][ii];
-  }
-
-  maxIdx = minIdx + nRngPixel[bn][angIdx]*nAzPixel[bn][angIdx];
-
-  //cout << minIdx << endl;
-  //cout << maxIdx << endl;
-
-  float minDistOffset;
-
-  minDistOffset = 1.e10;
-
-  int selectIdx;
-
-  selectIdx = -1;
-
-  for (ii=minIdx; ii<maxIdx; ii++) {
-    offset = (range_km-rngOffset[bn][ii])*(range_km-rngOffset[bn][ii]) +
-             (azimuth_km-azOffset[bn][ii])*(azimuth_km-azOffset[bn][ii]);
-    if (offset < minDistOffset) {
-      minDistOffset = offset;
-      selectIdx = ii;
-    }
-  }
-
-  //cout << minDistOffset << endl;
   //cout << selectIdx << endl;
-
   return semiMinorWidth[bn][selectIdx];
+
+}
+
+
+float PointTargetResponseTable::GetSemiMajorWidth(
+                        float range_km, float azimuth_km,
+                        float scan_angle_rad, float orbit_time_in_rev_s,
+                        int beam_num)
+{
+  int bn, timeIdx, angIdx, rngIdx, azIdx, selectIdx;
+
+  bn = beam_num - 1;
+
+  /* find index */
+
+  timeIdx = int(orbit_time_in_rev_s/TIME_STEP);
+  angIdx = int(scan_angle_rad*rtd/ANGLE_STEP);
+  rngIdx = int(range_km/RNG_STEP_SIZE)+N_RNG_BINS/2;
+  azIdx = int(azimuth_km/AZ_STEP_SIZE)+N_AZ_BINS/2;
+
+  selectIdx = timeIdx*N_ANG_STEPS*N_RNG_BINS*N_AZ_BINS
+              + angIdx*N_RNG_BINS*N_AZ_BINS
+              + rngIdx*N_AZ_BINS
+              + azIdx;
+
+  //cout << selectIdx << endl;
+  return semiMajorWidth[bn][selectIdx];
 }
 
