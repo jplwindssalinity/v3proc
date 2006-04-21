@@ -77,6 +77,8 @@ static const char rcs_id_ovwmconfigdefs_h[] =
 // Tables    //
 //-----------//
 #define AMBIG_TABLE_FILE_KEYWORD "AMBIG_TABLE_FILE"
+#define AMBIG_INDEX_FILE_KEYWORD "AMBIG_INDEX_FILE"
+
 #define PTRESPONSE_TABLE_AUX_FILE_BEAM_x_KEYWORD "PTR_TABLE_AUX_FILE_BEAM_x"
 #define PTRESPONSE_TABLE_DATA_FILE_BEAM_x_KEYWORD "PTR_TABLE_DATA_FILE_BEAM_x"
 #endif
