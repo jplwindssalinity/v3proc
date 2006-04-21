@@ -769,8 +769,29 @@ int ConfigAmbigTable(AmbigTable* atab,ConfigList* cfg_list){
 
 int ConfigPointTargetResponseTable(PointTargetResponseTable* ptrtab,
 				    ConfigList* cfg_list){
-  char* ptrfile=cfg_list->Get(PTRESPONSE_TABLE_FILE_KEYWORD);
-  if( ! ptrtab->Read(ptrfile)) return(0);
+
+  char keyword[1024];
+  char number[8];
+
+  for (int beam_idx = 0; beam_idx < NUMBER_OF_OVWM_BEAMS; beam_idx++) {
+
+    int beam_number = beam_idx + 1;
+    sprintf(number, "%d", beam_number);
+
+    /* for aux file */
+    substitute_string(PTRESPONSE_TABLE_AUX_FILE_BEAM_x_KEYWORD, "x",
+                     number, keyword);
+    char* ptrauxfile=cfg_list->Get(keyword);
+    if( ! ptrtab->ReadAux(ptrauxfile, beam_number)) return(0);
+
+    /* for data file */
+    substitute_string(PTRESPONSE_TABLE_DATA_FILE_BEAM_x_KEYWORD, "x",
+                     number, keyword);
+    char* ptrdatafile=cfg_list->Get(keyword);
+    if( ! ptrtab->ReadData(ptrdatafile, beam_number)) return(0);
+
+  }
+
   return(1);  
 }
 
