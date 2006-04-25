@@ -8,6 +8,32 @@ class AmbigTable{
   ~AmbigTable();
   int Read(char* index_filename, char* table_filename);
 
+
+  //supporting functions
+  double GetAmbRat1(const unsigned int& beam_number, 
+		    const double& azimuth_angle,
+		    const double& alongtrack_wrt_boresight,
+		    const double& crosstrack_wrt_boresight,
+		    double& amb_along_location,
+		    double& amb_cross_location);
+		    
+
+  double GetAmbRat2(const unsigned int& beam_number, 
+		    const double& azimuth_angle,
+		    const double& alongtrack_wrt_boresight,
+		    const double& crosstrack_wrt_boresight,
+		    double& amb_along_location,
+		    double& amb_cross_location);
+  
+  int IsNadirAmbiguous( unsigned int& beam_number, 
+		       const double& azimuth_angle,
+		       const double& alongtrack_wrt_boresight,
+		       const double& crosstrack_wrt_boresight);
+  
+
+
+
+
   float*** alongtrack;
   float*** crosstrack;
  
@@ -35,7 +61,7 @@ class AmbigTable{
   float vx_,vy_,vz_;
   float azi_in_deg_;
   unsigned int Nazi_;
- 
+  bool read_table_;
  
   
 };
