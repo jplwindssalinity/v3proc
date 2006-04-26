@@ -116,6 +116,7 @@ OBJS = \
 	Quat.o \
 	RainHeightTable.o \
 	Scatterometer.o \
+	SchToXyz.o \
 	Sds.o \
 	Sigma0.o \
 	Sigma0Map.o \
@@ -133,7 +134,8 @@ OBJS = \
 	XTable.o \
 	SeaPac.o \
 	ENOFTable.o \
-	Options.o
+	Options.o \
+	Utils.o
 
 INCS = \
 	*.h \
