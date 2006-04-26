@@ -117,8 +117,8 @@ public:
     int      operator==(Vector3 m2);
     double   operator() (unsigned int i) const {return(_v[i]);};
     
-    static double Dot(Vector3* v1,  Vector3* v2);
-    static double AngleBetween( Vector3* v1,  Vector3* v2);
+    static double Dot(const Vector3* v1,  const Vector3* v2);
+    static double AngleBetween( const Vector3* v1,  const Vector3* v2);
 
     //-----//
     // I/O //
@@ -132,7 +132,7 @@ public:
     //
 
     void    Scale(double r);        // set magnitude
-    double  Magnitude();        // get vector magnitude
+    double  Magnitude() const;        // get vector magnitude
     void    Show(char *name = (char*)NULL);
 
     int     SphericalSet(double r, double theta, double phi);

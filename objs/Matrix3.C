@@ -580,8 +580,8 @@ Vector3::operator==(Vector3 m2)
 //--------------------
 double
 Vector3::Dot(
-     Vector3*  v1,
-     Vector3*  v2)
+     const Vector3*  v1,
+     const Vector3*  v2)
 {
     return (v1->_v[0] * v2->_v[0]
     + v1->_v[1] * v2->_v[1]
@@ -593,8 +593,8 @@ Vector3::Dot(
 //-----------------
 double
 Vector3::AngleBetween(
-     Vector3*  v1,
-     Vector3*  v2)
+     const Vector3*  v1,
+     const Vector3*  v2)
 {
     double ratio = Dot(v1, v2) / (v1->Magnitude() * v2->Magnitude());
 
@@ -663,7 +663,7 @@ Vector3::Scale(
 // Get the magnitude of the vector.
 
 double
-Vector3::Magnitude()
+Vector3::Magnitude() const
 {
     return(sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]));
 }
