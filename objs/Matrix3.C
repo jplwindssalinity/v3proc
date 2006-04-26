@@ -575,6 +575,39 @@ Vector3::operator==(Vector3 m2)
        return(1);
 }
 
+//-------------------
+// Returns the dot product, v1. v2
+//--------------------
+double
+Vector3::Dot(
+    const Vector3*  v1,
+    const Vector3*  v2)
+{
+    return (v1->_v[0] * v2->_v[0]
+    + v1->_v[1] * v2->_v[1]
+    + v1->_v[2] * v2->_v[2]);
+}
+
+//--------------
+//Returns anglebetween two vectors v1 and v2
+//-----------------
+double
+Vector3::AngleBetween(
+    const Vector3*  v1,
+    const Vector3*  v2)
+{
+    double ratio = Dot(v1, v2) / (v1->Magnitude() * v2->Magnitude());
+
+    // Sometimes the ratio is slightly out of bounds
+    if (ratio < -1.0) {
+        return pi;
+    } else if (ratio > 1.0) {
+        return 0.0;
+    }
+    return acos(ratio);
+}
+
+
 //---------------//
 // Vector3::Read //
 //---------------//
@@ -848,4 +881,46 @@ Vector3::Zero()
     _v[1] = 0.0;
     _v[2] = 0.0;
     return;
+}
+
+//-------------
+//Set method
+//--------------
+void
+Vector3::SetX(const double& value)
+{
+  _v[0]= value;
+}
+
+void
+Vector3::SetY(const double& value)
+{
+  _v[1]=value;
+}
+
+void
+Vector3::SetZ(const double& value)
+{
+  _v[2]=value;
+}
+
+//------------------
+//Get method
+//--------------------
+double
+Vector3::GetX() const
+{
+  return(_v[0]);
+}
+
+double
+Vector3::GetY() const
+{
+  return(_v[1]);
+}
+
+double
+Vector3::GetZ() const
+{
+  return(_v[2]);
 }

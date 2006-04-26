@@ -115,6 +115,10 @@ public:
     double   operator%(Vector3 m2);    // dot product
     Vector3  operator/(double s);    // divide by scalar
     int      operator==(Vector3 m2);
+    double   operator() (unsigned int i) const {return(_v[i]);};
+    
+    static double Dot(const Vector3* v1, const Vector3* v2);
+    static double AngleBetween(const Vector3* v1, const Vector3* v2);
 
     //-----//
     // I/O //
@@ -141,6 +145,12 @@ public:
     double  Get(int idx);
     int     Get(int idx, double* value);
     void    Zero();
+    void    SetX(const double& value);
+    void    SetY(const double& value);
+    void    SetZ(const double& value);
+    double  GetX() const;
+    double  GetY() const;
+    double  GetZ() const;
 
 protected:
 
