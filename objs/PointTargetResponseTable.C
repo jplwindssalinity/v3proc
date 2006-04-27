@@ -114,6 +114,11 @@ int PointTargetResponseTable::ReadAux(char* filename, int beam_num)
   FILE *miscFileP;
 
   miscFileP = fopen(filename,"r");
+  if (miscFileP==NULL) {
+    fprintf(stderr,"PointTargetResponseTable: ReadAux : no aux file\n");
+    return (0);
+  }
+
   bn = beam_num-1;
 
   ii = 0;
@@ -146,7 +151,7 @@ int PointTargetResponseTable::ReadAux(char* filename, int beam_num)
   nAux[bn] = ii;
   cout << "Number of line in misc file: " << nAux[bn] << endl;
 
-  return 0;
+  return 1;
 }
 
 
@@ -157,6 +162,11 @@ int PointTargetResponseTable::ReadData(char* filename, int beam_num)
   FILE *dataFileP;
 
   dataFileP = fopen(filename,"r");
+  if (dataFileP==NULL) {
+    fprintf(stderr,"PointTargetResponseTable: ReadData : no data file\n");
+    return 0;
+  }
+
   bn = beam_num - 1;
 
   ii = 0;
@@ -176,7 +186,7 @@ int PointTargetResponseTable::ReadData(char* filename, int beam_num)
   nData[bn] = ii-1;
   cout << "Number of line in data file: " << nData[bn] << endl;
 
-  return(0);
+  return(1);
 }
 
 
