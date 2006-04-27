@@ -758,8 +758,9 @@ ConfigOvwmSim(
 //----------------//
 
 int ConfigAmbigTable(AmbigTable* atab,ConfigList* cfg_list){
-  char* ambfile=cfg_list->Get(AMBIG_TABLE_FILE_KEYWORD);
-  if( ! atab->Read(ambfile)) return(0);
+  char* ambindexfile=cfg_list->Get(AMBIG_TABLE_FILE_KEYWORD);
+  char* ambtablefile=cfg_list->Get(AMBIG_INDEX_FILE_KEYWORD);
+  if( ! atab->Read(ambindexfile,ambtablefile)) return(0);
   return(1);  
 }
 
@@ -782,7 +783,10 @@ int ConfigPointTargetResponseTable(PointTargetResponseTable* ptrtab,
     substitute_string(PTRESPONSE_TABLE_AUX_FILE_BEAM_x_KEYWORD, "x",
                      number, keyword);
     char* ptrauxfile=cfg_list->Get(keyword);
-    if( ! ptrtab->ReadAux(ptrauxfile, beam_number)) return(0);
+    if( ! ptrtab->ReadAux(ptrauxfile, beam_number)) {
+      cout << "TTT" << endl;
+      return(0);
+    }
 
     /* for data file */
     substitute_string(PTRESPONSE_TABLE_DATA_FILE_BEAM_x_KEYWORD, "x",
