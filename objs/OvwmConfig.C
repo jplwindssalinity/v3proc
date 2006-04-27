@@ -758,8 +758,8 @@ ConfigOvwmSim(
 //----------------//
 
 int ConfigAmbigTable(AmbigTable* atab,ConfigList* cfg_list){
-  char* ambindexfile=cfg_list->Get(AMBIG_TABLE_FILE_KEYWORD);
-  char* ambtablefile=cfg_list->Get(AMBIG_INDEX_FILE_KEYWORD);
+  char* ambindexfile=cfg_list->Get(AMBIG_INDEX_FILE_KEYWORD);
+  char* ambtablefile=cfg_list->Get(AMBIG_TABLE_FILE_KEYWORD);
   if( ! atab->Read(ambindexfile,ambtablefile)) return(0);
   return(1);  
 }
