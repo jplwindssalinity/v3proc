@@ -111,6 +111,7 @@ public:
     void     operator*=(double s);
     void     operator/=(double s);
     void     operator+=(Vector3 m2);
+    void     operator-=(Vector3 m2);
     Vector3  operator&(Vector3 m2);    // cross product
     double   operator%(Vector3 m2);    // dot product
     Vector3  operator/(double s);    // divide by scalar
