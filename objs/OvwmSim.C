@@ -548,7 +548,7 @@ OvwmSim::ScatSim(
 
     Beam* beam = ovwm->GetCurrentBeam();
     Meas::MeasTypeE meas_type = PolToMeasType(beam->polarization);
-
+    
     for (Meas* meas = meas_spot.GetHead(); meas; meas = meas_spot.GetNext())
     {
         meas->measType = meas_type;
@@ -1132,8 +1132,55 @@ OvwmSim::SetMeasurements(
     Vector3 xvec=yvec & zvec;
     CoordinateSwitch gc_to_rangeazim(xvec,yvec,zvec);
 
+
+    //---------------------------------------------------
     // Compute cross track/along track coordinate switch
-    CoordinateSwitch gc_to_crossalong;
+    //-------------------------------------------------
+    double r_a= r1_earth*1000.0;
+    double r_e2=e2;
+    SchToXyz sch_to_xyz(r_a,r_e2);//earth radius in meter and eccentricity square
+
+    //get position and velocity
+    OrbitState* sc;
+    sc= &(spacecraft->orbitState);
+    //get position and velocity
+    Vector3 position, velocity;
+    position=sc->rsat;//km
+    velocity=sc->vsat;//km/s
+    //transform in MKS unit
+    position *=1000.0;//in meters
+    velocity *=1000.0;//in meter/s
+
+    //compute sc position 6 seconds before and after    
+    Vector3 position1, position2, delta_position;
+    delta_position= velocity;
+    delta_position *= 6.0;   
+ 
+    //compute two nearby sc position separated by 6*2 seconds
+    position1 =position - delta_position;//6 seconds before
+    position2 =position + delta_position;//6 seconds after
+
+    //compute sc lat lon
+    Vector3 r_llh,r_llh1, r_llh2;
+    xyz_to_llh(r_a,r_e2,position,  r_llh);
+    xyz_to_llh(r_a,r_e2,position1, r_llh1);
+    xyz_to_llh(r_a,r_e2,position2, r_llh2);
+    
+    //compute heading
+    double r_heading;
+    geo_hdg(r_a,r_e2,r_llh1(0), r_llh1(1),r_llh2(0),r_llh2(1),r_heading);
+
+    //set peg point
+    sch_to_xyz.SetPegPoint(r_llh(0), r_llh(1), r_heading);
+
+    //now we can convert surface location into sch
+    //call the following two functions will do the job
+    // sch_to_xyz.xyz_to_sch(r_xyz,r_sch)
+    // or sch_to_xyz.sch_to_xyz(r_sch,r_xyz)
+
+
+
+
     //INCOMPLETE need to add to make ambig bias work right
 
     int slice_i = 0;

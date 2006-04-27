@@ -21,6 +21,8 @@ static const char rcs_id_ovwmsim_h[] =
 #include "L1AFrame.h"
 #include "Sigma0Map.h"
 #include "L1B.h"
+#include "SchToXyz.h"
+#include "Utils.h"
 
 //======================================================================
 // CLASSES
@@ -88,7 +90,7 @@ public:
     int  SetMeasurements(Spacecraft* spacecraft, Ovwm* ovwm,
              MeasSpot* meas_spot, WindField* windfield, Sigma0Map* inner_map,
              Sigma0Map* outer_map, GMF* gmf, Kp* kp, KpmField* kpmField,
-             Topo* topo, Stable* stable, CheckFrame* cf, int sim_l1b_direct);
+             Topo* topo, Stable* stable, CheckFrame* cf,  int sim_l1b_direct);
     int  SetL1AScience(MeasSpot* meas_spot, CheckFrame* cf, Ovwm* ovwm,
              L1AFrame* l1a_frame);
     int  SetL1ALoopback(Ovwm* ovwm, L1AFrame* l1a_frame);
