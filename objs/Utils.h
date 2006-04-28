@@ -21,8 +21,8 @@ using std::ostringstream;
 
 
 // Macros
-#define MAX(A,B)      ((A)>(B)?(A):(B))
-#define MIN(A,B)      ((A)<(B)?(A):(B))
+#define max(A,B)      ((A)>(B)?(A):(B))
+#define min(A,B)      ((A)<(B)?(A):(B))
 
 
 double SIGN_C(const double& a, const double& b);

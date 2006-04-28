@@ -167,7 +167,7 @@ void geo_hdg(const double& r_a, const double& r_e2,const double& r_lati,
     r_bc = r_cosbetai*r_cosbetaf  ;      
     
     r_cosphi = r_ac + r_bc*r_coslon;
-    r_sinphi = SIGN_C(1.0,r_sinlon)*sqrt(1.0 - MIN(pow(r_cosphi,2),1.0));
+    r_sinphi = SIGN_C(1.0,r_sinlon)*sqrt(1.0 - min(pow(r_cosphi,2),1.0));
     r_phi = fabs(atan2(r_sinphi,r_cosphi));
     
     if(r_a*fabs(r_phi) >  1.0e-6){
