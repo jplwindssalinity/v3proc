@@ -99,7 +99,13 @@ int AmbigTable::Read(char* index_filename, char* table_filename)
       if(fread((void*)&x,sizeof(float),1,index_f)!=1) return(0);
       if( (unsigned int) int(x+0.1) != Ncross_) return(0);
 
- 
+      //read alongtrack
+      for(unsigned int i=0;i<Nalong_;++i)
+	if(fread((void*)&alongtrack[i],sizeof(float),1,index_f)!=1) return(0);
+
+      //read crosstrack
+      for(unsigned int i=0;i<Ncross_;++i)
+	if(fread((void*)&crosstrack[i],sizeof(float),1,index_f)!=1) return(0);
 
       //read total amb ratio 
       for(unsigned int i=0;i<Nalong_;++i)
