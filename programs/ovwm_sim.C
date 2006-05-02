@@ -677,7 +677,7 @@ main(
                     // simulate
                     ovwm_sim.ScatSim(&spacecraft, &ovwm, &windfield,
                         inner_map_ptr, outer_map_ptr, &gmf, &kp, &kpmField,
-                        topo_ptr, stable_ptr, frame, &l1b);
+                        topo_ptr, stable_ptr, frame, &ovwm_sim.ptrTable, &l1b);
 
                     // save the delta f
                     /******* Commenting this out for now
