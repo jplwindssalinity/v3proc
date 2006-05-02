@@ -467,6 +467,7 @@ OvwmSim::ScatSim(
     Topo*        topo,
     Stable*      stable,
     L1AFrame*    l1a_frame,
+    PointTargetResponseTable* ptrTable,
     L1B*         l1b)
 {
   // incomplete 
@@ -486,7 +487,8 @@ OvwmSim::ScatSim(
   // compute frame header info if necessary //
   //----------------------------------------//
 
-  L1AFrameInit(spacecraft, ovwm, l1a_frame);
+  // Now comment out for L1B direct
+  //L1AFrameInit(spacecraft, ovwm, l1a_frame);
 
   // For now useDtc and useRgc are disabled.
   if(ovwm->cds.useRgc || ovwm->cds.useDtc){
@@ -514,7 +516,9 @@ OvwmSim::ScatSim(
 
     // need to modify SetDelayandFrequency and beam object to allow separate
     // tx/rx feeds
-    SetOrbitStepDelayAndFrequency(spacecraft, ovwm);
+
+    // Commented for properly no need in high res simulation
+    //SetOrbitStepDelayAndFrequency(spacecraft, ovwm);
 
 
     if (applyDopplerError)
@@ -559,7 +563,7 @@ OvwmSim::ScatSim(
     //------------------------//
     
     if (! SetMeasurements(spacecraft, ovwm, &meas_spot, windfield,
-        inner_map, outer_map, gmf, kp, kpmField, topo, stable, &cf,(l1b!=NULL)))
+        inner_map, outer_map, gmf, kp, kpmField, topo, stable, &cf, ptrTable, (l1b!=NULL)))
     {
         return(0);
     }
@@ -1085,6 +1089,7 @@ OvwmSim::SetMeasurements(
     Topo*        topo,
     Stable*      stable,
     CheckFrame*  cf,
+    PointTargetResponseTable* ptrTable,
     int sim_l1b_direct)
 {
 
@@ -1127,9 +1132,9 @@ OvwmSim::SetMeasurements(
 
 
     // Compute range and azimuth coordinate switch
-    Vector3 zvec=oti.rTarget.Nadir();
-    Vector3 yvec=zvec & oti.gcLook;
-    Vector3 xvec=yvec & zvec;
+    Vector3 zvec=-spacecraft->orbitState.rsat; // Nadir defined by s/c position
+    Vector3 yvec=zvec & oti.gcLook;            // az vector
+    Vector3 xvec=yvec & zvec;                  // rng vector
     CoordinateSwitch gc_to_rangeazim(xvec,yvec,zvec);
 
 
@@ -1470,14 +1475,22 @@ OvwmSim::SetMeasurements(
 	   
 
 	  // compute point target response array for pixel
+
+          Vector3 offset = meas->centroid - spot_centroid; // offset in xyz frame
+          offset =gc_to_rangeazim.Forward(offset);
+          float range_km = offset.GetX();
+          float azimuth_km = offset.GetY();
+          float scan_angle = meas->scanAngle;
+          float orbit_time = spacecraft->orbitState.time;
+
+          // Now set the default value, later update from Beam object
+          int beam_num = 1;
+
           float rangewid, azimwid;
-          /* HACK put this in when table read works
-          rangewid=ptrTable.GetSemiMinor(xxx)
-          azimwid=ptrTable.GetSemiMajor(xxx)
-          */
-          // until then
-          rangewid=0.120;
-          azimwid=1.0;
+          rangewid=ptrTable->GetSemiMinorWidth(range_km, azimuth_km, scan_angle,
+                                         orbit_time, beam_num)/1000.;
+          azimwid=ptrTable->GetSemiMajorWidth(range_km, azimuth_km, scan_angle,
+                                        orbit_time, beam_num)/1000.;
 
           // set up integration lengths
 	  int nL=ovwm->ses.numRangeLooksAveraged;

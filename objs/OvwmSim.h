@@ -81,7 +81,7 @@ public:
     int  ScatSim(Spacecraft* spacecraft, Ovwm* ovwm, WindField* windfield,
              Sigma0Map* inner_map, Sigma0Map* outer_map, GMF* gmf, Kp* kp,
              KpmField* kpmField, Topo* topo, Stable* stable,
-             L1AFrame* l1a_frame, L1B* l1b=NULL);
+             L1AFrame* l1a_frame, PointTargetResponseTable *ptrTable, L1B* l1b=NULL);
     int  CheckTiming(Ovwm* ovwm);
     int  LoopbackSim(Spacecraft* spacecraft, Ovwm* ovwm,
              L1AFrame* l1a_frame);
@@ -90,7 +90,8 @@ public:
     int  SetMeasurements(Spacecraft* spacecraft, Ovwm* ovwm,
              MeasSpot* meas_spot, WindField* windfield, Sigma0Map* inner_map,
              Sigma0Map* outer_map, GMF* gmf, Kp* kp, KpmField* kpmField,
-             Topo* topo, Stable* stable, CheckFrame* cf,  int sim_l1b_direct);
+             Topo* topo, Stable* stable, CheckFrame* cf,
+             PointTargetResponseTable *ptrTable, int sim_l1b_direct);
     int  SetL1AScience(MeasSpot* meas_spot, CheckFrame* cf, Ovwm* ovwm,
              L1AFrame* l1a_frame);
     int  SetL1ALoopback(Ovwm* ovwm, L1AFrame* l1a_frame);
