@@ -2,7 +2,7 @@
 // Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
-
+  
 #ifndef BEAM_H
 #define BEAM_H
 
