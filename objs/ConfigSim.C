@@ -1732,8 +1732,21 @@ ConfigControl(
     // grid start time //
     //-----------------//
 
+    char* grid_start_time_string =
+        config_list->Get(GRID_START_TIME_KEYWORD);
     char* time_in_rev_string = config_list->Get(TIME_IN_REV_KEYWORD);
-    if (time_in_rev_string != NULL)
+    if (grid_start_time_string != NULL)
+    {
+        ETime tmp_time;
+        if (! tmp_time.FromCodeA(grid_start_time_string))
+        {
+            fprintf(stderr, "ConfigControl: error parsing CodeA for %s (%s)\n",
+                GRID_START_TIME_KEYWORD, grid_start_time_string);
+            exit(1);
+        }
+        *grid_start_time = tmp_time.GetTime();
+    }
+    else if (time_in_rev_string != NULL)
     {
         ETime tmp_time;
         if (! tmp_time.FromCodeA(time_in_rev_string))
@@ -1757,7 +1770,20 @@ ConfigControl(
     //---------------//
 
     double grid_lat_range, grid_time_range;
-    if (config_list->GetDouble(GRID_LATITUDE_RANGE_KEYWORD, &grid_lat_range))
+    char* grid_end_time_string =
+        config_list->Get(GRID_END_TIME_KEYWORD);
+    if (grid_end_time_string != NULL)
+    {
+        ETime tmp_time;
+        if (! tmp_time.FromCodeA(grid_end_time_string))
+        {
+            fprintf(stderr, "ConfigControl: error parsing CodeA for %s (%s)\n",
+                GRID_END_TIME_KEYWORD, grid_end_time_string);
+            exit(1);
+        }
+        *grid_end_time = tmp_time.GetTime();
+    }
+    else if (config_list->GetDouble(GRID_LATITUDE_RANGE_KEYWORD, &grid_lat_range))
     {
         grid_time_range = orbit_period * grid_lat_range / 360.0;
         *grid_end_time = *grid_start_time + grid_time_range;
