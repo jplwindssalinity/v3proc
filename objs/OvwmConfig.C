@@ -749,7 +749,7 @@ ConfigOvwmSim(
       return(0);
     }
     ovwm_sim->minSignalToAmbigRatio=pow(10.0,0.1*dbvalue);
-	ovwm_sim->minOneWayGain=pow(10.0,0.1*dbvalue);
+
     return(1);
 }
 
