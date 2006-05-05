@@ -487,8 +487,10 @@ OvwmSim::ScatSim(
   // compute frame header info if necessary //
   //----------------------------------------//
 
-  // Now comment out for L1B direct
+  //cout << "AA" << endl;
+  /* now comment it out for testing ovwm_sim */
   //L1AFrameInit(spacecraft, ovwm, l1a_frame);
+  //cout << "BB" << endl;
 
   // For now useDtc and useRgc are disabled.
   if(ovwm->cds.useRgc || ovwm->cds.useDtc){
@@ -509,6 +511,7 @@ OvwmSim::ScatSim(
         }
     }
 
+    //cout << "Before set de" << endl;
     //-----------------------------------------------//
     // command the range delay and Doppler frequency //
     //-----------------------------------------------//
@@ -516,10 +519,9 @@ OvwmSim::ScatSim(
 
     // need to modify SetDelayandFrequency and beam object to allow separate
     // tx/rx feeds
+    SetOrbitStepDelayAndFrequency(spacecraft, ovwm);
 
-    // Commented for properly no need in high res simulation
-    //SetOrbitStepDelayAndFrequency(spacecraft, ovwm);
-
+    //cout << "Before set be" << endl;
 
     if (applyDopplerError)
     {
@@ -712,6 +714,9 @@ OvwmSim::ScatSim(
     // output L1B directly if l1b is not NULL
     if(l1b!=NULL){
       MeasSpot* ms= new MeasSpot;
+      ms->time = meas_spot.time;
+      ms->scOrbitState = meas_spot.scOrbitState;
+      ms->scAttitude = meas_spot.scAttitude;
       for (Meas* meas = meas_spot.GetHead(); meas; meas = meas_spot.GetNext())
 	{
 	  Meas* m = new Meas;
@@ -1103,6 +1108,7 @@ OvwmSim::SetMeasurements(
 				   &(spacecraft->attitude), 
 				   &(ovwm->sas.antenna),
 				   ovwm->sas.antenna.txCenterAzimuthAngle);
+    //spacecraft->orbitState.rsat.Show();
     CoordinateSwitch antenna_to_gc;
     antenna_to_gc = gc_to_antenna;
 
@@ -1115,8 +1121,11 @@ OvwmSim::SetMeasurements(
 
     // compute maximum gain
     beam->GetElectricalBoresight(&borelook,&boreazim);
+    //cout << "look: " << borelook << endl;
+    //cout << "azim: " << boreazim << endl;
     float maxgain;
     beam->GetPowerGain(borelook,boreazim,&maxgain);
+    //cout << "maxgain:" << maxgain << endl;
     
     // compute boresight position
     Vector3 boresight;
@@ -1130,13 +1139,11 @@ OvwmSim::SetMeasurements(
 
     EarthPosition spot_centroid=oti.rTarget;
 
-
     // Compute range and azimuth coordinate switch
     Vector3 zvec=-spacecraft->orbitState.rsat; // Nadir defined by s/c position
     Vector3 yvec=zvec & oti.gcLook;            // az vector
     Vector3 xvec=yvec & zvec;                  // rng vector
     CoordinateSwitch gc_to_rangeazim(xvec,yvec,zvec);
-
 
     //---------------------------------------------------
     // Compute cross track/along track coordinate switch
@@ -1449,13 +1456,17 @@ OvwmSim::SetMeasurements(
           // for computational efficiency we do it here.
           Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
           Vector3 rlook_ant=gc_to_antenna.Forward(rlook);
+    //gc_to_antenna.Show();
           double r,theta,phi;
 	  rlook_ant.SphericalGet(&r,&theta,&phi);
+    //cout << theta << endl;
+    //cout << phi << endl;
           double gain;
           if(!beam->GetPowerGain(theta,phi,&gain)){
 	    gain=0;
 	  }
           gain/=maxgain;
+    //exit(0);
 	  /* HACK put this part in when table reader works
 	  double amb1=ambTable.GetAmbRat1(xxxxxx);
 	  double amb2=ambTable.GetAmbRat2(xxxxxx);
@@ -1481,7 +1492,7 @@ OvwmSim::SetMeasurements(
           float range_km = offset.GetX();
           float azimuth_km = offset.GetY();
           float scan_angle = meas->scanAngle;
-          float orbit_time = spacecraft->orbitState.time;
+          float orbit_time = ovwm->cds.OrbitFraction()*6060.;
 
           // Now set the default value, later update from Beam object
           int beam_num = 1;
