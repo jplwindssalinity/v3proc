@@ -650,6 +650,7 @@ main(
                 //------------------------------//
 
                 sim_time = ovwm_event.time;
+                cout << sim_time - instrument_start_time << endl;
 
 
                 int pulse_index = 0;    // this will get used later
