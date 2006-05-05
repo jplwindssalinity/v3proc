@@ -1138,10 +1138,10 @@ Ovwm::LocatePixels(
 	  if(dot1>dot2) plook_vector=look1;
           else plook_vector=look2;
           if(r_idx==nomr_idx && d_idx==nomd_idx){
-	    fprintf(stderr,"BL %g %g %g L1 %g %g %g L2 %g %g %g %g %g\n",
-		    boresight_look.Get(0),boresight_look.Get(1),
-		    boresight_look.Get(2),look1.Get(0),look1.Get(1),
-		    look1.Get(2),look2.Get(0),look2.Get(1),look2.Get(2),dot1,dot2);
+	    //fprintf(stderr,"BL %g %g %g L1 %g %g %g L2 %g %g %g %g %g\n",
+		    //boresight_look.Get(0),boresight_look.Get(1),
+		    //boresight_look.Get(2),look1.Get(0),look1.Get(1),
+		    //look1.Get(2),look2.Get(0),look2.Get(1),look2.Get(2),dot1,dot2);
 	  }
           EarthPosition surfpt=spacecraft->orbitState.rsat+plook_vector*r;
           
@@ -1162,6 +1162,7 @@ Ovwm::LocatePixels(
 	  meas->incidenceAngle = pi - theta;
 
 	  meas->centroid = surfpt;
+	  meas->scanAngle = azim;
 
  #ifdef DEBUG_LOCATE_PIXELS
 	    double alt,lon,latgd;
@@ -1183,7 +1184,7 @@ Ovwm::LocatePixels(
           while(lon<0)lon+=2*pi;
 
           
-	  printf("%15.15g %15.15g\n",lon*rtd,latgd*rtd);
+	  //printf("%15.15g %15.15g\n",lon*rtd,latgd*rtd);
 
 	    if(fabs(alt)>0.05 || fabs(r-oti3.slantRange)>0.05 
 	       || fabs(d2-oti3.dopplerFreq)>0.05*ses.dopplerRes){
@@ -2408,7 +2409,9 @@ Ovwm::IdealRtt(
     //-------------------------------------------//
 
     Beam* beam = GetCurrentBeam();
-    double azimuth_rate = sas.antenna.spinRate;
+    // because we have separated tx and rec feed
+    //double azimuth_rate = sas.antenna.spinRate;
+    double azimuth_rate = 0.;
     double look, azim;
     if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc,
             &sp_zero_att, beam, azimuth_rate, &look, &azim))
