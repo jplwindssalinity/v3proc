@@ -35,6 +35,7 @@ static const char rcs_id_ovwmconfigdefs_h[] =
 #define NUM_TWTAS_KEYWORD "NUM_TWTAS"
 #define NUM_RECEIVERS_KEYWORD "NUM_RECEIVERS"
 #define BEAM_x_TX_DELAY_KEYWORD "BEAM_x_TX_DELAY"
+#define LANDSIGMA0_BEAM_x_KEYWORD "BEAM_x_LAND_SIGMA0"
 #define USE_REAL_APERTURE_KEYWORD "USE_REAL_APERTURE"
 
 //----------//
@@ -72,6 +73,13 @@ static const char rcs_id_ovwmconfigdefs_h[] =
 #define INNER_BEAM_SIGMA0_MAP_KEYWORD  "INNER_BEAM_SIGMA0_MAP"
 #define OUTER_BEAM_SIGMA0_MAP_KEYWORD  "OUTER_BEAM_SIGMA0_MAP"
 
+//--------------------------//
+// Latitude Bounds          //
+//--------------------------//
+#define SIM_LAT_MIN_KEYWORD  "SIM_LAT_MIN"
+#define SIM_LAT_MAX_KEYWORD  "SIM_LAT_MAX"
+#define SIM_LON_MIN_KEYWORD  "SIM_LON_MIN"
+#define SIM_LON_MAX_KEYWORD  "SIM_LON_MAX"
 
 //-----------//
 // Tables    //

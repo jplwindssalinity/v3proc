@@ -492,6 +492,33 @@ ConfigOvwmSim(
     tmp_time.FromCodeA(ovwm_sim->epochTimeString);
     ovwm_sim->epochOffset = tmp_time.GetTime();
 
+
+    //-------------------------/
+    // Latitude Bounds         /
+    //-------------------------/
+
+     config_list->DoNothingForMissingKeywords();  
+     if(! config_list->GetDouble(SIM_LAT_MIN_KEYWORD,&(ovwm_sim->latMin))){
+       ovwm_sim->latMin=-90.0;
+     }
+     if(! config_list->GetDouble(SIM_LAT_MAX_KEYWORD,&(ovwm_sim->latMax))){
+       ovwm_sim->latMax=90.0;
+     }
+     ovwm_sim->latMin*=dtr;
+     ovwm_sim->latMax*=dtr;
+
+
+
+     if(! config_list->GetDouble(SIM_LON_MIN_KEYWORD,&(ovwm_sim->lonMin))){
+       ovwm_sim->lonMin=-0.5;
+     }
+     if(! config_list->GetDouble(SIM_LON_MAX_KEYWORD,&(ovwm_sim->lonMax))){
+       ovwm_sim->lonMax=360.5;
+     }
+     ovwm_sim->lonMin*=dtr;
+     ovwm_sim->lonMax*=dtr;
+     config_list->ExitForMissingKeywords();  
+
     //----------//
     // land map //
     //----------//
@@ -506,10 +533,20 @@ ConfigOvwmSim(
             fprintf(stderr, "Cannot Initialize Land Map\n");
             return(0);
         }
-        config_list->GetFloat(LAND_SIGMA0_INNER_BEAM_KEYWORD,
-            &(ovwm_sim->landSigma0[0]));
-        config_list->GetFloat(LAND_SIGMA0_OUTER_BEAM_KEYWORD,
-            &(ovwm_sim->landSigma0[1]));
+
+	char keyword[1024];
+	char number[8];
+
+	for (int beam_idx = 0; beam_idx < NUMBER_OF_OVWM_BEAMS; beam_idx++) {
+
+	  int beam_number = beam_idx + 1;
+	  sprintf(number, "%d", beam_number);
+
+	  substitute_string(LANDSIGMA0_BEAM_x_KEYWORD, "x",
+			    number, keyword);
+	  config_list->GetFloat(keyword,
+            &(ovwm_sim->landSigma0[beam_idx]));
+	}
     }
     else
     {

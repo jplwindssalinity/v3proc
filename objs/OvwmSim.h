@@ -114,7 +114,12 @@ public:
     unsigned long            pulseCount; // cumulative counter
     double                   epochTime;  // used for setting time strings
     char*                    epochTimeString;
-    double                   epochOffset; //epochtimestring, added to epoch time
+    double                   epochOffset; //epochtimestring, added to epoch time    
+    double                   latMin;
+    double                   latMax;
+    double                   lonMin;
+    double                   lonMax;
+
     double                   startTime;
     OvwmSimBeamInfo          beamInfo[NUMBER_OF_OVWM_BEAMS];
     OvwmEvent::OvwmEventE    lastEventType;
@@ -131,7 +136,7 @@ public:
     PointTargetResponseTable ptrTable;
     float                    dopplerBias;
     double                   correlatedKpm;
-    float                    landSigma0[2];
+    float                    landSigma0[NUMBER_OF_OVWM_BEAMS];
 
     char*  simVs1BCheckfile;  // output data for cross check with 1B
 

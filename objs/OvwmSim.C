@@ -529,7 +529,54 @@ OvwmSim::ScatSim(
         exit(1);
     }
 
+    //---------------------------
+    // Check Latitude bounds
+    //---------------------------
 
+    // predigest //
+
+
+    Antenna* antenna = &(ovwm->sas.antenna);
+    Beam* beam = ovwm->GetCurrentBeam();
+    OrbitState* orbit_state = &(spacecraft->orbitState);
+    Attitude* attitude = &(spacecraft->attitude);
+
+
+    //--------------------------------//
+    // generate the coordinate switch //
+    //--------------------------------//
+
+    CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
+        attitude, antenna, antenna->groundImpactAzimuthAngle);
+
+    //------------------//
+    // find beam center //
+    //------------------//
+
+    double look, azim;
+    if (! beam->GetElectricalBoresight(&look, &azim))
+        return(0);
+    Vector3 vector;
+    vector.SphericalSet(1.0,look,azim);
+
+    
+
+    // compute boresight vector,range and doppler   //
+    OvwmTargetInfo oti;
+    if(! ovwm->TargetInfo(&antenna_frame_to_gc,spacecraft,vector,&oti)){
+      fprintf(stderr,"Error:LocatePixels cannot find boresight on surface\n");
+      exit(1);
+    }
+    // compute radius and center for best fit local sphere
+    // should probably make this a Earth Position method
+    double alt,lon,gdlat;
+    oti.rTarget.GetAltLonGDLat(&alt,&lon,&gdlat);
+    printf("gdlat=%g lon=%g\n",gdlat*rtd,lon*rtd);
+    if(gdlat<latMin || gdlat> latMax) return(0);
+    int check_lon=0;
+    if(lon>=lonMin && lon<= lonMax) check_lon=1;
+    if(lon>=lonMin+two_pi && lon<= lonMax+two_pi) check_lon=1;
+    if(check_lon==0) return(0);
     //---------------------//
     // Create measurements //
     //---------------------//
@@ -552,12 +599,12 @@ OvwmSim::ScatSim(
     // determine measurement type from beam //
     //--------------------------------------//
 
-    Beam* beam = ovwm->GetCurrentBeam();
     Meas::MeasTypeE meas_type = PolToMeasType(beam->polarization);
     
     for (Meas* meas = meas_spot.GetHead(); meas; meas = meas_spot.GetNext())
     {
         meas->measType = meas_type;
+        meas->beamIdx = ovwm->cds.currentBeamIdx;
     }
 
     //------------------------//
@@ -1140,7 +1187,7 @@ OvwmSim::SetMeasurements(
     EarthPosition spot_centroid=oti.rTarget;
 
     // Compute range and azimuth coordinate switch
-    Vector3 zvec=-spacecraft->orbitState.rsat; // Nadir defined by s/c position
+    Vector3 zvec=oti.rTarget.Normal(); // Z-axis is normal vector at boresight
     Vector3 yvec=zvec & oti.gcLook;            // az vector
     Vector3 xvec=yvec & zvec;                  // rng vector
     CoordinateSwitch gc_to_rangeazim(xvec,yvec,zvec);
@@ -1257,23 +1304,12 @@ OvwmSim::SetMeasurements(
             // LAND! Try to use the inner and outer maps //
             //-------------------------------------------//
 
-            if (meas->measType == Meas::HH_MEAS_TYPE)
-            {
-                // inner beam, use inner_map
-                if (inner_map != NULL)
-                    sigma0 = inner_map->GetSigma0(lon, lat);
-                else
-                    sigma0 = landSigma0[0];
-            }
-            else
-            {
-                // outer beam, use outer_map
-                if (outer_map != NULL)
-                    sigma0 = outer_map->GetSigma0(lon, lat);
-                else
-                    sigma0 = landSigma0[1];
-            }
+            // for now land map option is disallowed; set constant values
+            // for each beam
+            //           sigma0 = inner_map->GetSigma0(lon, lat);
+            sigma0 = landSigma0[meas->beamIdx];
 
+            // This part is INCOMPLETE needs to set other L1A/L1B fields
             if (simVs1BCheckfile)
             {
                 cf->sigma0[slice_i] = sigma0;
@@ -1497,16 +1533,24 @@ OvwmSim::SetMeasurements(
           // Now set the default value, later update from Beam object
           int beam_num = 1;
 
-          float rangewid, azimwid;
+          float rangewid, azimwid; // half widths
           rangewid=ptrTable->GetSemiMinorWidth(range_km, azimuth_km, scan_angle,
                                          orbit_time, beam_num)/1000.;
           azimwid=ptrTable->GetSemiMajorWidth(range_km, azimuth_km, scan_angle,
                                         orbit_time, beam_num)/1000.;
 
+
+	  if(rangewid==0 || azimwid==0){
+	    meas=meas_spot->RemoveCurrent();
+            delete meas;
+            meas=meas_spot->GetCurrent();
+	    slice_i++;
+            continue;
+	  }
           // set up integration lengths
 	  int nL=ovwm->ses.numRangeLooksAveraged;
-          int nrsteps=(int)ceil(integrationRangeWidthFactor*rangewid*nL/integrationStepSize)+1;
-          int nasteps=(int)ceil(integrationAzimuthWidthFactor*azimwid/integrationStepSize)+1;
+          int nrsteps=(int)ceil(integrationRangeWidthFactor*rangewid*2*nL/integrationStepSize)+1;
+          int nasteps=(int)ceil(integrationAzimuthWidthFactor*azimwid*2/integrationStepSize)+1;
 
           if(nrsteps>_max_int_range_bins || nasteps > _max_int_azim_bins){
 	    fprintf(stderr,"Error SetMeasurements too many integrations bins\n");
@@ -1528,7 +1572,7 @@ OvwmSim::SetMeasurements(
 	    int n2=n-nL/2;
             //HACK Actual spacing of range looks on ground should be used
             //     instead of rangewid
-	    center_range_idx[n]=(nrsteps-1)/2.0+(n2+0.5)*rangewid;
+	    center_range_idx[n]=(nrsteps-1)/2.0+(2*n2+1)*rangewid;
 	    
 	  }
 
@@ -1542,33 +1586,36 @@ OvwmSim::SetMeasurements(
 	 // INCOMPLETE:= NEED to turn off azimuthal weighting when 
 	 // gain pattern is dominant (i.e., fore/aft)
 
-         double ptrsum=0;
+         double areaeff=0, areaeff_SL=0;
+         
           for(int i=0;i<nrsteps;i++){
             float ii=i;
 
 	    for(int j=0;j<nasteps;j++){
 	      float jj=j;
 
-	      float val2=(jj-center_azim_idx);
+	      float val2=(jj-center_azim_idx)*integrationStepSize;
 	      val2/=azimwid;
 	      val2*=val2;
 
 	      for(int n=0;n<nL;n++){
-                float val1=(ii-center_range_idx[n]);
+                float val1=(ii-center_range_idx[n])*integrationStepSize;
                 val1/=rangewid;
                 val1*=val1;
 
-       		_ptr_array[i][j]+=exp(val1+val2);
+       		_ptr_array[i][j]+=exp(-(val1+val2));
 	      }
-	      ptrsum+=_ptr_array[i][j];
 	    }
 	  }
+
+
+          // Peak should = 1 not sum !
           // normalize ptresponse array
-	  for(int i=0;i<nrsteps;i++){
-	    for(int j=0;j<nasteps;j++){
-	      _ptr_array[i][j]/=ptrsum;
-	    }
-	  }
+	  // for(int i=0;i<nrsteps;i++){
+	  //  for(int j=0;j<nasteps;j++){
+	  //    _ptr_array[i][j]/=ptrsum;
+	  //  }
+	  //}
 
 
           // mainloop for computing X and signal energy and noise energy
@@ -1586,30 +1633,36 @@ OvwmSim::SetMeasurements(
 	      double a=a0+(j-center_azim_idx)*integrationStepSize;
 	      Vector3 locra(r,a,0.0);
 	      EarthPosition locgc=gc_to_rangeazim.Backward(locra);
-              
+              locgc+=spot_centroid;
               //------------------------------
 	      // compute windvector and sigma0
               //------------------------------
 	      double alt, lat, lon;
+              float s0;
+	      WindVector wv;
 	      if (! locgc.GetAltLonGDLat(&alt, &lon, &lat))
 		return(0);  
 	      LonLat lon_lat;
 	      lon_lat.longitude = lon;
 	      lon_lat.latitude = lat;
-	      WindVector wv;
-              float s0;
-	      if (! windfield->InterpolatedWindVector(lon_lat, &wv))
-		{
-		  wv.spd = 0.0;
-		  wv.dir = 0.0;
-		}
+	      if(landMap.IsLand(lon, lat)){
+		meas->landFlag=3;
+		s0=landSigma0[meas->beamIdx];
+	      }
+              else{
+		if (! windfield->InterpolatedWindVector(lon_lat, &wv))
+		  {
+		    wv.spd = 0.0;
+		    wv.dir = 0.0;
+		  }
 
-	      // chi is defined so that 0.0 means the wind is blowing towards
-	      // the s/c (the opposite direction as the look vector)
-	      float chi = wv.dir - meas->eastAzimuth + pi;
+		// chi is defined so that 0.0 means the wind is blowing towards
+		// the s/c (the opposite direction as the look vector)
+		float chi = wv.dir - meas->eastAzimuth + pi;
 
-	      gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
-                wv.spd, chi, &s0); 
+		gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
+					  wv.spd, chi, &s0); 
+	      }
               //-----------------------------        
 	      // compute gain and range
               //-----------------------------
@@ -1643,18 +1696,27 @@ OvwmSim::SetMeasurements(
 	    /(64*pi*pi*pi*ovwm->systemLoss);
           double kSNR=ovwm->ses.transmitPower*lambda*
 	    lambda*ovwm->ses.txPulseWidth*ovwm->ses.numPulses
-	    /(64*pi*pi*pi*ovwm->systemLoss*N0);
+	    /(64*pi*pi*pi*ovwm->systemLoss*N0*float(nL));
+          double SNR=Es*kSNR;
           meas->XK*=ksig;
           Es*=ksig;
-          double SNR=Es*kSNR;
           En=Es/SNR;
-        
+          meas->EnSlice=En;
+
           //-----------------------
-          // compute variance
+          // compute variance ONLY kpc for now!
           //-----------------------
-          double kpc2=(1/nL)*(1+2/SNR+1/(SNR*SNR));
+          double kpc2=(1/(float)nL)*(1+2/SNR+1/(SNR*SNR));
 	  var_esn_slice=kpc2*(Es*Es/(meas->XK*meas->XK));
-	  
+
+          // Consistent with meas->numSlices=-1 case in GMF::GetVariance
+          // kpm is removed 
+          float kpmtoremove=0.16;
+          float s0ne=En/meas->XK; // noise equivalent s0
+          float alpha=1/(float)nL;
+	  meas->A=alpha+1.0/(1+kpmtoremove*kpmtoremove);
+          meas->B=2.0*s0ne/(float)nL;
+          meas->C=s0ne*s0ne/(float)nL;
           
           // add noise and bias due to ambiguity
           meas->value=Es+En;

@@ -976,7 +976,7 @@ Ovwm::MakePixels(
     for (int slice_idx = 0; slice_idx < total_pixels; slice_idx++) {
         Meas* meas = new Meas();
         meas->startSliceIdx = slice_idx;
-        meas->numSlices = 1;
+        meas->numSlices = -1; // so meas->A and meas->B and meas->C are used
         meas_spot->Append(meas);
     }
 
@@ -1162,7 +1162,7 @@ Ovwm::LocatePixels(
 	  meas->incidenceAngle = pi - theta;
 
 	  meas->centroid = surfpt;
-	  meas->scanAngle = azim;
+	  meas->scanAngle = antenna->groundImpactAzimuthAngle;
 
  #ifdef DEBUG_LOCATE_PIXELS
 	    double alt,lon,latgd;
