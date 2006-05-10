@@ -1572,7 +1572,7 @@ OvwmSim::SetMeasurements(
 	    int n2=n-nL/2;
             //HACK Actual spacing of range looks on ground should be used
             //     instead of rangewid
-	    center_range_idx[n]=(nrsteps-1)/2.0+(2*n2+1)*rangewid;
+	    center_range_idx[n]=(nrsteps-1)/2.0+(2*n2+1)*rangewid/integrationStepSize;
 	    
 	  }
 
@@ -1604,6 +1604,7 @@ OvwmSim::SetMeasurements(
                 val1*=val1;
 
        		_ptr_array[i][j]+=exp(-(val1+val2));
+                areaeff+=_ptr_array[i][j]*integrationStepSize*integrationStepSize;
 	      }
 	    }
 	  }
@@ -1624,7 +1625,7 @@ OvwmSim::SetMeasurements(
 	  En=0;
 	  
           
-          Vector3 center_ra=gc_to_rangeazim.Forward(meas->centroid);
+          Vector3 center_ra=gc_to_rangeazim.Forward(meas->centroid-spot_centroid);
 	  double r0=center_ra.Get(0);
 	  double a0=center_ra.Get(1);
 	  for(int i=0;i<nrsteps;i++){
@@ -1645,7 +1646,11 @@ OvwmSim::SetMeasurements(
 	      LonLat lon_lat;
 	      lon_lat.longitude = lon;
 	      lon_lat.latitude = lat;
-	      if(landMap.IsLand(lon, lat)){
+              int island=0;
+              if(simCoast){
+		island=landMap.IsLand(lon, lat);
+	      }
+	      if(island){
 		meas->landFlag=3;
 		s0=landSigma0[meas->beamIdx];
 	      }
@@ -1679,7 +1684,7 @@ OvwmSim::SetMeasurements(
               //----------------------------
               // Integrate X and Es
               //----------------------------
-	      float dX=GatGar*_ptr_array[i][j]*s0*integrationStepSize*
+	      float dX=GatGar*_ptr_array[i][j]*integrationStepSize*
 		integrationStepSize/(range*range*range*range);
 	      meas->XK+=dX;
 	      Es+=dX*s0;
@@ -1707,14 +1712,14 @@ OvwmSim::SetMeasurements(
           // compute variance ONLY kpc for now!
           //-----------------------
           double kpc2=(1/(float)nL)*(1+2/SNR+1/(SNR*SNR));
-	  var_esn_slice=kpc2*(Es*Es/(meas->XK*meas->XK));
+	  var_esn_slice=kpc2*Es*Es;
 
           // Consistent with meas->numSlices=-1 case in GMF::GetVariance
           // kpm is removed 
           float kpmtoremove=0.16;
           float s0ne=En/meas->XK; // noise equivalent s0
           float alpha=1/(float)nL;
-	  meas->A=alpha+1.0/(1+kpmtoremove*kpmtoremove);
+	  meas->A=(alpha+1.0)/(1+kpmtoremove*kpmtoremove);
           meas->B=2.0*s0ne/(float)nL;
           meas->C=s0ne*s0ne/(float)nL;
           

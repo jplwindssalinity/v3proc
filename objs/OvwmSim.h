@@ -125,6 +125,7 @@ public:
     OvwmEvent::OvwmEventE    lastEventType;
     unsigned short           lastEventIdealEncoder;
     LandMap                  landMap;
+    int                      simCoast;
     TimeCorrelatedGaussian   ptgrNoise;
     int                      numLookStepsPerSlice;
     float                    azimuthIntegrationRange;

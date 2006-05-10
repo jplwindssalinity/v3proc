@@ -533,7 +533,8 @@ ConfigOvwmSim(
             fprintf(stderr, "Cannot Initialize Land Map\n");
             return(0);
         }
-
+        
+	config_list->GetInt(SIM_COAST_KEYWORD,&(ovwm_sim->simCoast));
 	char keyword[1024];
 	char number[8];
 
