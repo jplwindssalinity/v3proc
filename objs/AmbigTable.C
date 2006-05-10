@@ -19,8 +19,8 @@ AmbigTable::AmbigTable()
   Nazi_= (unsigned int)int( 360/Azimuth_step_+0.1);//Nazi_= 306 degree/Azimuth_step
 
  //set array size based on Nalong, Ncross_
-  alongtrack=(float***) make_array(sizeof(float),2,Nazi_,Nbeam_,Nalong_);
-  crosstrack=(float***) make_array(sizeof(float),2,Nazi_,Nbeam_,Ncross_);
+  alongtrack=(float***) make_array(sizeof(float),3,Nazi_,Nbeam_,Nalong_);
+  crosstrack=(float***) make_array(sizeof(float),3,Nazi_,Nbeam_,Ncross_);
 
  
 
@@ -101,11 +101,11 @@ int AmbigTable::Read(char* index_filename, char* table_filename)
 
       //read alongtrack
       for(unsigned int i=0;i<Nalong_;++i)
-	if(fread((void*)&alongtrack[i],sizeof(float),1,index_f)!=1) return(0);
+	if(fread((void*)&alongtrack[i_azi][i_beam][i],sizeof(float),1,index_f)!=1) return(0);
 
       //read crosstrack
       for(unsigned int i=0;i<Ncross_;++i)
-	if(fread((void*)&crosstrack[i],sizeof(float),1,index_f)!=1) return(0);
+	if(fread((void*)&crosstrack[i_azi][i_beam][i],sizeof(float),1,index_f)!=1) return(0);
 
       //read total amb ratio 
       for(unsigned int i=0;i<Nalong_;++i)
@@ -160,13 +160,16 @@ int AmbigTable::Read(char* index_filename, char* table_filename)
 
 double AmbigTable::GetAmbRat1(const unsigned int& beam_number, 
 			      const double& azimuth_angle,
-			      const double& alongtrack_wrt_boresight,
-			      const double& crosstrack_wrt_boresight ,
-			      double& amb_along_location,
-			      double& amb_cross_location)
+			      const double& alongtrack_input,
+			      const double& crosstrack_input ,
+			      double& amb_along,
+			      double& amb_cross)
 {
+			     
 
   double value=pow(10,100/10);//100 dB
+  amb_along=0;
+  amb_cross=0;
   if(!read_table_) {
     fprintf(stderr, "AmbigTable::GetAmbRat1: beam pattern has not been read in\n");
     exit(1);
@@ -186,23 +189,23 @@ double AmbigTable::GetAmbRat1(const unsigned int& beam_number,
 
   //compute indices for along/cross
   unsigned int azi_index=(unsigned int) i_azi;
-  if(alongtrack_wrt_boresight <alongtrack[azi_index][beam_number][0] 
-     || alongtrack_wrt_boresight >=alongtrack[azi_index][beam_number][Nalong_-1]){
+  if(alongtrack_input <alongtrack[azi_index][beam_number][0] 
+     || alongtrack_input >=alongtrack[azi_index][beam_number][Nalong_-1]){
     return(0.0);//checking outside process window?,  return 0.0
   }
-  if(crosstrack_wrt_boresight<crosstrack[azi_index][beam_number][0] 
-     || crosstrack_wrt_boresight>=crosstrack[azi_index][beam_number][Ncross_-1]){
+  if(crosstrack_input<crosstrack[azi_index][beam_number][0] 
+     || crosstrack_input>=crosstrack[azi_index][beam_number][Ncross_-1]){
     return(0.0);//checking outside processing window?,  return 0.0
   }
   
-  double along_index_r= alongtrack_wrt_boresight - alongtrack[azi_index][beam_number][0];
+  double along_index_r= alongtrack_input - alongtrack[azi_index][beam_number][0];
   along_index_r /=  alongtrack[azi_index][beam_number][1]- alongtrack[azi_index][beam_number][0];
   if(along_index_r <0.0 || along_index_r >=float(Nalong_)){
     fprintf(stderr, "AmbigTable::GetAmbRat1: alongtrack  index is out of range\n");
     exit(1);
   }
 
-  double cross_index_r= crosstrack_wrt_boresight - crosstrack[azi_index][beam_number][0];
+  double cross_index_r= crosstrack_input - crosstrack[azi_index][beam_number][0];
   cross_index_r /= crosstrack[azi_index][beam_number][1]-crosstrack[azi_index][beam_number][0];
   if(cross_index_r <0.0 || cross_index_r >float(Ncross_)){
     fprintf(stderr, "AmbigTable::GetAmbRat1: crosstrack  index is out of range\n");
@@ -215,8 +218,8 @@ double AmbigTable::GetAmbRat1(const unsigned int& beam_number,
   value=amb_first_power[azi_index][beam_number][along_index][cross_index];
 
   //addition location information
-  amb_along_location=amb_along1[azi_index][beam_number][along_index][cross_index];
-  amb_cross_location=amb_cross1[azi_index][beam_number][along_index][cross_index];
+  amb_along=amb_along1[azi_index][beam_number][along_index][cross_index];
+  amb_cross=amb_cross1[azi_index][beam_number][along_index][cross_index];
 
   return(value);
 
@@ -224,12 +227,15 @@ double AmbigTable::GetAmbRat1(const unsigned int& beam_number,
 
 double AmbigTable::GetAmbRat2(const unsigned int& beam_number, 
 			      const double& azimuth_angle,
-			      const double& alongtrack_wrt_boresight,
-			      const double& crosstrack_wrt_boresight,
-			      double& amb_along_location,
-			      double& amb_cross_location)
+			      const double& alongtrack_input,
+			      const double& crosstrack_input,
+			      double& amb_along,
+			      double& amb_cross)
+			     
 {
   double value=pow(10,100/10);//100 dB
+  amb_along=0;
+  amb_cross=0;
   if(!read_table_) {
     fprintf(stderr, "AmbigTable::GetAmbRat2: beam pattern has not been read in\n");
     exit(1);
@@ -248,23 +254,23 @@ double AmbigTable::GetAmbRat2(const unsigned int& beam_number,
 
   //compute indices for along/cross
   unsigned int azi_index=(unsigned int) i_azi;
-  if(alongtrack_wrt_boresight <alongtrack[azi_index][beam_number][0] 
-     || alongtrack_wrt_boresight >=alongtrack[azi_index][beam_number][Nalong_-1]){
+  if(alongtrack_input <alongtrack[azi_index][beam_number][0] 
+     || alongtrack_input >=alongtrack[azi_index][beam_number][Nalong_-1]){
     return(0.0);//checking outside process window?,  return 0.0
   }
-  if(crosstrack_wrt_boresight<crosstrack[azi_index][beam_number][0] 
-     || crosstrack_wrt_boresight>=crosstrack[azi_index][beam_number][Ncross_-1]){
+  if(crosstrack_input<crosstrack[azi_index][beam_number][0] 
+     || crosstrack_input>=crosstrack[azi_index][beam_number][Ncross_-1]){
     return(0.0);//checking outside processing window?,  return 0.0
   }
   
-  double along_index_r= alongtrack_wrt_boresight - alongtrack[azi_index][beam_number][0];
+  double along_index_r= alongtrack_input - alongtrack[azi_index][beam_number][0];
   along_index_r /=  alongtrack[azi_index][beam_number][1]- alongtrack[azi_index][beam_number][0];
   if(along_index_r <0.0 || along_index_r >=float(Nalong_)){
     fprintf(stderr, "AmbigTable::GetAmbRat2: alongtrack  index is out of range\n");
     exit(1);
   }
   
-  double cross_index_r= crosstrack_wrt_boresight - crosstrack[azi_index][beam_number][0];
+  double cross_index_r= crosstrack_input - crosstrack[azi_index][beam_number][0];
   cross_index_r /= crosstrack[azi_index][beam_number][1]-crosstrack[azi_index][beam_number][0];
   if(cross_index_r <0.0 || cross_index_r >float(Ncross_)){
     fprintf(stderr, "AmbigTable::GetAmbRat2: crosstrack  index is out of range\n");
@@ -277,16 +283,16 @@ double AmbigTable::GetAmbRat2(const unsigned int& beam_number,
   value=amb_second_power[azi_index][beam_number][along_index][cross_index];
 
   //addition location information
-  amb_along_location=amb_along2[azi_index][beam_number][along_index][cross_index];
-  amb_cross_location=amb_cross2[azi_index][beam_number][along_index][cross_index];
+  amb_along=amb_along2[azi_index][beam_number][along_index][cross_index];
+  amb_cross=amb_cross2[azi_index][beam_number][along_index][cross_index];
 
   return(value);
 }
 
  int AmbigTable::IsNadirAmbiguous( unsigned int& beam_number, 
 				  const double& azimuth_angle,
-				  const double& alongtrack_wrt_boresight,
-				  const double& crosstrack_wrt_boresight)
+				  const double& alongtrack_input,
+				  const double& crosstrack_input)
 {
   int value=1;
  if(!read_table_) {
@@ -309,23 +315,23 @@ double AmbigTable::GetAmbRat2(const unsigned int& beam_number,
 
   //compute indices for along/cross
   unsigned int azi_index=(unsigned int) i_azi;
-  if(alongtrack_wrt_boresight <alongtrack[azi_index][beam_number][0] 
-     || alongtrack_wrt_boresight >=alongtrack[azi_index][beam_number][Nalong_-1]){
+  if(alongtrack_input <alongtrack[azi_index][beam_number][0] 
+     || alongtrack_input >=alongtrack[azi_index][beam_number][Nalong_-1]){
     return(0);//checking outside process window?,  return 0.0
   }
-  if(crosstrack_wrt_boresight<crosstrack[azi_index][beam_number][0] 
-     || crosstrack_wrt_boresight>=crosstrack[azi_index][beam_number][Ncross_-1]){
+  if(crosstrack_input<crosstrack[azi_index][beam_number][0] 
+     || crosstrack_input>=crosstrack[azi_index][beam_number][Ncross_-1]){
     return(0);//checking outside processing window?,  return 0.0
   }
   
-  double along_index_r= alongtrack_wrt_boresight - alongtrack[azi_index][beam_number][0];
+  double along_index_r= alongtrack_input - alongtrack[azi_index][beam_number][0];
   along_index_r /=  alongtrack[azi_index][beam_number][1]- alongtrack[azi_index][beam_number][0];
   if(along_index_r <0.0 || along_index_r >=float(Nalong_)){
     fprintf(stderr, "AmbigTable::IsNadirAmbiguous: alongtrack  index is out of range\n");
     exit(1);
   }
   
-  double cross_index_r= crosstrack_wrt_boresight - crosstrack[azi_index][beam_number][0];
+  double cross_index_r= crosstrack_input - crosstrack[azi_index][beam_number][0];
   cross_index_r /= crosstrack[azi_index][beam_number][1]-crosstrack[azi_index][beam_number][0];
   if(cross_index_r <0.0 || cross_index_r >float(Ncross_)){
     fprintf(stderr, "AmbigTable::IsNadirAmbiguous: crosstrack  index is out of range\n");

@@ -12,23 +12,25 @@ class AmbigTable{
   //supporting functions
   double GetAmbRat1(const unsigned int& beam_number, 
 		    const double& azimuth_angle,
-		    const double& alongtrack_wrt_boresight,
-		    const double& crosstrack_wrt_boresight,
-		    double& amb_along_location,
-		    double& amb_cross_location);
-		    
+		    const double& alongtrack_input,
+		    const double& crosstrack_input,
+		    double& amb_along,
+		    double& amb_cross);
+		  
+		   
 
   double GetAmbRat2(const unsigned int& beam_number, 
 		    const double& azimuth_angle,
-		    const double& alongtrack_wrt_boresight,
-		    const double& crosstrack_wrt_boresight,
-		    double& amb_along_location,
-		    double& amb_cross_location);
+		    const double& alongtrack_input,
+		    const double& crosstrack_input,
+		    double& amb_along,
+		    double& amb_cross);
+		  
   
   int IsNadirAmbiguous( unsigned int& beam_number, 
 		       const double& azimuth_angle,
-		       const double& alongtrack_wrt_boresight,
-		       const double& crosstrack_wrt_boresight);
+		       const double& alongtrack_input,
+		       const double& crosstrack_input);
   
 
 
