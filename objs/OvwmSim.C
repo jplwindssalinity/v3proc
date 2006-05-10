@@ -1197,7 +1197,7 @@ OvwmSim::SetMeasurements(
     //-------------------------------------------------
     double r_a= r1_earth*1000.0;
     double r_e2=e2;
-    SchToXyz sch_to_xyz(r_a,r_e2);//earth radius in meter and eccentricity square
+    SchToXyz sch(r_a,r_e2);//earth radius in meter and eccentricity square
 
     //get position and velocity
     OrbitState* sc;
@@ -1230,15 +1230,31 @@ OvwmSim::SetMeasurements(
     geo_hdg(r_a,r_e2,r_llh1(0), r_llh1(1),r_llh2(0),r_llh2(1),r_heading);
 
     //set peg point
-    sch_to_xyz.SetPegPoint(r_llh(0), r_llh(1), r_heading);
+    sch.SetPegPoint(r_llh(0), r_llh(1), r_heading);
 
+    double d2r= pi/180.0;
+    double r2d= 180.0/pi;
+   
+    cout<<"nadir lat lon  "<< r_llh(0)*r2d<<" "<<r_llh(1)*r2d<<endl;
+    //cout<<"r_llh "<< r_llh1(0)*r2d<<" "<<r_llh1(1)*r2d<<endl;
+    //cout<<"r_llh "<< r_llh2(0)*r2d<<" "<<r_llh2(1)*r2d<<endl;
+    //
+    //cout<<"heading "<< r_heading*180/3.14<<endl;
     //now we can convert surface location into sch
     //call the following two functions will do the job
-    // sch_to_xyz.xyz_to_sch(r_xyz,r_sch)
-    // or sch_to_xyz.sch_to_xyz(r_sch,r_xyz)
+    // sch.xyz_to_sch(r_xyz,r_sch)
+    // or sch.sch_to_xyz(r_sch,r_xyz)
 
-
-
+    //need boresight xyz in meter scale
+    EarthPosition bore_in_meter=spot_centroid;
+    bore_in_meter *=1000.0;//km to m
+    Vector3 bore_sch_in_meter,bore_llh;
+    xyz_to_llh(r_a,r_e2,bore_in_meter,bore_llh);
+    cout<<"bore llh "<< bore_llh(0)*r2d<<" "<<bore_llh(1)*r2d<<" "<<bore_llh(3)<<endl;
+    sch.xyz_to_sch(bore_in_meter,bore_sch_in_meter);
+    cout<<"s c h of bore "<< bore_sch_in_meter(0)<<" "<<bore_sch_in_meter(1)<<" "<<bore_sch_in_meter(2)<<endl;
+    
+   
 
     //INCOMPLETE need to add to make ambig bias work right
 
@@ -1246,14 +1262,31 @@ OvwmSim::SetMeasurements(
     Meas* meas = meas_spot->GetHead();
 
 
+   
+    //scan angle and beam index
+    float scan_angle=meas->scanAngle;
+    scan_angle *= r2d;
+    if(scan_angle<=270) 
+      scan_angle=  scan_angle + 90;
+    else
+      scan_angle= scan_angle-90;
+
+    if(scan_angle <0.0 || scan_angle >360.0){
+      fprintf(stderr,"Error:SetMeasurements scan angle is out of range\n");
+      exit(1);
+    }
+    unsigned int beam_id=meas->beamIdx;
+    cout<<"scan angle and beam index "<< scan_angle<<" "<<beam_id<<endl;
 
     //-------------------------//
     // for each measurement... //
     //-------------------------//
-
+    //recycled variable    
+    Vector3 centroid_llh, centroid_xyz_in_meter, centroid_sch_in_meter;
+    double along_from_bore_in_meter, cross_from_bore_in_meter;
     while (meas)
     {
-
+ 
         //----------------------------------------//
         // get lon and lat for the earth location //
         //----------------------------------------//
@@ -1265,7 +1298,10 @@ OvwmSim::SetMeasurements(
         LonLat lon_lat;
         lon_lat.longitude = lon;
         lon_lat.latitude = lat;
+	
 
+
+	
         // Compute Land Flag
         meas->landFlag = landMap.IsLand(lon, lat);
 
@@ -1492,7 +1528,7 @@ OvwmSim::SetMeasurements(
           // for computational efficiency we do it here.
           Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
           Vector3 rlook_ant=gc_to_antenna.Forward(rlook);
-    //gc_to_antenna.Show();
+	  //gc_to_antenna.Show();
           double r,theta,phi;
 	  rlook_ant.SphericalGet(&r,&theta,&phi);
     //cout << theta << endl;
@@ -1503,7 +1539,26 @@ OvwmSim::SetMeasurements(
 	  }
           gain/=maxgain;
     //exit(0);
+
+
+	  //code done by ygim: phone 4-4299
+	  centroid_llh=Vector3(lat, lon, alt*1000.0);//alt in meter
+	  llh_to_xyz(r_a,r_e2,centroid_llh, centroid_xyz_in_meter);
+	  sch.xyz_to_sch(centroid_xyz_in_meter,centroid_sch_in_meter);
+	  cout<<"centroid lat lon alt "<< lat*r2d<<" "<<lon*r2d<<" "<< alt<< "km"<<endl;
+	  cout<<"centroid lat lon height "<< centroid_llh(0)*r2d<<" "<<centroid_llh(1)*r2d<<" "<<centroid_llh(2)<<endl;
+	  cout<<"centroid xyz "<< centroid_xyz_in_meter(0)<<" "<<centroid_xyz_in_meter(1)<<" "<<centroid_xyz_in_meter(2)<<endl;
+	  cout<<"centroid sch  "<< centroid_sch_in_meter(0)<<" "<<centroid_sch_in_meter(1)<<" "<<centroid_sch_in_meter(2)<<endl;
+	  along_from_bore_in_meter= centroid_sch_in_meter(0)-bore_sch_in_meter(0);
+	  cross_from_bore_in_meter= centroid_sch_in_meter(1)-bore_sch_in_meter(1);
+	  cout<<"along cross wrt bore "<< along_from_bore_in_meter<<" "<<cross_from_bore_in_meter<<endl;
+	  
+
 	  /* HACK put this part in when table reader works
+	  //ambiguity table access:
+	  //beam number, azimuth angle, alongtrack wrt boresight
+	  //crosstrack wrt boresight
+	  // amb_along_location, amb_cross_location
 	  double amb1=ambTable.GetAmbRat1(xxxxxx);
 	  double amb2=ambTable.GetAmbRat2(xxxxxx);
           */
