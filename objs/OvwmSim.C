@@ -1237,7 +1237,7 @@ OvwmSim::SetMeasurements(
     double d2r= pi/180.0;
     double r2d= 180.0/pi;
    
-    cout<<"nadir lat lon  "<< r_llh(0)*r2d<<" "<<r_llh(1)*r2d<<endl;
+    //cout<<"nadir lat lon  "<< r_llh(0)*r2d<<" "<<r_llh(1)*r2d<<endl;
     //cout<<"r_llh "<< r_llh1(0)*r2d<<" "<<r_llh1(1)*r2d<<endl;
     //cout<<"r_llh "<< r_llh2(0)*r2d<<" "<<r_llh2(1)*r2d<<endl;
     //
@@ -1552,11 +1552,11 @@ OvwmSim::SetMeasurements(
 	  sch.xyz_to_sch(centroid_xyz_in_meter,centroid_sch_in_meter);
 	  centroid_along= centroid_sch_in_meter(0)/1000.0;// km
 	  centroid_cross= centroid_sch_in_meter(1)/1000.0;// km
-	  cout<<"centroid lat lon height "<< centroid_llh(0)*r2d<<" "<<centroid_llh(1)*r2d<<" "<<centroid_llh(2)<<endl;
-	  cout<<"centroid xyz "<< centroid_xyz_in_meter(0)<<" "<<centroid_xyz_in_meter(1)<<" "<<centroid_xyz_in_meter(2)<<endl;
-	  cout<<"centroid sch  "<< centroid_sch_in_meter(0)<<" "<<centroid_sch_in_meter(1)<<" "<<centroid_sch_in_meter(2)<<endl;
+	  //cout<<"centroid lat lon height "<< centroid_llh(0)*r2d<<" "<<centroid_llh(1)*r2d<<" "<<centroid_llh(2)<<endl;
+	  //cout<<"centroid xyz "<< centroid_xyz_in_meter(0)<<" "<<centroid_xyz_in_meter(1)<<" "<<centroid_xyz_in_meter(2)<<endl;
+	  //cout<<"centroid sch  "<< centroid_sch_in_meter(0)<<" "<<centroid_sch_in_meter(1)<<" "<<centroid_sch_in_meter(2)<<endl;
 	 
-	  cout<<"along cross  "<< centroid_along<<"  "<<centroid_cross<<endl;
+	  //cout<<"along cross  "<< centroid_along<<"  "<<centroid_cross<<endl;
 
 	  
 
@@ -1574,7 +1574,8 @@ OvwmSim::SetMeasurements(
           
 
           // until then
-          cout<<"amb1 and 2 "<< amb1<<" "<<amb2<<endl;
+	  if(amb1 != 0.0 && amb2 !=0.0)
+	    cout<<"amb1 and 2 "<< amb1<<" "<<amb2<<endl;
 
 	  double amb=amb1+amb2;
 	  if(gain<minOneWayGain || amb> 1/minSignalToAmbigRatio){
