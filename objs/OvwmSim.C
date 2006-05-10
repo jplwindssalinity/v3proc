@@ -468,6 +468,7 @@ OvwmSim::ScatSim(
     Stable*      stable,
     L1AFrame*    l1a_frame,
     PointTargetResponseTable* ptrTable,
+    AmbigTable* ambigTable,
     L1B*         l1b)
 {
   // incomplete 
@@ -612,7 +613,7 @@ OvwmSim::ScatSim(
     //------------------------//
     
     if (! SetMeasurements(spacecraft, ovwm, &meas_spot, windfield,
-        inner_map, outer_map, gmf, kp, kpmField, topo, stable, &cf, ptrTable, (l1b!=NULL)))
+        inner_map, outer_map, gmf, kp, kpmField, topo, stable, &cf, ptrTable,ambigTable, (l1b!=NULL)))
     {
         return(0);
     }
@@ -1142,6 +1143,7 @@ OvwmSim::SetMeasurements(
     Stable*      stable,
     CheckFrame*  cf,
     PointTargetResponseTable* ptrTable,
+    AmbigTable* ambigTable,
     int sim_l1b_direct)
 {
 
@@ -1264,12 +1266,12 @@ OvwmSim::SetMeasurements(
 
    
     //scan angle and beam index
-    float scan_angle=meas->scanAngle;
+    double scan_angle=meas->scanAngle;
     scan_angle *= r2d;
-    if(scan_angle<=270) 
-      scan_angle=  scan_angle + 90;
+    if(scan_angle<=270.0) 
+      scan_angle=  scan_angle + 90.0;
     else
-      scan_angle= scan_angle-90;
+      scan_angle= scan_angle-90.0;
 
     if(scan_angle <0.0 || scan_angle >360.0){
       fprintf(stderr,"Error:SetMeasurements scan angle is out of range\n");
@@ -1283,7 +1285,9 @@ OvwmSim::SetMeasurements(
     //-------------------------//
     //recycled variable    
     Vector3 centroid_llh, centroid_xyz_in_meter, centroid_sch_in_meter;
-    double along_from_bore_in_meter, cross_from_bore_in_meter;
+    double centroid_along, centroid_cross;
+    double amb1_along, amb1_cross;//first ambigous point
+    double amb2_along, amb2_cross;//second ambigous point
     while (meas)
     {
  
@@ -1542,29 +1546,35 @@ OvwmSim::SetMeasurements(
 
 
 	  //code done by ygim: phone 4-4299
-	  centroid_llh=Vector3(lat, lon, alt*1000.0);//alt in meter
-	  llh_to_xyz(r_a,r_e2,centroid_llh, centroid_xyz_in_meter);
+	  centroid_xyz_in_meter= meas->centroid;
+	  centroid_xyz_in_meter *=1000.0;//change km to meter
+	  xyz_to_llh(r_a, r_e2, centroid_xyz_in_meter, centroid_llh);
 	  sch.xyz_to_sch(centroid_xyz_in_meter,centroid_sch_in_meter);
-	  cout<<"centroid lat lon alt "<< lat*r2d<<" "<<lon*r2d<<" "<< alt<< "km"<<endl;
+	  centroid_along= centroid_sch_in_meter(0)/1000.0;// km
+	  centroid_cross= centroid_sch_in_meter(1)/1000.0;// km
 	  cout<<"centroid lat lon height "<< centroid_llh(0)*r2d<<" "<<centroid_llh(1)*r2d<<" "<<centroid_llh(2)<<endl;
 	  cout<<"centroid xyz "<< centroid_xyz_in_meter(0)<<" "<<centroid_xyz_in_meter(1)<<" "<<centroid_xyz_in_meter(2)<<endl;
 	  cout<<"centroid sch  "<< centroid_sch_in_meter(0)<<" "<<centroid_sch_in_meter(1)<<" "<<centroid_sch_in_meter(2)<<endl;
-	  along_from_bore_in_meter= centroid_sch_in_meter(0)-bore_sch_in_meter(0);
-	  cross_from_bore_in_meter= centroid_sch_in_meter(1)-bore_sch_in_meter(1);
-	  cout<<"along cross wrt bore "<< along_from_bore_in_meter<<" "<<cross_from_bore_in_meter<<endl;
+	 
+	  cout<<"along cross  "<< centroid_along<<"  "<<centroid_cross<<endl;
+
 	  
 
-	  /* HACK put this part in when table reader works
+	  
 	  //ambiguity table access:
 	  //beam number, azimuth angle, alongtrack wrt boresight
 	  //crosstrack wrt boresight
 	  // amb_along_location, amb_cross_location
-	  double amb1=ambTable.GetAmbRat1(xxxxxx);
-	  double amb2=ambTable.GetAmbRat2(xxxxxx);
-          */
+	  double amb1=ambigTable->GetAmbRat1(beam_id, scan_angle,
+					     centroid_along,centroid_cross,amb1_along,amb1_cross);
+					 
+	  double amb2=ambigTable->GetAmbRat2(beam_id, scan_angle,
+					     centroid_along,centroid_cross, amb2_along,amb2_cross);
+					 
+          
+
           // until then
-          double amb1=0;
-          double amb2=0;
+          cout<<"amb1 and 2 "<< amb1<<" "<<amb2<<endl;
 
 	  double amb=amb1+amb2;
 	  if(gain<minOneWayGain || amb> 1/minSignalToAmbigRatio){
