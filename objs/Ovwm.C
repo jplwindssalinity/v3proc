@@ -1162,7 +1162,7 @@ Ovwm::LocatePixels(
 	  meas->incidenceAngle = pi - theta;
 
 	  meas->centroid = surfpt;
-	  meas->scanAngle = antenna->groundImpactAzimuthAngle;
+	  meas->scanAngle = antenna->txCenterAzimuthAngle;
 
  #ifdef DEBUG_LOCATE_PIXELS
 	    double alt,lon,latgd;
