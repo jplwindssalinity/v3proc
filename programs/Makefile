@@ -16,7 +16,7 @@ LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm
 PURE =
 
 CCC =			$(PURE) g++
-DEBUGFLAGS =	-O2
+DEBUGFLAGS =	-ggdb2
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -DNOPM
 
 INSTALLDIR =	../../bin
@@ -54,6 +54,7 @@ PROGRAMS = \
 	l2ab_25to50 \
 	l2b_diff \
 	l2b_diff_from_truth \
+	l2b_diff_from_truth_tmp \
 	test_hdf_l2b \
 	l2b_manyMet \
 	l2b_match_selected \
