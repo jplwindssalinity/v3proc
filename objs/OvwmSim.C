@@ -53,7 +53,7 @@ OvwmSim::OvwmSim()
 // HACK should compute the defined terms
 // from OVWM parameters or even from PTR table
 #define MAX_RANGE_WIDTH 1.2
-#define MAX_AZIMUTH_WIDTH 8.0
+#define MAX_AZIMUTH_WIDTH 12.0
 
 int OvwmSim::AllocateIntermediateArrays(){
 
@@ -1515,6 +1515,14 @@ OvwmSim::SetMeasurements(
         // high res simulation
         else{
 
+	  if(meas->centroid.Magnitude() < 1000.0)
+	    { 
+	      meas=meas_spot->RemoveCurrent();
+	      delete meas;
+	      meas=meas_spot->GetCurrent();
+	      slice_i++;
+	      continue;
+	    }
 
 	  Gaussian normrv(1.0,0.0); // setup normal distrib for kpc
           // remove unusable measurement to save time
@@ -1533,17 +1541,14 @@ OvwmSim::SetMeasurements(
 	    gain=0;
 	  }
           gain/=maxgain;
-	  //exit(0);
 
-	  
-	  if(meas->centroid.Magnitude() < 1000.0)
-	    { 
-	      meas=meas_spot->RemoveCurrent();
-	      delete meas;
-	      meas=meas_spot->GetCurrent();
-	      slice_i++;
-	      continue;
-	    }
+	  if(gain<minOneWayGain){
+	    meas=meas_spot->RemoveCurrent();
+            delete meas;
+            meas=meas_spot->GetCurrent();
+	    slice_i++;
+            continue;
+	  }
 
 	  //code done by ygim: phone 4-4299
 	  //scan angle and beam index
@@ -1590,7 +1595,14 @@ OvwmSim::SetMeasurements(
 					     amb2_along,
 					     amb2_cross);
 					 
-          
+
+          EarthPosition amb1pos,amb2pos;
+          EarthPosition amb1pos_sch(amb1_along+bore_along,amb1_cross+bore_cross,0.0);
+	  EarthPosition amb2pos_sch(amb2_along+bore_along,amb2_cross+bore_cross,0.0);
+	  sch.sch_to_xyz(amb1pos_sch*1000.0,amb1pos);
+          amb1pos=amb1pos/1000.0;
+	  sch.sch_to_xyz(amb2pos_sch*1000.0,amb2pos);
+          amb2pos=amb2pos/1000.0;
 
           // until then
 	  if(amb1 != 0.0 && amb2 !=0.0){
@@ -1606,8 +1618,30 @@ OvwmSim::SetMeasurements(
 	    */
 	  }
 
+
+	  if(amb1==0 || amb2==0){
+	    if(amb2 ==0 && amb1 ==0){
+	      meas=meas_spot->RemoveCurrent();
+	      delete meas;
+	      meas=meas_spot->GetCurrent();
+	      slice_i++;
+	      continue;
+	    }
+	    else{
+	      fprintf(stderr,"Warning: Bad Ambiguity Condition 0 value for one ambig only\n");
+	      meas=meas_spot->RemoveCurrent();
+	      delete meas;
+	      meas=meas_spot->GetCurrent();
+	      slice_i++;
+	      continue;
+	    }
+	  }
+
+          amb1=1/amb1;
+          amb2=1/amb2;
 	  double amb=amb1+amb2;
-	  if(gain<minOneWayGain || amb> 1/minSignalToAmbigRatio){
+
+	  if(amb> 1/minSignalToAmbigRatio){
 	    meas=meas_spot->RemoveCurrent();
             delete meas;
             meas=meas_spot->GetCurrent();
@@ -1678,7 +1712,7 @@ OvwmSim::SetMeasurements(
 	    }
 	 }
 
-	 // INCOMPLETE:= NEED to turn off azimuthal weighting when 
+	 // INCOMPLETE?:= MAY NEED to turn off azimuthal weighting when 
 	 // gain pattern is dominant (i.e., fore/aft)
 
          double areaeff=0, areaeff_SL=0;
@@ -1802,6 +1836,75 @@ OvwmSim::SetMeasurements(
           Es*=ksig;
           En=Es/SNR;
           meas->EnSlice=En;
+
+          //------------------------
+          // compute bias due to ambiguity
+          //------------------------
+          float amb1s0, amb2s0;
+          
+
+	  double alt, lat, lon;
+	  WindVector wv;
+	  if (! amb1pos.GetAltLonGDLat(&alt, &lon, &lat)){
+	    amb1s0=0;
+	    fprintf(stderr,"Warning amb1 not on surface\n");
+	  }
+          else{
+	    LonLat lon_lat;
+	    lon_lat.longitude = lon;
+	    lon_lat.latitude = lat;
+	    int island=0;
+	    island=landMap.IsLand(lon, lat);
+	    if(island){
+	      meas->landFlag=3;
+	      amb1s0=landSigma0[meas->beamIdx];
+	    }
+	    else{
+	      if (! windfield->InterpolatedWindVector(lon_lat, &wv))
+		{
+		  wv.spd = 0.0;
+		  wv.dir = 0.0;
+		}
+	      
+	      // chi is defined so that 0.0 means the wind is blowing towards
+	      // the s/c (the opposite direction as the look vector)
+	      float chi = wv.dir - meas->eastAzimuth + pi;
+	      
+	      gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
+					wv.spd, chi, &amb1s0); 
+	    }
+	  }
+
+	  if (! amb2pos.GetAltLonGDLat(&alt, &lon, &lat)){
+	    amb2s0=0;
+	    fprintf(stderr,"Warning amb2 not on surface\n");
+	  }
+          else{
+	    LonLat lon_lat;
+	    lon_lat.longitude = lon;
+	    lon_lat.latitude = lat;
+	    int island=0;
+	    island=landMap.IsLand(lon, lat);
+	    if(island){
+	      meas->landFlag=3;
+	      amb2s0=landSigma0[meas->beamIdx];
+	    }
+	    else{
+	      if (! windfield->InterpolatedWindVector(lon_lat, &wv))
+		{
+		  wv.spd = 0.0;
+		  wv.dir = 0.0;
+		}
+	      
+	      // chi is defined so that 0.0 means the wind is blowing towards
+	      // the s/c (the opposite direction as the look vector)
+	      float chi = wv.dir - meas->eastAzimuth + pi;
+	      
+	      gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
+					wv.spd, chi, &amb2s0); 
+	    }
+	  }
+	  Es+=meas->XK*amb1*amb1s0+meas->XK*amb2*amb2s0;
 
           //-----------------------
           // compute variance ONLY kpc for now!
