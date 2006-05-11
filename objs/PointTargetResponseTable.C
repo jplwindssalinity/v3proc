@@ -1,4 +1,5 @@
 #include"PointTargetResponseTable.h"
+#include"Constants.h"
 
 PointTargetResponseTable::PointTargetResponseTable()
 {
@@ -201,6 +202,9 @@ float PointTargetResponseTable::GetSemiMinorWidth(
 
   /* find index */
 
+  scan_angle_rad=scan_angle_rad+pi/2;
+  if(scan_angle_rad>two_pi) scan_angle_rad-=two_pi;
+
   timeIdx = int(orbit_time_in_rev_s/TIME_STEP);
   angIdx = int(scan_angle_rad*rtd/ANGLE_STEP);
   rngIdx = int(range_km/RNG_STEP_SIZE)+N_RNG_BINS/2;
@@ -227,6 +231,9 @@ float PointTargetResponseTable::GetSemiMajorWidth(
   bn = beam_num - 1;
 
   /* find index */
+
+  scan_angle_rad=scan_angle_rad+pi/2;
+  if(scan_angle_rad>two_pi) scan_angle_rad-=two_pi;
 
   timeIdx = int(orbit_time_in_rev_s/TIME_STEP);
   angIdx = int(scan_angle_rad*rtd/ANGLE_STEP);

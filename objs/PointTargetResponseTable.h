@@ -5,7 +5,6 @@
 #include <math.h>
 #include <string.h>
 
-#define rtd 5.729577951e1
 #define NBEAMS 4
 #define AUX_MAX_LINE 400
 #define DATA_MAX_LINE 200000
