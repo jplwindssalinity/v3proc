@@ -86,6 +86,8 @@ template class List<StringPair>;
 template class List<EarthPosition>;
 template class List<WindVectorPlus>;
 template class List<AngleInterval>;
+template list<string>;
+template map<string,string,Options::ltstr>;
 
 //-----------//
 // CONSTANTS //
