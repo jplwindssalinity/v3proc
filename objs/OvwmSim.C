@@ -1252,33 +1252,24 @@ OvwmSim::SetMeasurements(
     bore_in_meter *=1000.0;//km to m
     Vector3 bore_sch_in_meter,bore_llh;
     xyz_to_llh(r_a,r_e2,bore_in_meter,bore_llh);
-    cout<<"bore llh "<< bore_llh(0)*r2d<<" "<<bore_llh(1)*r2d<<" "<<bore_llh(3)<<endl;
+    //cout<<"bore llh "<< bore_llh(0)*r2d<<" "<<bore_llh(1)*r2d<<" "<<bore_llh(3)<<endl;
     sch.xyz_to_sch(bore_in_meter,bore_sch_in_meter);
-    cout<<"s c h of bore "<< bore_sch_in_meter(0)<<" "<<bore_sch_in_meter(1)<<" "<<bore_sch_in_meter(2)<<endl;
-    
+    //cout<<"s c h of bore "<< bore_sch_in_meter(0)<<" "<<bore_sch_in_meter(1)<<" "<<bore_sch_in_meter(2)<<endl;
+    double bore_along, bore_cross;
+    bore_along= bore_sch_in_meter(0)/1000.0;
+    bore_cross= bore_sch_in_meter(1)/1000.0;
    
+    
+
 
     //INCOMPLETE need to add to make ambig bias work right
 
     int slice_i = 0;
     Meas* meas = meas_spot->GetHead();
-
+    
 
    
-    //scan angle and beam index
-    double scan_angle=meas->scanAngle;
-    scan_angle *= r2d;
-    if(scan_angle<=270.0) 
-      scan_angle=  scan_angle + 90.0;
-    else
-      scan_angle= scan_angle-90.0;
-
-    if(scan_angle <0.0 || scan_angle >360.0){
-      fprintf(stderr,"Error:SetMeasurements scan angle is out of range\n");
-      exit(1);
-    }
-    unsigned int beam_id=meas->beamIdx;
-    cout<<"scan angle and beam index "<< scan_angle<<" "<<beam_id<<endl;
+   
 
     //-------------------------//
     // for each measurement... //
@@ -1535,47 +1526,85 @@ OvwmSim::SetMeasurements(
 	  //gc_to_antenna.Show();
           double r,theta,phi;
 	  rlook_ant.SphericalGet(&r,&theta,&phi);
-    //cout << theta << endl;
-    //cout << phi << endl;
+	  //cout << theta << endl;
+	  //cout << phi << endl;
           double gain;
           if(!beam->GetPowerGain(theta,phi,&gain)){
 	    gain=0;
 	  }
           gain/=maxgain;
-    //exit(0);
+	  //exit(0);
 
+	  
+	  if(meas->centroid.Magnitude() < 1000.0)
+	    { 
+	      meas=meas_spot->RemoveCurrent();
+	      delete meas;
+	      meas=meas_spot->GetCurrent();
+	      slice_i++;
+	      continue;
+	    }
 
 	  //code done by ygim: phone 4-4299
+	  //scan angle and beam index
+	  double scanangle=meas->scanAngle;
+	  scanangle *= r2d;
+	  if(scanangle<=270.0) 
+	    scanangle=  scanangle + 90.0;
+	  else
+	    scanangle= scanangle-90.0;
+	  
+	  if(scanangle <0.0 || scanangle >360.0){
+	    fprintf(stderr,"Error:SetMeasurements scan angle is out of range\n");
+	    exit(1);
+	  }
+	  unsigned int beam_id=meas->beamIdx;
+	 
+
+
+
 	  centroid_xyz_in_meter= meas->centroid;
 	  centroid_xyz_in_meter *=1000.0;//change km to meter
 	  xyz_to_llh(r_a, r_e2, centroid_xyz_in_meter, centroid_llh);
 	  sch.xyz_to_sch(centroid_xyz_in_meter,centroid_sch_in_meter);
 	  centroid_along= centroid_sch_in_meter(0)/1000.0;// km
 	  centroid_cross= centroid_sch_in_meter(1)/1000.0;// km
-	  //cout<<"centroid lat lon height "<< centroid_llh(0)*r2d<<" "<<centroid_llh(1)*r2d<<" "<<centroid_llh(2)<<endl;
-	  //cout<<"centroid xyz "<< centroid_xyz_in_meter(0)<<" "<<centroid_xyz_in_meter(1)<<" "<<centroid_xyz_in_meter(2)<<endl;
-	  //cout<<"centroid sch  "<< centroid_sch_in_meter(0)<<" "<<centroid_sch_in_meter(1)<<" "<<centroid_sch_in_meter(2)<<endl;
-	 
-	  //cout<<"along cross  "<< centroid_along<<"  "<<centroid_cross<<endl;
-
+	  
 	  
 
 	  
 	  //ambiguity table access:
-	  //beam number, azimuth angle, alongtrack wrt boresight
+	  //beam number, azimuth angle
+	  // alongtrack wrt boresight
 	  //crosstrack wrt boresight
 	  // amb_along_location, amb_cross_location
-	  double amb1=ambigTable->GetAmbRat1(beam_id, scan_angle,
-					     centroid_along,centroid_cross,amb1_along,amb1_cross);
+	  double amb1=ambigTable->GetAmbRat1(beam_id, scanangle,
+					     centroid_along-bore_along,
+					     centroid_cross-bore_cross,
+					     amb1_along,
+					     amb1_cross);
 					 
-	  double amb2=ambigTable->GetAmbRat2(beam_id, scan_angle,
-					     centroid_along,centroid_cross, amb2_along,amb2_cross);
+	  double amb2=ambigTable->GetAmbRat2(beam_id, scanangle,
+					     centroid_along - bore_along
+					     ,centroid_cross - bore_cross, 
+					     amb2_along,
+					     amb2_cross);
 					 
           
 
           // until then
-	  if(amb1 != 0.0 && amb2 !=0.0)
-	    cout<<"amb1 and 2 "<< amb1<<" "<<amb2<<endl;
+	  if(amb1 != 0.0 && amb2 !=0.0){
+	    /*
+	    cout<<"scan angle and beam index "<< scanangle<<" "<<beam_id<<endl;
+	    cout<<"centroid lat lon height "<< centroid_llh(0)*r2d<<" "<<centroid_llh(1)*r2d<<" "<<centroid_llh(2)<<endl;
+	    cout<<"centroid xyz "<< centroid_xyz_in_meter(0)<<" "<<centroid_xyz_in_meter(1)<<" "<<centroid_xyz_in_meter(2)<<endl;
+	    cout<<"centroid sch  "<< centroid_sch_in_meter(0)<<" "<<centroid_sch_in_meter(1)<<" "<<centroid_sch_in_meter(2)<<endl;
+	    
+	    cout<<"along cross  "<< centroid_along<<"  "<<centroid_cross<<endl;
+	    cout<<"along cross w.r.t. bore "<< centroid_along - bore_along<<" "<<centroid_cross-bore_cross<<endl;
+	    cout<<"amb1 and 2 in dB: "<< 10*log(amb1)/log(10.0)<<" "<<10*log(amb2)/log(10.0)<<endl;
+	    */
+	  }
 
 	  double amb=amb1+amb2;
 	  if(gain<minOneWayGain || amb> 1/minSignalToAmbigRatio){
