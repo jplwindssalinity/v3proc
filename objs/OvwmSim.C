@@ -572,7 +572,7 @@ OvwmSim::ScatSim(
     // should probably make this a Earth Position method
     double alt,lon,gdlat;
     oti.rTarget.GetAltLonGDLat(&alt,&lon,&gdlat);
-    //printf("gdlat=%g lon=%g\n",gdlat*rtd,lon*rtd);
+    printf("gdlat=%g lon=%g\n",gdlat*rtd,lon*rtd);
     if(gdlat<latMin || gdlat> latMax) return(0);
     int check_lon=0;
     if(lon>=lonMin && lon<= lonMax) check_lon=1;
@@ -1656,15 +1656,6 @@ OvwmSim::SetMeasurements(
           offset =gc_to_rangeazim.Forward(offset);
           float range_km = offset.GetX();
           float azimuth_km = offset.GetY();
-
-          if(fabs(range_km)>RNG_SWATH_WIDTH/2.){
-            fprintf(stderr,"Range %f is out of the bound in PTResponse\n", range_km);
-            exit(1);
-          }
-          if(fabs(azimuth_km)>AZ_SWATH_WIDTH/2.){
-            fprintf(stderr,"Azimuth %f is out of the bound in PTResponse\n", azimuth_km);
-            exit(1);
-          }
 
           float scan_angle = meas->scanAngle;
           float orbit_time = ovwm->cds.OrbitFraction()*6060.;
