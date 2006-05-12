@@ -180,7 +180,8 @@ double AmbigTable::GetAmbRat1(const unsigned int& beam_number,
     exit(1);
   }
 
-  int i_azi= int( azimuth_angle/Azimuth_step_ + 0.1);
+  int i_azi= int( azimuth_angle/Azimuth_step_ + 0.5);
+  if(i_azi==Nazi_) i_azi = 0;
   if(i_azi <0 || i_azi >=int(Nazi_)){
     fprintf(stderr, "AmbigTable::GetAmbRat1: azimuth angle index is out of range\n");
     exit(1);
@@ -246,7 +247,8 @@ double AmbigTable::GetAmbRat2(const unsigned int& beam_number,
     exit(1);
   }
 
-  int i_azi= int( azimuth_angle/Azimuth_step_ + 0.1);
+  int i_azi= int( azimuth_angle/Azimuth_step_ + 0.5);
+  if(i_azi==Nazi_) i_azi = 0;
   if(i_azi <0 || i_azi >= int(Nazi_)){
     fprintf(stderr, "AmbigTable::GetAmbRat2: azimuth angle index is out of range\n");
     exit(1);
@@ -305,7 +307,8 @@ double AmbigTable::GetAmbRat2(const unsigned int& beam_number,
     exit(1);
   }
 
-  int i_azi= int( azimuth_angle/Azimuth_step_ + 0.1);
+  int i_azi= int( azimuth_angle/Azimuth_step_ + 0.5);
+  if(i_azi==Nazi_) i_azi = 0;
   if(i_azi <0 || i_azi >=int(Nazi_)){
     fprintf(stderr, "AmbigTable::IsNadirAmbiguous: azimuth angle index is out of range\n");
     exit(1);
