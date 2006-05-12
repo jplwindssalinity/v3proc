@@ -213,7 +213,8 @@ Meas::Write(
         fwrite((void *)&scanAngle, sizeof(float), 1, fp) != 1 ||
         fwrite((void *)&A, sizeof(float), 1, fp) != 1 ||
         fwrite((void *)&B, sizeof(float), 1, fp) != 1 ||
-        fwrite((void *)&C, sizeof(float), 1, fp) != 1)
+        fwrite((void *)&C, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&azimuth_width, sizeof(float), 1, fp) != 1)
     {
         return(0);
     }
@@ -247,7 +248,8 @@ Meas::Read(
         fread((void *)&scanAngle, sizeof(float), 1, fp) != 1 ||
         fread((void *)&A, sizeof(float), 1, fp) != 1 ||
         fread((void *)&B, sizeof(float), 1, fp) != 1 ||
-        fread((void *)&C, sizeof(float), 1, fp) != 1)
+        fread((void *)&C, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&azimuth_width, sizeof(float), 1, fp) != 1)
     {
         return(0);
     }
@@ -285,6 +287,7 @@ Meas::WriteAscii(
     fprintf(fp, "A: %g ", A);
     fprintf(fp, "B: %g ", B);
     fprintf(fp, "C: %g \n", C);
+    fprintf(fp, "azimuth_width: %g \n", azimuth_width);
 
     return(1);
 }
