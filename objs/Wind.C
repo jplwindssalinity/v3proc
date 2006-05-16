@@ -1108,6 +1108,92 @@ WindField::~WindField()
 }
 
 //--------------------//
+// WindField::ReadSV  //
+// windfield from     //
+// Svetla Veleva      //
+//--------------------//
+
+int
+WindField::ReadSV(
+    const char*  filename)
+{
+    //-----------//
+    // open file //
+    //-----------//
+
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
+
+    int binByte1, binByte2, dataByte1, dataByte2;
+    int lonDim, latDim;
+
+    if (fread((void *)&binByte1, sizeof(int), 1, fp) != 1 ||
+        fread((void *)&lonDim, sizeof(int), 1, fp) != 1 ||
+        fread((void *)&latDim, sizeof(int), 1, fp) != 1 ||
+        fread((void *)&binByte2, sizeof(int), 1, fp) != 1 ||
+        fread((void *)&dataByte1, sizeof(int), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //------------//
+    // read field //
+    //------------//
+
+    float u[latDim][lonDim];
+    float v[latDim][lonDim];
+
+    int size = lonDim * latDim * sizeof(float);
+    if (fread((void *)u, size, 1, fp) != 1 ||
+        fread((void *)v, size, 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    if (fread((void *)&dataByte2, sizeof(int), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //------------//
+    // close file //
+    //------------//
+
+    fclose(fp);
+
+    //-------------------------------//
+    // transfer to wind field format //
+    //-------------------------------//
+
+    _lon.SpecifyWrappedCenters(lon_min * dtr, lon_max * dtr, lonDim);
+    _lat.SpecifyCenters(lat_min * dtr, lat_max * dtr, latDim);
+
+    if (! _Allocate())
+        return(0);
+
+    for (int lon_idx = 0; lon_idx < lonDim; lon_idx++)
+    {
+        for (int lat_idx = 0; lat_idx < latDim; lat_idx++)
+        {
+            WindVector* wv = new WindVector;
+            if (! wv)
+                return(0);
+
+            wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
+            *(*(_field + lon_idx) + lat_idx) = wv;
+        }
+    }
+
+    _wrap = 1;
+
+    return(1);
+}
+
+//--------------------//
 // WindField::ReadVap //
 //--------------------//
 
@@ -1799,7 +1885,11 @@ WindField::ReadType(
     const char*  filename,
     const char*  type)
 {
-    if (strcasecmp(type, VAP_TYPE) == 0)
+    if (strcasecmp(type, SV_TYPE) == 0)
+    {
+        return(ReadSV(filename));
+    }
+    else if (strcasecmp(type, VAP_TYPE) == 0)
     {
         return(ReadVap(filename));
     }
