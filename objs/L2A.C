@@ -116,7 +116,7 @@ L2AFrame::Read(
 {
     if (fread((void *)&rev, sizeof(unsigned int), 1, fp) != 1 ||
         fread((void *)&ati, sizeof(int), 1, fp) != 1 ||
-        fread((void *)&cti, sizeof(unsigned char), 1, fp) != 1 ||
+        fread((void *)&cti, sizeof(int), 1, fp) != 1 ||
         measList.Read(fp) != 1)
     {
         return(0);
@@ -135,7 +135,7 @@ L2AFrame::Write(
 {
     if (fwrite((void *)&rev, sizeof(unsigned int), 1, fp) != 1 ||
         fwrite((void *)&ati, sizeof(int), 1, fp) != 1 ||
-        fwrite((void *)&cti, sizeof(unsigned char), 1, fp) != 1 ||
+        fwrite((void *)&cti, sizeof(int), 1, fp) != 1 ||
         measList.Write(fp) != 1)
     {
         return(0);
@@ -367,7 +367,7 @@ L2AFrame::CombineFrames(
   while (frameGroup25[2*off].ati < frameGroup25[0].ati+1)
     {
 
-      frameGroup50[off].cti = (unsigned char) startIdx + off;
+      frameGroup50[off].cti = startIdx + off;
       frameGroup50[off].ati = frameGroup25[0].ati;
       frameGroup50[off].rev = frameGroup25[2*off].rev;
 

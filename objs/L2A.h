@@ -95,7 +95,7 @@ public:
 
     unsigned int   rev;
     int            ati;
-    unsigned char  cti;
+    int            cti;
     MeasList       measList;    // a list of measurements from a single frame
 };
 
