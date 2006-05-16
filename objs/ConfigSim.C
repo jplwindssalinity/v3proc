@@ -1389,6 +1389,18 @@ ConfigWindField(
         return(0);
     }
 
+    if (strcasecmp(windfield_type, "SV") == 0)
+    {
+        if (!config_list->GetFloat(WIND_FIELD_LAT_MIN_KEYWORD, &windfield->lat_min) ||
+            !config_list->GetFloat(WIND_FIELD_LAT_MAX_KEYWORD, &windfield->lat_max) ||
+            !config_list->GetFloat(WIND_FIELD_LON_MIN_KEYWORD, &windfield->lon_min) ||
+            !config_list->GetFloat(WIND_FIELD_LON_MAX_KEYWORD, &windfield->lon_max))
+        {
+          fprintf(stderr, "ConfigWindField: SV can't determine range of lat and lon\n");
+          return(0);
+        }
+    }
+
     char* windfield_filename = config_list->Get(TRUTH_WIND_FILE_KEYWORD);
     if (windfield_filename == NULL)
     {
