@@ -182,6 +182,18 @@ main(
             exit(1);
         }
 
+        if (strcasecmp(truth_type, "SV") == 0)
+        {
+            if (!config_list.GetFloat(WIND_FIELD_LAT_MIN_KEYWORD, &truth.lat_min) ||
+                !config_list.GetFloat(WIND_FIELD_LAT_MAX_KEYWORD, &truth.lat_max) ||
+                !config_list.GetFloat(WIND_FIELD_LON_MIN_KEYWORD, &truth.lon_min) ||
+                !config_list.GetFloat(WIND_FIELD_LON_MAX_KEYWORD, &truth.lon_max))
+            {
+              fprintf(stderr, "%s: SV can't determine range of lat and lon\n", command);
+              return(0);
+            }
+        }
+
         char* truth_file = config_list.Get(TRUTH_WIND_FILE_KEYWORD);
         if (truth_file == NULL) {
             fprintf(stderr, "%s: must specify truth windfield file\n", command);
