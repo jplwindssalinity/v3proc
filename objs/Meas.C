@@ -286,7 +286,7 @@ Meas::WriteAscii(
     fprintf(fp, "LandFlag: %d ", landFlag);
     fprintf(fp, "A: %g ", A);
     fprintf(fp, "B: %g ", B);
-    fprintf(fp, "C: %g \n", C);
+    fprintf(fp, "C: %g ", C);
     fprintf(fp, "azimuth_width: %g \n", azimuth_width);
 
     return(1);
