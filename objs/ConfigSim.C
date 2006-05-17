@@ -1214,6 +1214,22 @@ ConfigL2AToL2B(
         if (nudge_type == NULL)
             return(0);
 
+        if (strcasecmp(nudge_type, "SV") == 0)
+        {
+            if (!config_list->GetFloat(NUDGE_WINDFIELD_LAT_MIN_KEYWORD,
+                                       &l2a_to_l2b->nudgeField.lat_min) ||
+                !config_list->GetFloat(NUDGE_WINDFIELD_LAT_MAX_KEYWORD,
+                                       &l2a_to_l2b->nudgeField.lat_max) ||
+                !config_list->GetFloat(NUDGE_WINDFIELD_LON_MIN_KEYWORD,
+                                       &l2a_to_l2b->nudgeField.lon_min) ||
+                !config_list->GetFloat(NUDGE_WINDFIELD_LON_MAX_KEYWORD,
+                                       &l2a_to_l2b->nudgeField.lon_max))
+            {
+              fprintf(stderr, "ConfigNudgeWindField: SV can't determine range of lat and lon\n");
+              return(0);
+            }
+        }
+
         char* nudge_windfield = config_list->Get(NUDGE_WINDFIELD_FILE_KEYWORD);
         if (nudge_windfield == NULL)
             return(0);
