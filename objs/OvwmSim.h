@@ -177,6 +177,9 @@ public:
     float    minOneWayGain;    // lower gain pixels omitted for L1A/L1B
     float    minSignalToAmbigRatio; // more ambiguous pixels omitted 
                                     // from L1A/L1B
+    int    spot_check_beam_number ;// spot check beam number
+    int    spot_check_scan_angle;// spot check scan angle
+    bool     spot_check_generate_map;//true when  map generation is requested
 
 protected:
     int  _spotNumber;
@@ -186,6 +189,11 @@ protected:
     int  _max_int_range_bins; // first dim of _ptr_array
     int  _max_int_azim_bins; // second dim of _ptr_array
 
+    float** amb_map_ ; //amb ratio map inside beam foot print
+    float** X_map_; //X map inside beam foot print
+    float** kpc_map_;//kpc map
+    float** gain_map_; //gain map inside beam foot print
+   
 };
 
 #endif

@@ -6,6 +6,10 @@
 static const char rcs_id_ovwmsim_c[] =
     "@(#) $Id$";
 
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <string>
 #include "OvwmSim.h"
 #include "CheckFrame.h"
 #include "InstrumentGeom.h"
@@ -14,6 +18,7 @@ static const char rcs_id_ovwmsim_c[] =
 #include "AccurateGeom.h"
 #include "Beam.h"
 #include "Sigma0Map.h"
+
 
 //==================//
 // OvwmSimBeamInfo //
@@ -43,7 +48,8 @@ OvwmSim::OvwmSim()
     createXtable(0), computeXfactor(0), useBYUXfactor(0),
     rangeGateClipping(0), applyDopplerError(0), l1aFrameReady(0),
     simKpcFlag(0), simCorrKpmFlag(0), simUncorrKpmFlag(0), simKpriFlag(0),
-    _spotNumber(0), _spinUpPulses(2), _calPending(0), _ptr_array(NULL)
+    _spotNumber(0), _spinUpPulses(2), _calPending(0),_ptr_array(NULL),
+    amb_map_(NULL),X_map_(NULL),kpc_map_(NULL),gain_map_(NULL)
 {
     return;
 }
@@ -63,8 +69,24 @@ int OvwmSim::AllocateIntermediateArrays(){
     integrationStepSize);  
   _ptr_array=(float**)make_array(sizeof(float),2,_max_int_range_bins,
 				 _max_int_azim_bins);
+ 
+  //generate map array for spot check
+  //11 : number of pulses
+  // 40: range bins
+  amb_map_=(float**)make_array(sizeof(float),2,40,11);
+  X_map_=(float**)make_array(sizeof(float),2,40,11);
+  kpc_map_=(float**)make_array(sizeof(float),2,40,11);
+  gain_map_=(float**)make_array(sizeof(float),2,40,11);
+
+
   if(_ptr_array==NULL){
     fprintf(stderr,"Error: OvwmSim unable to allocate _ptr_array\n");
+    exit(1);
+  }
+
+
+  if(amb_map_==NULL || X_map_==NULL || kpc_map_==NULL || gain_map_ ==NULL){
+    fprintf(stderr,"Error: OvwmSim unable to allocate amb, X, kpc, gain map arrays\n");
     exit(1);
   }
   return(1);
@@ -1260,6 +1282,7 @@ OvwmSim::SetMeasurements(
     bore_cross= bore_sch_in_meter(1)/1000.0;
    
     
+   
 
 
     //INCOMPLETE need to add to make ambig bias work right
@@ -1268,13 +1291,64 @@ OvwmSim::SetMeasurements(
     Meas* meas = meas_spot->GetHead();
     
 
-   
-   
+    //-------------------------------------------------------------
+    //for each measurement, scan angle and beam number are fixed
+    //code done by ygim: phone 4-4299
+    //scan angle and beam index
+    //-------------------------------------------------------------
+    double scanangle=meas->scanAngle;
+    scanangle *= r2d;
+    double bs_scanangle=scanangle;
+    if(scanangle<=270.0) 
+      scanangle=  scanangle + 90.0;
+    else
+      scanangle= scanangle-90.0;
+    
+    if(scanangle <0.0 || scanangle >360.0){
+      fprintf(stderr,"Error:SetMeasurements scan angle is out of range\n");
+      exit(1);
+    }
+    unsigned int beam_id=meas->beamIdx;
+    //display on screen 
+    cout<<"beam id and BS's scan angle "<< beam_id<<" "<<bs_scanangle<<endl;
+    
+
+    //Map generation for spot check
+    bool generate_map=false;
+    if(spot_check_generate_map && beam_id == (unsigned int) spot_check_beam_number && int(bs_scanangle+0.5) == spot_check_scan_angle){
+      //need to make an array to save data
+      //reset map arrays
+      //make sure we have big enough array
+      if(ovwm->ses.numPulses!= 11){
+	fprintf(stderr,"Error: OvwmSim:setMeasurements: number of pulses is not  11\n");
+	exit(1);
+      }
+      if(ovwm->ses.numRangePixels>40){
+	fprintf(stderr,"Error: OvwmSim:setMeasurements : number of range pixels is larger than 40\n");
+	exit(1);
+      }
+      //reset the values, those values could be changed 
+      for(unsigned int i=0; i<40;++i)
+	for(unsigned int j=0;j<11;++j){
+	  amb_map_[i][j]=0.0;
+	  X_map_[i][j]=0.0;
+	  gain_map_[i][j]=0.0;
+	  kpc_map_[i][j]=0.0;
+	}   
+      generate_map=true;
+      cout<<"range doppler pixel "<< ovwm->ses.numRangePixels<<" "<<ovwm->ses.numPulses<<endl;
+    }
 
     //-------------------------//
-    // for each measurement... //
-    //-------------------------//
+    // for each measurement...
+    //
     //recycled variable    
+    //-------------------------//
+   
+    unsigned int range_index, azimuth_index;
+
+
+
     Vector3 centroid_llh, centroid_xyz_in_meter, centroid_sch_in_meter;
     double centroid_along, centroid_cross;
     double amb1_along, amb1_cross;//first ambigous point
@@ -1282,6 +1356,7 @@ OvwmSim::SetMeasurements(
     while (meas)
     {
  
+      
         //----------------------------------------//
         // get lon and lat for the earth location //
         //----------------------------------------//
@@ -1515,6 +1590,10 @@ OvwmSim::SetMeasurements(
         // high res simulation
         else{
 
+	 
+	  azimuth_index = slice_i%11;
+	  range_index = int(slice_i/11);
+
 	  if(meas->centroid.Magnitude() < 1000.0)
 	    { 
 	      meas=meas_spot->RemoveCurrent();
@@ -1534,13 +1613,18 @@ OvwmSim::SetMeasurements(
 	  //gc_to_antenna.Show();
           double r,theta,phi;
 	  rlook_ant.SphericalGet(&r,&theta,&phi);
-	  //cout << theta << endl;
-	  //cout << phi << endl;
+	  //cout << theta*r2d << endl;
+	  //cout << phi*r2d << endl;
           double gain;
           if(!beam->GetPowerGain(theta,phi,&gain)){
 	    gain=0;
 	  }
           gain/=maxgain;
+
+	  if(generate_map)
+	    gain_map_[range_index][azimuth_index]=gain;
+
+
 
 	  if(gain<minOneWayGain){
 	    meas=meas_spot->RemoveCurrent();
@@ -1550,22 +1634,10 @@ OvwmSim::SetMeasurements(
             continue;
 	  }
 
-	  //code done by ygim: phone 4-4299
-	  //scan angle and beam index
-	  double scanangle=meas->scanAngle;
-	  scanangle *= r2d;
-	  if(scanangle<=270.0) 
-	    scanangle=  scanangle + 90.0;
-	  else
-	    scanangle= scanangle-90.0;
-	  
-	  if(scanangle <0.0 || scanangle >360.0){
-	    fprintf(stderr,"Error:SetMeasurements scan angle is out of range\n");
-	    exit(1);
-	  }
-	  unsigned int beam_id=meas->beamIdx;
 	 
-
+	 
+	 
+	  //cout<<"slice "<< slice_i<<endl;
 
 
 	  centroid_xyz_in_meter= meas->centroid;
@@ -1640,6 +1712,9 @@ OvwmSim::SetMeasurements(
           amb1=1/amb1;
           amb2=1/amb2;
 	  double amb=amb1+amb2;
+	  
+	  if(generate_map)
+	    amb_map_[range_index][azimuth_index]=amb;
 
 	  if(amb> 1/minSignalToAmbigRatio){
 	    meas=meas_spot->RemoveCurrent();
@@ -1661,7 +1736,7 @@ OvwmSim::SetMeasurements(
           float orbit_time = ovwm->cds.OrbitFraction()*6060.;
 
           // Now set the default value, later update from Beam object
-          int beam_num = 1;
+          int beam_num = beam_id+1;
 
           float rangewid, azimwid; // half widths
           rangewid=ptrTable->GetSemiMinorWidth(range_km, azimuth_km, scan_angle,
@@ -1823,6 +1898,12 @@ OvwmSim::SetMeasurements(
 
 	    }
 	  }
+
+
+
+	  if(generate_map)
+	    X_map_[range_index][azimuth_index]=meas->XK;
+
           //------------------------------------------
           // Put in constants to get values in Joules
 	  //------------------------------------------
@@ -1915,6 +1996,12 @@ OvwmSim::SetMeasurements(
           double kpc2=(1/(float)nL)*(1+2/SNR+1/(SNR*SNR));
 	  var_esn_slice=kpc2*Es*Es;
 
+
+
+	  if(generate_map)
+	    kpc_map_[range_index][azimuth_index]=kpc2;
+
+
           // Consistent with meas->numSlices=-1 case in GMF::GetVariance
           // kpm is removed 
           float kpmtoremove=0.16;
@@ -1948,6 +2035,66 @@ OvwmSim::SetMeasurements(
         meas = meas_spot->GetNext();
     }
 
+
+    //write amb,x,kpc, and x map on the screen
+    if(generate_map){
+     
+     
+      string amb_filename="amb_map.dat";
+      std::ofstream amb_file(amb_filename.c_str());
+      if(!amb_file.is_open()) 
+	fprintf(stderr,"Uable to open amb file to write map info to file\n");
+      for(int i=0;i<ovwm->ses.numRangePixels;++i){
+	for(int j=0;j<ovwm->ses.numPulses;++j){
+	  amb_file<<amb_map_[i][j]<<" ";
+	}
+	amb_file<<endl;
+      }
+      amb_file.close();
+
+
+      string gain_filename="gain_map.dat";
+      std::ofstream gain_file(gain_filename.c_str());
+      if(!gain_file.is_open()) 
+	fprintf(stderr,"Uable to open gain file to write map info to file\n");
+      for(int i=0;i<ovwm->ses.numRangePixels;++i){
+	for(int j=0;j<ovwm->ses.numPulses;++j){
+	  gain_file<<gain_map_[i][j]<<" ";
+	}
+	gain_file<<endl;
+      }
+      gain_file.close();
+
+      string kpc_filename="kpc_map.dat";
+      std::ofstream kpc_file(kpc_filename.c_str());
+      if(!kpc_file.is_open()) 
+	fprintf(stderr,"Uable to open kpc file to write map info to file\n");
+      for(int i=0;i<ovwm->ses.numRangePixels;++i){
+	for(int j=0;j<ovwm->ses.numPulses;++j){
+	  kpc_file<<kpc_map_[i][j]<<" ";
+	}
+	kpc_file<<endl;
+      }
+      kpc_file.close();
+
+
+      string X_filename="X_map.dat";
+      std::ofstream X_file(X_filename.c_str());
+      if(!X_file.is_open()) 
+	fprintf(stderr,"Uable to open X file to write map info to file\n");
+      for(int i=0;i<ovwm->ses.numRangePixels;++i){
+	for(int j=0;j<ovwm->ses.numPulses;++j){
+	  X_file<<X_map_[i][j]<<" ";
+	}
+	X_file<<endl;
+      }
+      X_file.close();
+
+
+    }
+    
+
+   
     return(1);
 }
 
