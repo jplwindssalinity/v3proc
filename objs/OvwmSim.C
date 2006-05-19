@@ -1256,12 +1256,10 @@ OvwmSim::SetMeasurements(
     //set peg point
     sch.SetPegPoint(r_llh(0), r_llh(1), r_heading);
 
-    double d2r= pi/180.0;
-    double r2d= 180.0/pi;
    
-    //cout<<"nadir lat lon  "<< r_llh(0)*r2d<<" "<<r_llh(1)*r2d<<endl;
-    //cout<<"r_llh "<< r_llh1(0)*r2d<<" "<<r_llh1(1)*r2d<<endl;
-    //cout<<"r_llh "<< r_llh2(0)*r2d<<" "<<r_llh2(1)*r2d<<endl;
+    //cout<<"nadir lat lon  "<< r_llh(0)*rtd<<" "<<r_llh(1)*rtd<<endl;
+    //cout<<"r_llh "<< r_llh1(0)*rtd<<" "<<r_llh1(1)*rtd<<endl;
+    //cout<<"r_llh "<< r_llh2(0)*rtd<<" "<<r_llh2(1)*rtd<<endl;
     //
     //cout<<"heading "<< r_heading*180/3.14<<endl;
     //now we can convert surface location into sch
@@ -1274,7 +1272,7 @@ OvwmSim::SetMeasurements(
     bore_in_meter *=1000.0;//km to m
     Vector3 bore_sch_in_meter,bore_llh;
     xyz_to_llh(r_a,r_e2,bore_in_meter,bore_llh);
-    //cout<<"bore llh "<< bore_llh(0)*r2d<<" "<<bore_llh(1)*r2d<<" "<<bore_llh(3)<<endl;
+    //cout<<"bore llh "<< bore_llh(0)*rtd<<" "<<bore_llh(1)*rtd<<" "<<bore_llh(3)<<endl;
     sch.xyz_to_sch(bore_in_meter,bore_sch_in_meter);
     //cout<<"s c h of bore "<< bore_sch_in_meter(0)<<" "<<bore_sch_in_meter(1)<<" "<<bore_sch_in_meter(2)<<endl;
     double bore_along, bore_cross;
@@ -1297,7 +1295,7 @@ OvwmSim::SetMeasurements(
     //scan angle and beam index
     //-------------------------------------------------------------
     double scanangle=meas->scanAngle;
-    scanangle *= r2d;
+    scanangle *= rtd;
     double bs_scanangle=scanangle;
     if(scanangle<=270.0) 
       scanangle=  scanangle + 90.0;
@@ -1310,7 +1308,7 @@ OvwmSim::SetMeasurements(
     }
     unsigned int beam_id=meas->beamIdx;
     //display on screen 
-    cout<<"beam id and BS's scan angle "<< beam_id<<" "<<bs_scanangle<<endl;
+    //cout<<"beam id and BS's scan angle "<< beam_id<<" "<<bs_scanangle<<endl;
     
 
     //Map generation for spot check
@@ -1613,8 +1611,8 @@ OvwmSim::SetMeasurements(
 	  //gc_to_antenna.Show();
           double r,theta,phi;
 	  rlook_ant.SphericalGet(&r,&theta,&phi);
-	  //cout << theta*r2d << endl;
-	  //cout << phi*r2d << endl;
+	  //cout << theta*rtd << endl;
+	  //cout << phi*rtd << endl;
           double gain;
           if(!beam->GetPowerGain(theta,phi,&gain)){
 	    gain=0;
@@ -1680,7 +1678,7 @@ OvwmSim::SetMeasurements(
 	  if(amb1 != 0.0 && amb2 !=0.0){
 	    /*
 	    cout<<"scan angle and beam index "<< scanangle<<" "<<beam_id<<endl;
-	    cout<<"centroid lat lon height "<< centroid_llh(0)*r2d<<" "<<centroid_llh(1)*r2d<<" "<<centroid_llh(2)<<endl;
+	    cout<<"centroid lat lon height "<< centroid_llh(0)*rtd<<" "<<centroid_llh(1)*rtd<<" "<<centroid_llh(2)<<endl;
 	    cout<<"centroid xyz "<< centroid_xyz_in_meter(0)<<" "<<centroid_xyz_in_meter(1)<<" "<<centroid_xyz_in_meter(2)<<endl;
 	    cout<<"centroid sch  "<< centroid_sch_in_meter(0)<<" "<<centroid_sch_in_meter(1)<<" "<<centroid_sch_in_meter(2)<<endl;
 	    
@@ -1815,7 +1813,7 @@ OvwmSim::SetMeasurements(
 	      }
 	    }
 	  }
-
+ 
 
           // Peak should = 1 not sum !
           // normalize ptresponse array
@@ -2013,7 +2011,6 @@ OvwmSim::SetMeasurements(
           
           // add noise and bias due to ambiguity
           meas->value=Es+En;
-          // INCOMPLETE Need to Add Ambiguity Bias
 
           //----------------------------
           // fuzz using kpc
@@ -2027,10 +2024,22 @@ OvwmSim::SetMeasurements(
 	    meas->value-=En;
 	    meas->value/=meas->XK;
 	  }
+	  
+	  
 	}
 
 
-
+        // duplicate low res measurements so gridding will work down to 1 km
+        int numdup=(int)(meas->azimuth_width);
+	if(numdup%2==0) numdup--; // make an odd number of measurements
+        for(int i=-numdup/2;i<=numdup/2;i++){
+	  if(i==0) continue;
+	  Meas* m=new Meas;	  
+	  *m=*meas;
+	  m->centroid=m->centroid+yvec*float(i); 
+	    // yvec is the azimuth direction vector
+	  meas_spot->InsertAfter(m);
+	}
         slice_i++;
         meas = meas_spot->GetNext();
     }
