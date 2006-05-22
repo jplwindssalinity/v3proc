@@ -59,7 +59,7 @@ OvwmSim::OvwmSim()
 
 // HACK should compute the defined terms
 // from OVWM parameters or even from PTR table
-#define MAX_RANGE_WIDTH 1.2
+#define MAX_RANGE_WIDTH 2.0
 #define MAX_AZIMUTH_WIDTH 12.0
 
 int OvwmSim::AllocateIntermediateArrays(){
