@@ -10,6 +10,7 @@ static const char rcs_id_ovwmsim_c[] =
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include "stdlib.h"
 #include "OvwmSim.h"
 #include "CheckFrame.h"
 #include "InstrumentGeom.h"
@@ -1624,7 +1625,7 @@ OvwmSim::SetMeasurements(
 
 
 
-	  if(gain<minOneWayGain){
+	  if(!generate_map && gain<minOneWayGain){
 	    meas=meas_spot->RemoveCurrent();
             delete meas;
             meas=meas_spot->GetCurrent();
@@ -1688,9 +1689,9 @@ OvwmSim::SetMeasurements(
 	    */
 	  }
 
-
+	 
 	  if(amb1==0 || amb2==0){
-	    if(amb2 ==0 && amb1 ==0){
+	    if( amb2 ==0 && amb1 ==0){
 	      meas=meas_spot->RemoveCurrent();
 	      delete meas;
 	      meas=meas_spot->GetCurrent();
@@ -1706,6 +1707,7 @@ OvwmSim::SetMeasurements(
 	      continue;
 	    }
 	  }
+	  
 
           amb1=1/amb1;
           amb2=1/amb2;
@@ -1714,7 +1716,7 @@ OvwmSim::SetMeasurements(
 	  if(generate_map)
 	    amb_map_[range_index][azimuth_index]=amb;
 
-	  if(amb> 1/minSignalToAmbigRatio){
+	  if(!generate_map && amb> 1/minSignalToAmbigRatio){
 	    meas=meas_spot->RemoveCurrent();
             delete meas;
             meas=meas_spot->GetCurrent();
@@ -1743,7 +1745,7 @@ OvwmSim::SetMeasurements(
                                         orbit_time, beam_num)/1000.;
 
 
-	  if(rangewid==0 || azimwid==0){
+	  if(!generate_map &&(rangewid==0 || azimwid==0)){
 	    meas=meas_spot->RemoveCurrent();
             delete meas;
             meas=meas_spot->GetCurrent();
@@ -2048,9 +2050,21 @@ OvwmSim::SetMeasurements(
     //write amb,x,kpc, and x map on the screen
     if(generate_map){
      
+      char angle_str[7],beam_str[1];
+      sprintf(beam_str,"%d",beam_id+1);
+      sprintf(angle_str,"%d",int(bs_scanangle*100.0));
      
-      string amb_filename="amb_map.dat";
-      std::ofstream amb_file(amb_filename.c_str());
+      char amb_filename[80];
+      char gain_filename[80];
+      char  kpc_filename[80];
+      char X_filename[80];
+      sprintf(amb_filename,"%s%d%s%d%s","amb_",beam_id+1,"_",int(bs_scanangle*100.0),".dat");
+      sprintf(gain_filename,"%s%d%s%d%s","gain_",beam_id+1,"_",int(bs_scanangle*100.0),".dat");
+      sprintf(kpc_filename,"%s%d%s%d%s","kpc_",beam_id+1,"_",int(bs_scanangle*100.0),".dat");
+      sprintf(X_filename,"%s%d%s%d%s","X_",beam_id+1,"_",int(bs_scanangle*100.0),".dat");
+
+     ;
+      std::ofstream amb_file(amb_filename);
       if(!amb_file.is_open()) 
 	fprintf(stderr,"Uable to open amb file to write map info to file\n");
       for(int i=0;i<ovwm->ses.numRangePixels;++i){
@@ -2062,8 +2076,8 @@ OvwmSim::SetMeasurements(
       amb_file.close();
 
 
-      string gain_filename="gain_map.dat";
-      std::ofstream gain_file(gain_filename.c_str());
+     
+      std::ofstream gain_file(gain_filename);
       if(!gain_file.is_open()) 
 	fprintf(stderr,"Uable to open gain file to write map info to file\n");
       for(int i=0;i<ovwm->ses.numRangePixels;++i){
@@ -2074,8 +2088,8 @@ OvwmSim::SetMeasurements(
       }
       gain_file.close();
 
-      string kpc_filename="kpc_map.dat";
-      std::ofstream kpc_file(kpc_filename.c_str());
+     
+      std::ofstream kpc_file(kpc_filename);
       if(!kpc_file.is_open()) 
 	fprintf(stderr,"Uable to open kpc file to write map info to file\n");
       for(int i=0;i<ovwm->ses.numRangePixels;++i){
@@ -2087,8 +2101,8 @@ OvwmSim::SetMeasurements(
       kpc_file.close();
 
 
-      string X_filename="X_map.dat";
-      std::ofstream X_file(X_filename.c_str());
+      
+      std::ofstream X_file(X_filename);
       if(!X_file.is_open()) 
 	fprintf(stderr,"Uable to open X file to write map info to file\n");
       for(int i=0;i<ovwm->ses.numRangePixels;++i){
