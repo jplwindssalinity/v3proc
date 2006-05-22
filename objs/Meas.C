@@ -18,6 +18,7 @@ static const char rcs_id_measurement_c[] =
 #include "LonLat.h"
 #include "GenericGeom.h"
 #include "Parameter.h"
+#include "ETime.h"
 
 #ifndef IS_EVEN
 #define IS_EVEN(x) (x % 2 == 0 ? 1 : 0)
@@ -867,7 +868,11 @@ MeasSpot::WriteAscii(
         fprintf(fp,"#######         Spot Info               ######\n");
         fprintf(fp,"##############################################\n");
         fprintf(fp,"\n");
-        fprintf(fp,"Time: %.8g\n", time);
+	ETime et;
+        et.SetTime(time);
+        char str[100];
+        et.ToCodeA(str);
+        fprintf(fp,"Time: %.20g %s\n", time,str );
     if (scOrbitState.WriteAscii(fp) != 1 ||
         scAttitude.WriteAscii(fp) != 1 ||
         MeasList::WriteAscii(fp) != 1)
