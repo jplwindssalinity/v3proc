@@ -714,6 +714,8 @@ main(
             if(l1bdirect && ovwm_sim.l1aFrameReady){
 	      l1b.WriteDataRec();
 	      l1b.frame.spotList.FreeContents();
+	      ovwm_sim.l1aFrameReady=0;
+              frame_count++;
 	    }
 
 
@@ -741,6 +743,7 @@ main(
                         spacecraft.attitude.GetPitch() * rtd,
                         spacecraft.attitude.GetYaw() * rtd);
                 }
+                ovwm_sim.l1aFrameReady=0;
                 frame_count++;
             }
 	} // if !instrument_done
