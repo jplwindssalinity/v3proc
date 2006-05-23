@@ -1691,7 +1691,11 @@ OvwmSim::SetMeasurements(
 
 	 
 	  if(amb1==0 || amb2==0){
-	    if( amb2 ==0 && amb1 ==0){
+	    if(generate_map && amb1==0 && amb2==0){
+	      amb1=1;
+	      amb2=1;//this is needed to move beyond 1/amb1 computation
+	    }
+	    else if(!generate_map &&( amb2 ==0 && amb1 ==0)){
 	      meas=meas_spot->RemoveCurrent();
 	      delete meas;
 	      meas=meas_spot->GetCurrent();
