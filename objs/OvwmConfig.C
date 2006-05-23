@@ -788,6 +788,23 @@ ConfigOvwmSim(
     }
     ovwm_sim->minSignalToAmbigRatio=pow(10.0,0.1*dbvalue);
 
+
+    //---------------
+    //spot check keyword
+    //---------------
+    ovwm_sim ->spot_check_generate_map=false;// no map
+    int beam_id, angle;
+    if(config_list->GetInt(SIM_ONEFOOT_BEAM_KEYWORD, &beam_id) &&
+       config_list->GetInt(SIM_ONEFOOT_SCAN_ANGLE_KEYWORD,&angle)){
+      if(beam_id <1 || beam_id > 4 || angle<0 || angle >360)
+	return(0);
+      else{
+	ovwm_sim->spot_check_beam_number = beam_id -1;//start from 0
+	ovwm_sim->spot_check_scan_angle = angle ;
+	ovwm_sim->spot_check_generate_map=true;
+      }
+    }
+
     return(1);
 }
 
@@ -884,5 +901,6 @@ int ConfigOvwmL1A(Ovwm* ovwm, L1A* l1a, ConfigList* config_list){
         return(0);
     }
 
+    
     return(1);
 }
