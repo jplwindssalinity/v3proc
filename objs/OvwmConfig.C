@@ -793,6 +793,9 @@ ConfigOvwmSim(
     //spot check keyword
     //---------------
     ovwm_sim ->spot_check_generate_map=false;// no map
+    config_list->DoNothingForMissingKeywords();
+   
+
     int beam_id, angle;
     if(config_list->GetInt(SIM_ONEFOOT_BEAM_KEYWORD, &beam_id) &&
        config_list->GetInt(SIM_ONEFOOT_SCAN_ANGLE_KEYWORD,&angle)){
@@ -804,7 +807,12 @@ ConfigOvwmSim(
 	ovwm_sim->spot_check_generate_map=true;
       }
     }
+    else{
 
+    }
+
+    config_list->RestoreLogFlag();
+    
     return(1);
 }
 
