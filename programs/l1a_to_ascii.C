@@ -73,6 +73,8 @@ template class List<long>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
+template list<string>;
+template map<string,string,Options::ltstr>;
 
 const char* usage_array[] = { "<config_file>", "<input_file>",
     "<output_file>", "<start_frame>(OPT)", "<end_frame>(OPT)", 0};
