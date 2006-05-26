@@ -45,6 +45,7 @@ static const char rcs_id[] =
 #include "Tracking.C"
 
 #define XBIN 1000
+#define YBIN 1500
 #define SYSTEM_TEMPERATURE 926.0 // in K 
 #define NUM_RANGE_LOOKS_AVERAGED 8
 
@@ -126,16 +127,21 @@ main(
 		//exit(1);
 	//}       
 
-        int nBeamIF[XBIN], nBeamIA[XBIN], nBeamOF[XBIN], nBeamOA[XBIN]; 
+        int nWVC_OF[XBIN], nWVC_OA[XBIN], nWVC_IF[XBIN], nWVC_IA[XBIN]; 
+        float nLookOF[XBIN], nLookOA[XBIN], nLookIF[XBIN], nLookIA[XBIN]; 
         float SNR_IF[XBIN], SNR_IA[XBIN], SNR_OF[XBIN], SNR_OA[XBIN];
         float kpc_IF[XBIN], kpc_IA[XBIN], kpc_OF[XBIN], kpc_OA[XBIN];
         float azres_IF[XBIN], azres_IA[XBIN], azres_OF[XBIN], azres_OA[XBIN];
 
         for (int ii=0; ii<XBIN; ii++) {
-          nBeamOF[ii] = 0;
-          nBeamOA[ii] = 0;
-          nBeamIF[ii] = 0;
-          nBeamIA[ii] = 0;
+          nWVC_OF[ii] = 0;
+          nWVC_OA[ii] = 0;
+          nWVC_IF[ii] = 0;
+          nWVC_IA[ii] = 0;
+          nLookOF[ii] = 0.;
+          nLookOA[ii] = 0.;
+          nLookIF[ii] = 0.;
+          nLookIA[ii] = 0.;
           SNR_OF[ii] = 0.;
           SNR_OA[ii] = 0.;
           SNR_IF[ii] = 0.;
@@ -156,8 +162,15 @@ main(
 	// copy desired frames //
 	//---------------------//
 
+        int findCell_OF, findCell_OA, findCell_IF, findCell_IA;
+
 	while (l2a.ReadDataRec() && frame_number <= end_frame)
 	{
+          findCell_OF = 0;
+          findCell_OA = 0;
+          findCell_IF = 0;
+          findCell_IA = 0;
+
           for (Meas* meas = l2a.frame.measList.GetHead();
                meas; meas = l2a.frame.measList.GetNext())
           {
@@ -167,82 +180,97 @@ main(
             //float SNR = Es/En/NUM_RANGE_LOOKS_AVERAGED;
             float SNR = Es/En;
 
-            // calculate kpc - use A, B, C and SNR
-            float kpc = sqrt((1. + 2./SNR + 1./(SNR*SNR))/NUM_RANGE_LOOKS_AVERAGED);
-
             if (meas->beamIdx <= 1 && 
                 (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.))
             {
 
-               nBeamOF[l2a.frame.cti]++;
+               if (!findCell_OF) {
+                 nWVC_OF[l2a.frame.cti]++;
+                 findCell_OF = 1;
+               }
+               nLookOF[l2a.frame.cti]++;
                SNR_OF[l2a.frame.cti] += SNR;
-               kpc_OF[l2a.frame.cti] += kpc;
                azres_OF[l2a.frame.cti] += meas->azimuth_width;
 
             } else if (meas->beamIdx <= 1 &&
                        (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.))
             {
 
-               nBeamOA[l2a.frame.cti]++;
+               if (!findCell_OA) {
+                 nWVC_OA[l2a.frame.cti]++;
+                 findCell_OA = 1;
+               }
+               nLookOA[l2a.frame.cti]++;
                SNR_OA[l2a.frame.cti] += SNR;
-               kpc_OA[l2a.frame.cti] += kpc;
                azres_OA[l2a.frame.cti] += meas->azimuth_width;
 
             } else if (meas->beamIdx > 1 &&
                 (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.))
             {
 
-               nBeamIF[l2a.frame.cti]++;
+               if (!findCell_IF) {
+                 nWVC_IF[l2a.frame.cti]++;
+                 findCell_IF = 1;
+               }
+               nLookIF[l2a.frame.cti]++;
                SNR_IF[l2a.frame.cti] += SNR;
-               kpc_IF[l2a.frame.cti] += kpc;
                azres_IF[l2a.frame.cti] += meas->azimuth_width;
 
             } else if (meas->beamIdx > 1 &&
                        (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.))
             {
 
-               nBeamIA[l2a.frame.cti]++;
+               if (!findCell_IA) {
+                 nWVC_IA[l2a.frame.cti]++;
+                 findCell_IA = 1;
+               }
+               nLookIA[l2a.frame.cti]++;
                SNR_IA[l2a.frame.cti] += SNR;
-               kpc_IA[l2a.frame.cti] += kpc;
                azres_IA[l2a.frame.cti] += meas->azimuth_width;
 
             }
           }
           //printf("%d\n", l2a.frame.cti);
           //printf("%d\n", l2a.header.crossTrackBins);
-          //exit(0);
 	  //if(frame_number >= start_frame){
 	  //  l2a.WriteReqDataAscii();
 	  //}
           if(start_frame>=0) frame_number++;
         }
 
-        for (int ii=0; ii<1000; ii++) {
-          if (nBeamOF[ii] != 0) {
-            SNR_OF[ii] /= nBeamOF[ii];
-            kpc_OF[ii] /= nBeamOF[ii];
-            azres_OF[ii] /= nBeamOF[ii];
+        for (int ii=0; ii<XBIN; ii++) {
+
+          if (nWVC_OF[ii]>0) {
+            azres_OF[ii] /= nLookOF[ii];
+            SNR_OF[ii] /= nLookOF[ii]; // average SNR
+            nLookOF[ii] = nLookOF[ii]/nWVC_OF[ii]*NUM_RANGE_LOOKS_AVERAGED; // looks per wind cell
+            kpc_OF[ii] = sqrt((1. + 2./SNR_OF[ii] + 1./(SNR_OF[ii]*SNR_OF[ii]))/nLookOF[ii]);
           }
-          if (nBeamOA[ii] != 0) {
-            SNR_OA[ii] /= nBeamOA[ii];
-            kpc_OA[ii] /= nBeamOA[ii];
-            azres_OA[ii] /= nBeamOA[ii];
+
+          if (nWVC_OA[ii]>0) {
+            azres_OA[ii] /= nLookOA[ii];
+            SNR_OA[ii] /= nLookOA[ii]; // average SNR
+            nLookOA[ii] = nLookOA[ii]/nWVC_OA[ii]*NUM_RANGE_LOOKS_AVERAGED; // looks per wind cell
+            kpc_OA[ii] = sqrt((1. + 2./SNR_OA[ii] + 1./(SNR_OA[ii]*SNR_OA[ii]))/nLookOA[ii]);
           }
-          if (nBeamIF[ii] != 0) {
-            SNR_IF[ii] /= nBeamIF[ii];
-            kpc_IF[ii] /= nBeamIF[ii];
-            azres_IF[ii] /= nBeamIF[ii];
+
+          if (nWVC_IF[ii]>0) {
+            azres_IF[ii] /= nLookIF[ii];
+            SNR_IF[ii] /= nLookIF[ii]; // average SNR
+            nLookIF[ii] = nLookIF[ii]/nWVC_IF[ii]*NUM_RANGE_LOOKS_AVERAGED; // looks per wind cell
+            kpc_IF[ii] = sqrt((1. + 2./SNR_IF[ii] + 1./(SNR_IF[ii]*SNR_IF[ii]))/nLookIF[ii]);
           }
-          if (nBeamIA[ii] != 0) {
-            SNR_IA[ii] /= nBeamIA[ii];
-            kpc_IA[ii] /= nBeamIA[ii];
-            azres_IA[ii] /= nBeamIA[ii];
+
+          if (nWVC_IA[ii]>0) {
+            azres_IA[ii] /= nLookIA[ii];
+            SNR_IA[ii] /= nLookIA[ii]; // average SNR
+            nLookIA[ii] = nLookIA[ii]/nWVC_IA[ii]*NUM_RANGE_LOOKS_AVERAGED; // looks per wind cell
+            kpc_IA[ii] = sqrt((1. + 2./SNR_IA[ii] + 1./(SNR_IA[ii]*SNR_IA[ii]))/nLookIA[ii]);
           }
-          fprintf(outfileP, "%d %d %d %d %d %f %f %f %f %f %f %f %f %f %f %f %f\n", ii,
-                  nBeamOF[ii]*NUM_RANGE_LOOKS_AVERAGED,
-                  nBeamOA[ii]*NUM_RANGE_LOOKS_AVERAGED,
-                  nBeamIF[ii]*NUM_RANGE_LOOKS_AVERAGED,
-                  nBeamIA[ii]*NUM_RANGE_LOOKS_AVERAGED,
+
+          fprintf(outfileP, "%d %d %d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", ii,
+                  nWVC_OF[ii], nWVC_OA[ii], nWVC_IF[ii], nWVC_IA[ii],
+                  nLookOF[ii], nLookOA[ii], nLookIF[ii], nLookIA[ii],
                   SNR_OF[ii], SNR_OA[ii], SNR_IF[ii], SNR_IA[ii],
                   kpc_OF[ii], kpc_OA[ii], kpc_IF[ii], kpc_IA[ii],
                   azres_OF[ii], azres_OA[ii], azres_IF[ii], azres_IA[ii]);
