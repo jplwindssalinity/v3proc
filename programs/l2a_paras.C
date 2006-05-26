@@ -176,7 +176,8 @@ main(
           {
             // calculate SNR - use XK and Value
             float Es = meas->XK*meas->value;
-            float En = bK*SYSTEM_TEMPERATURE;
+            //float En = bK*SYSTEM_TEMPERATURE;
+            float En = meas->EnSlice;
             //float SNR = Es/En/NUM_RANGE_LOOKS_AVERAGED;
             float SNR = Es/En;
 
