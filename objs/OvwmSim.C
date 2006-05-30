@@ -1197,6 +1197,7 @@ OvwmSim::SetMeasurements(
     //cout << "azim: " << boreazim << endl;
     float maxgain;
     beam->GetPowerGain(borelook,boreazim,&maxgain);
+    
     //cout << "maxgain:" << maxgain << endl;
     
     // compute boresight position
@@ -1216,6 +1217,9 @@ OvwmSim::SetMeasurements(
     Vector3 yvec=zvec & oti.gcLook;            // az vector
     Vector3 xvec=yvec & zvec;                  // rng vector
     CoordinateSwitch gc_to_rangeazim(xvec,yvec,zvec);
+
+
+
 
     //---------------------------------------------------
     // Compute cross track/along track coordinate switch
@@ -1622,7 +1626,7 @@ OvwmSim::SetMeasurements(
 
 	  if(generate_map)
 	    gain_map_[range_index][azimuth_index]=gain;
-
+	    
 
 
 	  if(!generate_map && gain<minOneWayGain){
@@ -1905,8 +1909,11 @@ OvwmSim::SetMeasurements(
 
 
 
-	  if(generate_map)
+	  if(generate_map){
 	    X_map_[range_index][azimuth_index]=meas->XK;
+	    cout<<"range azimuth index "<< range_index<< " "<<azimuth_index<<endl;
+	    cout<<"range azimuth in km "<< range_km<<" "<<azimuth_km<<endl;
+	  }
 
           //------------------------------------------
           // Put in constants to get values in Joules
