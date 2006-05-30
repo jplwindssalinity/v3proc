@@ -1301,7 +1301,7 @@ OvwmSim::SetMeasurements(
     if(scanangle<=270.0) 
       scanangle=  scanangle + 90.0;
     else
-      scanangle= scanangle-90.0;
+      scanangle= scanangle-270.0;
     
     if(scanangle <0.0 || scanangle >360.0){
       fprintf(stderr,"Error:SetMeasurements scan angle is out of range\n");
@@ -1309,8 +1309,8 @@ OvwmSim::SetMeasurements(
     }
     unsigned int beam_id=meas->beamIdx;
     //display on screen 
-    //cout<<"beam id and BS's scan angle "<< beam_id<<" "<<bs_scanangle<<endl;
-    
+    cout<<"beam id and BS and amb scan angles "<< beam_id<<" "<<bs_scanangle<<" "<<scanangle<<endl;
+    cout<<"bore along cross in km "<< bore_along<<" "<<bore_cross<<endl;
 
     //Map generation for spot check
     bool generate_map=false;
