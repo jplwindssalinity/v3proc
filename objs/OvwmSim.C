@@ -660,7 +660,7 @@ OvwmSim::ScatSim(
             }
         }
     }
-
+  
     //---------------------------------//
     // Add Spot Specific Info to Frame //
     //---------------------------------//
@@ -1911,8 +1911,11 @@ OvwmSim::SetMeasurements(
 
 	  if(generate_map){
 	    X_map_[range_index][azimuth_index]=meas->XK;
-	    cout<<"range azimuth index "<< range_index<< " "<<azimuth_index<<endl;
-	    cout<<"range azimuth in km "<< range_km<<" "<<azimuth_km<<endl;
+	    //these screen outputs were used to make sure
+	    // that we are accessing correct range azimuth 
+	    // values
+	    //cout<<"range azimuth index "<< range_index<< " "<<azimuth_index<<endl;
+	    //cout<<"range azimuth in km "<< range_km<<" "<<azimuth_km<<endl;
 	  }
 
           //------------------------------------------

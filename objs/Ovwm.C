@@ -1016,7 +1016,7 @@ Ovwm::LocatePixels(
     //--------------------------------//
 
     CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-        attitude, antenna, antenna->groundImpactAzimuthAngle);
+        attitude, antenna, antenna->txCenterAzimuthAngle);
 
     //------------------//
     // find beam center //
