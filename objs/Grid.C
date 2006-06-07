@@ -369,6 +369,23 @@ Grid::ShiftForward(
             if (offsetlist != NULL)
             {
                 offsetlist->MakeMeasList(fp, &(l2a.frame.measList));
+
+                // remove duplicate meas in measlist
+                Meas* nextmeas = new Meas;
+                for (Meas* meas = l2a.frame.measList.GetHead(); meas;
+                     meas = l2a.frame.measList.GetNext())
+                {
+                    nextmeas = l2a.frame.measList.GetNext();
+                    if (nextmeas != NULL &&
+                        meas->startSliceIdx==nextmeas->startSliceIdx &&
+                        meas->scanAngle==nextmeas->scanAngle) {
+                      nextmeas = l2a.frame.measList.GetPrev();
+                      meas = l2a.frame.measList.RemoveCurrent();
+                      delete meas;
+                      meas = l2a.frame.measList.GetCurrent();
+                      continue;
+                    }
+                }
             }
         }
 
