@@ -180,7 +180,8 @@ main(
             float En = meas->EnSlice;
             //float SNR = Es/En/NUM_RANGE_LOOKS_AVERAGED;
             float SNR = Es/En;
-
+            while(meas->scanAngle<0) meas->scanAngle+=2*pi;
+	    while(meas->scanAngle>2*pi) meas->scanAngle-=2*pi;
             if (meas->beamIdx <= 1 && 
                 (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.))
             {
