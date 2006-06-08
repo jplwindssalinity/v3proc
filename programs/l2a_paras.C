@@ -132,7 +132,10 @@ main(
         float SNR_IF[XBIN], SNR_IA[XBIN], SNR_OF[XBIN], SNR_OA[XBIN];
         float kpc_IF[XBIN], kpc_IA[XBIN], kpc_OF[XBIN], kpc_OA[XBIN];
         float azres_IF[XBIN], azres_IA[XBIN], azres_OF[XBIN], azres_OA[XBIN];
-
+        float s0_IF[XBIN], s0_IA[XBIN], s0_OF[XBIN], s0_OA[XBIN];
+	float X_IF[XBIN],  X_IA[XBIN], X_OF[XBIN], X_OA[XBIN];
+        
+        
         for (int ii=0; ii<XBIN; ii++) {
           nWVC_OF[ii] = 0;
           nWVC_OA[ii] = 0;
@@ -154,6 +157,14 @@ main(
           azres_OA[ii] = 0.;
           azres_IF[ii] = 0.;
           azres_IA[ii] = 0.;
+          s0_OF[ii] = 0.;
+          s0_OA[ii] = 0.;
+          s0_IF[ii] = 0.;
+          s0_IA[ii] = 0.;
+	  X_OF[ii] = 0.;
+          X_OA[ii] = 0.;
+          X_IF[ii] = 0.;
+          X_IA[ii] = 0.;
         }
 
         int frame_number=1;
@@ -192,6 +203,8 @@ main(
                }
                nLookOF[l2a.frame.cti]++;
                SNR_OF[l2a.frame.cti] += SNR;
+               s0_OF[l2a.frame.cti] += meas->value;
+               X_OF[l2a.frame.cti] += meas->XK;
                azres_OF[l2a.frame.cti] += meas->azimuth_width;
 
             } else if (meas->beamIdx <= 1 &&
@@ -205,6 +218,8 @@ main(
                nLookOA[l2a.frame.cti]++;
                SNR_OA[l2a.frame.cti] += SNR;
                azres_OA[l2a.frame.cti] += meas->azimuth_width;
+               s0_OA[l2a.frame.cti] += meas->value;
+               X_OA[l2a.frame.cti] += meas->XK;
 
             } else if (meas->beamIdx > 1 &&
                 (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.))
@@ -217,6 +232,8 @@ main(
                nLookIF[l2a.frame.cti]++;
                SNR_IF[l2a.frame.cti] += SNR;
                azres_IF[l2a.frame.cti] += meas->azimuth_width;
+               s0_IF[l2a.frame.cti] += meas->value;
+               X_IF[l2a.frame.cti] += meas->XK;
 
             } else if (meas->beamIdx > 1 &&
                        (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.))
@@ -229,7 +246,8 @@ main(
                nLookIA[l2a.frame.cti]++;
                SNR_IA[l2a.frame.cti] += SNR;
                azres_IA[l2a.frame.cti] += meas->azimuth_width;
-
+	       s0_IA[l2a.frame.cti] += meas->value;
+               X_IA[l2a.frame.cti] += meas->XK;
             }
           }
           //printf("%d\n", l2a.frame.cti);
@@ -245,6 +263,8 @@ main(
           if (nWVC_OF[ii]>0) {
             azres_OF[ii] /= nLookOF[ii];
             SNR_OF[ii] /= nLookOF[ii]; // average SNR
+	    s0_OF[ii] /= nLookOF[ii]; // average s0
+	    X_OF[ii] /= nLookOF[ii]; // average X
             nLookOF[ii] = nLookOF[ii]/nWVC_OF[ii]*NUM_RANGE_LOOKS_AVERAGED; // looks per wind cell
             kpc_OF[ii] = sqrt((1. + 2./SNR_OF[ii] + 1./(SNR_OF[ii]*SNR_OF[ii]))/nLookOF[ii]);
           }
@@ -252,6 +272,8 @@ main(
           if (nWVC_OA[ii]>0) {
             azres_OA[ii] /= nLookOA[ii];
             SNR_OA[ii] /= nLookOA[ii]; // average SNR
+	    s0_OA[ii] /= nLookOA[ii]; // average s0
+	    X_OA[ii] /= nLookOA[ii]; // average X
             nLookOA[ii] = nLookOA[ii]/nWVC_OA[ii]*NUM_RANGE_LOOKS_AVERAGED; // looks per wind cell
             kpc_OA[ii] = sqrt((1. + 2./SNR_OA[ii] + 1./(SNR_OA[ii]*SNR_OA[ii]))/nLookOA[ii]);
           }
@@ -259,6 +281,8 @@ main(
           if (nWVC_IF[ii]>0) {
             azres_IF[ii] /= nLookIF[ii];
             SNR_IF[ii] /= nLookIF[ii]; // average SNR
+	    s0_IF[ii] /= nLookIF[ii]; // average s0
+	    X_IF[ii] /= nLookIF[ii]; // average X
             nLookIF[ii] = nLookIF[ii]/nWVC_IF[ii]*NUM_RANGE_LOOKS_AVERAGED; // looks per wind cell
             kpc_IF[ii] = sqrt((1. + 2./SNR_IF[ii] + 1./(SNR_IF[ii]*SNR_IF[ii]))/nLookIF[ii]);
           }
@@ -266,6 +290,8 @@ main(
           if (nWVC_IA[ii]>0) {
             azres_IA[ii] /= nLookIA[ii];
             SNR_IA[ii] /= nLookIA[ii]; // average SNR
+	    s0_IA[ii] /= nLookIA[ii]; // average s0
+	    X_IA[ii] /= nLookIA[ii]; // average X
             nLookIA[ii] = nLookIA[ii]/nWVC_IA[ii]*NUM_RANGE_LOOKS_AVERAGED; // looks per wind cell
             kpc_IA[ii] = sqrt((1. + 2./SNR_IA[ii] + 1./(SNR_IA[ii]*SNR_IA[ii]))/nLookIA[ii]);
           }
@@ -275,7 +301,9 @@ main(
                   nLookOF[ii], nLookOA[ii], nLookIF[ii], nLookIA[ii],
                   SNR_OF[ii], SNR_OA[ii], SNR_IF[ii], SNR_IA[ii],
                   kpc_OF[ii], kpc_OA[ii], kpc_IF[ii], kpc_IA[ii],
-                  azres_OF[ii], azres_OA[ii], azres_IF[ii], azres_IA[ii]);
+                  azres_OF[ii], azres_OA[ii], azres_IF[ii], azres_IA[ii],
+                  s0_OF[ii], s0_OA[ii], s0_IF[ii], s0_IA[ii],
+                  X_OF[ii], X_OA[ii], X_IF[ii], X_IA[ii]);
         }
 
         //----------------------//
