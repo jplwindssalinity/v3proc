@@ -196,7 +196,8 @@ float PointTargetResponseTable::GetSemiMinorWidth(
                         float scan_angle_rad, float orbit_time_in_rev_s,
                         int beam_num)
 {
-  int bn, timeIdx, angIdx, rngIdx, azIdx, selectIdx;
+  int bn, timeIdx, angIdx, rngIdx, azIdx, selectIdx1, selectIdx2;
+  float frac, intpWidth;
 
   bn = beam_num - 1;
 
@@ -206,17 +207,32 @@ float PointTargetResponseTable::GetSemiMinorWidth(
   if(scan_angle_rad>two_pi) scan_angle_rad-=two_pi;
 
   timeIdx = int(orbit_time_in_rev_s/TIME_STEP);
+  timeIdx = 0; // now, for appling result of one rev
   angIdx = int(scan_angle_rad*rtd/ANGLE_STEP);
   rngIdx = int(range_km/RNG_STEP_SIZE)+N_RNG_BINS/2;
   azIdx = int(azimuth_km/AZ_STEP_SIZE)+N_AZ_BINS/2;
 
-  selectIdx = timeIdx*N_ANG_STEPS*N_RNG_BINS*N_AZ_BINS
+  frac = scan_angle_rad*rtd/ANGLE_STEP - angIdx;
+
+  selectIdx1 = timeIdx*N_ANG_STEPS*N_RNG_BINS*N_AZ_BINS
               + angIdx*N_RNG_BINS*N_AZ_BINS
               + rngIdx*N_AZ_BINS
               + azIdx;
 
-  //cout << selectIdx << endl;
-  return semiMinorWidth[bn][selectIdx];
+  if (scan_angle_rad*rtd < 360.-ANGLE_STEP) { // next angle Idx
+    selectIdx2 = selectIdx1 + N_RNG_BINS*N_AZ_BINS;
+  } else { // use angle idx 0
+    selectIdx2 = timeIdx*N_ANG_STEPS*N_RNG_BINS*N_AZ_BINS
+                + rngIdx*N_AZ_BINS
+                + azIdx;
+  }
+
+  //cout << selectIdx1 << " " << semiMinorWidth[bn][selectIdx1] << endl;
+  //cout << selectIdx2 << " " << semiMinorWidth[bn][selectIdx2] <<endl;
+  intpWidth = (1.-frac)*semiMinorWidth[bn][selectIdx1] + frac*semiMinorWidth[bn][selectIdx2];
+  //cout << frac << " " << intpWidth << endl;
+  //return semiMinorWidth[bn][selectIdx];
+  return intpWidth;
 
 }
 
@@ -226,7 +242,8 @@ float PointTargetResponseTable::GetSemiMajorWidth(
                         float scan_angle_rad, float orbit_time_in_rev_s,
                         int beam_num)
 {
-  int bn, timeIdx, angIdx, rngIdx, azIdx, selectIdx;
+  int bn, timeIdx, angIdx, rngIdx, azIdx, selectIdx1, selectIdx2;
+  float frac, intpWidth;
 
   bn = beam_num - 1;
 
@@ -236,16 +253,32 @@ float PointTargetResponseTable::GetSemiMajorWidth(
   if(scan_angle_rad>two_pi) scan_angle_rad-=two_pi;
 
   timeIdx = int(orbit_time_in_rev_s/TIME_STEP);
+  timeIdx = 0; // now, for appling result of one rev
   angIdx = int(scan_angle_rad*rtd/ANGLE_STEP);
   rngIdx = int(range_km/RNG_STEP_SIZE)+N_RNG_BINS/2;
   azIdx = int(azimuth_km/AZ_STEP_SIZE)+N_AZ_BINS/2;
 
-  selectIdx = timeIdx*N_ANG_STEPS*N_RNG_BINS*N_AZ_BINS
+  frac = scan_angle_rad*rtd/ANGLE_STEP - angIdx;
+
+  selectIdx1 = timeIdx*N_ANG_STEPS*N_RNG_BINS*N_AZ_BINS
               + angIdx*N_RNG_BINS*N_AZ_BINS
               + rngIdx*N_AZ_BINS
               + azIdx;
 
-  //cout << selectIdx << endl;
-  return semiMajorWidth[bn][selectIdx];
+  if (scan_angle_rad*rtd < 360.-ANGLE_STEP) { // next angle Idx
+    selectIdx2 = selectIdx1 + N_RNG_BINS*N_AZ_BINS; 
+  } else { // use angle idx 0
+    selectIdx2 = timeIdx*N_ANG_STEPS*N_RNG_BINS*N_AZ_BINS
+                + rngIdx*N_AZ_BINS
+                + azIdx;
+  }
+
+  //cout << selectIdx1 << " " << semiMajorWidth[bn][selectIdx1] << endl;
+  //cout << selectIdx2 << " " << semiMajorWidth[bn][selectIdx2] << endl;
+  intpWidth = (1.-frac)*semiMajorWidth[bn][selectIdx1] + frac*semiMajorWidth[bn][selectIdx2];
+  //cout << frac << " " << intpWidth << endl;
+  //return semiMajorWidth[bn][selectIdx];
+  return intpWidth;
+
 }
 
