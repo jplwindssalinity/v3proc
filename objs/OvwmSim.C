@@ -1747,11 +1747,16 @@ OvwmSim::SetMeasurements(
           int beam_num = beam_id+1;
 
           float rangewid, azimwid; // half widths
+
           rangewid=ptrTable->GetSemiMinorWidth(range_km, azimuth_km, scan_angle,
                                          orbit_time, beam_num)/1000.;
           azimwid=ptrTable->GetSemiMajorWidth(range_km, azimuth_km, scan_angle,
                                         orbit_time, beam_num)/1000.;
 
+          meas->azimuth_width = 2.*azimwid;
+
+          if (fabs(range_km) >= RNG_SWATH_WIDTH/2.) rangewid = 0.;
+          if (fabs(azimuth_km) >= AZ_SWATH_WIDTH/2.) azimwid = 0.;
 
 	  if(!generate_map &&(rangewid==0 || azimwid==0)){
 	    meas=meas_spot->RemoveCurrent();
@@ -1760,7 +1765,6 @@ OvwmSim::SetMeasurements(
 	    slice_i++;
             continue;
 	  }
-          meas->azimuth_width = 2.*azimwid;
 
           // set up integration lengths
 	  int nL=ovwm->ses.numRangeLooksAveraged;
