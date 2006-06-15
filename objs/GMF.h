@@ -62,6 +62,7 @@ public:
     //--------------//
 
     int  ReadOldStyle(const char* filename);
+    int  ReadHighWind(const char* filename);
     int  ReadPolarimetric(const char* filename);
 
     //---------//

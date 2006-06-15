@@ -1490,6 +1490,11 @@ ConfigGMF(
         if (! gmf->ReadPolarimetric(gmf_filename))
             return(0);
     }
+   else if (strcasecmp(gmf_format, "HIGH_WIND") == 0)
+    {
+        if (! gmf->ReadHighWind(gmf_filename))
+            return(0);
+    }
     else
         return(0);
 
