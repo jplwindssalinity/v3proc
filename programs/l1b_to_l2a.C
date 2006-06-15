@@ -221,7 +221,7 @@ main(
 	do
 	{
 		counter++;
-		//if (counter % 100 == 0) printf("L1B record count = %ld\n",counter);
+		if (counter % 1000 == 0) printf("L1B record count = %ld bytes cout =%g\n",counter,(double)ftello(grid.l1b.GetInputFp()));
 
 		//-----------------------------//
 		// read a level 1B data record //
