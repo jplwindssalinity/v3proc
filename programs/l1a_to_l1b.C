@@ -87,7 +87,7 @@ template class List<Meas>;
 template class List<EarthPosition>;
 template class List<MeasSpot>;
 template class List<WindVectorPlus>;
-template class List<long>;
+template class List<off_t>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
