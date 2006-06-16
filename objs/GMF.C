@@ -217,8 +217,6 @@ int GMF::ReadHighWind(
     if (fd == -1)
         return(0);
 
-    int dummy;
-    read(fd, &dummy, sizeof(int));
 
     _metCount = 2;
 
