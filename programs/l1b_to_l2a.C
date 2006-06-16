@@ -120,7 +120,7 @@ template map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", 0};
+const char* usage_array[] = { "<sim_config_file>", "[max_record_no]",0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -136,12 +136,15 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 2)
+	if (argc != 2 && argc!=3 )
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
-
+        long int max_record_no=0;
+        if(argc==3){
+	  max_record_no=atoi(argv[clidx++]);
+	}
 	//---------------------//
 	// read in config file //
 	//---------------------//
@@ -221,7 +224,8 @@ main(
 	do
 	{
 		counter++;
-		if (counter % 100 == 0) fprintf(stderr,"L1B record count = %ld bytes cout =%g\n",counter,(double)ftello(grid.l1b.GetInputFp()));
+                if(max_record_no>0 && counter>max_record_no) break;
+		if (counter % 100 == 0) fprintf(stderr,"L1B record count = %ld bytes count =%g\n",counter,(double)ftello(grid.l1b.GetInputFp()));
 
 		//-----------------------------//
 		// read a level 1B data record //
