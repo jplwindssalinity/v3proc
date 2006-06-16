@@ -124,7 +124,7 @@ public:
     // not to be written out! //
     //------------------------//
 
-    long  offset;    // byte offset in file
+    off_t  offset;    // byte offset in file
 };
 
 //======================================================================
@@ -181,7 +181,7 @@ public:
 //    It is used to index Meas objects in a file.
 //======================================================================
 
-class OffsetList : public List<long>
+class OffsetList : public List<off_t>
 {
 public:
 

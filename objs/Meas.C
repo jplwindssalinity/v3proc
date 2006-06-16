@@ -231,7 +231,7 @@ Meas::Read(
     FILE*    fp)
 {
     FreeContents();
-    offset = ftell(fp);
+    offset = ftello(fp);
     if (fread((void *)&value, sizeof(float), 1, fp) != 1 ||
         fread((void *)&XK, sizeof(float), 1, fp) != 1 ||
         fread((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
@@ -761,10 +761,10 @@ OffsetList::MakeMeasList(
     FILE*        fp,
     MeasList*    meas_list)
 {
-    for (long* offset = GetHead(); offset; offset = GetNext())
+    for (off_t* offset = GetHead(); offset; offset = GetNext())
     {
         Meas* meas = new Meas();
-        if (fseek(fp, *offset, SEEK_SET) == -1)
+        if (fseeko(fp, *offset, SEEK_SET) == -1)
             return(0);
 
         if (! meas->Read(fp))
@@ -787,7 +787,7 @@ OffsetList::MakeMeasList(
 void
 OffsetList::FreeContents()
 {
-    long* offset;
+    off_t* offset;
     GotoHead();
     while ((offset = RemoveCurrent()) != NULL)
         delete offset;

@@ -247,7 +247,7 @@ Grid::Add(
 
     // convert the measurement to an offset
 
-    long* offset = new long;
+    off_t* offset = new off_t;
     *offset = meas->offset;
 
     OffsetList* offsetlist = _grid[cti][ati].GetHead();
@@ -324,7 +324,7 @@ Grid::ShiftForward(
     //---------------------------//
 
     FILE* fp = l1b.GetInputFp();
-    long offset = ftell(fp);
+    off_t offset = ftello(fp);
     if (offset == -1)
         return(0);
 
@@ -416,7 +416,7 @@ Grid::ShiftForward(
     // restore L1B location //
     //----------------------//
 
-    if (fseek(fp, offset, SEEK_SET) == -1)
+    if (fseeko(fp, offset, SEEK_SET) == -1)
         return(0);
 
     return(1);
