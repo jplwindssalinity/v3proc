@@ -203,9 +203,9 @@ main(
                }
                nLookOF[l2a.frame.cti]++;
                SNR_OF[l2a.frame.cti] += SNR;
+               azres_OF[l2a.frame.cti] += meas->azimuth_width;
                s0_OF[l2a.frame.cti] += meas->value;
                X_OF[l2a.frame.cti] += meas->XK;
-               azres_OF[l2a.frame.cti] += meas->azimuth_width;
 
             } else if (meas->beamIdx <= 1 &&
                        (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.))
@@ -296,7 +296,7 @@ main(
             kpc_IA[ii] = sqrt((1. + 2./SNR_IA[ii] + 1./(SNR_IA[ii]*SNR_IA[ii]))/nLookIA[ii]);
           }
 
-          fprintf(outfileP, "%d %d %d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", ii,
+          fprintf(outfileP, "%d %d %d %d %d %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %g %g %g %g\n", ii,
                   nWVC_OF[ii], nWVC_OA[ii], nWVC_IF[ii], nWVC_IA[ii],
                   nLookOF[ii], nLookOA[ii], nLookIF[ii], nLookIA[ii],
                   SNR_OF[ii], SNR_OA[ii], SNR_IF[ii], SNR_IA[ii],
