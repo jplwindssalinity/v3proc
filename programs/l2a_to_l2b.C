@@ -125,7 +125,7 @@ template map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", 0};
+const char* usage_array[] = { "<sim_config_file>", "[ignore_bad_l2a]",0};
 
 //--------------------//
 // Report handler     //
@@ -156,12 +156,14 @@ main(
     // parse the command line //
     //------------------------//
 
+    int ignore_bad_l2a=0;
     const char* command = no_path(argv[0]);
-    if (argc != 2)
+    if (argc != 2 && argc!=3 )
         usage(command, usage_array, 1);
 
     int clidx = 1;
     const char* config_file = argv[clidx++];
+    if(argc==3) ignore_bad_l2a =atoi(argv[clidx++]);
 
     //------------------------//
     // tell how far you have  //
@@ -287,16 +289,16 @@ main(
                 break;
             case L2A::ERROR_READING_FRAME:
                 fprintf(stderr, "%s: error reading Level 2A data\n", command);
-                exit(1);
+                if(!ignore_bad_l2a) exit(1);
                 break;
             case L2A::ERROR_UNKNOWN:
                 fprintf(stderr, "%s: unknown error reading Level 2A data\n",
                     command);
-                exit(1);
+                if(!ignore_bad_l2a) exit(1);
                 break;
             default:
                 fprintf(stderr, "%s: unknown status\n", command);
-                exit(1);
+                if(!ignore_bad_l2a) exit(1);
             }
             break;        // done, exit do loop
         }
