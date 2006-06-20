@@ -157,6 +157,7 @@ main(
 	    }
 	  }
           if(start_frame>=0) frame_number++;
+	  if(frame_number%1000==0) fprintf(stderr,"%d frames read\n",frame_number-1);
         }
         if(start_frame>=0 && end_frame>frame_number){
 	  fprintf(stderr,"Maximum frame number was %d\n",frame_number-1);
