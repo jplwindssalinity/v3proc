@@ -130,6 +130,9 @@ main(
 	  }
           if(start_frame>=0) frame_number++;
         }
+        if(start_frame>=0 && end_frame>frame_number){
+	  fprintf(stderr,"Maximum frame number was %d\n",frame_number);
+	}
 
         //----------------------//
         // close files and exit //

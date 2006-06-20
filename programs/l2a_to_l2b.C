@@ -127,21 +127,6 @@ template map<string,string,Options::ltstr>;
 
 const char* usage_array[] = { "<sim_config_file>", "[ignore_bad_l2a]",0};
 
-//--------------------//
-// Report handler     //
-// runs if SIGUSR1 is //
-// received.          //
-//--------------------//
-
-int global_frame_number = 0;
-void
-report(
-    int  sig_num)
-{
-    fprintf(stderr,"l2a_to_l2b: Starting frame number %d\n",
-        global_frame_number);
-    return;
-}
 
 //--------------//
 // MAIN PROGRAM //
@@ -155,7 +140,7 @@ main(
     //------------------------//
     // parse the command line //
     //------------------------//
-
+    int frame_number =0;
     int ignore_bad_l2a=0;
     const char* command = no_path(argv[0]);
     if (argc != 2 && argc!=3 )
@@ -275,7 +260,7 @@ main(
 
     for (;;)
     {
-        global_frame_number++;
+        frame_number++;
 
         //-----------------------------//
         // read a level 2A data record //
@@ -328,7 +313,8 @@ main(
 #endif
 
         int retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
-
+        if(frame_number%100==0) fprintf(stderr,"%d l2a frames processed\n",
+					frame_number);
 #ifdef LATLON_LIMIT_HACK
         // start hack
         if (retval != 1)
