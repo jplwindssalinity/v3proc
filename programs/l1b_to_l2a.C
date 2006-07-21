@@ -214,66 +214,115 @@ main(
 	grid.l1b.OpenForReading();
 	grid.l2a.OpenForWriting();
 
-	//-----------------//
-	// conversion loop //
-	//-----------------//
+        /* all variable ended with Size are in byte */
 
-	L1BToL2A l1b_to_l2a;
+        int nSpotSize = 4;
 
-	long counter = 0;
-	do
-	{
-		counter++;
-                if(max_record_no>0 && counter>max_record_no) break;
-		if (counter % 100 == 0) fprintf(stderr,"L1B record count = %ld bytes count =%g\n",counter,(double)ftello(grid.l1b.GetInputFp()));
+        int timeSize = 8;
+        int scOSSize = 56;
+        int scAttSize = 15; // 3 float and 3 char (order of rpy)
+        int nMeasSize = 4;
 
-		//-----------------------------//
-		// read a level 1B data record //
-		//-----------------------------//
+        int spotSize = timeSize + scOSSize + scAttSize;
 
-		if (! grid.l1b.ReadDataRec())
-		{
-			switch (grid.l1b.GetStatus())
-			{
-			case L1B::OK:	// end of file
-				break;
-			case L1B::ERROR_READING_FRAME:
-				fprintf(stderr, "%s: error reading Level 1B data\n", command);
-				exit(1);
-				break;
-			case L1B::ERROR_UNKNOWN:
-				fprintf(stderr, "%s: unknown error reading Level 1B data\n",
-					command);
-				exit(1);
-				break;
-			default:
-				fprintf(stderr, "%s: unknown status\n", command);
-				exit(1);
-			}
-			break;	// done, exit do loop
-		}
+        int nSpot = 0;
+        int nm = 0;
+        off_t tmp = 0;
 
-		//-------//
-		// Group //
-		//-------//
+        /* find byte length of a measurement from a spot list with */
+        /* positive number of measurements                         */
 
-		if (! l1b_to_l2a.Group(&grid, use_compositing))
-		{
-			fprintf(stderr, "%s: error converting Level 1B to Level 2A\n",
-				command);
-			exit(1);
-		}
+        while (nm==0) {
 
-	} while (1);
+          tmp = ftello(grid.l1b.GetInputFp());
+          if (! grid.l1b.ReadDataRec()) {
+            fprintf(stderr, "%s: error reading Level 1B data\n", command);
+            exit(1);
+          }
+
+          /* find out number of spots in the spotlist */
+
+          nSpot = grid.l1b.frame.spotList.NodeCount();
+          //cout << "num of spots: " << nSpot << endl;
+
+          /* find out total number of measurements for all spots */
+
+          for (MeasSpot* meas_spot = grid.l1b.frame.spotList.GetHead();
+               meas_spot; meas_spot = grid.l1b.frame.spotList.GetNext()) {
+            nm += meas_spot->NodeCount();
+          }
+
+        }
+
+        cout << "number of meas: " << nm << endl;
+
+        int sumSize = nSpotSize + nSpot*(spotSize+nMeasSize);
+        grid.meas_length = (int)((ftello(grid.l1b.GetInputFp())-tmp-sumSize)/nm);
+        cout << "meas length in byte: " << grid.meas_length << endl;
+
+        /* get number of bytes in l1b file */
+
+        fseeko(grid.l1b.GetInputFp(),0,SEEK_END);
+        off_t end_byte = ftello(grid.l1b.GetInputFp());
+
+        /* go back to the beginning of l1b file */
+
+        fseeko(grid.l1b.GetInputFp(),0,SEEK_SET);
+
+        double spotTime;
+
+        Meas* meas = new Meas;
+
+        long counter = 0;
+
+        for (;;) {
+
+          counter++;
+          if (max_record_no>0 && counter>max_record_no) break;
+          if (counter % 100 == 0) {
+            fprintf(stderr,"L1B record count = %ld bytes count =%g\n",
+                    counter, (double)ftello(grid.l1b.GetInputFp()));
+          }
+
+          if (fread(&nSpot, sizeof(int), 1, grid.l1b.GetInputFp()) != 1) break; // find number of spots
+          //cout << "num of spots: " << nSpot << endl;
+
+          for (long ss=0; ss<nSpot; ss++) {
+
+            if (fread(&spotTime, sizeof(double), 1, grid.l1b.GetInputFp()) != 1) break; // find spot time
+            if (fseeko(grid.l1b.GetInputFp(), spotSize-timeSize, SEEK_CUR) == -1) break;
+            if (fread(&nm, sizeof(int), 1, grid.l1b.GetInputFp()) != 1) break; // find number of meas
+
+            for (int mm=0; mm<nm; mm++) {
+              if (meas->Read(grid.l1b.GetInputFp()) != 1) {
+                fprintf(stderr, "Error in Read of Meas!\n");
+                break;
+                //exit(1);
+              }
+              if (grid.Add(meas, spotTime, ss, use_compositing) != 1) {
+                fprintf(stderr, "Error in Add of Grid!\n");
+                break;
+                //exit(1);
+              }
+            } // meas loop
+
+          } // spot loop
+
+          if (ftello(grid.l1b.GetInputFp()) >= end_byte) break;
+
+        }
+
+        delete meas;
 
 	//
 	// Write out data in the grid that hasn't been written yet.
 	//
 
-	grid.Flush(use_compositing);
+        grid.Flush(use_compositing);
 
 	grid.l1b.Close();
 	grid.l2a.Close();
 
-	return (0);
+        return (0);
+
 }
