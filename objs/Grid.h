@@ -67,6 +67,12 @@ public:
 	L2A			l2a;		// handles output to a level 2A data file.
 	Ephemeris	ephemeris;	// defines the grid location
 
+        int meas_length;
+        //float gctd[181][361];
+        //float gatd[181][361];
+        float gctd[361][721];  // 1st index is lat, 2nd is lon
+        float gatd[361][721];  // 1st index is lat, 2nd is lon
+
 protected:
 
 	// resolution and sizes are in km

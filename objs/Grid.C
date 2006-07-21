@@ -11,7 +11,13 @@ static const char rcs_id_grid_c[] =
 #include "Grid.h"
 #include "Meas.h"
 #include "Sigma0.h"
+#include <time.h>
+#include <iostream.h>
 
+#define OFFSET_CK_DUP 52
+//#define TIME_STEP 16.8 // second for moving 1 deg in lat roughly
+#define TIME_STEP 8.4 // second for moving 0.5 deg in lat roughly
+#define LAT_OFFSET 40 // to cover area with lat less than 1st meas record
 
 //======//
 // Grid //
@@ -173,12 +179,227 @@ Grid::Add(
     // calculate the subtrack distances //
     //----------------------------------//
 
-    float ctd, atd;
-    if (ephemeris.GetSubtrackCoordinates(meas->centroid, _start_position,
-        _start_time, meas_time, &ctd, &atd) == 0)
-    {
-        return(0);  // Couldn't find a grid position, so dump this measurement.
+    static int firstTime = 1;
+    static double refTime = 0.;
+    double hll[3];
+    EarthPosition pos;
+    int nLatStep = 0;
+
+    /* generate atd and ctd table */
+
+    //cout << firstTime << endl;
+
+    if (firstTime) {
+
+      /* initialize gctd and gatd */
+
+      //for (int ii=0; ii<181; ii++) {
+      //  for (int jj=0; jj<361; jj++) {
+      for (int ii=0; ii<361; ii++) {
+        for (int jj=0; jj<721; jj++) {
+          gctd[ii][jj] = -9999.;
+          gatd[ii][jj] = 0.;
+        }
+      }
+
     }
+
+    if (firstTime || (meas_time-refTime)>6000.) { // first time or another orbit
+
+      printf("Meas Time and Old Ref Time: %18g, %18g\n", meas_time, refTime);
+      cout << "Time difference: " <<  meas_time - refTime << endl;
+
+      refTime = meas_time;
+
+      OrbitState os;
+      int sign;
+
+      ephemeris.GetOrbitState(refTime, EPHEMERIS_INTERP_ORDER, &os);
+      if (os.vsat.Get(2) > 0.) {  // orbit moving up
+        sign = 1;
+      } else { // orbit moving down
+        sign = -1;
+      }
+
+      if (_end_time-refTime<6000.) { // 6000 sec is about the period of orbit
+        nLatStep = int((_end_time - refTime)/TIME_STEP) + LAT_OFFSET; // LAT_OFFSET for covering meas with lat less than 1st rec, now it is 40, means 20 deg
+      } else
+        nLatStep = int(6000./TIME_STEP);
+
+      cout << "Number of lat steps: " << nLatStep << endl;
+
+      meas->centroid.GetAltLonGDLat(hll,hll+1,hll+2); // get alt, lon and lat
+      cout << "alt, long, lat: " << hll[0] << " " << hll[1]*rtd << " " << hll[2]*rtd << endl;
+
+      float lat, lon;
+      int lonIdx, latIdx;
+      int refLon, refLat;
+
+      refLon = (int)(hll[1]*rtd);
+      refLat = (int)(hll[2]*rtd)-20*sign; // -20 for 1st meas record might not have the lowest lat
+
+      for (int ii=0; ii<nLatStep; ii++) { //lat loop
+
+        double time = refTime + (ii-LAT_OFFSET)*TIME_STEP; // time increment for change of 0.5 deg in lat
+        lat = refLat + sign*ii*0.5;
+
+        /* for moving up */
+
+        if (lat>=90. && lat<270.) {
+          lat = 180 - lat;
+          refLon = ((int)(hll[1]*rtd)+180)%360; // the other side of orbit, so change refLon
+        }
+        if (lat>=270.) lat = lat - 360;
+
+        /* for moving down */
+
+        if (lat<=-90. && lat>-270.) {
+          lat = -180 - lat;
+          refLon = ((int)(hll[1]*rtd)+180)%360; // the other side of orbit, so change refLon
+        }
+        if (lat<=-270.) lat = lat + 360;
+
+        //printf("Time: %30.26g\n", time);
+        //cout << "Time: " << time << endl;
+        //cout << "Lat: " << lat << endl;
+
+        int plus_flag = 0;
+        int minus_flag = 0;
+
+        if (lat==90.) {
+
+          latIdx = (int)(2*lat);
+          pos.SetAltLonGDLat(0.,0.,89.999/rtd);
+          ephemeris.GetSubtrackCoordinates(pos, _start_position,
+          _start_time, time, &gctd[latIdx+180][0], &gatd[latIdx+180][0]);
+
+          //cout << lat << " " << latIdx << " " << gctd[latIdx+180][0] << " " << gatd[latIdx+180][0] << endl;
+
+          for (int ll=1; ll<=720; ll++) {
+            gctd[latIdx+180][ll] = gctd[latIdx+180][0];
+            gatd[latIdx+180][ll] = gatd[latIdx+180][0];
+          }
+
+        } else if (lat==-90.) {
+
+          latIdx = (int)(2*lat);
+          pos.SetAltLonGDLat(0.,0.,-89.999/rtd);
+          ephemeris.GetSubtrackCoordinates(pos, _start_position,
+          _start_time, time, &gctd[latIdx+180][0], &gatd[latIdx+180][0]);
+
+          //cout << lat << " " << latIdx << " " << gctd[latIdx+180][0] << " " << gatd[latIdx+180][0] << endl;
+
+          for (int ll=1; ll<=720; ll++) {
+            gctd[latIdx+180][ll] = gctd[latIdx+180][0];
+            gatd[latIdx+180][ll] = gatd[latIdx+180][0];
+          }
+
+        } else {
+
+          latIdx = (int)(2*lat);
+
+          for (int jj=0; jj<360; jj++) { //lon loop
+
+            lon = refLon + jj*0.5;
+            if (lon>=360.) lon -= 360.;
+
+            lonIdx = (int)(2*lon);
+
+            pos.SetAltLonGDLat(0.,double(lon)/rtd,double(lat)/rtd);
+            ephemeris.GetSubtrackCoordinates(pos, _start_position,
+            _start_time, time, &gctd[latIdx+180][lonIdx], &gatd[latIdx+180][lonIdx]);
+
+            //cout << lon << " " << lonIdx << " " << gctd[latIdx+180][lonIdx] << " " << gatd[latIdx+180][lonIdx] << endl;
+
+            if (fabs(gctd[latIdx+180][lonIdx]) > 1500.) plus_flag = 1;
+
+            lon = refLon - jj*0.5;
+            if (lon<0.) lon += 360.;
+
+            lonIdx = (int)(2*lon);
+
+            pos.SetAltLonGDLat(0.,double(lon)/rtd,double(lat)/rtd);
+            ephemeris.GetSubtrackCoordinates(pos, _start_position,
+            _start_time, time, &gctd[latIdx+180][lonIdx], &gatd[latIdx+180][lonIdx]);
+
+            //cout << lon << " " << lonIdx << " " << gctd[latIdx+180][lonIdx] << " " << gatd[latIdx+180][lonIdx] << endl;
+
+            if (fabs(gctd[latIdx+180][lonIdx]) > 1500.) minus_flag = 1;
+
+            if (plus_flag && minus_flag) break;
+
+          }
+
+        } // lon loop
+      } // lat loop
+
+      for (int ii=0; ii<361; ii++) {
+        gctd[ii][720] = gctd[ii][0];
+        gatd[ii][720] = gatd[ii][0];
+      }
+
+      firstTime = 0;
+
+    }
+
+    float ctd, atd;
+    float measLon, measLat, lonFact, latFact;
+    int lonIdx1, lonIdx2, latIdx1, latIdx2;
+    double measHLL[3];
+
+    meas->centroid.GetAltLonGDLat(measHLL,measHLL+1,measHLL+2); // get alt, lon and lat
+
+    measLon = measHLL[1]*rtd;
+    measLat = measHLL[2]*rtd;
+    lonIdx1 = (int)(measLon*2.);
+    lonIdx2 = (int)(measLon*2.)+1;
+    latIdx1 = (int)(measLat*2.);
+    latIdx2 = (int)(measLat*2.)+1;
+    lonFact = measLon*2. - lonIdx1;
+    latFact = measLat*2. - latIdx1;
+
+    //cout << measLon << endl;
+    //cout << measLat << endl;
+    //cout << lonIdx1 << endl;
+    //cout << lonIdx2 << endl;
+    //cout << latIdx1 << endl;
+    //cout << latIdx2 << endl;
+    //cout << lonFact << endl;
+    //cout << latFact << endl;
+
+    //cout << gctd[latIdx1+180][lonIdx1] << " " << gatd[latIdx1+180][lonIdx1] << endl;
+    //cout << gctd[latIdx2+180][lonIdx1] << " " << gatd[latIdx2+180][lonIdx1] << endl;
+    //cout << gctd[latIdx1+180][lonIdx2] << " " << gatd[latIdx1+180][lonIdx2] << endl;
+    //cout << gctd[latIdx2+180][lonIdx2] << " " << gatd[latIdx2+180][lonIdx2] << endl;
+
+    if (gctd[latIdx1+180][lonIdx1]==-9999. ||
+        gctd[latIdx2+180][lonIdx1]==-9999. ||
+        gctd[latIdx1+180][lonIdx2]==-9999. ||
+        gctd[latIdx2+180][lonIdx2]==-9999.) {
+      cerr << "latIdx1, lonIdx1: " << latIdx1 << " " << lonIdx1 << endl;
+      cerr << "Grid ctd is not large enough!!" << endl;
+      exit(1);
+    }
+
+    ctd = (1.-lonFact)*(1.-latFact)*gctd[latIdx1+180][lonIdx1]
+         + (1.-lonFact)*latFact*gctd[latIdx2+180][lonIdx1]
+         + lonFact*(1.-latFact)*gctd[latIdx1+180][lonIdx2]
+         + lonFact*latFact*gctd[latIdx2+180][lonIdx2];
+
+    atd = (1.-lonFact)*(1.-latFact)*gatd[latIdx1+180][lonIdx1]
+         + (1.-lonFact)*latFact*gatd[latIdx2+180][lonIdx1]
+         + lonFact*(1.-latFact)*gatd[latIdx1+180][lonIdx2]
+         + lonFact*latFact*gatd[latIdx2+180][lonIdx2];
+
+    //cout << "ss along, cross: " << atd << " " << ctd << endl;
+
+    //if (ephemeris.GetSubtrackCoordinates(meas->centroid, _start_position,
+    //    _start_time, meas_time, &ctd, &atd) == 0)
+    //{
+    //    return(0);  // Couldn't find a grid position, so dump this measurement.
+    //}
+
+    //cout << "from along, cross: " << atd << " " << ctd << endl;
 
     //
     // Compute grid indices, noting that the cross track grid starts on the left
@@ -297,6 +518,7 @@ Grid::Add(
     }
 
     //printf("%d %d %f %f\n",cti,vati,ctd,atd);
+
     return(1);
 }
 
@@ -319,6 +541,8 @@ int
 Grid::ShiftForward(
     int  do_composite)
 {
+    static int headerWritten = 0;
+
     //---------------------------//
     // remember the L1B location //
     //---------------------------//
@@ -337,10 +561,10 @@ Grid::ShiftForward(
         // convert each offset list to a MeasList //
         //----------------------------------------//
 
-        l2a.frame.measList.FreeContents();
-
         if (do_composite == 1)
         {
+            l2a.frame.measList.FreeContents();
+
             for (OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
                 offsetlist; offsetlist = _grid[i][_ati_start].GetNext())
             {
@@ -362,44 +586,145 @@ Grid::ShiftForward(
                     return(0);
                 }
             }
+
+            //----------------------------------//
+            // complete and write the L2A frame //
+            //----------------------------------//
+
+            l2a.frame.rev = 0;
+            l2a.frame.cti = i;
+            l2a.frame.ati = _ati_offset;
+            if (l2a.frame.measList.GetHead() != NULL)
+            {
+                l2a.WriteDataRec();
+            }
+
         }
         else
         {
+            /* write l2a header in the first time */
+
+            if (!headerWritten) {
+              l2a.WriteHeader();
+              headerWritten = 1;
+            }
+
+            char buffer[160000];
+            float ss1, ss2, sa1, sa2;
+            int ns1, ns2;
+
             OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
             if (offsetlist != NULL)
             {
-                offsetlist->MakeMeasList(fp, &(l2a.frame.measList));
 
-                // remove duplicate meas in measlist
-                Meas* nextmeas = new Meas;
-                for (Meas* meas = l2a.frame.measList.GetHead(); meas;
-                     meas = l2a.frame.measList.GetNext())
-                {
-                    nextmeas = l2a.frame.measList.GetNext();
-                    if (nextmeas != NULL &&
-                        meas->startSliceIdx==nextmeas->startSliceIdx &&
-                        meas->scanAngle==nextmeas->scanAngle) {
-                      nextmeas = l2a.frame.measList.GetPrev();
-                      meas = l2a.frame.measList.RemoveCurrent();
-                      delete meas;
-                      meas = l2a.frame.measList.GetCurrent();
-                      continue;
+                // remove duplicate meas in offsetlist
+
+                off_t* l1b_nextoffset = new off_t;
+                int dup_flag = 0;
+                int dd = 0;
+
+                for (off_t* l1b_offset = offsetlist->GetHead(); l1b_offset;
+                            l1b_offset = offsetlist->GetNext()) {
+
+                  if (dup_flag==1) {
+                    l1b_offset = offsetlist->GetPrev();
+                  }
+
+                  if (fseeko(fp, *l1b_offset+OFFSET_CK_DUP, SEEK_SET)==-1) {
+                    return(0);
+                  }
+
+                  fread(&ss1, sizeof(float), 1, fp);
+                  fread(&ns1, sizeof(int), 1, fp);
+                  fread(&sa1, sizeof(float), 1, fp);
+
+                  l1b_nextoffset = offsetlist->GetNext();
+
+                  //cout << "offset1: " << *l1b_offset << endl;
+
+                  if (l1b_nextoffset != NULL) {
+
+                    //cout << "offset2: " << *l1b_nextoffset << endl;
+
+                    if (fseeko(fp, *l1b_nextoffset+OFFSET_CK_DUP, SEEK_SET)==-1) {
+                      return(0);
                     }
-                }
-            }
-        }
 
-        //----------------------------------//
-        // complete and write the L2A frame //
-        //----------------------------------//
+                    fread(&ss2, sizeof(float), 1, fp);
+                    fread(&ns2, sizeof(int), 1, fp);
+                    fread(&sa2, sizeof(float), 1, fp);
 
-        l2a.frame.rev = 0;
-        l2a.frame.cti = i;
-        l2a.frame.ati = _ati_offset;
-        if (l2a.frame.measList.GetHead() != NULL)
-        {
-            l2a.WriteDataRec();
-        }
+                    if (ss1==ss2 && sa1==sa2) {
+                      dup_flag = 1;
+                      /* need to remove the element pointed by l1b_offset */
+                      l1b_offset = offsetlist->GetPrev();
+                      l1b_offset = offsetlist->RemoveCurrent();
+                      delete l1b_offset;
+                      l1b_offset = offsetlist->GetCurrent();
+                      //cout << "dup: " << *l1b_offset << endl;
+                    } else {
+                      dup_flag = 0;
+                      /* put pointer backward */
+                      l1b_offset = offsetlist->GetPrev();
+                      //cout << "not dup: " << *l1b_offset << " " << dd << endl;
+                      /* write record to buffer */
+                      fseeko(fp, *l1b_offset, SEEK_SET);
+                      fread(&buffer[dd], sizeof(char), meas_length, fp);
+                      dd += meas_length;
+                    }
+
+                  } // l1b_nextoffset not NULL
+
+                } // remove duplicate
+
+                /* write out final record */
+
+                l1b_nextoffset = offsetlist->GetTail();
+                fseeko(fp, *l1b_nextoffset, SEEK_SET);
+                fread(&buffer[dd], sizeof(char), meas_length, fp);
+                dd += meas_length;
+
+                /* write out to l2a file */
+
+                unsigned int rev = 0;
+
+                fwrite((void *)&rev, sizeof(unsigned int), 1, l2a.GetOutputFp()); 
+                fwrite((void *)&_ati_offset, sizeof(int), 1, l2a.GetOutputFp()); 
+                fwrite((void *)&i, sizeof(int), 1, l2a.GetOutputFp()); 
+
+                /* get the total count */
+
+                //int nm = offsetlist->NodeCount();
+                int nm = dd/meas_length;
+
+                //cout << "# rec: " << nm << " " << dd << endl;
+
+                if (nm>2000) {
+                  cerr << "Number of measurements for a cell exceeds 2000!!" << endl;
+                  exit(1);
+                } 
+
+                fwrite((void *)&nm, sizeof(int), 1, l2a.GetOutputFp()); 
+
+                //int cc = 0;
+
+                //for (off_t* l1b_offset = offsetlist->GetHead(); l1b_offset;
+                //            l1b_offset = offsetlist->GetNext()) {
+                //  if (fseeko(fp, *l1b_offset, SEEK_SET)==-1) {
+                //    return(0);
+                //  }   
+                //  fread(&buffer[cc], sizeof(char), meas_length, fp);
+                //  //fwrite(buffer, sizeof(char), meas_length, l2a.GetOutputFp());
+                //  cc += meas_length;
+                //}
+
+                fwrite(buffer, sizeof(char), nm*meas_length, l2a.GetOutputFp());
+
+                delete l1b_nextoffset;
+
+            } // offset != NULL
+
+        } // composite = 0
 
         //----------------------//
         // free the offset list //
