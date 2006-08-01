@@ -73,6 +73,8 @@ public:
         float gctd[361][721];  // 1st index is lat, 2nd is lon
         float gatd[361][721];  // 1st index is lat, 2nd is lon
 
+        double lat_end_time;
+
 protected:
 
 	// resolution and sizes are in km

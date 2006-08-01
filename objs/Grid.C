@@ -17,7 +17,7 @@ static const char rcs_id_grid_c[] =
 #define OFFSET_CK_DUP 52
 //#define TIME_STEP 16.8 // second for moving 1 deg in lat roughly
 #define TIME_STEP 8.4 // second for moving 0.5 deg in lat roughly
-#define LAT_OFFSET 40 // to cover area with lat less than 1st meas record
+#define LAT_OFFSET 40 // to cover area with lat less than 1st meas record, or lat larger than last rec
 
 //======//
 // Grid //
@@ -204,9 +204,9 @@ Grid::Add(
 
     }
 
-    if (firstTime || (meas_time-refTime)>6000.) { // first time or another orbit
+    if (firstTime || (meas_time-refTime)>5700.) { // first time or another orbit
 
-      printf("Meas Time and Old Ref Time: %18g, %18g\n", meas_time, refTime);
+      printf("Meas Time and Old Ref Time: %18.12g, %18.12g\n", meas_time, refTime);
       cout << "Time difference: " <<  meas_time - refTime << endl;
 
       refTime = meas_time;
@@ -221,33 +221,45 @@ Grid::Add(
         sign = -1;
       }
 
-      if (_end_time-refTime<6000.) { // 6000 sec is about the period of orbit
-        nLatStep = int((_end_time - refTime)/TIME_STEP) + LAT_OFFSET; // LAT_OFFSET for covering meas with lat less than 1st rec, now it is 40, means 20 deg
-      } else
+      // add LAT_OFFSET for covering meas with lat less than 1st rec,
+      // or lat larger than last rec, now it is 60, means 15 deg for each side
+
+      if (lat_end_time-refTime<6000.) { // 6000 sec is about the period of orbit
+        nLatStep = int((lat_end_time - refTime)/TIME_STEP)+LAT_OFFSET;
+      } else {
         nLatStep = int(6000./TIME_STEP);
+      }
+
+      if (nLatStep>720) nLatStep = 720;
 
       cout << "Number of lat steps: " << nLatStep << endl;
 
-      meas->centroid.GetAltLonGDLat(hll,hll+1,hll+2); // get alt, lon and lat
-      cout << "alt, long, lat: " << hll[0] << " " << hll[1]*rtd << " " << hll[2]*rtd << endl;
+      os.rsat.GetAltLonGDLat(hll,hll+1,hll+2);
+      cout << "At ref time, S/C alt, long, lat: " << hll[0] << " " << hll[1]*rtd << " " << hll[2]*rtd << endl;
 
       float lat, lon;
       int lonIdx, latIdx;
       int refLon, refLat;
 
-      refLon = (int)(hll[1]*rtd);
-      refLat = (int)(hll[2]*rtd)-20*sign; // -20 for 1st meas record might not have the lowest lat
+      //refLon = (int)(hll[1]*rtd);
+      //refLat = (int)(hll[2]*rtd)-20*sign; // -20 for 1st meas record might not have the lowest lat
+
+      refLat = (int)(hll[2]*rtd)-LAT_OFFSET*sign/2/2; // -15 for 1st meas record might not have the lowest lat
 
       for (int ii=0; ii<nLatStep; ii++) { //lat loop
 
-        double time = refTime + (ii-LAT_OFFSET)*TIME_STEP; // time increment for change of 0.5 deg in lat
+        double time = refTime + (ii-LAT_OFFSET/2)*TIME_STEP; // time increment for change of 0.5 deg in lat
         lat = refLat + sign*ii*0.5;
+
+        // find refLon
+        ephemeris.GetOrbitState(time, EPHEMERIS_INTERP_ORDER, &os);
+        os.rsat.GetAltLonGDLat(hll,hll+1,hll+2);
+        refLon = (int)(hll[1]*rtd);
 
         /* for moving up */
 
         if (lat>=90. && lat<270.) {
           lat = 180 - lat;
-          refLon = ((int)(hll[1]*rtd)+180)%360; // the other side of orbit, so change refLon
         }
         if (lat>=270.) lat = lat - 360;
 
@@ -255,13 +267,13 @@ Grid::Add(
 
         if (lat<=-90. && lat>-270.) {
           lat = -180 - lat;
-          refLon = ((int)(hll[1]*rtd)+180)%360; // the other side of orbit, so change refLon
         }
         if (lat<=-270.) lat = lat + 360;
 
         //printf("Time: %30.26g\n", time);
         //cout << "Time: " << time << endl;
         //cout << "Lat: " << lat << endl;
+        //cout << "refLon: " << refLon << endl;
 
         int plus_flag = 0;
         int minus_flag = 0;
@@ -326,7 +338,11 @@ Grid::Add(
 
             if (fabs(gctd[latIdx+180][lonIdx]) > 1500.) minus_flag = 1;
 
-            if (plus_flag && minus_flag) break;
+            if (plus_flag && minus_flag) {
+              //cout << "ref lon: " << refLon << endl;
+              //cout << "counts : " << jj << endl;
+              break;
+            }
 
           }
 
@@ -376,8 +392,14 @@ Grid::Add(
         gctd[latIdx2+180][lonIdx1]==-9999. ||
         gctd[latIdx1+180][lonIdx2]==-9999. ||
         gctd[latIdx2+180][lonIdx2]==-9999.) {
+      printf("Meas Time: %30.26g\n", meas_time);
+      printf("Ref Time: %30.26g\n", refTime);
       cerr << "latIdx1, lonIdx1: " << latIdx1 << " " << lonIdx1 << endl;
       cerr << "Grid ctd is not large enough!!" << endl;
+      cout << gctd[latIdx1+180][lonIdx1] << " " << gatd[latIdx1+180][lonIdx1] << endl;
+      cout << gctd[latIdx2+180][lonIdx1] << " " << gatd[latIdx2+180][lonIdx1] << endl;
+      cout << gctd[latIdx1+180][lonIdx2] << " " << gatd[latIdx1+180][lonIdx2] << endl;
+      cout << gctd[latIdx2+180][lonIdx2] << " " << gatd[latIdx2+180][lonIdx2] << endl;
       exit(1);
     }
 
@@ -619,6 +641,9 @@ Grid::ShiftForward(
 
                 // remove duplicate meas in offsetlist
 
+                Meas* meas = new Meas;
+                Meas* nextmeas = new Meas;
+
                 off_t* l1b_nextoffset = new off_t;
                 int dup_flag = 0;
                 int dd = 0;
@@ -630,13 +655,17 @@ Grid::ShiftForward(
                     l1b_offset = offsetlist->GetPrev();
                   }
 
-                  if (fseeko(fp, *l1b_offset+OFFSET_CK_DUP, SEEK_SET)==-1) {
+                  //if (fseeko(fp, *l1b_offset+OFFSET_CK_DUP, SEEK_SET)==-1) {
+                  //  return(0);
+                  //}
+                  if (fseeko(fp, *l1b_offset, SEEK_SET)==-1) {
                     return(0);
                   }
 
-                  fread(&ss1, sizeof(float), 1, fp);
-                  fread(&ns1, sizeof(int), 1, fp);
-                  fread(&sa1, sizeof(float), 1, fp);
+                  //fread(&ss1, sizeof(float), 1, fp);
+                  //fread(&ns1, sizeof(int), 1, fp);
+                  //fread(&sa1, sizeof(float), 1, fp);
+                  meas->Read(fp);
 
                   l1b_nextoffset = offsetlist->GetNext();
 
@@ -646,15 +675,26 @@ Grid::ShiftForward(
 
                     //cout << "offset2: " << *l1b_nextoffset << endl;
 
-                    if (fseeko(fp, *l1b_nextoffset+OFFSET_CK_DUP, SEEK_SET)==-1) {
+                    //if (fseeko(fp, *l1b_nextoffset+OFFSET_CK_DUP, SEEK_SET)==-1) {
+                    //  return(0);
+                    //}
+                    if (fseeko(fp, *l1b_nextoffset, SEEK_SET)==-1) {
                       return(0);
                     }
 
-                    fread(&ss2, sizeof(float), 1, fp);
-                    fread(&ns2, sizeof(int), 1, fp);
-                    fread(&sa2, sizeof(float), 1, fp);
+                    //fread(&ss2, sizeof(float), 1, fp);
+                    //fread(&ns2, sizeof(int), 1, fp);
+                    //fread(&sa2, sizeof(float), 1, fp);
+                    nextmeas->Read(fp);
 
-                    if (ss1==ss2 && sa1==sa2) {
+                    //cout << "ss: " << meas->startSliceIdx << " " << nextmeas->startSliceIdx << endl;
+                    //cout << "sa: " << meas->scanAngle << " " << nextmeas->scanAngle << endl;
+                    //if (ss1==ss2 && sa1==sa2) {
+                    //if (meas->startSliceIdx==nextmeas->startSliceIdx
+                    //    && meas->scanAngle==nextmeas->scanAngle) {
+                    if (meas->startSliceIdx==nextmeas->startSliceIdx
+                        && meas->scanAngle==nextmeas->scanAngle
+                        && meas->measType==nextmeas->measType) {
                       dup_flag = 1;
                       /* need to remove the element pointed by l1b_offset */
                       l1b_offset = offsetlist->GetPrev();
@@ -662,6 +702,7 @@ Grid::ShiftForward(
                       delete l1b_offset;
                       l1b_offset = offsetlist->GetCurrent();
                       //cout << "dup: " << *l1b_offset << endl;
+                      //cout << "type: " << meas->measType << " " << nextmeas->measType << endl;
                     } else {
                       dup_flag = 0;
                       /* put pointer backward */
@@ -676,6 +717,9 @@ Grid::ShiftForward(
                   } // l1b_nextoffset not NULL
 
                 } // remove duplicate
+
+                delete meas;
+                delete nextmeas;
 
                 /* write out final record */
 
