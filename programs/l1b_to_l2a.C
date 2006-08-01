@@ -207,6 +207,12 @@ main(
 	grid.SetStartTime(grid_start_time);
 	grid.SetEndTime(grid_end_time);
 
+        if (instrument_end_time>grid_end_time) {
+          grid.lat_end_time = instrument_end_time;
+        } else {
+          grid.lat_end_time = grid_end_time;
+        }
+
 	//------------//
 	// open files //
 	//------------//
