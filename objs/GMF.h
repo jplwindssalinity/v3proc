@@ -150,6 +150,8 @@ public:
     int  retrieveUsingLogVar;
     int  retrieveOverIce;
     int  smartNudgeFlag;
+    int  retrieveUsingCriteriaFlag;
+
     float minimumAzimuthDiversity;
 
     //protected:

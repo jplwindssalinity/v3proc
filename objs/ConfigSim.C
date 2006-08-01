@@ -1539,6 +1539,11 @@ ConfigGMF(
     else
         gmf->retrieveOverIce = 0;
 
+    if ( config_list->GetInt(RETRIEVE_USING_CRITERIA_FLAG_KEYWORD, &tmp_int))
+        gmf->retrieveUsingCriteriaFlag = tmp_int;
+    else
+        gmf->retrieveUsingCriteriaFlag = 1;
+
     config_list->ExitForMissingKeywords();
 
     float tmp_float;

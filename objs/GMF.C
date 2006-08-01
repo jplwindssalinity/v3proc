@@ -40,8 +40,8 @@ static const char rcs_id_gmf_c[] =
 GMF::GMF()
 :   retrieveUsingKpcFlag(1), retrieveUsingKpmFlag(1), retrieveUsingKpriFlag(1),
     retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), retrieveOverIce(0),
-    smartNudgeFlag(0), minimumAzimuthDiversity(20.0*dtr), _phiCount(0),
-    _phiStepSize(0.0), _spdTol(DEFAULT_SPD_TOL), _sepAngle(DEFAULT_SEP_ANGLE),
+    smartNudgeFlag(0), retrieveUsingCriteriaFlag(1), minimumAzimuthDiversity(20.0*dtr),
+    _phiCount(0), _phiStepSize(0.0), _spdTol(DEFAULT_SPD_TOL), _sepAngle(DEFAULT_SEP_ANGLE),
     _smoothAngle(DEFAULT_SMOOTH_ANGLE), _maxSolutions(DEFAULT_MAX_SOLUTIONS),
     _bestSpd(NULL), _bestObj(NULL), _copyObj(NULL), _speed_buffer(NULL),
     _objective_buffer(NULL), _dir_mle_maxima(NULL)
@@ -889,27 +889,31 @@ GMF::CheckRetrieveCriteria(
 
     Node<Meas>* current;
 
-    for (Meas* meas1 = meas_list->GetHead(); meas1;
-        meas1 = meas_list->GetNext())
-    {
-        // remember the current
-        current = meas_list->GetCurrentNode();
+    if (retrieveUsingCriteriaFlag) { // for polarmetric case, no checking
 
-        for (Meas* meas2 = meas_list->GetHead(); meas2;
-            meas2 = meas_list->GetNext())
-        {
-            float azdiv = ANGDIF(meas1->eastAzimuth, meas2->eastAzimuth);
-            if (azdiv >= minimumAzimuthDiversity)
-            {
-                goto passed;
-                break;
-            }
-        }
+      for (Meas* meas1 = meas_list->GetHead(); meas1;
+          meas1 = meas_list->GetNext())
+      {
+          // remember the current
+          current = meas_list->GetCurrentNode();
 
-        // restore the current
-        meas_list->SetCurrentNode(current);
+          for (Meas* meas2 = meas_list->GetHead(); meas2;
+              meas2 = meas_list->GetNext())
+          {
+              float azdiv = ANGDIF(meas1->eastAzimuth, meas2->eastAzimuth);
+              if (azdiv >= minimumAzimuthDiversity)
+              {
+                  goto passed;
+                  break;
+              }
+          }
+
+          // restore the current
+          meas_list->SetCurrentNode(current);
+      }
+      return(0);        // failed diversity check
+
     }
-    return(0);        // failed diversity check
 
     passed:            // passed diversity check
 
