@@ -361,7 +361,7 @@ Ephemeris::GetOrbitState(
     OrbitState* os2;
     if (_GetBracketingOrbitStates(time, &os1, &os2) == 0)
     {
-        printf("Error: Can't find requested time %g in Ephemeris\n",time);
+        printf("Error: Can't find requested time %18.12g in Ephemeris\n",time);
         return(0);
     }
 
