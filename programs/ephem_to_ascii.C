@@ -147,9 +147,17 @@ main(
 	// loop and write //
 	//----------------//
 
+        double start_time = 0.;
+        static int first_time = 1;
+
 	while (os.Read(ephem_fp))
 	{
-        fprintf(output_fp,"%10g %10g %10g %10g %10g %10g %10g\n",os.time,
+          if (first_time) {
+            start_time = os.time;
+            fprintf(output_fp,"Start time is %30.26g\n", start_time);
+            first_time = 0;
+          }
+        fprintf(output_fp,"%10g %10g %10g %10g %10g %10g %10g\n",os.time-start_time,
           os.rsat.Get(0), os.rsat.Get(1),os.rsat.Get(2),
           os.vsat.Get(0),os.vsat.Get(1), os.vsat.Get(2));
 	}
