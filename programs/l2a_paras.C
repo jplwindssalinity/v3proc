@@ -34,6 +34,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream.h>
 #include "Constants.h"
 #include "Misc.h"
 #include "L2A.h"
@@ -190,6 +191,7 @@ main(
             //float En = bK*SYSTEM_TEMPERATURE;
             float En = meas->EnSlice;
             //float SNR = Es/En/NUM_RANGE_LOOKS_AVERAGED;
+            if (Es==0 && En==0) continue;
             float SNR = Es/En;
             while(meas->scanAngle<0) meas->scanAngle+=2*pi;
 	    while(meas->scanAngle>2*pi) meas->scanAngle-=2*pi;
