@@ -1670,7 +1670,7 @@ OvwmSim::SetMeasurements(
 
 
 	  if(!generate_map && gain<minOneWayGain && sim_l1b_direct){
-            cout << "too small gain" << endl;
+            //cout << "too small gain" << endl;
 
 	    meas=meas_spot->RemoveCurrent();
             delete meas;
@@ -1743,7 +1743,7 @@ OvwmSim::SetMeasurements(
 	    }
 	    else if(!generate_map &&( amb2 ==0 && amb1 ==0) && sim_l1b_direct){
 
-              cout << "amb too big" << endl;
+              //cout << "amb too big" << endl;
 
 	      meas=meas_spot->RemoveCurrent();
 	      delete meas;
@@ -1751,7 +1751,7 @@ OvwmSim::SetMeasurements(
 	      slice_i++;
 	      continue;
 	    }
-	    else{
+	    else if(!generate_map && sim_l1b_direct){
 	      fprintf(stderr,"Warning: Bad Ambiguity Condition 0 value for one ambig only\n");
 	      meas=meas_spot->RemoveCurrent();
 	      delete meas;
@@ -1759,6 +1759,11 @@ OvwmSim::SetMeasurements(
 	      slice_i++;
 	      continue;
 	    }
+            else if(!generate_map && !sim_l1b_direct){ // create meas in L1A
+	      fprintf(stderr,"Warning: Bad Ambiguity Condition, set ambig 1\n");
+              amb1=1;
+              amb2=1;
+            }
 	  }
 	  
 
@@ -1771,7 +1776,7 @@ OvwmSim::SetMeasurements(
 
 	  if(!generate_map && amb> 1/minSignalToAmbigRatio && sim_l1b_direct){
 
-            cout << "amb signal" << endl;
+            //cout << "amb signal" << endl;
 
 	    meas=meas_spot->RemoveCurrent();
             delete meas;
@@ -1818,8 +1823,8 @@ OvwmSim::SetMeasurements(
 
 	  if(!generate_map &&(rangewid==0 || azimwid==0) && sim_l1b_direct){
 
-            cout << "rng or az width" << endl;
-            cout << range_km << " " << azimuth_km <<endl;
+            //cout << "rng or az width" << endl;
+            //cout << range_km << " " << azimuth_km <<endl;
 
 	    meas=meas_spot->RemoveCurrent();
             delete meas;
