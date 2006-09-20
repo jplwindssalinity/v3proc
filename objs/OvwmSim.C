@@ -2154,31 +2154,32 @@ OvwmSim::SetMeasurements(
 
           // Noise subtract/calibrate to get s0 if L1B direct output is desired
           // INCOMPLETE add sim_l1b_direct to parameter list of method
-/*
+
 	  if(sim_l1b_direct){
 	    meas->value-=En;
 	    meas->value/=meas->XK;
 	  }
-*/
 	  
           //cout << meas->value << endl;
 	  
 	}
 
 
-/* plan to do it in L1AToL1B
         // duplicate low res measurements so gridding will work down to 1 km
-        int numdup=(int)(meas->azimuth_width);
-	if(numdup%2==0) numdup--; // make an odd number of measurements
-        for(int i=-numdup/2;i<=numdup/2;i++){
-	  if(i==0) continue;
-	  Meas* m=new Meas;	  
-	  *m=*meas;
-	  m->centroid=m->centroid+yvec*float(i); 
-	    // yvec is the azimuth direction vector
-	  meas_spot->InsertAfter(m);
-	}
-*/
+
+        if (sim_l1b_direct) {
+          int numdup=(int)(meas->azimuth_width);
+      	  if(numdup%2==0) numdup--; // make an odd number of measurements
+          for(int i=-numdup/2;i<=numdup/2;i++){
+	    if(i==0) continue;
+	    Meas* m=new Meas;	  
+	    *m=*meas;
+	    m->centroid=m->centroid+yvec*float(i); 
+	      // yvec is the azimuth direction vector
+	    meas_spot->InsertAfter(m);
+	  }
+        }
+
         slice_i++;
         meas = meas_spot->GetNext();
     }
