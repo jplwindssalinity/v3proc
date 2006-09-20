@@ -142,7 +142,7 @@ OvwmL1AToL1B::Convert(
     cout << Es_cal << endl;
     cout << En_cal << endl;
 
-    // find out PtGr for ksig used in computeXfactor
+    // find out PtGr for ksig used in calXfactor
 
     float ptgr;
 
@@ -632,7 +632,7 @@ OvwmL1AToL1B::Convert(
 
             //cout << Esn_pixel << endl;
 
-            if (computeXfactor) // calculate X factor
+            if (calXfactor) // calculate X factor
             {
                 Vector3 rlook = meas->centroid - orbit_state->rsat;
                 Vector3 rlook_ant=gc_to_antenna.Forward(rlook);
