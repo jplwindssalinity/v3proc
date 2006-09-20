@@ -8,34 +8,525 @@ static const char rcs_id_l1a_c[] =
 
 #include <memory.h>
 #include <malloc.h>
+#include <iostream.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include "L1A.h"
+#include "OvwmL1A.h"
 #include "Misc.h"
 
 #define GET_L1A_FIRST_PULSE(x) ((x & 0x00000004) >> 2)
 
-//=====//
-// L1A //
-//=====//
+//===============//
+// OvwmL1AFrame //
+//===============//
 
-L1A::L1A()
-:    buffer(NULL), bufferSize(0), gsBuffer(NULL), _status(OK), _calPulseFP(0)
+OvwmL1AFrame::OvwmL1AFrame()
+:   time(0),
+    spotTime(NULL), spotScanAngle(NULL), spotBeamIdx(NULL),
+    gcAltitude(0.0), gcLongitude(0.0),
+    gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
+    velZ(0.0),
+    loopbackSpots(NULL), loopbackNoise(0),
+    loadSpots(NULL), loadNoise(0),
+    science(NULL), spotNoise(NULL), dataCountSpots(NULL),
+    spotsPerFrame(0), maxMeasPerSpot(0)
 {
     return;
 }
 
-L1A::~L1A()
+OvwmL1AFrame::~OvwmL1AFrame()
+{
+    Deallocate();
+    return;
+}
+
+//-------------------//
+// OvwmL1A::Allocate //
+//-------------------//
+    
+int
+OvwmL1AFrame::Allocate(
+    int  number_of_beams,
+    int  antenna_cycles_per_frame,
+    int  max_meas_per_spot)
+{
+    spotsPerFrame = number_of_beams;
+
+    //---------------------------//
+    // allocate cal measurements //
+    //---------------------------//
+
+    loopbackSpots = (float *)malloc(spotsPerFrame*sizeof(float));
+    if (loopbackSpots == NULL)
+    {
+        return(0);
+    }
+    loadSpots = (float *)malloc(spotsPerFrame*sizeof(float));
+    if (loadSpots == NULL)
+    {
+        return(0);
+    }
+
+    //-------------------------------//
+    // allocate science measurements //
+    //-------------------------------//
+
+    science = (float *)malloc(spotsPerFrame*max_meas_per_spot*sizeof(float));
+    if (science == NULL)
+        return(0);
+
+    spotNoise = (float *)malloc(spotsPerFrame * sizeof(float));
+    if (spotNoise == NULL)
+        return(0);
+
+    dataCountSpots = (int *)malloc(spotsPerFrame * sizeof(int));
+    if (dataCountSpots == NULL)
+        return(0);
+
+    spotTime = (double *)malloc(spotsPerFrame * sizeof(double));
+    if (spotTime == NULL)
+        return(0);
+
+    spotScanAngle = (float *)malloc(spotsPerFrame * sizeof(float));
+    if (spotScanAngle == NULL)
+        return(0);
+
+    spotBeamIdx = (int *)malloc(spotsPerFrame * sizeof(int));
+    if (spotBeamIdx == NULL)
+        return(0);
+
+    return(1);
+}
+
+//--------------------------//
+// OvwmL1AFrame::Deallocate //
+//--------------------------//
+
+int
+OvwmL1AFrame::Deallocate()
+{
+    if (loopbackSpots)
+    {
+        free(loopbackSpots);
+        loopbackSpots = NULL;
+    }
+    if (loadSpots)
+    {
+        free(loadSpots);
+        loadSpots = NULL;
+    }
+    if (science)
+    {
+        free(science);
+        science = NULL;
+    }
+    if (spotNoise)
+    {
+        free(spotNoise);
+        spotNoise = NULL;
+    }
+    if (dataCountSpots)
+    {
+        free(dataCountSpots);
+        dataCountSpots = NULL;
+    }
+    if (spotTime)
+    {
+        free(spotTime);
+        spotTime = NULL;
+    }
+    if (spotScanAngle)
+    {
+        free(spotScanAngle);
+        spotScanAngle = NULL;
+    }
+    if (spotBeamIdx)
+    {
+        free(spotBeamIdx);
+        spotBeamIdx = NULL;
+    }
+    spotsPerFrame = 0;
+
+    return(1);
+
+}
+
+//-------------------------//
+// OvwmL1AFrame::FrameSize //
+//-------------------------//
+
+int
+OvwmL1AFrame::FrameSize()
+{
+    int size = 0;
+    size += sizeof(double);                 // frame time
+    size += sizeof(double) * spotsPerFrame; // spot time
+    size += sizeof(float) * spotsPerFrame;  // spot scan angle
+    size += sizeof(int) * spotsPerFrame;    // spot beam idx
+
+    //size += sizeof(unsigned int);   // instrument ticks
+    //size += sizeof(unsigned int);   // orbit ticks
+    //size += sizeof(unsigned char);  // orbit step
+    //size += sizeof(unsigned char);  // pri of orbit step change
+
+    size += sizeof(float);          // altitude
+    size += sizeof(float);          // longitude
+    size += sizeof(float);          // latitude
+    size += sizeof(float);          // x
+    size += sizeof(float);          // y
+    size += sizeof(float);          // z
+    size += sizeof(float);          // vx
+    size += sizeof(float);          // vy
+    size += sizeof(float);          // vz
+    size += sizeof(float);          // roll
+    size += sizeof(float);          // pitch
+    size += sizeof(float);          // yaw
+
+    //size += sizeof(unsigned char);  // cal position
+
+    size += sizeof(float) * spotsPerFrame;  // loopback slices
+    size += sizeof(float);                  // loopback noise
+    size += sizeof(float) * spotsPerFrame;  // load slices
+    size += sizeof(float);                  // load noise
+
+    //size += sizeof(unsigned short) * spotsPerFrame;  // antenna position
+    //size += sizeof(unsigned char) * spotsPerFrame;  // event
+
+    size += sizeof(float) * spotsPerFrame * maxMeasPerSpot; // science data
+    size += sizeof(float) * spotsPerFrame;                  // spot noise
+    size += sizeof(int) * spotsPerFrame;                    // data counts of spots
+
+    //size += sizeof(unsigned int);   // instrument status
+
+    return(size);
+}
+
+//--------------------//
+// OvwmL1AFrame::Pack //
+//--------------------//
+    
+int 
+OvwmL1AFrame::Pack(
+    char*  buffer)
+{
+    int idx = 0;
+    int size;
+
+    size = sizeof(double);
+    memcpy((void *)(buffer + idx), (void *)&time, size);
+    idx += size;
+
+    size = sizeof(double) * spotsPerFrame;
+    memcpy((void *)(buffer + idx), (void *)spotTime, size);
+    idx += size;
+
+    size = sizeof(float) * spotsPerFrame;
+    memcpy((void *)(buffer + idx), (void *)spotScanAngle, size);
+    idx += size;
+
+    size = sizeof(int) * spotsPerFrame;
+    memcpy((void *)(buffer + idx), (void *)spotBeamIdx, size);
+    idx += size;
+
+    //size = sizeof(unsigned int);
+    //memcpy((void *)(buffer + idx), (void *)&instrumentTicks, size);
+    //idx += size;
+
+    //memcpy((void *)(buffer + idx), (void *)&orbitTicks, size);
+    //idx += size;
+    
+    //size = sizeof(unsigned char);
+    //memcpy((void *)(buffer + idx), (void *)&orbitStep, size);
+    //idx += size;
+    
+    //memcpy((void *)(buffer + idx), (void *)&priOfOrbitStepChange, size);
+    //idx += size;
+    
+    size = sizeof(float);
+    memcpy((void *)(buffer + idx), (void *)&gcAltitude, size);
+    idx += size;
+
+    memcpy((void *)(buffer + idx), (void *)&gcLongitude, size);
+    idx += size;
+
+    memcpy((void *)(buffer + idx), (void *)&gcLatitude, size);
+    idx += size;
+
+    memcpy((void *)(buffer + idx), (void *)&gcX, size);
+    idx += size;
+
+    memcpy((void *)(buffer + idx), (void *)&gcY, size);
+    idx += size;
+
+    memcpy((void *)(buffer + idx), (void *)&gcZ, size);
+    idx += size;
+
+    memcpy((void *)(buffer + idx), (void *)&velX, size);
+    idx += size;
+
+    memcpy((void *)(buffer + idx), (void *)&velY, size);
+    idx += size;
+
+    memcpy((void *)(buffer + idx), (void *)&velZ, size);
+    idx += size;
+
+    float tmp_float;
+    tmp_float = attitude.GetRoll();
+    memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+    idx += size;
+
+    tmp_float = attitude.GetPitch();
+    memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+    idx += size;
+
+    tmp_float = attitude.GetYaw();
+    memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+    idx += size;
+
+    //size = sizeof(unsigned char);
+    //memcpy((void *)(buffer + idx), (void *)&calPosition, size);
+    //idx += size;
+
+    size = sizeof(float) * spotsPerFrame;
+    memcpy((void *)(buffer + idx), (void *)loopbackSpots, size);
+    idx += size;
+
+    size = sizeof(float);
+    memcpy((void *)(buffer + idx), (void *)&loopbackNoise, size);
+    idx += size;
+
+    size = sizeof(float) * spotsPerFrame;
+    memcpy((void *)(buffer + idx), (void *)loadSpots, size);
+    idx += size;
+
+    size = sizeof(float);
+    memcpy((void *)(buffer + idx), (void *)&loadNoise, size);
+    idx += size;
+
+    size = sizeof(float) * spotsPerFrame * maxMeasPerSpot;
+    memcpy((void *)(buffer + idx), (void *)science, size);
+    idx += size;
+
+    size = sizeof(float) * spotsPerFrame;
+    memcpy((void *)(buffer + idx), (void *)spotNoise, size);
+    idx += size;
+
+    size = sizeof(int) * spotsPerFrame;
+    memcpy((void *)(buffer + idx), (void *)dataCountSpots, size);
+    idx += size;
+
+    return(idx);
+}
+
+//----------------------//
+// OvwmL1AFrame::Unpack //
+//----------------------//
+    
+int 
+OvwmL1AFrame::Unpack(
+    char*  buffer)
+{
+    int idx = 0;
+    int size;
+
+    size = sizeof(double);
+    memcpy((void *)&time, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(double) * spotsPerFrame;
+    memcpy((void *)spotTime, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(float) * spotsPerFrame;
+    memcpy((void *)spotScanAngle, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(int) * spotsPerFrame;
+    memcpy((void *)spotBeamIdx, (void *)(buffer + idx), size);
+    idx += size;
+
+    //size = sizeof(unsigned int);
+    //memcpy((void *)&instrumentTicks, (void *)(buffer + idx), size);
+    //idx += size;
+
+    //memcpy((void *)&orbitTicks, (void *)(buffer + idx), size);
+    //idx += size;
+    
+    //size = sizeof(unsigned char);
+    //memcpy((void *)&orbitStep, (void *)(buffer + idx), size);
+    //idx += size;
+    
+    //memcpy((void *)&priOfOrbitStepChange, (void *)(buffer + idx), size);
+    //idx += size;
+    
+    size = sizeof(float);
+    memcpy((void *)&gcAltitude, (void *)(buffer + idx), size);
+    idx += size;
+
+    memcpy((void *)&gcLongitude, (void *)(buffer + idx), size);
+    idx += size;
+
+    memcpy((void *)&gcLatitude, (void *)(buffer + idx), size);
+    idx += size;
+
+    memcpy((void *)&gcX, (void *)(buffer + idx), size);
+    idx += size;
+
+    memcpy((void *)&gcY, (void *)(buffer + idx), size);
+    idx += size;
+
+    memcpy((void *)&gcZ, (void *)(buffer + idx), size);
+    idx += size;
+
+    memcpy((void *)&velX, (void *)(buffer + idx), size);
+    idx += size;
+
+    memcpy((void *)&velY, (void *)(buffer + idx), size);
+    idx += size;
+
+    memcpy((void *)&velZ, (void *)(buffer + idx), size);
+    idx += size;
+
+    float tmp_float;
+    memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+    attitude.SetRoll(tmp_float);
+    idx += size;
+
+    memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+    attitude.SetPitch(tmp_float);
+    idx += size;
+
+    memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+    attitude.SetYaw(tmp_float);
+    idx += size;
+
+    //size = sizeof(unsigned char);
+    //memcpy((void *)&calPosition, (void *)(buffer + idx), size);
+    //idx += size;
+
+    size = sizeof(float) * spotsPerFrame;
+    memcpy((void *)loopbackSpots, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(float);
+    memcpy((void *)&loopbackNoise, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(float) * spotsPerFrame;
+    memcpy((void *)loadSpots, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(float); 
+    memcpy((void *)&loadNoise, (void *)(buffer + idx), size);
+    idx += size;
+
+    //size = sizeof(unsigned short) * spotsPerFrame;
+    //memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
+    //idx += size; 
+    
+    size = sizeof(float) * spotsPerFrame * maxMeasPerSpot;
+    memcpy((void *)science, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(float) * spotsPerFrame;
+    memcpy((void *)spotNoise, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(int) * spotsPerFrame;
+    memcpy((void *)dataCountSpots, (void *)(buffer + idx), size);
+    idx += size;
+
+    //size = sizeof(unsigned int);
+    //memcpy((void *)&frame_inst_status, (void *)(buffer + idx), size);
+    //idx += size;
+    
+    return(idx);
+}
+
+//--------------------------//
+// OvwmL1AFrame::WriteAscii //
+//--------------------------//
+    
+int 
+OvwmL1AFrame::WriteAscii(
+    FILE*  ofp)
+{   
+    fprintf(ofp, "\n");
+    fprintf(ofp, "*** Frame ***\n\n");
+
+    //fprintf(ofp, "Time: %g   Instrument Ticks: %d   Orbit Ticks: %d\n",
+    //    time, instrumentTicks, orbitTicks);
+
+    fprintf(ofp, "Time: %18.6lf \n", time);
+
+    //fprintf(ofp, "Orbit Step: %d   Pri Of Orbit Step Change: %d\n",
+    //    orbitStep, priOfOrbitStepChange);
+
+    fprintf(ofp, "GC Altitude: %g   GC Longitude: %g   GC Latitude: %g\n",
+        gcAltitude, gcLongitude, gcLatitude);
+    fprintf(ofp, "X: %g   Y: %g   Z: %g\n", gcX, gcY, gcZ);
+    fprintf(ofp, "VelX: %g   VelY: %g   VelZ: %g\n", velX, velY, velZ);
+    fprintf(ofp, "Roll: %g   Pitch: %g   Yaw: %g\n", attitude.GetRoll() * dtr,
+        attitude.GetPitch() * dtr, attitude.GetYaw() * dtr);
+
+    //fprintf(ofp, "Cal Position: %d\n", calPosition);
+
+    fprintf(ofp, "--- Calibration Data ---\n");
+    fprintf(ofp, "loop back: %g, noise: %g\n", loopbackSpots[0], loopbackNoise);
+    fprintf(ofp, "load: %g, noise: %g\n", loadSpots[0], loadNoise);
+
+    fprintf(ofp, "--- Science Data ---\n");
+    for (int spot_idx = 0; spot_idx < spotsPerFrame; spot_idx++)
+    {
+
+        fprintf(ofp, "Spot Time: %12.6lf\n", spotTime[spot_idx]);
+        fprintf(ofp, "Spot Scan Angle: %12.6f\n", spotScanAngle[spot_idx]);
+        fprintf(ofp, "Spot Beam Idx: %2d\n", spotBeamIdx[spot_idx]);
+
+        int spot_slice_offset = spot_idx * maxMeasPerSpot;
+
+        //fprintf(ofp, "Spot %d (%s) AntennaPos: %d SpotNoise: %d\n", spot_idx,
+        //pscat_event_map[(int)eventId[spot_idx]],
+        //antennaPosition[spot_idx],spotNoise[spot_idx]);
+
+        fprintf(ofp, "Spot: %d, meas count: %d, spotNoise: %g\n", spot_idx,
+                     dataCountSpots[spot_idx], spotNoise[spot_idx]);
+
+        //fprintf(ofp, "meas count: %d, loop back: %d, load: %d\n", dataCountSpots[spot_idx],
+        //             loopbackSpots[spot_idx], loadSpots[spot_idx]);
+
+        for (int meas_idx = 0; meas_idx < dataCountSpots[spot_idx]; meas_idx++)
+        {
+            fprintf(ofp, "  %g\n", science[spot_slice_offset + meas_idx]);
+        }
+    }
+
+    fprintf(ofp, "\n");
+    return(1);
+}
+
+//=========//
+// OvwmL1A //
+//=========//
+
+OvwmL1A::OvwmL1A()
+:    buffer(NULL), bufferSize(0), _status(OK)
+{
+    return;
+}
+
+OvwmL1A::~OvwmL1A()
 {
     DeallocateBuffer();
     return;
 }
 
-//---------------------//
-// L1A::AllocateBuffer //
-//---------------------//
+//-------------------------//
+// OvwmL1A::AllocateBuffer //
+//-------------------------//
 
 int
-L1A::AllocateBuffer()
+OvwmL1A::AllocateBuffer()
 {
     bufferSize = frame.FrameSize();
     buffer = (char *)malloc(bufferSize);
@@ -44,17 +535,17 @@ L1A::AllocateBuffer()
         bufferSize = 0;
         return(0);
     }
-    gsBuffer = (char*) malloc(GS_L1A_FRAME_SIZE);
-    if (gsBuffer == NULL) return 0;
+    //gsBuffer = (char*) malloc(GS_L1A_FRAME_SIZE);
+    //if (gsBuffer == NULL) return 0;
     return(1);
 }
 
-//-----------------------//
-// L1A::DeallocateBuffer //
-//-----------------------//
+//---------------------------//
+// OvwmL1A::DeallocateBuffer //
+//---------------------------//
 
 int
-L1A::DeallocateBuffer()
+OvwmL1A::DeallocateBuffer()
 {
     if (buffer)
     {
@@ -62,20 +553,20 @@ L1A::DeallocateBuffer()
         buffer = 0;
     }
     bufferSize = 0;
-    if (gsBuffer)
-    {
-        free(gsBuffer);
-        gsBuffer = 0;
-    }
+    //if (gsBuffer)
+    //{
+    //    free(gsBuffer);
+    //    gsBuffer = 0;
+    //}
     return(1);
 }
 
-//------------------//
-// L1A::ReadDataRec //
-//------------------//
+//----------------------//
+// OvwmL1A::ReadDataRec //
+//----------------------//
 
 int
-L1A::ReadDataRec()
+OvwmL1A::ReadDataRec()
 {
     if (! Read(buffer, bufferSize))
     {
@@ -94,22 +585,22 @@ L1A::ReadDataRec()
     return(1);
 }
 
-//-------------------//
-// L1A::WriteDataRec //
-//-------------------//
+//-----------------------//
+// OvwmL1A::WriteDataRec //
+//-----------------------//
 
 int
-L1A::WriteDataRec()
+OvwmL1A::WriteDataRec()
 {
     return(Write(buffer, bufferSize));
 }
 
-//------------------------//
-// L1A::WriteDataRecAscii //
-//------------------------//
+//----------------------------//
+// OvwmL1A::WriteDataRecAscii //
+//----------------------------//
 
 int
-L1A::WriteDataRecAscii(
+OvwmL1A::WriteDataRecAscii(
     FILE*  ofp)
 {
     if (ofp == NULL || ! frame.WriteAscii(ofp))
@@ -122,6 +613,7 @@ L1A::WriteDataRecAscii(
 // L1A::ReadGSDataRec //
 //--------------------//
 
+/*
 int
 L1A::ReadGSDataRec()
 {
@@ -141,11 +633,13 @@ L1A::ReadGSDataRec()
     }
     return(1);
 }
+*/
 
 //--------------------------//
 // L1A::WriteGSDataRecAscii //
 //--------------------------//
 
+/*
 int
 L1A::WriteGSDataRecAscii(
     FILE*  ofp)
@@ -155,11 +649,13 @@ L1A::WriteGSDataRecAscii(
 
     return(gsFrame.WriteAscii(ofp));
 }
+*/
 
 //---------------------//
 // L1A::WriteGSDataRec //
 //---------------------//
 
+/*
 int
 L1A::WriteGSDataRec()
 {
@@ -170,11 +666,13 @@ L1A::WriteGSDataRec()
         return(0);
     return(Write(gsBuffer, GS_L1A_FRAME_SIZE));
 }
+*/
 
 //------------------//
 // L1A::FillGSFrame //
 //------------------//
 
+/*
 int
 L1A::FillGSFrame()
 {
@@ -222,6 +720,7 @@ L1A::FillGSFrame()
     gsFrame.in_science.loop_back_cal_noise = (int)frame.loopbackNoise;
     gsFrame.in_science.load_cal_noise = (int)frame.loadNoise;
 
+*/
 /*
     (void)memcpy(gsFrame.in_science.loop_back_cal_A_power,
                  frame.loopbackSlices, sizeof(float)*frame.slicesPerSpot);
@@ -236,12 +735,13 @@ L1A::FillGSFrame()
     (void)memcpy(&gsFrame.in_science.load_cal_noise,
                  &frame.loadNoise, sizeof(float));
 */
-
+/*
     (void)memcpy(gsFrame.in_science.power_dn,
                  frame.science, sizeof(unsigned int)*frame.slicesPerFrame);
     (void)memcpy(gsFrame.in_science.noise_dn,
                  frame.spotNoise, sizeof(unsigned int)*frame.spotsPerFrame);
 
+*/
 /*
     for (int i = 0; i < frame.slicesPerFrame; i++)
     {  // convert floats to ints
@@ -252,7 +752,7 @@ L1A::FillGSFrame()
       gsFrame.in_science.noise_dn[i] = (int)frame.spotNoise[i];
     }
 */
-
+/*
     // la1_frame_inst_status
     (void)memcpy(&(gsFrame.l1a_frame_inst_status),
                    &(frame.frame_inst_status), sizeof(int));
@@ -270,11 +770,13 @@ L1A::FillGSFrame()
 
     return(1);
 } // L1A::FillGSFrame
+*/
 
 //-----------------------------//
 // L1A::OpenCalPulseForWriting //
 //-----------------------------//
 
+/*
 int
 L1A::OpenCalPulseForWriting(
     const char*  filename)
@@ -286,11 +788,13 @@ L1A::OpenCalPulseForWriting(
         return(0);
     return(1);
 }
+*/
 
 //-----------------------------//
 // L1A::OpenCalPulseForReading //
 //-----------------------------//
 
+/*
 int
 L1A::OpenCalPulseForReading(
     const char*  filename)
@@ -302,11 +806,13 @@ L1A::OpenCalPulseForReading(
         return(0);
     return(1);
 }
+*/
 
 //------------------------//
 // L1A::CloseCalPulseFile //
 //------------------------//
 
+/*
 int
 L1A::CloseCalPulseFile()
 {
@@ -319,12 +825,14 @@ L1A::CloseCalPulseFile()
     }
     return(1);
 }
+*/
 
 //-------------------------//
 // L1A::WriteGSCalPulseRec //
 //-------------------------//
 // totally rewritten by JNH 2001.03.29 (untested too!)
 
+/*
 int
 L1A::WriteGSCalPulseRec()
 {
@@ -384,12 +892,14 @@ L1A::WriteGSCalPulseRec()
 
     return(fwrite(&cpr, sizeof(L1A_Calibration_Pulse_Type), 1, _calPulseFP));
 }
+*/
 
 //------------------------//
 // L1A::ReadGSCalPulseRec //
 //------------------------//
 // This may actually work.
 
+/*
 int
 L1A::ReadGSCalPulseRec()
 {
@@ -435,6 +945,7 @@ L1A::ReadGSCalPulseRec()
 
     return(1);
 }
+*/
 
 /*
 //------------------------//
@@ -571,6 +1082,7 @@ L1A::ReadGSCalPulseRec(
 // L1A::WriteGSCalPulseRecAscii //
 //------------------------------//
 
+/*
 int
 L1A::WriteGSCalPulseRecAscii(
     FILE*  ofp)
@@ -636,3 +1148,4 @@ L1A::WriteGSCalPulseRecAscii(
 
     return(1);
 }
+*/
