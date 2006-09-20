@@ -121,11 +121,17 @@ ConfigOvwmSes(
         return(0);
     if (! config_list->GetFloat(TRANSMIT_PATH_LOSS_KEYWORD, &(ovwm_ses->transmitPathLoss))) // dB
         return(0);
+    if (! config_list->GetFloat(LOOP_BACK_LOSS_KEYWORD, &(ovwm_ses->loopbackLoss)))   // dB
+        return(0);
+    if (! config_list->GetFloat(LOOP_BACK_LOSS_RATIO_KEYWORD, &(ovwm_ses->loopbackLossRatio)))   // dB
+        return(0);
 
 
     // convert to real units
     ovwm_ses->receivePathLoss = pow(10.0,0.1*ovwm_ses->receivePathLoss);
     ovwm_ses->transmitPathLoss = pow(10.0,0.1*ovwm_ses->transmitPathLoss);
+    ovwm_ses->loopbackLoss = pow(10.0,0.1*ovwm_ses->loopbackLoss);
+    ovwm_ses->loopbackLossRatio = pow(10.0,0.1*ovwm_ses->loopbackLossRatio);
 
 
     //----------//
@@ -749,11 +755,12 @@ ConfigOvwmSim(
 	}
 
       ovwm_sim->integrationStepSize=integration_param;
+// moved to OvwmConfigDefs.h
 // HACK FOR NOW until I check out the .h file
-#define INTEGRATION_RANGE_WIDTH_FACTOR_KEYWORD "INTEGRATION_RANGE_WIDTH_FACTOR"
-#define INTEGRATION_AZIMUTH_WIDTH_FACTOR_KEYWORD "INTEGRATION_AZIM_WIDTH_FACTOR"
-#define SIM_MIN_ONEWAY_GAIN_KEYWORD "SIM_MIN_ONE_WAY_GAIN"
-#define SIM_MIN_SIG_TO_AMB_RATIO_KEYWORD "SIM_MIN_SIG_TO_AMB"
+//#define INTEGRATION_RANGE_WIDTH_FACTOR_KEYWORD "INTEGRATION_RANGE_WIDTH_FACTOR"
+//#define INTEGRATION_AZIMUTH_WIDTH_FACTOR_KEYWORD "INTEGRATION_AZIM_WIDTH_FACTOR"
+//#define SIM_MIN_ONEWAY_GAIN_KEYWORD "SIM_MIN_ONE_WAY_GAIN"
+//#define SIM_MIN_SIG_TO_AMB_RATIO_KEYWORD "SIM_MIN_SIG_TO_AMB"
       if (! config_list->GetFloat(INTEGRATION_RANGE_WIDTH_FACTOR_KEYWORD,
 				  &integration_param))
 	{
@@ -863,12 +870,12 @@ int ConfigPointTargetResponseTable(PointTargetResponseTable* ptrtab,
   return(1);  
 }
 
-//----------//
-// L1A      //
-//----------//
+//---------------//
+// ConfigOvwmL1A //
+//---------------//
 
 // Must be configured after OVWM object !!!!
-int ConfigOvwmL1A(Ovwm* ovwm, L1A* l1a, ConfigList* config_list){
+int ConfigOvwmL1A(Ovwm* ovwm, OvwmL1A* l1a, ConfigList* config_list){
     //---------------------------//
     // configure the l1a product //
     //---------------------------//
@@ -889,6 +896,7 @@ int ConfigOvwmL1A(Ovwm* ovwm, L1A* l1a, ConfigList* config_list){
 
     
     int total_pixels=ovwm->GetNumberOfPixels();
+    l1a->frame.maxMeasPerSpot = total_pixels;
 
     //-------------------------//
     // configure the l1a frame //
@@ -911,4 +919,110 @@ int ConfigOvwmL1A(Ovwm* ovwm, L1A* l1a, ConfigList* config_list){
 
     
     return(1);
+}
+
+//--------------------//
+// ConfigOvwmL1AToL1B //
+//--------------------//
+
+int ConfigOvwmL1AToL1B(OvwmL1AToL1B* l1a_to_l1b, ConfigList* config_list)
+{
+
+    //-------------------------//
+    // output simga0 to stdout //
+    //-------------------------//
+    
+    config_list->DoNothingForMissingKeywords();
+    int output_sigma0_to_stdout;
+    if (! config_list->GetInt(OUTPUT_SIGMA0_TO_STDOUT_KEYWORD,
+        &output_sigma0_to_stdout))
+    {
+        output_sigma0_to_stdout = 0;    // default value
+    }
+    l1a_to_l1b->outputSigma0ToStdout = output_sigma0_to_stdout;
+
+    l1a_to_l1b->simVs1BCheckfile = config_list->Get(ONEB_CHECKFILE_KEYWORD);
+    // Remove any pre-existing check file
+    FILE* fptr = fopen(l1a_to_l1b->simVs1BCheckfile,"w");
+    if (fptr != NULL)
+        fclose(fptr);
+
+    config_list->ExitForMissingKeywords();
+
+    //--------------------------------------//
+    // Read in the land map file            //
+    //--------------------------------------//
+
+    char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
+    int use_land;
+    config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land);
+    if (! l1a_to_l1b->landMap.Initialize(landfile,use_land))
+    {
+        fprintf(stderr,"Cannot Initialize Land Map\n");
+        exit(0);
+    }
+
+    //----------//
+    // x-factor //
+    //----------//
+
+    config_list->DoNothingForMissingKeywords();
+
+    int calXfactor;
+    if (! config_list->GetInt(CAL_XFACTOR_KEYWORD, &calXfactor))
+        calXfactor = 1;    // default value
+    l1a_to_l1b->calXfactor = calXfactor;
+
+    config_list->ExitForMissingKeywords();
+
+    float integration_param; // km
+    if (! config_list->GetFloat(INTEGRATION_STEP_SIZE_KEYWORD,
+                                &integration_param))
+    {
+      return(0);
+    }
+
+    l1a_to_l1b->integrationStepSize=integration_param;
+
+    if (! config_list->GetFloat(INTEGRATION_RANGE_WIDTH_FACTOR_KEYWORD,
+                                &integration_param))
+    {
+      return(0);
+    }
+
+    l1a_to_l1b->integrationRangeWidthFactor=integration_param;
+
+    if (! config_list->GetFloat(INTEGRATION_AZIMUTH_WIDTH_FACTOR_KEYWORD,
+                                &integration_param))
+    {
+      return(0);
+    }
+
+    l1a_to_l1b->integrationAzimuthWidthFactor=integration_param;
+
+    l1a_to_l1b->AllocateIntermediateArrays();
+
+    if(!ConfigPointTargetResponseTable(&(l1a_to_l1b->ptrTable),config_list))
+        return(0);
+    if(!ConfigAmbigTable(&(l1a_to_l1b->ambigTable),config_list)) return(0);
+
+    float dbvalue;
+    if (! config_list->GetFloat(SIM_MIN_ONEWAY_GAIN_KEYWORD,&dbvalue))
+    {
+      return(0);
+    }
+    l1a_to_l1b->minOneWayGain=pow(10.0,0.1*dbvalue);
+ 
+    if (! config_list->GetFloat(SIM_MIN_SIG_TO_AMB_RATIO_KEYWORD,&dbvalue))
+    {
+      return(0);
+    }
+    l1a_to_l1b->minSignalToAmbigRatio=pow(10.0,0.1*dbvalue);
+
+    int sim_land;
+    if (! config_list->GetInt(SIM_LAND_FLAG_KEYWORD, &sim_land))
+        return(0);
+    l1a_to_l1b->simLandFlag = sim_land;
+
+    return 1;
 }

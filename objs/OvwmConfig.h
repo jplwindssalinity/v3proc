@@ -14,7 +14,8 @@ static const char rcs_id_ovwmconfig_h[] =
 #include "OvwmSim.h"
 #include "AmbigTable.h"
 #include "PointTargetResponseTable.h"
-#include "L1A.h"
+#include "OvwmL1A.h"
+#include "OvwmL1AToL1B.h"
 
 //======================================================================
 // DESCRIPTION
@@ -68,6 +69,12 @@ int ConfigPointTargetResponseTable(PointTargetResponseTable* ptrtab,
 //-------------------------------//
 // L1A the OVWM way              //
 //-------------------------------//
-int ConfigOvwmL1A(Ovwm* ovwm, L1A* l1a, ConfigList* config_list);
+int ConfigOvwmL1A(Ovwm* ovwm, OvwmL1A* l1a, ConfigList* config_list);
+
+//-------------------------------//
+// L1A to L1B for OVWM           //
+//-------------------------------//
+
+int ConfigOvwmL1AToL1B(OvwmL1AToL1B* l1a_to_l1b, ConfigList* config_list);
 
 #endif
