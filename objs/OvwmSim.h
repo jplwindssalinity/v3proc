@@ -18,7 +18,7 @@ static const char rcs_id_ovwmsim_h[] =
 #include "GMF.h"
 #include "Meas.h"
 #include "CheckFrame.h"
-#include "L1AFrame.h"
+#include "OvwmL1A.h"
 #include "Sigma0Map.h"
 #include "L1B.h"
 #include "SchToXyz.h"
@@ -78,25 +78,27 @@ public:
     int  DetermineNextEvent(int spots_per_frame, Ovwm* ovwm,
              OvwmEvent* ovwm_event);
     int  L1AFrameInit(Spacecraft* spacecraft, Ovwm* ovwm,
-             L1AFrame* l1aframe);
+             OvwmL1AFrame* l1aframe);
     int  ScatSim(Spacecraft* spacecraft, Ovwm* ovwm, WindField* windfield,
              Sigma0Map* inner_map, Sigma0Map* outer_map, GMF* gmf, Kp* kp,
              KpmField* kpmField, Topo* topo, Stable* stable,
-             L1AFrame* l1a_frame, PointTargetResponseTable *ptrTable, AmbigTable* ambigTable, L1B* l1b=NULL);
+             OvwmL1AFrame* l1a_frame, PointTargetResponseTable *ptrTable,
+             AmbigTable* ambigTable, L1B* l1b=NULL);
     int  CheckTiming(Ovwm* ovwm);
     int  LoopbackSim(Spacecraft* spacecraft, Ovwm* ovwm,
-             L1AFrame* l1a_frame);
-    int  LoadSim(Spacecraft* spacecraft, Ovwm* ovwm, L1AFrame* l1a_frame);
-    int  SetL1ASpacecraft(Spacecraft* spacecraft, L1AFrame* l1a_frame);
+             OvwmL1AFrame* l1a_frame);
+    int  LoadSim(Spacecraft* spacecraft, Ovwm* ovwm, OvwmL1AFrame* l1a_frame);
+    int  SetL1ASpacecraft(Spacecraft* spacecraft, OvwmL1AFrame* l1a_frame);
     int  SetMeasurements(Spacecraft* spacecraft, Ovwm* ovwm,
              MeasSpot* meas_spot, WindField* windfield, Sigma0Map* inner_map,
              Sigma0Map* outer_map, GMF* gmf, Kp* kp, KpmField* kpmField,
              Topo* topo, Stable* stable, CheckFrame* cf,
-             PointTargetResponseTable *ptrTable, AmbigTable *ambigTable, int sim_l1b_direct);
+             PointTargetResponseTable *ptrTable, AmbigTable *ambigTable,
+             int sim_l1b_direct);
     int  SetL1AScience(MeasSpot* meas_spot, CheckFrame* cf, Ovwm* ovwm,
-             L1AFrame* l1a_frame);
-    int  SetL1ALoopback(Ovwm* ovwm, L1AFrame* l1a_frame);
-    int  SetL1ALoad(Ovwm* ovwm, L1AFrame* l1a_frame);
+             OvwmL1AFrame* l1a_frame);
+    int  SetL1ALoopback(Ovwm* ovwm, OvwmL1AFrame* l1a_frame);
+    int  SetL1ALoad(Ovwm* ovwm, OvwmL1AFrame* l1a_frame);
     int  ComputeXfactor(Spacecraft* spacecraft, Ovwm* ovwm, Meas* meas,
              float* X);
     int  MeasToEsnX(Ovwm* ovwm, Meas* meas, float X, float sigma0,

@@ -203,7 +203,7 @@ int
 OvwmSim::L1AFrameInit(
     Spacecraft*  spacecraft,
     Ovwm*       ovwm,
-    L1AFrame*    l1a_frame)
+    OvwmL1AFrame*    l1a_frame)
 {
     //----------------------//
     // frame initialization //
@@ -214,30 +214,33 @@ OvwmSim::L1AFrameInit(
       fprintf(stderr,"L1AFrameInit is still incomplete\n");
       first_call=0;
     }
-    return(0);
 
+    //cout << "s# " << _spotNumber << endl;
 
     if (_spotNumber == 0)
     {
         if (! SetL1ASpacecraft(spacecraft,l1a_frame))
             return(0);
         l1a_frame->time = ovwm->cds.time;
-        l1a_frame->orbitTicks = ovwm->cds.orbitTime;
-        l1a_frame->orbitStep = ovwm->cds.SetAndGetOrbitStep();
-        l1a_frame->instrumentTicks = ovwm->cds.instrumentTime;
-        l1a_frame->priOfOrbitStepChange = 255;      // flag value
-        l1a_frame->calPosition = 255;    // no cal pulses yet
+        //l1a_frame->orbitTicks = ovwm->cds.orbitTime;
+        //l1a_frame->orbitStep = ovwm->cds.SetAndGetOrbitStep();
+        //l1a_frame->instrumentTicks = ovwm->cds.instrumentTime;
+        //l1a_frame->priOfOrbitStepChange = 255;      // flag value
+        //l1a_frame->calPosition = 255;    // no cal pulses yet
 
         //---------------------------------//
         // Set GS data from the simulation //
         //---------------------------------//
 
         // GS Status block
+/* not implement status now
         l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
         l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
         l1a_frame->status.specified_cal_pulse_pos = 255;  // no cal pulses yet.
         l1a_frame->in_eu.true_cal_pulse_pos = 255; // ditto
+*/
 
+/* not implement in_eu now
         Beam* cur_beam = ovwm->GetCurrentBeam();
         // all times in GS-L1A are ms (not sec).
         l1a_frame->in_eu.prf_cycle_time_eu = 1e3*ovwm->ses.pri;
@@ -265,8 +268,10 @@ OvwmSim::L1AFrameInit(
         l1a_frame->in_eu.rcv_protect_sw_temp_eu = 20;
         l1a_frame->in_eu.beam_select_sw_temp_eu = 20;
         l1a_frame->in_eu.receiver_temp_eu = 20;
+*/
 
         // Set Frame Inst. Status Flag bits.
+/* not implement status now
         int inst_flag = 0;
         if (cur_beam->polarization == H_POL)
         {
@@ -316,11 +321,13 @@ OvwmSim::L1AFrameInit(
                (void *)&(ovwm->cds.instrumentTime),
                sizeof(unsigned int));
         l1a_frame->status.corres_instr_time[4] = 0; // zero fractional part
+*/
 
         //-----------------------------------------------------------------//
         // Set all temperatures in frame enginnering data to 20 deg C.
         //-----------------------------------------------------------------//
 
+/* not implement engdata now
         static int ii[22] = {13,14,15,28,29,30,31,32,33,46,47,48,49,50,51,52,
                         53,54,55,56,57,58};
         char* ptr = (char*)&(l1a_frame->engdata);
@@ -438,6 +445,7 @@ OvwmSim::L1AFrameInit(
         l1a_frame->engdata.eng_status_c1 = 28;
         l1a_frame->engdata.eng_status_c2 = 16;
         l1a_frame->engdata.eng_status_c3 = 0;
+*/
     }
     else if (_spotNumber == 1)
     {
@@ -445,6 +453,7 @@ OvwmSim::L1AFrameInit(
         // Store data needed from 2nd pulse //
         //----------------------------------//
 
+/* not implement in_eu or status
         Beam* cur_beam = ovwm->GetCurrentBeam();
         if (cur_beam->polarization == H_POL)
         {
@@ -464,6 +473,7 @@ OvwmSim::L1AFrameInit(
           l1a_frame->status.range_gate_b_width = ovwm->GetRxGateWidthDn();
           l1a_frame->in_eu.transmit_power_outer = ovwm->ses.transmitPower;
         }
+*/
 
     }
 
@@ -489,7 +499,7 @@ OvwmSim::ScatSim(
     KpmField*    kpmField,
     Topo*        topo,
     Stable*      stable,
-    L1AFrame*    l1a_frame,
+    OvwmL1AFrame*    l1a_frame,
     PointTargetResponseTable* ptrTable,
     AmbigTable* ambigTable,
     L1B*         l1b)
@@ -511,10 +521,10 @@ OvwmSim::ScatSim(
   // compute frame header info if necessary //
   //----------------------------------------//
 
-  //cout << "AA" << endl;
   /* now comment it out for testing ovwm_sim */
-  //L1AFrameInit(spacecraft, ovwm, l1a_frame);
-  //cout << "BB" << endl;
+  L1AFrameInit(spacecraft, ovwm, l1a_frame);
+
+  //printf("after l1a frame init: %20.8f\n", spacecraft->orbitState.time);
 
   // For now useDtc and useRgc are disabled.
   if(ovwm->cds.useRgc || ovwm->cds.useDtc){
@@ -535,7 +545,6 @@ OvwmSim::ScatSim(
         }
     }
 
-    //cout << "Before set de" << endl;
     //-----------------------------------------------//
     // command the range delay and Doppler frequency //
     //-----------------------------------------------//
@@ -545,7 +554,7 @@ OvwmSim::ScatSim(
     // tx/rx feeds
     SetOrbitStepDelayAndFrequency(spacecraft, ovwm);
 
-    //cout << "Before set be" << endl;
+    //printf("after set orbit: %20.8f\n", spacecraft->orbitState.time);
 
     if (applyDopplerError)
     {
@@ -615,9 +624,17 @@ OvwmSim::ScatSim(
     if (! ovwm->LocatePixels(spacecraft, &meas_spot))
       return(0);
    
+    //printf("after locate pixel: %20.8f\n", spacecraft->orbitState.time);
 
     CheckTiming(ovwm);
 
+    //printf("after check time: %20.8f\n", spacecraft->orbitState.time);
+
+    l1a_frame->spotTime[_spotNumber] = spacecraft->orbitState.time;
+    l1a_frame->spotBeamIdx[_spotNumber] = ovwm->cds.currentBeamIdx;
+
+    printf("spot # and time: %d %20.8f\n", _spotNumber, l1a_frame->spotTime[_spotNumber]);
+    //exit(1);
 
     //--------------------------------------//
     // determine measurement type from beam //
@@ -722,6 +739,7 @@ OvwmSim::ScatSim(
     // set orbit step change indicator //
     //---------------------------------//
 
+/* now no status in l1a_frame
     unsigned short orbit_step = ovwm->cds.SetAndGetOrbitStep();
     if (orbit_step != l1a_frame->orbitStep)
     {
@@ -731,6 +749,7 @@ OvwmSim::ScatSim(
         l1a_frame->orbitStep = orbit_step;
         l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
     }
+*/
 
     //-----------------------------//
     // determine if frame is ready //
@@ -780,7 +799,6 @@ OvwmSim::ScatSim(
         cf.WriteDataRec(fptr);
         fclose(fptr);
     }
-
 
     // output L1B directly if l1b is not NULL
     if(l1b!=NULL){
@@ -992,38 +1010,44 @@ int
 OvwmSim::LoopbackSim(
     Spacecraft*  spacecraft,
     Ovwm*       ovwm,
-    L1AFrame*    l1a_frame)
+    OvwmL1AFrame*    l1a_frame)
 {
     //----------------------------------------//
     // compute frame header info if necessary //
     //----------------------------------------//
 
-    L1AFrameInit(spacecraft,ovwm,l1a_frame);
+/* consider loop back not as a separate spot, so no need to do init */
+    //L1AFrameInit(spacecraft,ovwm,l1a_frame);
 
     //-----------------------------//
     // Set cal pulse sequence flag //
     // (turn off Bit position 8)   //
     //-----------------------------//
 
-    l1a_frame->frame_inst_status = l1a_frame->frame_inst_status & 0xFFFFFEFF;
+    //l1a_frame->frame_inst_status = l1a_frame->frame_inst_status & 0xFFFFFEFF;
 
     //-------------------------------------------------//
     // tracking must be done to update state variables //
     //-------------------------------------------------//
 
-    SetOrbitStepDelayAndFrequency(spacecraft, ovwm);
+    //SetOrbitStepDelayAndFrequency(spacecraft, ovwm);
 
     //--------------------------------------//
     // Add Cal-pulse Specific Info to Frame //
     //--------------------------------------//
 
-    if (! SetL1ALoopback(ovwm, l1a_frame))
-        return(0);
+    if (_spotNumber==0) {
+      if (! SetL1ALoopback(ovwm, l1a_frame))
+          return(0);
+    }
+
+    return 1;
 
     //---------------------------------//
     // set orbit step change indicator //
     //---------------------------------//
 
+/* not implement status now
     unsigned short orbit_step = ovwm->cds.SetAndGetOrbitStep();
     if (orbit_step != l1a_frame->orbitStep)
     {
@@ -1033,11 +1057,14 @@ OvwmSim::LoopbackSim(
         l1a_frame->orbitStep = orbit_step;
         l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
     }
+*/
 
     //-----------------------------//
     // determine if frame is ready //
     //-----------------------------//
 
+/* consider loop back not as a separate spot, so no need to do init */
+/*
     _spotNumber++;  // Move to next pulse
     if (_spotNumber >= l1a_frame->spotsPerFrame)
     {
@@ -1053,6 +1080,7 @@ OvwmSim::LoopbackSim(
 
     pulseCount++;
     return(1);
+*/
 }
 
 //-------------------//
@@ -1063,45 +1091,52 @@ int
 OvwmSim::LoadSim(
     Spacecraft*  spacecraft,
     Ovwm*       ovwm,
-    L1AFrame*    l1a_frame)
+    OvwmL1AFrame*    l1a_frame)
 {
     //----------------------------------------//
     // compute frame header info if necessary //
     //----------------------------------------//
 
-    L1AFrameInit(spacecraft,ovwm,l1a_frame);
+/* consider load not as a separate spot, so no need to do init */
+    //L1AFrameInit(spacecraft,ovwm,l1a_frame);
 
     //-------------------------------------------------//
     // tracking must be done to update state variables //
     //-------------------------------------------------//
 
-    SetOrbitStepDelayAndFrequency(spacecraft, ovwm);
+    //SetOrbitStepDelayAndFrequency(spacecraft, ovwm);
 
     //--------------------------------------//
     // Add Cal-pulse Specific Info to Frame //
     //--------------------------------------//
 
-    if (! SetL1ALoad(ovwm, l1a_frame))
-        return(0);
+/* happen only in the beginning of a frame */
+
+    if (_spotNumber==0) {
+      if (! SetL1ALoad(ovwm, l1a_frame))
+          return(0);
+    }
 
     //---------------------------------//
     // set orbit step change indicator //
     //---------------------------------//
 
-    unsigned short orbit_step = ovwm->cds.SetAndGetOrbitStep();
-    if (orbit_step != l1a_frame->orbitStep)
-    {
-        l1a_frame->priOfOrbitStepChange = _spotNumber;
-        l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
-        // remember, the CDS puts in the last orbit step (anti-documentation)
-        l1a_frame->orbitStep = orbit_step;
-        l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
-    }
+    //unsigned short orbit_step = ovwm->cds.SetAndGetOrbitStep();
+    //if (orbit_step != l1a_frame->orbitStep)
+    //{
+    //    l1a_frame->priOfOrbitStepChange = _spotNumber;
+    //    l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
+    //    // remember, the CDS puts in the last orbit step (anti-documentation)
+    //    l1a_frame->orbitStep = orbit_step;
+    //    l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
+    //}
 
     //-----------------------------//
     // determine if frame is ready //
     //-----------------------------//
 
+/* consider loop back not as a separate spot, so no need to do init */
+/*
     _spotNumber++;  // Move to next pulse
     if (_spotNumber >= l1a_frame->spotsPerFrame)
     {
@@ -1116,6 +1151,7 @@ OvwmSim::LoadSim(
     }
 
     pulseCount++;
+*/
     return(1);
 }
 
@@ -1126,7 +1162,7 @@ OvwmSim::LoadSim(
 int
 OvwmSim::SetL1ASpacecraft(
     Spacecraft*  spacecraft,
-    L1AFrame*    l1a_frame)
+    OvwmL1AFrame*    l1a_frame)
 {
     OrbitState* orbit_state = &(spacecraft->orbitState);
 
@@ -1382,8 +1418,10 @@ OvwmSim::SetMeasurements(
         // ignore land if necessary //
         //--------------------------//
 
-        if (meas->landFlag == 1 && simLandFlag == 0)
+        if (meas->landFlag == 1 && simLandFlag == 0 && sim_l1b_direct)
         {
+            cout << "land and not sim" << endl;
+
             // this is land, but we don't want land
             // remove this measurement, and go to the next
             meas = meas_spot->RemoveCurrent();
@@ -1597,8 +1635,10 @@ OvwmSim::SetMeasurements(
 	  azimuth_index = slice_i%11;
 	  range_index = int(slice_i/11);
 
-	  if(meas->centroid.Magnitude() < 1000.0)
+	  if(meas->centroid.Magnitude() < 1000.0 && sim_l1b_direct)
 	    { 
+              cout << "centroid dist < 1000" << endl;
+
 	      meas=meas_spot->RemoveCurrent();
 	      delete meas;
 	      meas=meas_spot->GetCurrent();
@@ -1629,7 +1669,9 @@ OvwmSim::SetMeasurements(
 	    
 
 
-	  if(!generate_map && gain<minOneWayGain){
+	  if(!generate_map && gain<minOneWayGain && sim_l1b_direct){
+            cout << "too small gain" << endl;
+
 	    meas=meas_spot->RemoveCurrent();
             delete meas;
             meas=meas_spot->GetCurrent();
@@ -1699,7 +1741,10 @@ OvwmSim::SetMeasurements(
 	      amb1=1;
 	      amb2=1;//this is needed to move beyond 1/amb1 computation
 	    }
-	    else if(!generate_map &&( amb2 ==0 && amb1 ==0)){
+	    else if(!generate_map &&( amb2 ==0 && amb1 ==0) && sim_l1b_direct){
+
+              cout << "amb too big" << endl;
+
 	      meas=meas_spot->RemoveCurrent();
 	      delete meas;
 	      meas=meas_spot->GetCurrent();
@@ -1724,7 +1769,10 @@ OvwmSim::SetMeasurements(
 	  if(generate_map)
 	    amb_map_[range_index][azimuth_index]=amb;
 
-	  if(!generate_map && amb> 1/minSignalToAmbigRatio){
+	  if(!generate_map && amb> 1/minSignalToAmbigRatio && sim_l1b_direct){
+
+            cout << "amb signal" << endl;
+
 	    meas=meas_spot->RemoveCurrent();
             delete meas;
             meas=meas_spot->GetCurrent();
@@ -1755,10 +1803,24 @@ OvwmSim::SetMeasurements(
 
           meas->azimuth_width = 2.*azimwid;
 
-          if (fabs(range_km) >= RNG_SWATH_WIDTH/2.) rangewid = 0.;
-          if (fabs(azimuth_km) >= AZ_SWATH_WIDTH/2.) azimwid = 0.;
+/* to get over for creating meas record */
+/* assign nominal values for widths     */
 
-	  if(!generate_map &&(rangewid==0 || azimwid==0)){
+          if (fabs(range_km) >= RNG_SWATH_WIDTH/2. ||
+              fabs(azimuth_km) >= AZ_SWATH_WIDTH/2.) {
+            rangewid = 0.06;
+            azimwid = 1.00;
+            meas->azimuth_width = 2.*azimwid;
+          }
+
+          //if (fabs(range_km) >= RNG_SWATH_WIDTH/2.) rangewid = 0.;
+          //if (fabs(azimuth_km) >= AZ_SWATH_WIDTH/2.) azimwid = 0.;
+
+	  if(!generate_map &&(rangewid==0 || azimwid==0) && sim_l1b_direct){
+
+            cout << "rng or az width" << endl;
+            cout << range_km << " " << azimuth_km <<endl;
+
 	    meas=meas_spot->RemoveCurrent();
             delete meas;
             meas=meas_spot->GetCurrent();
@@ -1887,6 +1949,42 @@ OvwmSim::SetMeasurements(
 		gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
 					  wv.spd, chi, &s0); 
 	      }
+
+              //---------------------------------------------------------------//
+              // Fuzz the sigma0 by Kpm to simulate the effects of model function
+              // error.  The resulting sigma0 is the 'true' value.
+              // It does not map back to the correct wind speed for the
+              // current beam and geometry because the model function is
+              // not perfect.
+              //---------------------------------------------------------------//
+
+              //cout << "s0 from GMF: " << s0 << endl;
+
+              // Uncorrelated component.
+              if (simUncorrKpmFlag == 1)
+              {
+                double kpm2;
+                if (! kp->GetKpm2(meas->measType, wv.spd, &kpm2))
+                {
+                  printf("Error: Bad Kpm value in OvwmSim::SetMeas\n");
+                  exit(-1);
+                }
+                Gamma gammaRv(s0*s0*kpm2,s0);
+                s0 = gammaRv.GetNumber();
+              }
+
+              //cout << "s0 after uncorr kpm: " << s0 << endl;
+
+              // Correlated component.
+              if (simCorrKpmFlag == 1)
+              {
+                s0 *= kpmField->GetRV(correlatedKpm, lon_lat);
+              }
+
+              //cout << "s0 after corr kpm: " << s0 << endl;
+
+              //exit(1);
+
               //-----------------------------        
 	      // compute gain and range
               //-----------------------------
@@ -1912,6 +2010,7 @@ OvwmSim::SetMeasurements(
 	  }
 
 
+          //cout << "Es: " << Es << endl;
 
 	  if(generate_map){
 	    X_map_[range_index][azimuth_index]=meas->XK;
@@ -1930,13 +2029,17 @@ OvwmSim::SetMeasurements(
           double ksig=ovwm->ses.transmitPower*ovwm->ses.rxGainEcho*lambda*
 	    lambda*ovwm->ses.txPulseWidth*ovwm->ses.numPulses
 	    /(64*pi*pi*pi*ovwm->systemLoss);
+          //cout << "ksig: " << ksig << endl;
           double kSNR=ovwm->ses.transmitPower*lambda*
 	    lambda*ovwm->ses.txPulseWidth*ovwm->ses.numPulses
 	    /(64*pi*pi*pi*ovwm->systemLoss*N0*float(nL));
           double SNR=Es*kSNR;
           meas->XK*=ksig;
+          //cout << "XK: " << meas->XK << endl;
           Es*=ksig;
+          //cout << "Es after ksig: " << Es << endl;
           En=Es/SNR;
+          //cout << "SNR, Es, En: " << SNR <<  " " << Es << " " << En << endl;
           meas->EnSlice=En;
 
           //------------------------
@@ -2006,7 +2109,10 @@ OvwmSim::SetMeasurements(
 					wv.spd, chi, &amb2s0); 
 	    }
 	  }
+
 	  Es+=meas->XK*amb1*amb1s0+meas->XK*amb2*amb2s0;
+
+          //cout << "Es after amb: " << Es << endl;
 
           //-----------------------
           // compute variance ONLY kpc for now!
@@ -2030,25 +2136,37 @@ OvwmSim::SetMeasurements(
           meas->C=s0ne*s0ne/(float)nL;
           
           // add noise and bias due to ambiguity
+
           meas->value=Es+En;
+
+          //cout << "Es after noise, meas value: " << meas->value << endl;
 
           //----------------------------
           // fuzz using kpc
           //----------------------------
+
           double v=normrv.GetNumber()*sqrt(var_esn_slice); 
+
           meas->value+=v;
+
+          //cout << "meas value after kpc: " << meas->value << endl;
+          //if (slice_i > 100) exit(1);
 
           // Noise subtract/calibrate to get s0 if L1B direct output is desired
           // INCOMPLETE add sim_l1b_direct to parameter list of method
+/*
 	  if(sim_l1b_direct){
 	    meas->value-=En;
 	    meas->value/=meas->XK;
 	  }
+*/
 	  
+          //cout << meas->value << endl;
 	  
 	}
 
 
+/* plan to do it in L1AToL1B
         // duplicate low res measurements so gridding will work down to 1 km
         int numdup=(int)(meas->azimuth_width);
 	if(numdup%2==0) numdup--; // make an odd number of measurements
@@ -2060,6 +2178,7 @@ OvwmSim::SetMeasurements(
 	    // yvec is the azimuth direction vector
 	  meas_spot->InsertAfter(m);
 	}
+*/
         slice_i++;
         meas = meas_spot->GetNext();
     }
@@ -2148,37 +2267,56 @@ OvwmSim::SetL1AScience(
     MeasSpot*    meas_spot,
     CheckFrame*  cf,
     Ovwm*       ovwm,
-    L1AFrame*    l1a_frame)
+    OvwmL1AFrame*    l1a_frame)
 {
     //----------------------//
     // set antenna position //
     //----------------------//
 
-    l1a_frame->antennaPosition[_spotNumber] = ovwm->cds.rawEncoder;
+    //l1a_frame->antennaPosition[_spotNumber] = ovwm->cds.rawEncoder;
 
     //-------------------------//
     // for each measurement... //
     //-------------------------//
 
-    int slice_number = _spotNumber * l1a_frame->slicesPerSpot;
+    int meas_number = _spotNumber * l1a_frame->maxMeasPerSpot;
     if (simVs1BCheckfile) cf->EsnEcho = 0.0;
+
     for (Meas* meas = meas_spot->GetHead(); meas;
         meas = meas_spot->GetNext())
     {
+        if (meas_number == _spotNumber*l1a_frame->maxMeasPerSpot) {
+          l1a_frame->spotScanAngle[_spotNumber] = meas->scanAngle;
+        }
+
         //----------------------------//
         // update the level 0.0 frame //
         //----------------------------//
 
-        l1a_frame->science[slice_number] = (unsigned int)(meas->value);
+        //l1a_frame->science[meas_number] = (unsigned int)(meas->value);
+
+        l1a_frame->science[meas_number] = meas->value;
+        //cout << meas_number << " " << meas->value << " " << l1a_frame->science[meas_number] << endl;
+
         if (simVs1BCheckfile) cf->EsnEcho += meas->value;
-        slice_number++;
+
+        meas_number++;
     }
 
+    l1a_frame->dataCountSpots[_spotNumber] = meas_number - _spotNumber*l1a_frame->maxMeasPerSpot;
+
+    //cout << "meas count " << _spotNumber << " " << l1a_frame->dataCountSpots[_spotNumber] << endl;
+
     // Compute the spot noise measurement.
+
     float spot_noise;
     sigma0_to_Esn_noise(ovwm, meas_spot, simKpcFlag, &spot_noise);
-    l1a_frame->spotNoise[_spotNumber] = (unsigned int)spot_noise;
+
+    l1a_frame->spotNoise[_spotNumber] = spot_noise;
+
     if (simVs1BCheckfile) cf->EsnNoise = spot_noise;
+
+    //cout << "spot noise: " << _spotNumber << " " << spot_noise << endl;
 
     return(1);
 }
@@ -2190,14 +2328,14 @@ OvwmSim::SetL1AScience(
 int
 OvwmSim::SetL1ALoopback(
     Ovwm*       ovwm,
-    L1AFrame*    l1a_frame)
+    OvwmL1AFrame*    l1a_frame)
 {
 
     //----------------------//
     // set antenna position //
     //----------------------//
 
-    l1a_frame->antennaPosition[_spotNumber] = ovwm->cds.rawEncoder;
+    //l1a_frame->antennaPosition[_spotNumber] = ovwm->cds.rawEncoder;
 
     //-------------------------------------------//
     // Set Es_cal using PtGr.                    //
@@ -2206,14 +2344,18 @@ OvwmSim::SetL1ALoopback(
 
     float Esn_echo_cal,Esn_noise_cal;
     PtGr_to_Esn(&ptgrNoise,ovwm,simKpriFlag,&Esn_echo_cal,&Esn_noise_cal);
+    //cout << "Loop back: " << endl;
+    //cout << simKpriFlag << endl;
+    //cout << Esn_echo_cal << endl;
+    //cout << Esn_noise_cal << endl;
 
     //-------------------//
     // for each slice... //
     //-------------------//
 
-    int base_slice_number = _spotNumber * l1a_frame->slicesPerSpot;
-    for (int i=0; i < l1a_frame->slicesPerSpot; i++)
-    {
+    //int base_slice_number = _spotNumber * l1a_frame->slicesPerSpot;
+    //for (int i=0; i < l1a_frame->slicesPerSpot; i++)
+    //{
         //----------------------------------------------------------------//
         // Update the level 1A frame.
         // Here, we set each slice to zero because the loopback energy
@@ -2225,23 +2367,30 @@ OvwmSim::SetL1ALoopback(
         // processing system.
         //----------------------------------------------------------------//
 
-        l1a_frame->loopbackSlices[i] = 0;
-        l1a_frame->science[base_slice_number + i] = 0;
-    }
+    //    l1a_frame->loopbackSlices[i] = 0;
+    //    l1a_frame->science[base_slice_number + i] = 0;
+    //}
 
     // Now set the single slice with loopback energy.
     // Note the scale factor of 256 (8 bit shift) applied only to echo channel.
-    int icenter = 4;
-    l1a_frame->loopbackSlices[icenter] = (unsigned int)(Esn_echo_cal/256.0);
-    l1a_frame->science[base_slice_number + icenter] =
-      (unsigned int)(Esn_echo_cal/256.0);
+    //int icenter = 4;
+    //l1a_frame->loopbackSlices[icenter] = (unsigned int)(Esn_echo_cal/256.0);
+    //l1a_frame->science[base_slice_number + icenter] =
+    //  (unsigned int)(Esn_echo_cal/256.0);
+
+    l1a_frame->loopbackSpots[_spotNumber] = Esn_echo_cal;
 
     //----------------------------------------------//
     // Set corresponding noise channel measurements //
     //----------------------------------------------//
 
-    l1a_frame->loopbackNoise = (unsigned int)(Esn_noise_cal);
-    l1a_frame->spotNoise[_spotNumber] = (unsigned int)(Esn_noise_cal);
+    l1a_frame->loopbackNoise = Esn_noise_cal;
+    //l1a_frame->spotNoise[_spotNumber] = (unsigned int)(Esn_noise_cal);
+
+    //cout << "In L1A: " << endl;
+    //cout << l1a_frame->loopbackSpots[_spotNumber] << endl;
+    //cout << l1a_frame->loopbackNoise << endl;
+    //cout << l1a_frame->spotNoise[_spotNumber] << endl;
 
     //--------------------------------------------------------//
     // Set cal position indicator so that the actual position //
@@ -2251,9 +2400,11 @@ OvwmSim::SetL1ALoopback(
     // for load measurements which always follow a loopback.  //
     //--------------------------------------------------------//
 
-    l1a_frame->calPosition = _spotNumber + 2;
-    l1a_frame->in_eu.true_cal_pulse_pos = l1a_frame->calPosition;
-    l1a_frame->status.specified_cal_pulse_pos = l1a_frame->calPosition;
+/* not implement status and in_eu now
+    //l1a_frame->calPosition = _spotNumber + 2;
+    //l1a_frame->in_eu.true_cal_pulse_pos = l1a_frame->calPosition;
+    //l1a_frame->status.specified_cal_pulse_pos = l1a_frame->calPosition;
+*/
 
     return(1);
 }
@@ -2265,14 +2416,14 @@ OvwmSim::SetL1ALoopback(
 int
 OvwmSim::SetL1ALoad(
     Ovwm*       ovwm,
-    L1AFrame*    l1a_frame)
+    OvwmL1AFrame*    l1a_frame)
 {
 
     //----------------------//
     // set antenna position //
     //----------------------//
 
-    l1a_frame->antennaPosition[_spotNumber] = ovwm->cds.rawEncoder;
+    //l1a_frame->antennaPosition[_spotNumber] = ovwm->cds.rawEncoder;
 
     //-------------------------------------------//
     // Compute load noise measurements to assure //
@@ -2283,13 +2434,17 @@ OvwmSim::SetL1ALoad(
     float En_noise_load;
     make_load_measurements(ovwm,&En_echo_load,&En_noise_load);
 
+    //cout << "Load: " << endl;
+    //cout << En_echo_load << endl;
+    //cout << En_noise_load << endl;
+
     //-------------------//
     // for each slice... //
     //-------------------//
 
-    int base_slice_number = _spotNumber * l1a_frame->slicesPerSpot;
-    for (int i=0; i < l1a_frame->slicesPerSpot; i++)
-    {
+    //int base_slice_number = _spotNumber * l1a_frame->slicesPerSpot;
+    //for (int i=0; i < l1a_frame->slicesPerSpot; i++)
+    //{
       //----------------------------------------------------------------//
       // Update the level 0.0 frame
       // Here, we set each slice to the same number so that they
@@ -2304,37 +2459,48 @@ OvwmSim::SetL1ALoad(
       // noise in the current implementation, but we aren't using it!
       //----------------------------------------------------------------//
 
-      if (l1a_frame->slicesPerSpot == 12)
-      {
-        float Bs = 8314.0;   // Nominal value consistent with q-table.
-        float Bg = 46190.0;  // Nominal value consistent with q-table.
-        float Be = 10*Bs + 2*Bg;
-        if (i == 0 || i == 11)
-        {
-          l1a_frame->loadSlices[i] =
-            (unsigned int)(En_echo_load * ovwm->ses.Qtable[i]*Bg/Be);
-        }
-        else
-        {
-          l1a_frame->loadSlices[i] =
-            (unsigned int)(En_echo_load * ovwm->ses.Qtable[i]*Bs/Be);
-        }
-      }
-      else
-      {  // assume slice bandwidths are all the same
-        l1a_frame->loadSlices[i] =
-          (unsigned int)(En_echo_load/l1a_frame->slicesPerSpot);
-      }
-      l1a_frame->science[base_slice_number + i] = l1a_frame->loadSlices[i];
-    }
+    //  if (l1a_frame->slicesPerSpot == 12)
+    //  {
+    //    float Bs = 8314.0;   // Nominal value consistent with q-table.
+    //    float Bg = 46190.0;  // Nominal value consistent with q-table.
+    //    float Be = 10*Bs + 2*Bg;
+    //    if (i == 0 || i == 11)
+    //    {
+    //      l1a_frame->loadSlices[i] =
+    //        (unsigned int)(En_echo_load * ovwm->ses.Qtable[i]*Bg/Be);
+    //    }
+    //    else
+    //    {
+    //      l1a_frame->loadSlices[i] =
+    //        (unsigned int)(En_echo_load * ovwm->ses.Qtable[i]*Bs/Be);
+    //    }
+    //  }
+    //  else
+    //  {  // assume slice bandwidths are all the same
+    //    l1a_frame->loadSlices[i] =
+    //      (unsigned int)(En_echo_load/l1a_frame->slicesPerSpot);
+    //  }
+    //  l1a_frame->science[base_slice_number + i] = l1a_frame->loadSlices[i];
+    //}
+
+/*** check whether I need to divide # of meas in the spot ***/
+/*** now we didn't do the division                        ***/
+
+    //l1a_frame->loadSpots[_spotNumber] = (unsigned int)(En_echo_load);
+    l1a_frame->loadSpots[_spotNumber] = En_echo_load;
 
     //----------------------------------------------//
     // Set corresponding noise channel measurements //
     //----------------------------------------------//
 
-    l1a_frame->loadNoise = (unsigned int)(En_noise_load);
-    l1a_frame->spotNoise[_spotNumber] = (unsigned int)(En_noise_load);
+    //l1a_frame->loadNoise = (unsigned int)(En_noise_load);
+    l1a_frame->loadNoise = En_noise_load;
+    //l1a_frame->spotNoise[_spotNumber] = (unsigned int)(En_noise_load);
 
+    //cout << "L1A:" << endl;
+    //cout << l1a_frame->loadSpots[_spotNumber] << endl;
+    //cout << l1a_frame->loadNoise << endl;
+    //cout << l1a_frame->spotNoise[_spotNumber] << endl;
     return(1);
 }
 
