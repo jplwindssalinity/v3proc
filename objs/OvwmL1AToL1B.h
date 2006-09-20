@@ -96,7 +96,9 @@ public:
     float   minOneWayGain;         // use to decide which meas to process
     float   minSignalToAmbigRatio; // more ambiguous pixels omitted
 
-    int     simLandFlag;   // 0 = ignore land, 1 = simulate land
+    int     computeXfactor;        // compute X-factor
+
+    int     simLandFlag;           // 0 = ignore land, 1 = simulate land
 
 protected:
 
