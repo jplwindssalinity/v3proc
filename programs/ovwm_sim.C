@@ -307,7 +307,7 @@ main(
     // create a Level 1A product //
     //----------------------------//
 
-    L1A l1a;
+    OvwmL1A l1a;
     if (! ConfigOvwmL1A(&ovwm, &l1a, &config_list))
     {
         fprintf(stderr, "%s: error configuring Level 0\n", command);
@@ -324,7 +324,7 @@ main(
         // the filename is already there, just open it
         l1a.OpenForWriting();
     }
-    L1AFrame* frame = &(l1a.frame);
+    OvwmL1AFrame* frame = &(l1a.frame);
 
     //--------------------------//
     // create an ephemeris file //
@@ -652,7 +652,6 @@ main(
                 sim_time = ovwm_event.time;
                 cout << sim_time - instrument_start_time << endl;
 
-
                 int pulse_index = 0;    // this will get used later
                 switch(ovwm_event.eventId)
                 {
@@ -675,10 +674,25 @@ main(
                     // remember the pulse index
                     pulse_index = ovwm_sim.GetSpotNumber();
 
+                    // create loop back and load //
+
+                    if (!l1bdirect) {
+                      ovwm_sim.LoopbackSim(&spacecraft, &ovwm, frame);
+                      ovwm_sim.LoadSim(&spacecraft, &ovwm, frame);
+                    }
+
                     // simulate
-                    ovwm_sim.ScatSim(&spacecraft, &ovwm, &windfield,
-                        inner_map_ptr, outer_map_ptr, &gmf, &kp, &kpmField,
-                        topo_ptr, stable_ptr, frame, &ovwm_sim.ptrTable,&ovwm_sim.ambigTable, &l1b);
+
+                    if (l1bdirect) {
+                      ovwm_sim.ScatSim(&spacecraft, &ovwm, &windfield,
+                          inner_map_ptr, outer_map_ptr, &gmf, &kp, &kpmField,
+                          topo_ptr, stable_ptr, frame, &ovwm_sim.ptrTable,&ovwm_sim.ambigTable, &l1b);
+
+                    } else {
+                      ovwm_sim.ScatSim(&spacecraft, &ovwm, &windfield,
+                          inner_map_ptr, outer_map_ptr, &gmf, &kp, &kpmField,
+                          topo_ptr, stable_ptr, frame, &ovwm_sim.ptrTable,&ovwm_sim.ambigTable);
+                    }
 
                     // save the delta f
                     /******* Commenting this out for now
@@ -726,14 +740,20 @@ main(
          
             if (ovwm_sim.l1aFrameReady)
             {
+               //cout << "L1A ready:" << endl;
+               //FILE *ffp;
+               //ffp = fopen("ttt", "w");
                 // Report Latest Attitude Measurement
                 // + Knowledge Error
                 spacecraft_sim.ReportAttitude(sim_time, &spacecraft,
                     &(frame->attitude));
 
+                //l1a.frame.WriteAscii(ffp);
+
                 int size = frame->Pack(l1a.buffer);
                 l1a.Write(l1a.buffer, size);
 
+                //cout << size << endl;
                 // save the true attitude
                 if (true_att_fp != NULL)
                 {
@@ -745,6 +765,7 @@ main(
                 }
                 ovwm_sim.l1aFrameReady=0;
                 frame_count++;
+                //if (frame_count==1) exit(1);
             }
 	} // if !instrument_done
 
