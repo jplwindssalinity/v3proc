@@ -13,7 +13,7 @@ static const char rcs_id_sigma0_c[] =
 #include "CoordinateSwitch.h"
 #include "Spacecraft.h"
 #include "Meas.h"
-#include "Sigma0.h"
+#include "OvwmSigma0.h"
 #include "Ovwm.h"
 #include "Distributions.h"
 #include "Misc.h"
@@ -170,56 +170,71 @@ PtGr_to_Esn(
     float*       Esn_echo_cal,
     float*       Esn_noise_cal)
 {
-  // Incomplete
-  return(0); 
-  /********************
-	double Tg = ovwm->GetRxGateWidth();
-	double Bn = ovwm->ses.noiseBandwidth;
-	double Be = ovwm->ses.GetTotalSignalBandwidth();
-	double beta = ovwm->ses.rxGainNoise / ovwm->ses.rxGainEcho;
-	double alpha = Bn/Be;
-	double L13 = ovwm->ses.receivePathLoss;
 
-	//------------------------------------------------------------------------//
-	// Signal (ie., echo) energy referenced to the point just before the
-	// I-Q detection occurs (ie., including the receiver gain and system loss).
+    double Tg = ovwm->GetRxGateWidth();
+    double Bn = ovwm->ses.noiseBandwidth;
+    double Be = ovwm->ses.chirpBandwidth;
+    double beta = ovwm->ses.rxGainNoise / ovwm->ses.rxGainEcho;
+    double alpha = Bn/Be;
+    double L13 = ovwm->ses.receivePathLoss;
+
+    //cout << Tg << endl;
+    //cout << Bn << endl;
+    //cout << Be << endl;
+    //cout << beta << endl;
+    //cout << alpha << endl;
+    //cout << L13 << endl;
+
+    //------------------------------------------------------------------------//
+    // Signal (ie., echo) energy referenced to the point just before the
+    // I-Q detection occurs (ie., including the receiver gain and system loss).
     // L21 boosts Pt up to the level at which it goes through the loopback.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
 
     double Es_cal = true_Es_cal(ovwm);
 
-	//------------------------------------------------------------------------//
-	// Add Kpri noise if requested.  This should properly be Kpc style noise
+    //cout << Es_cal << endl;
+
+    //------------------------------------------------------------------------//
+    // Add Kpri noise if requested.  This should properly be Kpc style noise
     // added to the signal + noise measurement as done in sigma0_to_Esn, but
     // we are controlling this variance source separately right now.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
 
     if (sim_kpri_flag)
         Es_cal *= (1 + ptgrNoise->GetNumber(ovwm->cds.time));
 
-	//------------------------------------------------------------------------//
-	// Noise power spectral density referenced the same way as the signal.
-	//------------------------------------------------------------------------//
+    //cout << Es_cal << endl;
 
-	double N0_echo = bK * ovwm->systemTemperature *
-        ovwm->ses.rxGainEcho / L13;
+    //------------------------------------------------------------------------//
+    // Noise power spectral density referenced the same way as the signal.
+    //------------------------------------------------------------------------//
 
-	//------------------------------------------------------------------------//
-	// Noise energy within echo channel referenced like the signal energy.
-	//------------------------------------------------------------------------//
+    double N0_echo = bK * ovwm->systemTemperature *
+    ovwm->ses.rxGainEcho / L13;
 
-	double En_cal = N0_echo * Be * Tg;
+    //------------------------------------------------------------------------//
+    // Noise energy within echo channel referenced like the signal energy.
+    //------------------------------------------------------------------------//
 
-	//------------------------------------------------------------------------//
-	// Signal + Noise Energy within echo channel referenced as above.
-	// Noise channel measurements to get perfect reversal.
-	//------------------------------------------------------------------------//
+    double En_cal = N0_echo * Be * Tg;
 
-	*Esn_echo_cal = (float)(Es_cal + En_cal);
+    //cout << N0_echo << endl;
+    //cout << En_cal << endl;
+
+    //------------------------------------------------------------------------//
+    // Signal + Noise Energy within echo channel referenced as above.
+    // Noise channel measurements to get perfect reversal.
+    //------------------------------------------------------------------------//
+
+    *Esn_echo_cal = (float)(Es_cal + En_cal);
     *Esn_noise_cal = (float)(beta*Es_cal + alpha*beta*En_cal);
 
-	return(1);
-  *************/
+    //cout << *Esn_echo_cal << endl;
+    //cout << *Esn_noise_cal << endl;
+    //exit(1);
+
+    return(1);
 }
 
 //
@@ -246,9 +261,6 @@ make_load_measurements(
     float*       En_echo_load,
     float*       En_noise_load)
 {
-  // incomplete
-  return(0);
-  /**********************
     //-------------------------------------------//
     // Compute load noise measurements to assure //
     // a perfect retrieval of alpha.             //
@@ -256,18 +268,24 @@ make_load_measurements(
 
     double Tg = ovwm->GetRxGateWidth();
     double Bn = ovwm->ses.noiseBandwidth;
-    double Be = ovwm->ses.GetTotalSignalBandwidth();
+    double Be = ovwm->ses.chirpBandwidth;
 
     double N0_echo = bK * ovwm->systemTemperature *
         ovwm->ses.rxGainEcho / ovwm->ses.receivePathLoss;
     double N0_noise = bK * ovwm->systemTemperature *
         ovwm->ses.rxGainNoise / ovwm->ses.receivePathLoss;
 
+    //cout << ovwm->systemTemperature << endl;
+    //cout << ovwm->ses.rxGainEcho << endl;
+    //cout << ovwm->ses.rxGainNoise << endl;
+    //cout << ovwm->ses.receivePathLoss << endl;
+
     *En_echo_load = N0_echo * Be * Tg;
     *En_noise_load = N0_noise * Bn * Tg;
 
-	return(1);
-  *****************/
+    //cout << *En_echo_load << endl;
+    //cout << *En_noise_load << endl;
+    return(1);
 }
 
 //
@@ -296,79 +314,137 @@ sigma0_to_Esn_noise(
     float*       Esn_noise)
 {
 
-  // incomplete
-  return(0);
-  /**********************
-	//------------------------------------------------------------------------//
-	// Noise power spectral densities referenced the same way as the signal.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
+    // Noise power spectral densities referenced the same way as the signal.
+    //------------------------------------------------------------------------//
 
-	double N0_noise = bK * ovwm->systemTemperature *
+    double N0_noise = bK * ovwm->systemTemperature *
         ovwm->ses.rxGainNoise / ovwm->ses.receivePathLoss;
 
-	//------------------------------------------------------------------------//
-	// Useful quantities.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
+    // Useful quantities.
+    //------------------------------------------------------------------------//
 
 
-	double Tg = ovwm->GetRxGateWidth();
-	double Bn = ovwm->ses.noiseBandwidth;
-	double Be = ovwm->ses.GetTotalSignalBandwidth();
-	double beta = ovwm->ses.rxGainNoise / ovwm->ses.rxGainEcho;
+    double Tg = ovwm->GetRxGateWidth();
+    double Bn = ovwm->ses.noiseBandwidth;
+    double Be = ovwm->ses.chirpBandwidth;
+    double beta = ovwm->ses.rxGainNoise / ovwm->ses.rxGainEcho;
 
-	//------------------------------------------------------------------------//
-	// Start with the noise contribution to the noise energy measurement
-	// outside of the echo bandwidth.
-	// This is simply the noise power spectral density (using the noise
-	// channel gain) multiplied by the appropriate bandwidth and the
-	// receiver gate width.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
+    // Start with the noise contribution to the noise energy measurement
+    // outside of the echo bandwidth.
+    // This is simply the noise power spectral density (using the noise
+    // channel gain) multiplied by the appropriate bandwidth and the
+    // receiver gate width.
+    //------------------------------------------------------------------------//
 
-	*Esn_noise = N0_noise*(Bn-Be)*Tg;
+    *Esn_noise = N0_noise*(Bn-Be)*Tg;
 
-	//------------------------------------------------------------------------//
-	// Add in the signal + noise energies within the measurement spot.
-	// These energies will include Kpc variance (if selected) that
-	// accounts for both signal variation due to fading, and thermal noise
-	// variation from the receiver front end.
-	// The gain of the noise channel is different from the gain of the echo
-	// channel, so a correction factor is applied.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
+    // Add in the signal + noise energies within the measurement spot.
+    // These energies will include Kpc variance (if selected) that
+    // accounts for both signal variation due to fading, and thermal noise
+    // variation from the receiver front end.
+    // The gain of the noise channel is different from the gain of the echo
+    // channel, so a correction factor is applied.
+    //------------------------------------------------------------------------//
 
-	Meas* meas = spot->GetHead();
-	while (meas != NULL)
-	{
-		*Esn_noise += meas->value*beta;
-		meas = spot->GetNext();
-	}
+    Meas* meas = spot->GetHead();
+    while (meas != NULL)
+    {
+      *Esn_noise += meas->value*beta;
+      meas = spot->GetNext();
+    }
 
-	if (sim_kpc_flag == 0)
-	{
-		return(1);
-	}
+    if (sim_kpc_flag == 0)
+    {
+      return(1);
+    }
 
-	//------------------------------------------------------------------------//
-	// Compute the variance of the portion of the noise channel energy
-	// measurement which falls outside of the echo bandwidth.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
+    // Compute the variance of the portion of the noise channel energy
+    // measurement which falls outside of the echo bandwidth.
+    //------------------------------------------------------------------------//
 
-	float var_noise = (Bn - Be)*N0_noise*N0_noise*Tg;
+    float var_noise = (Bn - Be)*N0_noise*N0_noise*Tg;
 
-	//------------------------------------------------------------------------//
-	// Fuzz the Esn_noise value by adding a random number drawn from
-	// a gaussian distribution with the variance just computed and zero mean.
-	// This adds a small amount of additional variance on top of the variance
-	// already present in the slice measurements.  The extra variance is due
-	// to random variation of the thermal noise power in the noise
-	// bandwidth outside of the echo bandwidth.
-	// Because the noise bandwidth is much larger than the echo bandwidth,
-	// this extra variance should be much smaller than the echo variance.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
+    // Fuzz the Esn_noise value by adding a random number drawn from
+    // a gaussian distribution with the variance just computed and zero mean.
+    // This adds a small amount of additional variance on top of the variance
+    // already present in the slice measurements.  The extra variance is due
+    // to random variation of the thermal noise power in the noise
+    // bandwidth outside of the echo bandwidth.
+    // Because the noise bandwidth is much larger than the echo bandwidth,
+    // this extra variance should be much smaller than the echo variance.
+    //------------------------------------------------------------------------//
 
-	Gaussian rv(var_noise,0.0);
-	*Esn_noise += rv.GetNumber();
+    Gaussian rv(var_noise,0.0);
+    *Esn_noise += rv.GetNumber();
 
-	return(1);
-  ******************/
+    return(1);
+
 }
+
+//------------------------------------------------------------------------//
+// Er_to_Es
+//
+// The Er_to_Es function estimates the signal only energy
+// in a pixel from five signal+noise measurements and assuming
+// noise is evenly distributed in all pixels of the spot.
+// The noise channel measurements include the echo channel but with
+// a different gain. The load measurements
+// are used to calibrate the bandwidth ratio of the noise filter to the
+// echo filter (alpha).  The receiver gain ratio (beta) between the
+// noise filter and the echo filter is a pre-launch calibrated constant.
+//  
+// Inputs:
+//  Esn_pixel = The pixel echo channel energy (Esn_slice)
+//  Esn_echo = The total echo channel energy (Esn_echo)
+//  Esn_noise = The corresponding noise channel energy (Esn_noise)
+//  En_echo_load = The corresponding load echo channel energy (En_echo_load)
+//  En_noise_load = The corresponding load noise channel energy (En_noise_load)
+//      numPixels = number of pixels in the spot
+//      Es_pixel = pointer to the computed pixel signal energy.
+//      En_pixel = pointer to the computed pixel noise energy.
+//
+//------------------------------------------------------------------------//
+
+int
+Er_to_Es(
+    float   beta,
+    float   Esn_pixel,
+    float   Esn_echo,
+    float   Esn_noise,
+    float   En_echo_load,
+    float   En_noise_load,
+    int     numPixels,
+    float*  Es_pixel,
+    float*  En_pixel)
+{
+    // Compute alpha from the load measurements.
+    if (En_echo_load == 0.0)
+    {
+      fprintf(stderr,"Error, echo channel load energy is 0\n");
+      return(0);
+    }   
+
+    double alpha = 1.0/beta * En_noise_load/En_echo_load;
+
+    // Estimate the noise energy in the slice. (exact when 0 variance is used)
+    if (alpha == 1.0 || beta == 0.0)
+    {
+      fprintf(stderr,"Error, bad alpha and/or beta values\n");
+      return(0);
+    }
+
+    double EnSpot = 1.0/(1.0 - alpha)*(Esn_echo - Esn_noise/beta);
+    *En_pixel = EnSpot/numPixels;
+    
+    // Subtract out slice noise, leaving the signal power fuzzed by Kpc.
+    *Es_pixel = Esn_pixel - *En_pixel;
+    
+    return(1);
+}   
 

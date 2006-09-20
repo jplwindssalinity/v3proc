@@ -49,4 +49,8 @@ int PtGr_to_Esn(TimeCorrelatedGaussian*  ptgrNoise, Ovwm* ovwm,
                 float* Esn_echo_cal, float* Esn_noise_cal);
 int make_load_measurements(Ovwm* ovwm, float* En_echo_load,
                            float* En_noise_load);
+int Er_to_Es(float beta, float Esn_slice, float Esn_echo, float Esn_noise,
+             float En_echo_load, float En_noise_load, int numPixels,
+             float* Es_pixel, float* En_pixel);
+
 #endif
