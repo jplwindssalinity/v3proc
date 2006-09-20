@@ -485,15 +485,10 @@ OvwmL1AToL1B::Convert(
 
         int slice_i = 0;
 
-        int rm_flag = 0;
+        meas = meas_spot->GetHead();
 
-        for (Meas* meas = meas_spot->GetHead(); meas;
-            meas = meas_spot->GetNext())
+        while(meas)
         {
-            if (rm_flag) {
-              meas=meas_spot->GetPrev();
-              rm_flag = 0;
-            }
 
             meas->measType = meas_type;
             meas->XK = 0.;
@@ -505,8 +500,6 @@ OvwmL1AToL1B::Convert(
             if (meas->landFlag == 1 && simLandFlag == 0)
             {
                 //cout << "land and not sim" << endl;
-
-                rm_flag = 1;
 
                 // this is land, but we don't want land
                 // remove this measurement, and go to the next
@@ -535,8 +528,6 @@ OvwmL1AToL1B::Convert(
 
             if(gain<minOneWayGain){
               //cout << "too small gain" << endl;
-
-              rm_flag = 1;
 
               meas=meas_spot->RemoveCurrent();
               delete meas;
@@ -579,7 +570,6 @@ OvwmL1AToL1B::Convert(
 
             if (amb1==0 || amb2==0){
               if (amb1==0 && amb2==0){
-                rm_flag = 1;
                 //cout << "amb too big" << endl;
 
                 meas=meas_spot->RemoveCurrent();
@@ -590,7 +580,6 @@ OvwmL1AToL1B::Convert(
               }
               else{
                 fprintf(stderr,"Warning: Bad Ambiguity Condition 0 value for one ambig only\n");
-                rm_flag = 1;
 
                 meas=meas_spot->RemoveCurrent();
                 delete meas;
@@ -607,8 +596,6 @@ OvwmL1AToL1B::Convert(
             if(amb> 1/minSignalToAmbigRatio){
 
               //cout << "amb signal" << endl;
-
-              rm_flag = 1;
 
               meas=meas_spot->RemoveCurrent();
               delete meas;
@@ -692,8 +679,6 @@ OvwmL1AToL1B::Convert(
 
                 if(rangewid==0. || azimwid==0.){
                   //cout << "outside ptr range" << endl;
-
-                  rm_flag = 1;
 
                   meas=meas_spot->RemoveCurrent();
                   delete meas;
@@ -917,6 +902,8 @@ OvwmL1AToL1B::Convert(
                 // yvec is the azimuth direction vector
               meas_spot->InsertAfter(m);
             }
+
+            meas = meas_spot->GetNext();
 
             slice_i++; // check whether we need slice_i
         }
