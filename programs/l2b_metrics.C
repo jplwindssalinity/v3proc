@@ -439,6 +439,18 @@ main(
     WindField truth;
     if (! nudge_as_truth_opt)
     {
+        if (strcasecmp(truth_type, "SV") == 0)
+        {
+            if (!config_list.GetFloat(WIND_FIELD_LAT_MIN_KEYWORD, &truth.lat_min) ||
+                !config_list.GetFloat(WIND_FIELD_LAT_MAX_KEYWORD, &truth.lat_max) ||
+                !config_list.GetFloat(WIND_FIELD_LON_MIN_KEYWORD, &truth.lon_min) ||
+                !config_list.GetFloat(WIND_FIELD_LON_MAX_KEYWORD, &truth.lon_max))
+            {
+              fprintf(stderr, "ConfigWindField: SV can't determine range of lat and lon\n");
+              return(0);
+            }
+        }
+
         if (! truth.ReadType(truth_file, truth_type))
         {
             fprintf(stderr, "%s: error reading true wind field from file %s\n",
