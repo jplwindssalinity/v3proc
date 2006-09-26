@@ -510,6 +510,19 @@ OvwmL1AToL1B::Convert(
                 continue;
             }
 
+            // remove record with low magnitude
+
+            if (meas->centroid.Magnitude() < 1000.0)
+            {
+              //cout << "centroid dist < 1000" << endl;
+
+              meas=meas_spot->RemoveCurrent();
+              delete meas;
+              meas=meas_spot->GetCurrent();
+              slice_i++;
+              continue;
+            }
+
             // remove record with low gain
 
             Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
@@ -1048,10 +1061,11 @@ OvwmL1AToL1B::ComputeSigma0(
 
     // Consistent with meas->numSlices=-1 case in GMF::GetVariance
     // kpm is removed 
-    float kpmtoremove=0.16;
+    //float kpmtoremove=0.16;
     float s0ne=*En_pixel/meas->XK; // noise equivalent s0
     float alpha=1/(float)nL;
-    meas->A=(alpha+1.0)/(1+kpmtoremove*kpmtoremove);
+    meas->A=alpha+1.0;
+    //meas->A=(alpha+1.0)/(1+kpmtoremove*kpmtoremove);
     meas->B=2.0*s0ne/(float)nL;
     meas->C=s0ne*s0ne/(float)nL;
 
