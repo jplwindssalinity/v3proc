@@ -8,6 +8,7 @@ SHELL =			/bin/csh
 INCDIR =		../../include
 TARGET_LIB =	../../lib/libSim.a
 HDFINCDIR =     /sw/include
+#DEBUGFLAGS =    -ggdb2
 DEBUGFLAGS =    -O2
 INCFLAGS =      -I$(INCDIR) -I$(HDFINCDIR) -I.
 
@@ -110,6 +111,8 @@ OBJS = \
 	QscatConfig.o \
 	QscatSim.o \
 	Ovwm.o \
+	OvwmL1A.o \
+	OvwmL1AToL1B.o \
 	OvwmConfig.o \
 	OvwmSim.o \
 	OvwmSigma0.o \
