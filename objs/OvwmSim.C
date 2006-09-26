@@ -1420,7 +1420,7 @@ OvwmSim::SetMeasurements(
 
         if (meas->landFlag == 1 && simLandFlag == 0 && sim_l1b_direct)
         {
-            cout << "land and not sim" << endl;
+            //cout << "land and not sim" << endl;
 
             // this is land, but we don't want land
             // remove this measurement, and go to the next
@@ -1637,7 +1637,7 @@ OvwmSim::SetMeasurements(
 
 	  if(meas->centroid.Magnitude() < 1000.0 && sim_l1b_direct)
 	    { 
-              cout << "centroid dist < 1000" << endl;
+              //cout << "centroid dist < 1000" << endl;
 
 	      meas=meas_spot->RemoveCurrent();
 	      delete meas;
@@ -1760,7 +1760,7 @@ OvwmSim::SetMeasurements(
 	      continue;
 	    }
             else if(!generate_map && !sim_l1b_direct){ // create meas in L1A
-	      fprintf(stderr,"Warning: Bad Ambiguity Condition, set ambig 1\n");
+	      //fprintf(stderr,"Warning: Bad Ambiguity Condition, set ambig 1\n");
               amb1=1;
               amb2=1;
             }
@@ -2133,12 +2133,15 @@ OvwmSim::SetMeasurements(
 
           // Consistent with meas->numSlices=-1 case in GMF::GetVariance
           // kpm is removed 
-          float kpmtoremove=0.16;
-          float s0ne=En/meas->XK; // noise equivalent s0
-          float alpha=1/(float)nL;
-	  meas->A=(alpha+1.0)/(1+kpmtoremove*kpmtoremove);
-          meas->B=2.0*s0ne/(float)nL;
-          meas->C=s0ne*s0ne/(float)nL;
+
+	  if(sim_l1b_direct){
+            float kpmtoremove=0.16;
+            float s0ne=En/meas->XK; // noise equivalent s0
+            float alpha=1/(float)nL;
+            meas->A=(alpha+1.0)/(1+kpmtoremove*kpmtoremove);
+            meas->B=2.0*s0ne/(float)nL;
+            meas->C=s0ne*s0ne/(float)nL;
+          }
           
           // add noise and bias due to ambiguity
 

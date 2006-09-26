@@ -1812,9 +1812,19 @@ GMF::GetVariance(
     //------------------------//
 
     double var;
-    if (meas->numSlices == -1)
+    if (meas->numSlices==-1)
     {
-        float kpm = 0.16;
+        double kpm2 = 0.0;
+
+        if (retrieveUsingKpmFlag) {
+          if (! kp->GetKpm2(meas->measType, spd, &kpm2))
+          {
+              fprintf(stderr,"GMF::GetVariance: Error computing Kpm\n");
+              kpm2 = 0.0;
+          }
+        }
+
+        float kpm = sqrt(kpm2);
         float alpha = (1.0 + kpm*kpm) * meas->A - 1.0;
         var = (alpha*trial_sigma0 + meas->B) * trial_sigma0 + meas->C;
     }
