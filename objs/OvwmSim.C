@@ -2139,12 +2139,14 @@ OvwmSim::SetMeasurements(
 
           // Consistent with meas->numSlices=-1 case in GMF::GetVariance
           // kpm is removed 
+          // update and let kpm calculated in GMF::GetVariance
 
 	  if(sim_l1b_direct){
-            float kpmtoremove=0.16;
+            //float kpmtoremove=0.16;
             float s0ne=En/meas->XK; // noise equivalent s0
             float alpha=1/(float)nL;
-            meas->A=(alpha+1.0)/(1+kpmtoremove*kpmtoremove);
+            //meas->A=(alpha+1.0)/(1+kpmtoremove*kpmtoremove);
+            meas->A=alpha+1.0;
             meas->B=2.0*s0ne/(float)nL;
             meas->C=s0ne*s0ne/(float)nL;
           }
