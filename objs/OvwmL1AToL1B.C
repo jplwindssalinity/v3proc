@@ -499,7 +499,7 @@ OvwmL1AToL1B::Convert(
     
             if (meas->landFlag == 1 && simLandFlag == 0)
             {
-                //cout << "land and not sim" << endl;
+                //cout << "meas # " << slice_i << "land and not sim" << endl;
 
                 // this is land, but we don't want land
                 // remove this measurement, and go to the next
@@ -514,7 +514,7 @@ OvwmL1AToL1B::Convert(
 
             if (meas->centroid.Magnitude() < 1000.0)
             {
-              //cout << "centroid dist < 1000" << endl;
+              //cout << "meas # " << slice_i << "centroid dist < 1000" << endl;
 
               meas=meas_spot->RemoveCurrent();
               delete meas;
@@ -540,7 +540,7 @@ OvwmL1AToL1B::Convert(
             //cout << "set min gain: " << minOneWayGain << endl;
 
             if(gain<minOneWayGain){
-              //cout << "too small gain" << endl;
+              //cout << "meas # " << slice_i << "too small gain" << endl;
 
               meas=meas_spot->RemoveCurrent();
               delete meas;
@@ -583,7 +583,7 @@ OvwmL1AToL1B::Convert(
 
             if (amb1==0 || amb2==0){
               if (amb1==0 && amb2==0){
-                //cout << "amb too big" << endl;
+                //cout << "meas # " << slice_i << "amb too big" << endl;
 
                 meas=meas_spot->RemoveCurrent();
                 delete meas;
@@ -592,6 +592,7 @@ OvwmL1AToL1B::Convert(
                 continue;
               }
               else{
+                //cout << "meas # " << slice_i;
                 fprintf(stderr,"Warning: Bad Ambiguity Condition 0 value for one ambig only\n");
 
                 meas=meas_spot->RemoveCurrent();
@@ -608,7 +609,7 @@ OvwmL1AToL1B::Convert(
 
             if(amb> 1/minSignalToAmbigRatio){
 
-              //cout << "amb signal" << endl;
+              //cout << "meas # " << slice_i << "amb signal" << endl;
 
               meas=meas_spot->RemoveCurrent();
               delete meas;
@@ -691,7 +692,7 @@ OvwmL1AToL1B::Convert(
                 // remove meas if it is out of ptr range
 
                 if(rangewid==0. || azimwid==0.){
-                  //cout << "outside ptr range" << endl;
+                  //cout << "meas # " << slice_i << "outside ptr range" << endl;
 
                   meas=meas_spot->RemoveCurrent();
                   delete meas;
