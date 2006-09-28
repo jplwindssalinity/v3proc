@@ -1637,7 +1637,7 @@ OvwmSim::SetMeasurements(
 
 	  if(meas->centroid.Magnitude() < 1000.0 && sim_l1b_direct)
 	    { 
-              //cout << "centroid dist < 1000" << endl;
+              //cout << "meas # " << slice_i << "centroid dist < 1000" << endl;
 
 	      meas=meas_spot->RemoveCurrent();
 	      delete meas;
@@ -1670,7 +1670,7 @@ OvwmSim::SetMeasurements(
 
 
 	  if(!generate_map && gain<minOneWayGain && sim_l1b_direct){
-            //cout << "too small gain" << endl;
+            //cout << "meas # " << slice_i << "too small gain" << endl;
 
 	    meas=meas_spot->RemoveCurrent();
             delete meas;
@@ -1743,7 +1743,7 @@ OvwmSim::SetMeasurements(
 	    }
 	    else if(!generate_map &&( amb2 ==0 && amb1 ==0) && sim_l1b_direct){
 
-              //cout << "amb too big" << endl;
+              //cout << "meas # " << slice_i << "amb too big" << endl;
 
 	      meas=meas_spot->RemoveCurrent();
 	      delete meas;
@@ -1752,6 +1752,8 @@ OvwmSim::SetMeasurements(
 	      continue;
 	    }
 	    else if(!generate_map && sim_l1b_direct){
+
+              //cout << "meas # " << slice_i;
 	      fprintf(stderr,"Warning: Bad Ambiguity Condition 0 value for one ambig only\n");
 	      meas=meas_spot->RemoveCurrent();
 	      delete meas;
@@ -1776,7 +1778,7 @@ OvwmSim::SetMeasurements(
 
 	  if(!generate_map && amb> 1/minSignalToAmbigRatio && sim_l1b_direct){
 
-            //cout << "amb signal" << endl;
+            //cout << "meas # " << slice_i << "amb signal" << endl;
 
 	    meas=meas_spot->RemoveCurrent();
             delete meas;
@@ -1808,29 +1810,32 @@ OvwmSim::SetMeasurements(
 
           meas->azimuth_width = 2.*azimwid;
 
+          if (fabs(range_km) >= RNG_SWATH_WIDTH/2.) rangewid = 0.;
+          if (fabs(azimuth_km) >= AZ_SWATH_WIDTH/2.) azimwid = 0.;
+
+	  if(!generate_map &&(rangewid==0 || azimwid==0)) {
+
+            if (sim_l1b_direct){
+
+              //cout << "rng or az width" << endl;
+              //cout << "meas # " << slice_i << " " << range_km << " " << azimuth_km <<endl;
+
+	      meas=meas_spot->RemoveCurrent();
+              delete meas;
+              meas=meas_spot->GetCurrent();
+              slice_i++;
+              continue;
+
+            } else if (!sim_l1b_direct) {
+
 /* to get over for creating meas record */
 /* assign nominal values for widths     */
 
-          if (fabs(range_km) >= RNG_SWATH_WIDTH/2. ||
-              fabs(azimuth_km) >= AZ_SWATH_WIDTH/2.) {
-            rangewid = 0.06;
-            azimwid = 1.00;
-            meas->azimuth_width = 2.*azimwid;
-          }
+              rangewid = 0.06;
+              azimwid = 1.00;
+              meas->azimuth_width = 2.*azimwid;
+            }
 
-          //if (fabs(range_km) >= RNG_SWATH_WIDTH/2.) rangewid = 0.;
-          //if (fabs(azimuth_km) >= AZ_SWATH_WIDTH/2.) azimwid = 0.;
-
-	  if(!generate_map &&(rangewid==0 || azimwid==0) && sim_l1b_direct){
-
-            //cout << "rng or az width" << endl;
-            //cout << range_km << " " << azimuth_km <<endl;
-
-	    meas=meas_spot->RemoveCurrent();
-            delete meas;
-            meas=meas_spot->GetCurrent();
-	    slice_i++;
-            continue;
 	  }
 
           // set up integration lengths
@@ -2037,7 +2042,8 @@ OvwmSim::SetMeasurements(
           //cout << "ksig: " << ksig << endl;
           double kSNR=ovwm->ses.transmitPower*lambda*
 	    lambda*ovwm->ses.txPulseWidth*ovwm->ses.numPulses
-	    /(64*pi*pi*pi*ovwm->systemLoss*N0*float(nL));
+	    /(64*pi*pi*pi*ovwm->systemLoss*N0*float(nL))
+            *ovwm->ses.receivePathLoss; // the last term added as noise has this factor
           double SNR=Es*kSNR;
           meas->XK*=ksig;
           //cout << "XK: " << meas->XK << endl;
