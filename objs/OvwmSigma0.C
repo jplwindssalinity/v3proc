@@ -325,8 +325,17 @@ sigma0_to_Esn_noise(
     // Useful quantities.
     //------------------------------------------------------------------------//
 
+    /*
+     * For OVWM which operating in burst mode, the Tg used for generating
+     * measurements is not the whole receive window. It depends on desired
+     * max range swath and number of pulses in burst.
+     */
 
-    double Tg = ovwm->GetRxGateWidth();
+    //double Tg = ovwm->GetRxGateWidth();
+    double Tg = ovwm->ses.numRangePixels*(ovwm->ses.rangeRes*2./speed_light_kps)*
+                ovwm->ses.numPulses;
+    //cout << "Tg: " << Tg << endl;
+
     double Bn = ovwm->ses.noiseBandwidth;
     double Be = ovwm->ses.chirpBandwidth;
     double beta = ovwm->ses.rxGainNoise / ovwm->ses.rxGainEcho;
