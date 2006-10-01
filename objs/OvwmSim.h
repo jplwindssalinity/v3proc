@@ -24,6 +24,7 @@ static const char rcs_id_ovwmsim_h[] =
 #include "SchToXyz.h"
 #include "Utils.h"
 #include "AmbigTable.h"
+#include "Rain.h"
 
 //======================================================================
 // CLASSES
@@ -134,6 +135,7 @@ public:
     float                    azimuthIntegrationRange;
     float                    azimuthStepSize;
     XTable                   kfactorTable;
+    RainField                rainField;
     BYUXTable                BYUX;
     XTable                   xTable;
     AmbigTable               ambigTable;
@@ -171,6 +173,7 @@ public:
     int    simUncorrKpmFlag;   // 0 = no Kpm, 1 = uncorrellated Kpm
     int    simKpriFlag;        // 0 = no Kpri, 1 = Kpri
     int    simHiRes;           // 0 = quickSim, 1 = high resolution sim
+    int    simRain;            // 0 no rainfield used, 1=rainfield file used
     float    integrationStepSize; // step size of high res sim km
     float    integrationRangeWidthFactor; // multiple of range width to 
                                           // integrate over

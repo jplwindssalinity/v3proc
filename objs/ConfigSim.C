@@ -1460,6 +1460,37 @@ ConfigWindField(
     return(1);
 }
 
+int  
+
+ConfigRainField(RainField* rainfield, ConfigList* config_list){
+    char* rainfield_filename1 = config_list->Get(TRUTH_RAIN_FILE_INNERH_KEYWORD);
+    if (rainfield_filename1 == NULL)
+    {
+        fprintf(stderr, "ConfigRainField: can't determine rainfield file\n");
+        return(0);
+    }
+
+    char* rainfield_filename2 = config_list->Get(TRUTH_RAIN_FILE_OUTERV_KEYWORD);
+    if (rainfield_filename2 == NULL)
+    {
+        fprintf(stderr, "ConfigRainField: can't determine rainfield file\n");
+        return(0);
+    }
+
+    if (!config_list->GetFloat(RAIN_FIELD_LAT_MIN_KEYWORD, &rainfield->lat_min) ||
+	!config_list->GetFloat(RAIN_FIELD_LAT_MAX_KEYWORD, &rainfield->lat_max) ||
+	!config_list->GetFloat(RAIN_FIELD_LON_MIN_KEYWORD, &rainfield->lon_min) ||
+	!config_list->GetFloat(RAIN_FIELD_LON_MAX_KEYWORD, &rainfield->lon_max))
+      {
+	fprintf(stderr, "ConfigRainField: can't determine range of lat and lon\n");
+	return(0);
+      }
+    if(!rainfield->ReadSVBinary(rainfield_filename1,rainfield_filename2)){
+	fprintf(stderr, "ConfigRainField: can't read rainfield file\n");
+	return(0);      
+    }
+    return(1);
+}
 //-----------//
 // ConfigGMF //
 //-----------//

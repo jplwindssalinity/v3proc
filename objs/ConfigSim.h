@@ -25,6 +25,7 @@ static const char rcs_id_configsim_h[] =
 #include "ConfigSimDefs.h"
 #include "Kp.h"
 #include "FbbTable.h"
+#include "Rain.h"
 
 //======================================================================
 // DESCRIPTION
@@ -136,6 +137,12 @@ int  ConfigEphemeris(Ephemeris* ephemeris, ConfigList* config_list);
 //-----------//
 
 int  ConfigWindField(WindField* windfield, ConfigList* config_list);
+
+//-----------//
+// RainField //
+//-----------//
+
+int  ConfigRainField(RainField* rainfield, ConfigList* config_list);
 
 //-----//
 // GMF //

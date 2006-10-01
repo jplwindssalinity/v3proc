@@ -559,6 +559,15 @@ ConfigOvwmSim(
     {
         ovwm_sim->landMap.Initialize(NULL, use_land_map);
     }
+    
+    //-----------------//
+    // Rain field      //
+    //-----------------//
+    
+    config_list->GetInt(SIM_RAIN_KEYWORD, &ovwm_sim->simRain);
+    if (ovwm_sim->simRain){
+      if(!ConfigRainField(&ovwm_sim->rainField,config_list)) return(0);
+    }
 
     //-----------------------//
     // initialize PTGR noise //
@@ -744,7 +753,10 @@ ConfigOvwmSim(
       return(0);
     }
 
-
+    if(!ovwm_sim->simHiRes){
+      fprintf(stderr,"Fatal error SIM_HIRES =0 is obsolete\n");
+      return(0);
+    }
 
     float integration_param; // km
     if(ovwm_sim->simHiRes){

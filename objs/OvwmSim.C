@@ -1490,7 +1490,13 @@ OvwmSim::SetMeasurements(
 
             gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
                 wv.spd, chi, &sigma0);
-
+		
+	    // add rain contamination if simRain
+	    if(simRain){
+	      float a,b;
+	      int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
+	      if(goodrain) sigma0= sigma0/a + b;
+	    }
             if (simVs1BCheckfile)
             {
                 cf->sigma0[slice_i] = sigma0;
@@ -1958,6 +1964,14 @@ OvwmSim::SetMeasurements(
 
 		gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
 					  wv.spd, chi, &s0); 
+
+		// add rain contamination if simRain
+                if(simRain){
+		  float a,b;
+                  int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
+                  printf("s0before %g a %g b %g  lat %g lon %g inc %g\n",s0,a,b,lat*rtd,lon*rtd,meas->incidenceAngle*rtd);
+		  if(goodrain) s0= s0/a + b;
+		}
 	      }
 
               //---------------------------------------------------------------//
@@ -2088,6 +2102,13 @@ OvwmSim::SetMeasurements(
 	      
 	      gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
 					wv.spd, chi, &amb1s0); 
+
+	      // add rain contamination if simRain
+	      if(simRain){
+		float a,b;
+		int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
+		if(goodrain) amb1s0= amb1s0/a + b;
+	      }
 	    }
 	  }
 
@@ -2118,6 +2139,13 @@ OvwmSim::SetMeasurements(
 	      
 	      gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
 					wv.spd, chi, &amb2s0); 
+
+	      // add rain contamination if simRain
+	      if(simRain){
+		float a,b;
+		int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
+		if(goodrain) amb2s0= amb2s0/a + b;
+	      }
 	    }
 	  }
 

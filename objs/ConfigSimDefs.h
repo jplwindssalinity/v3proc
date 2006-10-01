@@ -122,6 +122,8 @@ static const char rcs_id_configsimdefs_h[] =
 #define SIM_CORR_KPM_FLAG_KEYWORD    "SIM_CORR_KPM_FLAG"
 #define SIM_UNCORR_KPM_FLAG_KEYWORD  "SIM_UNCORR_KPM_FLAG"
 #define SIM_KPRI_FLAG_KEYWORD        "SIM_KPRI_FLAG"
+#define SIM_RAIN_KEYWORD             "SIM_RAIN"
+
 
 #define TX_PULSE_WIDTH_KEYWORD       "TX_PULSE_WIDTH"
 
@@ -313,6 +315,16 @@ static const char rcs_id_configsimdefs_h[] =
 #define WIND_FIELD_LAT_MAX_KEYWORD          "WIND_FIELD_LAT_MAX"
 #define WIND_FIELD_LON_MIN_KEYWORD          "WIND_FIELD_LON_MIN"
 #define WIND_FIELD_LON_MAX_KEYWORD          "WIND_FIELD_LON_MAX"
+
+//--------------//
+// Truth Rain   //
+//--------------//
+#define TRUTH_RAIN_FILE_INNERH_KEYWORD      "TRUTH_RAIN_FILE_INNERH"
+#define TRUTH_RAIN_FILE_OUTERV_KEYWORD      "TRUTH_RAIN_FILE_OUTERV"
+#define RAIN_FIELD_LAT_MIN_KEYWORD          "RAIN_FIELD_LAT_MIN"
+#define RAIN_FIELD_LAT_MAX_KEYWORD          "RAIN_FIELD_LAT_MAX"
+#define RAIN_FIELD_LON_MIN_KEYWORD          "RAIN_FIELD_LON_MIN"
+#define RAIN_FIELD_LON_MAX_KEYWORD          "RAIN_FIELD_LON_MAX"
 
 //-----//
 // GMF //
