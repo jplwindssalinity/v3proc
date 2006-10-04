@@ -17,7 +17,8 @@ static const char rcs_id_ovwm_h[] =
 #include "AmbigTable.h"
 #include "PointTargetResponseTable.h"
 
-#define NUMBER_OF_OVWM_BEAMS  4
+//#define NUMBER_OF_OVWM_BEAMS  4
+#define NUMBER_OF_OVWM_BEAMS  2
 
 //======================================================================
 // CLASSES
