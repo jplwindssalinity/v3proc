@@ -71,6 +71,9 @@ static const char rcs_id[] =
 #include "Tracking.h"
 #include "Tracking.C"
 
+using std::list;
+using std::map; 
+
 //-----------//
 // TEMPLATES //
 //-----------//
@@ -91,8 +94,8 @@ template class List<off_t>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
-template list<string>;
-template map<string,string,Options::ltstr>;
+template class std::list<string>;
+template class std::map<string,string,Options::ltstr>;
 
 //-----------//
 // CONSTANTS //

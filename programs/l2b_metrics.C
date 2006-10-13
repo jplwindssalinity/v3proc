@@ -78,6 +78,9 @@ static const char rcs_id[] =
 #include "Array.h"
 #include "AngleInterval.h"
 
+using std::list;
+using std::map; 
+
 //-----------//
 // TEMPLATES //
 //-----------//
@@ -86,8 +89,8 @@ template class List<StringPair>;
 template class List<EarthPosition>;
 template class List<WindVectorPlus>;
 template class List<AngleInterval>;
-template list<string>;
-template map<string,string,Options::ltstr>;
+template class std::list<string>;
+template class std::map<string,string,Options::ltstr>;
 
 //-----------//
 // CONSTANTS //

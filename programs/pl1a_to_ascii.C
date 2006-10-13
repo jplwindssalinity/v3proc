@@ -52,6 +52,9 @@ static const char rcs_id[] =
 #include "PscatL1A.h"
 #include "PscatConfig.h"
 
+using std::list;
+using std::map; 
+
 //-----------//
 // TEMPLATES //
 //-----------//
@@ -73,8 +76,8 @@ template class List<off_t>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
-template list<string>;
-template map<string,string,Options::ltstr>;
+template class std::list<string>;
+template class std::map<string,string,Options::ltstr>;
 
 const char* usage_array[] = { "<config_file>", "<input_file>",
     "<output_file>", "[ start_frame ]", "[ end_frame]", 0};
