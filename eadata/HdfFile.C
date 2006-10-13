@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.9  1999/09/30 23:01:39  sally
+// update 9/30/99
+//
 // 
 //    Rev 1.11   07 Sep 1999 13:33:02   sally
 //  add interface for Global Attributes
@@ -187,7 +190,8 @@ HdfFile::~HdfFile()
         free(_filename);
 
     // close all datasets first (in case user forgets to close them)
-    long int* idP=0;
+    //long int* idP=0;
+    int32* idP=0;
     (void)_datasetIDs.GetHead();
     while ((idP = _datasetIDs.RemoveCurrent()) != 0)
     {
@@ -342,7 +346,8 @@ int32&       numDimensions)  // OUT
     dataLength = _endIndex - _startIndex + 1;
 
     // save the dataset ID in the internal list
-    long int* idP = new long int(datasetID);
+    //long int* idP = new long int(datasetID);
+    int32* idP = new int32(datasetID);
 #if 0
 printf("new ID = %d\n", *idP);
 #endif
@@ -445,12 +450,15 @@ HdfFile::CloseDataset(
 int32      datasetID)
 {
     // remove this dataset ID from the internal list
-    for (long int* idP=_datasetIDs.GetHead(); idP != 0;
+    //for (long int* idP=_datasetIDs.GetHead(); idP != 0;
+    //                        idP=_datasetIDs.GetNext())
+    for (int32* idP=_datasetIDs.GetHead(); idP != 0;
                             idP=_datasetIDs.GetNext())
     {
         if (*idP == datasetID)
         {
-            long int* matchidP = _datasetIDs.RemoveCurrent();
+            //long int* matchidP = _datasetIDs.RemoveCurrent();
+            int32* matchidP = _datasetIDs.RemoveCurrent();
             // close the dataset
             if (SDendaccess(datasetID) == FAIL)
             {
