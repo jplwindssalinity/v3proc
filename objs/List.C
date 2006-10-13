@@ -12,6 +12,8 @@ static const char rcs_id_list_c[] =
 #include <stdio.h>
 #include "List.h"
 
+using namespace std;
+
 //======//
 // Node //
 //======//
@@ -550,21 +552,21 @@ SortableList<T>::AddSorted(
     T*    new_data)
 {
     // make sure there is a current node
-    if (! _current)
-        _current = _head;
+    if (! List<T>::_current)
+        List<T>::_current = List<T>::_head;
 
-    T* current_data = GetCurrent();
+    T* current_data = List<T>::GetCurrent();
 
     // search backwards
     while (current_data && *new_data < *current_data)
-        current_data = GetPrev();
+        current_data = List<T>::GetPrev();
 
     if (! current_data)
         return(Prepend(new_data));
 
     // search forward
     while (current_data && *new_data >= *current_data)
-        current_data = GetNext();
+        current_data = List<T>::GetNext();
 
     if (! current_data)
         return(Append(new_data));
@@ -611,7 +613,7 @@ int
 SortableList<T>::Find(
     T*    data)
 {
-    for (T* contents = GetHead(); contents; contents = GetNext())
+    for (T* contents = List<T>::GetHead(); contents; contents = List<T>::GetNext())
     {
         if (*contents == *data)
             return(1);
@@ -627,20 +629,20 @@ template <class T>
 int
 SortableList<T>::Sort()
 {
-    if (! _head)
+    if (! List<T>::_head)
         return(0);
 
-    for (Node<T>* node = _head->next; node; node = node->next)
+    for (Node<T>* node = List<T>::_head->next; node; node = node->next)
     {
         T* node_data = ((Node<T>*)node)->data;
         T* prev_data = ((Node<T>*)(node->prev))->data;
         if (*node_data < *prev_data)
         {
             // node needs to be sorted
-            _current = node;    // go to the unsorted node
+            List<T>::_current = node;    // go to the unsorted node
             node = node->prev;    // back up before current
-            T* data = RemoveCurrent();
-            _current = _head;    // go to beginning of list
+            T* data = List<T>::RemoveCurrent();
+            List<T>::_current = List<T>::_head;    // go to beginning of list
             if (! AddSorted(data))
                 return(0);
         }

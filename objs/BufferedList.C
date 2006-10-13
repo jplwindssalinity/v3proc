@@ -35,8 +35,8 @@ BufferedList<T>::~BufferedList()
 	CloseInputFile();
 
     T* data;
-    GetHead();
-    while ((data=RemoveCurrent()) != NULL)
+    List<T>::GetHead();
+    while ((data=List<T>::RemoveCurrent()) != NULL)
         delete data;
 
     return;
@@ -102,13 +102,13 @@ T*
 BufferedList<T>::GetOrReadNext()
 {
 	// make sure there is a current node
-	if (! _current)
-		_current = _head;
+	if (! List<T>::_current)
+		List<T>::_current = List<T>::_head;
 
-	if (_current && _current->next)
+	if (List<T>::_current && List<T>::_current->next)
 	{
 		// There is a next node in memory, so just return it.
-		return(GetNext());
+		return(List<T>::GetNext());
 	}
 	else
 	{
@@ -122,13 +122,13 @@ BufferedList<T>::GetOrReadNext()
 			if (_numNodes > _maxNodes)
 			{
 				// flush the oldest node (ie., the head).
-				GotoHead();
-				T* old_data = RemoveCurrent();
+				List<T>::GotoHead();
+				T* old_data = List<T>::RemoveCurrent();
 				delete old_data;
 				_numNodes--;
 
 				// go back to the tail
-				GotoTail();
+				List<T>::GotoTail();
 			}
 			return(new_data);
 		}
