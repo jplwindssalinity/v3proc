@@ -2189,6 +2189,7 @@ Ovwm::TargetInfo(
     Vector3 vrel = spacecraft->orbitState.vsat - vspot;
     double lambda = speed_light_kps / ses.txFrequency;
     qti->dopplerFreq = 2.0 * (vrel % qti->gcLook) / lambda;
+    qti->basebandFreq = 0.;
 
     // compute baseband frequency
     /******
