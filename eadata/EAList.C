@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.9  1999/09/30 23:01:39  sally
+// update 9/30/99
+//
 // 
 //    Rev 1.2   07 Sep 1999 13:32:46   sally
 // add interface for Global Attributes
@@ -317,14 +320,14 @@ SortedList<T>::AddSorted(
     T*  newdata)
 {
     // make sure there is a current node
-    if (! _current)
-        _current = _head;
+    if (! EAList<T>::_current)
+        EAList<T>::_current = EAList<T>::_head;
 
-    T* currentdata = GetCurrent();
+    T* currentdata = EAList<T>::GetCurrent();
 
     // search backward
     while (currentdata != 0 && *newdata < *currentdata)
-        currentdata = GetPrev();
+        currentdata = EAList<T>::GetPrev();
 
     if (currentdata == 0)   // went all the way back past the head
     {                       // or the list was empty
@@ -335,7 +338,7 @@ SortedList<T>::AddSorted(
 
     // search forward
     while (currentdata != 0 && *newdata >= *currentdata)
-        currentdata = GetNext();
+        currentdata = EAList<T>::GetNext();
 
     if (currentdata == 0)   // went all the way past the tail
     {
@@ -384,20 +387,20 @@ template<class T>
 void
 SortedList<T>::Sort()
 {
-    if (! _head)
+    if (! EAList<T>::_head)
         return;
 
-    for (NodeBase* node = _head->next; node; node = node->next)
+    for (NodeBase* node = EAList<T>::_head->next; node; node = node->next)
     {
         T* node_data = ((EANode<T>*)node)->data;
         T* prev_data = ((EANode<T>*)(node->prev))->data;
         if (*node_data < *prev_data)
         {
             // node needs to be sorted
-            _current = node;    // go to the unsorted node
+            EAList<T>::_current = node;    // go to the unsorted node
             node = node->prev;  // back up before current
-            T* data = RemoveCurrent();
-            _current = _head;   // go to beginning of list
+            T* data = EAList<T>::RemoveCurrent();
+            EAList<T>::_current = EAList<T>::_head;   // go to beginning of list
             AddSorted(data);
         }
     }
