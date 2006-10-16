@@ -11,8 +11,6 @@
 #define TIME_STEP 300. // time step between PTR table, 68 cycles, 300 sec.
 #define ANGLE_STEP 10. // angle step between PTR table, 10 degree
 #define N_ANG_STEPS 36 // number of angles step in a revolution, 36 as ANGLE_STEP is 10 deg
-#define RNG_SWATH_WIDTH 18. // footprint in range dim, 18 km
-#define AZ_SWATH_WIDTH 12. // footprint in azimuth dim, 12 km
 #define RNG_STEP_SIZE 0.5 // range increment of point target in footprint, 0.5 km
 #define AZ_STEP_SIZE 0.5 // azimuth increment of point target in footprint, 0.5 km
 #define N_RNG_BINS 37 // number of range bins in the footprint
@@ -41,6 +39,8 @@ class PointTargetResponseTable{
 
   int *nData;
   float **rngOffset, **azOffset, **semiMajorWidth, **semiMinorWidth;
+
+  float azGroundWidthMax,rngGroundWidthMax;
 
 };
 

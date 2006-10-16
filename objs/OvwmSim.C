@@ -57,16 +57,13 @@ OvwmSim::OvwmSim()
 
 
 
-// HACK should compute the defined terms
-// from OVWM parameters or even from PTR table
-#define MAX_RANGE_WIDTH 2.0
-#define MAX_AZIMUTH_WIDTH 12.0
 
-int OvwmSim::AllocateIntermediateArrays(){
 
-  _max_int_range_bins=(int)ceil(integrationRangeWidthFactor*MAX_RANGE_WIDTH/
+int OvwmSim::AllocateIntermediateArrays(float max_range_width,float max_azimuth_width){
+
+  _max_int_range_bins=(int)ceil(integrationRangeWidthFactor*max_range_width/
     integrationStepSize); 
-  _max_int_azim_bins=(int)ceil(integrationAzimuthWidthFactor*MAX_AZIMUTH_WIDTH/
+  _max_int_azim_bins=(int)ceil(integrationAzimuthWidthFactor*max_azimuth_width/
     integrationStepSize);  
   _ptr_array=(float**)make_array(sizeof(float),2,_max_int_range_bins,
 				 _max_int_azim_bins);
@@ -1803,7 +1800,6 @@ OvwmSim::SetMeasurements(
 
           float scan_angle = meas->scanAngle;
           float orbit_time = ovwm->cds.OrbitFraction()*6060.;
-
           // Now set the default value, later update from Beam object
           int beam_num = beam_id+1;
 
@@ -1814,10 +1810,13 @@ OvwmSim::SetMeasurements(
           azimwid=ptrTable->GetSemiMajorWidth(range_km, azimuth_km, scan_angle,
                                         orbit_time, beam_num)/1000.;
 
-          meas->azimuth_width = 2.*azimwid;
 
-          if (fabs(range_km) >= RNG_SWATH_WIDTH/2.) rangewid = 0.;
-          if (fabs(azimuth_km) >= AZ_SWATH_WIDTH/2.) azimwid = 0.;
+          if(ovwm->ses.numPulses==1) azimwid=ptrTable->azGroundWidthMax/2;
+ 
+
+
+          if (fabs(range_km) >= ptrTable->rngGroundWidthMax/2.) rangewid = 0.;
+          if (fabs(azimuth_km) >= ptrTable->azGroundWidthMax/2.) azimwid = 0.;
 
 	  if(!generate_map &&(rangewid==0 || azimwid==0)) {
 
@@ -1840,6 +1839,7 @@ OvwmSim::SetMeasurements(
               rangewid = 0.06;
               azimwid = 1.00;
               meas->azimuth_width = 2.*azimwid;
+              meas->range_width=2.*rangewid;
             }
 
 	  }
@@ -1880,8 +1880,6 @@ OvwmSim::SetMeasurements(
 	    }
 	 }
 
-	 // INCOMPLETE?:= MAY NEED to turn off azimuthal weighting when 
-	 // gain pattern is dominant (i.e., fore/aft)
 
          double areaeff=0, areaeff_SL=0;
          
@@ -1891,9 +1889,15 @@ OvwmSim::SetMeasurements(
 	    for(int j=0;j<nasteps;j++){
 	      float jj=j;
 
-	      float val2=(jj-center_azim_idx)*integrationStepSize;
-	      val2/=azimwid;
-	      val2*=val2;
+	      float val2;
+              if(ovwm->ses.numPulses!=1){
+		val2=(jj-center_azim_idx)*integrationStepSize;
+		val2/=azimwid;
+		val2*=val2;
+	      }
+	      else{
+		val2=1.0;
+	      }
 
 	      for(int n=0;n<nL;n++){
                 float val1=(ii-center_range_idx[n])*integrationStepSize;
@@ -1922,7 +1926,7 @@ OvwmSim::SetMeasurements(
 	  En=0;
 	  
           
-          Vector3 center_ra=gc_to_rangeazim.Forward(meas->centroid-spot_centroid);
+          Vector3 center_ra=gc_to_rangeazim.Forward(meas->centroid-spot_centroid);        double maxdX=0;
 	  double r0=center_ra.Get(0);
 	  double a0=center_ra.Get(1);
 	  for(int i=0;i<nrsteps;i++){
@@ -2029,11 +2033,29 @@ OvwmSim::SetMeasurements(
 		integrationStepSize/(range*range*range*range);
 	      meas->XK+=dX;
 	      Es+=dX*s0;
-
+              // reassign ptr_array to X for later computation of bounds
+              _ptr_array[i][j]=dX;
+              if(dX> maxdX) maxdX=dX;
 	    }
 	  }
 
-
+          // determine range and azimuth width
+          int jmin= center_azim_idx;
+          int jmax= center_azim_idx;
+          int imin=center_range_idx_ave;
+	  int imax=center_range_idx_ave;
+	  for(int i=0;i<nrsteps;i++){
+	    for(int j=0;j<nasteps;j++){
+	      if(_ptr_array[i][j]>0.5*maxdX){
+		if(i<imin) imin=i;
+		if(i>imax) imax=i;
+		if(j<jmin) jmin=j;
+		if(j>jmax) jmax=j;
+	      }
+	    }
+	  }
+          meas->azimuth_width=integrationStepSize*(jmax-jmin);
+          meas->range_width=integrationStepSize*(imax-imin);
           //cout << "Es: " << Es << endl;
 
 	  if(generate_map){
@@ -2210,7 +2232,7 @@ OvwmSim::SetMeasurements(
 
 
         // duplicate low res measurements so gridding will work down to 1 km
-
+        /****
         if (sim_l1b_direct) {
           int numdup=(int)(meas->azimuth_width);
       	  if(numdup%2==0) numdup--; // make an odd number of measurements
@@ -2223,7 +2245,7 @@ OvwmSim::SetMeasurements(
 	    meas_spot->InsertAfter(m);
 	  }
         }
-
+        ****/
         slice_i++;
         meas = meas_spot->GetNext();
     }

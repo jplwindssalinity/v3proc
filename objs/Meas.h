@@ -119,6 +119,8 @@ public:
     float      scanAngle;
     float      A, B, C;    // Kpc coefficients
     float      azimuth_width;
+    float      range_width;
+
 
     //------------------------//
     // not to be written out! //

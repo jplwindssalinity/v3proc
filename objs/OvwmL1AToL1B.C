@@ -38,15 +38,14 @@ OvwmL1AToL1B::~OvwmL1AToL1B()
 
 // HACK should compute the defined terms
 // from OVWM parameters or even from PTR table
-#define MAX_RANGE_WIDTH 2.0
-#define MAX_AZIMUTH_WIDTH 12.0
 
-int OvwmL1AToL1B::AllocateIntermediateArrays()
+
+int OvwmL1AToL1B::AllocateIntermediateArrays(float max_range_width,float max_azimuth_width)
 {
-  _max_int_range_bins=(int)ceil(integrationRangeWidthFactor*MAX_RANGE_WIDTH/
-    integrationStepSize);
-  _max_int_azim_bins=(int)ceil(integrationAzimuthWidthFactor*MAX_AZIMUTH_WIDTH/
-    integrationStepSize);
+  _max_int_range_bins=(int)ceil(integrationRangeWidthFactor*max_range_width/
+    integrationStepSize); 
+  _max_int_azim_bins=(int)ceil(integrationAzimuthWidthFactor*max_azimuth_width/
+    integrationStepSize);  
   _ptr_array=(float**)make_array(sizeof(float),2,_max_int_range_bins,
                                  _max_int_azim_bins);
   if(_ptr_array==NULL){
@@ -672,6 +671,8 @@ OvwmL1AToL1B::Convert(
                 azimwid=ptrTable.GetSemiMajorWidth(range_km, azimuth_km, scan_angle,
                                         orbit_time, beam_num)/1000.;
 
+                if(ovwm->ses.numPulses==1) azimwid=ptrTable.azGroundWidthMax/2;
+
                 //cout << "rng, az: " << range_km << " " << azimuth_km << endl;
 
 /* in ovwm_sim */
@@ -686,8 +687,8 @@ OvwmL1AToL1B::Convert(
           //  //meas->azimuth_width = 2.*azimwid;
           //}
 
-                if (fabs(range_km) >= RNG_SWATH_WIDTH/2.) rangewid = 0.;
-                if (fabs(azimuth_km) >= AZ_SWATH_WIDTH/2.) azimwid = 0.;
+                if (fabs(range_km) >= ptrTable.rngGroundWidthMax/2.) rangewid = 0.;
+                if (fabs(azimuth_km) >= ptrTable.azGroundWidthMax/2.) azimwid = 0.;
 
                 // remove meas if it is out of ptr range
 
@@ -708,7 +709,6 @@ OvwmL1AToL1B::Convert(
                 //cout << "int azimu factor: " << integrationAzimuthWidthFactor << endl;
                 //cout << "int step size: " << integrationStepSize << endl;
 
-                meas->azimuth_width = 2.*azimwid;
 
                 //cout << range_km << endl;
                 //cout << RNG_SWATH_WIDTH << endl;
@@ -765,10 +765,15 @@ OvwmL1AToL1B::Convert(
                   for(int j=0;j<nasteps;j++){
                     float jj=j;
 
-                    float val2=(jj-center_azim_idx)*integrationStepSize;
-                    val2/=azimwid;
-                    val2*=val2;
-
+		    float val2;
+		    if(ovwm->ses.numPulses!=1){
+		      val2=(jj-center_azim_idx)*integrationStepSize;
+		      val2/=azimwid;
+		      val2*=val2;
+		    }
+		    else{
+		      val2=1.0;
+		    }
                     for(int n=0;n<nL;n++){
                       float val1=(ii-center_range_idx[n])*integrationStepSize;
                       val1/=rangewid;
@@ -785,6 +790,8 @@ OvwmL1AToL1B::Convert(
                 //cout << "eff area: " << areaeff << endl;
  
                 Vector3 center_ra=gc_to_rangeazim.Forward(meas->centroid-spot_centroid);
+
+                double maxdX=0;
                 double r0=center_ra.Get(0);
                 double a0=center_ra.Get(1);
 
@@ -818,10 +825,29 @@ OvwmL1AToL1B::Convert(
                     float dX=GatGar*_ptr_array[i][j]*integrationStepSize*
                      integrationStepSize/(range*range*range*range);
                     meas->XK+=dX;
-
+		    // reassign ptr_array to X for later computation of bounds
+		    _ptr_array[i][j]=dX;
+		    if(dX> maxdX) maxdX=dX;
                   } // az steps
 
                 } // rng steps
+		// determine range and azimuth width
+		int jmin= center_azim_idx;
+		int jmax= center_azim_idx;
+		int imin=center_range_idx_ave;
+		int imax=center_range_idx_ave;
+		for(int i=0;i<nrsteps;i++){
+		  for(int j=0;j<nasteps;j++){
+		    if(_ptr_array[i][j]>0.5*maxdX){
+		      if(i<imin) imin=i;
+		      if(i>imax) imax=i;
+		      if(j<jmin) jmin=j;
+		      if(j>jmax) jmax=j;
+		    }
+		  }
+		}
+		meas->azimuth_width=integrationStepSize*(jmax-jmin);
+		meas->range_width=integrationStepSize*(imax-imin);
 
                 double lambda = speed_light_kps/ ovwm->ses.txFrequency;
                 double ksig=ptgr*lambda*
@@ -904,7 +930,7 @@ OvwmL1AToL1B::Convert(
                 printf("%g ",meas->value);
 
             // duplicate low res measurements so gridding will work down to 1 km
-
+            /**
             int numdup=(int)(meas->azimuth_width);
             if(numdup%2==0) numdup--; // make an odd number of measurements
             for(int i=-numdup/2;i<=numdup/2;i++){
@@ -916,7 +942,7 @@ OvwmL1AToL1B::Convert(
                 // yvec is the azimuth direction vector
               meas_spot->InsertAfter(m);
             }
-
+            **/
             meas = meas_spot->GetNext();
 
             slice_i++; // check whether we need slice_i

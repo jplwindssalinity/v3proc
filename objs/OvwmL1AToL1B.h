@@ -49,7 +49,7 @@ public:
     OvwmL1AToL1B();
     ~OvwmL1AToL1B();
 
-    int AllocateIntermediateArrays();
+    int AllocateIntermediateArrays(float max_range_width,float max_azimuth_width);
 
     //------------//
     // conversion //

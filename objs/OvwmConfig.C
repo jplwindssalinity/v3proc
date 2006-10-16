@@ -525,6 +525,9 @@ ConfigOvwmSim(
      ovwm_sim->lonMax*=dtr;
      config_list->ExitForMissingKeywords();  
 
+
+
+
     //----------//
     // land map //
     //----------//
@@ -788,12 +791,14 @@ ConfigOvwmSim(
 	}
 
       ovwm_sim->integrationAzimuthWidthFactor=integration_param;
-      ovwm_sim->AllocateIntermediateArrays();
 
       // Read Ambiguity and PointTargetResponse Tables
       if(!ConfigAmbigTable(&(ovwm_sim->ambigTable),config_list)) return(0);
       if(!ConfigPointTargetResponseTable(&(ovwm_sim->ptrTable),config_list))
 	return(0);
+
+      ovwm_sim->AllocateIntermediateArrays(ovwm_sim->ptrTable.rngGroundWidthMax,ovwm_sim->ptrTable.azGroundWidthMax);
+
     }
     float dbvalue;
     if (! config_list->GetFloat(SIM_MIN_ONEWAY_GAIN_KEYWORD,&dbvalue))
@@ -856,6 +861,14 @@ int ConfigPointTargetResponseTable(PointTargetResponseTable* ptrtab,
 
   char keyword[1024];
   char number[8];
+
+
+   //-------------------------/
+    // Maximal Footprint Size Bounds         /
+    //-------------------------/
+
+     cfg_list->GetFloat(PTRTAB_AZIMUTH_MAX_GROUND_WIDTH_KEYWORD,&(ptrtab->azGroundWidthMax));
+     cfg_list->GetFloat(PTRTAB_RANGE_MAX_GROUND_WIDTH_KEYWORD,&(ptrtab->rngGroundWidthMax));
 
   for (int beam_idx = 0; beam_idx < NUMBER_OF_OVWM_BEAMS; beam_idx++) {
 
@@ -1012,10 +1025,12 @@ int ConfigOvwmL1AToL1B(OvwmL1AToL1B* l1a_to_l1b, ConfigList* config_list)
 
     l1a_to_l1b->integrationAzimuthWidthFactor=integration_param;
 
-    l1a_to_l1b->AllocateIntermediateArrays();
-
+  
     if(!ConfigPointTargetResponseTable(&(l1a_to_l1b->ptrTable),config_list))
         return(0);
+
+    l1a_to_l1b->AllocateIntermediateArrays(l1a_to_l1b->ptrTable.rngGroundWidthMax,l1a_to_l1b->ptrTable.azGroundWidthMax);
+
     if(!ConfigAmbigTable(&(l1a_to_l1b->ambigTable),config_list)) return(0);
 
     float dbvalue;

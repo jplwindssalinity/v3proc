@@ -109,7 +109,7 @@ public:
              float* var_Esn, float* X);
 
     int  GetSpotNumber()  { return (_spotNumber); };
-    int  AllocateIntermediateArrays();
+    int  AllocateIntermediateArrays(float max_range_width, float max_azimuth_width);
     
     //-----------//
     // variables //
