@@ -92,12 +92,18 @@ static const char rcs_id_ovwmconfigdefs_h[] =
 #define OUTER_BEAM_SIGMA0_MAP_KEYWORD  "OUTER_BEAM_SIGMA0_MAP"
 
 //--------------------------//
-// Latitude Bounds          //
+// Latitude/Longitude Bounds          //
 //--------------------------//
 #define SIM_LAT_MIN_KEYWORD  "SIM_LAT_MIN"
 #define SIM_LAT_MAX_KEYWORD  "SIM_LAT_MAX"
 #define SIM_LON_MIN_KEYWORD  "SIM_LON_MIN"
 #define SIM_LON_MAX_KEYWORD  "SIM_LON_MAX"
+
+//--------------------------//
+// Footprint Size Bounds          //
+//--------------------------//
+#define PTRTAB_AZIMUTH_MAX_GROUND_WIDTH_KEYWORD  "PTRTAB_AZIMUTH_MAX_GROUND_WIDTH"
+#define PTRTAB_RANGE_MAX_GROUND_WIDTH_KEYWORD  "PTRTAB_RANGE_MAX_GROUND_WIDTH"
 
 //-----------//
 // Tables    //
