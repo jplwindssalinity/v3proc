@@ -32,7 +32,7 @@ static const char rcs_id_grid_h[] =
 class Grid
 {
 public:
-
+        enum GridMethodE{ CENTROID, OVERLAP };
 	//--------------//
 	// construction //
 	//--------------//
@@ -74,7 +74,8 @@ public:
         float gatd[361][721];  // 1st index is lat, 2nd is lon
 
         double lat_end_time;
-
+        GridMethodE method;
+        float overlapFactor;
 protected:
 
 	// resolution and sizes are in km

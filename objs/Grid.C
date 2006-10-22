@@ -13,6 +13,7 @@ static const char rcs_id_grid_c[] =
 #include "Sigma0.h"
 #include <time.h>
 #include <iostream.h>
+#include "Misc.h"
 
 #define OFFSET_CK_DUP 52
 //#define TIME_STEP 16.8 // second for moving 1 deg in lat roughly
@@ -428,119 +429,334 @@ Grid::Add(
     // side at cti = 0.
     //
 
-    int cti = (int) ((ctd + _crosstrack_size/2.0)/_crosstrack_res + 0.5);
-    int vati = (int) (atd/_alongtrack_res);    // virtual along track index.
+    int cti0 = (int) ((ctd + _crosstrack_size/2.0)/_crosstrack_res + 0.5);
+    int vati0 = (int) (atd/_alongtrack_res);    // virtual along track index.
 
-    if ((cti >= _crosstrack_bins) || (cti < 0))
-    {
-        fprintf(stderr, "Grid::Add: crosstrack index = %d out of range\n",
-            cti);
-        return(0);
+    int ctimin,ctimax,vatimin,vatimax;
+    float ctdmin=ctd,ctdmax=ctd,atdmin=atd,atdmax=atd;
+    // compute bounds on measurement if we are using overlap
+    float corn_ctd[4],corn_atd[4];
+    float cosang,sinang,rwid,awid;
+
+    // This code is used to set a test condition which writes data for plotting grid examples in Xmgrace
+    bool testr=false;
+    //if(meas->scanAngle>30*dtr && meas->scanAngle<31*dtr){
+    if(false){
+      testr=true;
+    }
+    if(method==OVERLAP){
+      cosang=cos(meas->scanAngle);
+      sinang=sin(meas->scanAngle);
+
+      rwid=meas->range_width;
+      awid=meas->azimuth_width;
+
+      // zero width cases occur when the INTEGRATION_STEP was set coarsely during the simulation.
+      if(rwid==0) rwid=0.01; 
+      if(awid==0) awid=0.01;
+ 
+      float r_c=0.5*sinang*rwid;
+      float r_a=0.5*cosang*rwid;
+      float az_c=-0.5*cosang*awid;
+      float az_a=0.5*sinang*awid;
+      
+      int sgn[2]={-1,1};
+      int off=0;
+      for(int r=0;r<2;r++){
+	for(int az=0;az<2;az++){
+	  corn_ctd[off]=ctd+r_c*sgn[r]+az_c*sgn[az];
+	  corn_atd[off]=atd+r_a*sgn[r]+az_a*sgn[az];
+	  if(corn_atd[off]>atdmax)atdmax=corn_atd[off];
+	  if(corn_atd[off]<atdmin)atdmin=corn_atd[off];
+	  if(corn_ctd[off]>ctdmax)ctdmax=corn_ctd[off];
+	  if(corn_ctd[off]<ctdmin)ctdmin=corn_ctd[off];
+	    off++;
+	}
+      }
+      if(testr){
+	printf("# For XMGRACE rwid=%g awid=%g scanang=%g\n",
+	       rwid,awid,meas->scanAngle*rtd);
+        printf("%g %g\n&\n",ctd,atd);
+        printf("%g %g\n",corn_ctd[0],corn_atd[0]);
+        printf("%g %g\n",corn_ctd[1],corn_atd[1]);
+        printf("%g %g\n",corn_ctd[3],corn_atd[3]);
+        printf("%g %g\n",corn_ctd[2],corn_atd[2]);
+        printf("%g %g\n&\n",corn_ctd[0],corn_atd[0]);
+        
+      }
+    ctimin = (int) ((ctdmin + _crosstrack_size/2.0)/_crosstrack_res + 0.5);
+    vatimin = (int) (atdmin/_alongtrack_res);    // virtual along track index.
+    ctimax = (int) ((ctdmax + _crosstrack_size/2.0)/_crosstrack_res + 0.5);
+    vatimax = (int) (atdmax/_alongtrack_res);    // virtual along track index.
+    }
+    else{
+      ctimin=cti0;
+      ctimax=cti0;
+      vatimin=vati0;
+      vatimax=vati0;
     }
 
-    //
-    // Negative vati means the point falls before the defined grid start.
-    // For this special case, Add() returns success, but dumps the measurement.
-    // If vati falls inside the defined grid, but in a portion that has been
-    // already output, then an error message is generated (see below).
-    //
 
-    if (vati < 0)
-    {
-//        delete meas;
-        return(1);
-    }
+    bool one_cell=(method!=OVERLAP) || (ctimin==ctimax && vatimin==vatimax);
+    for(int vati=vatimin;vati<=vatimax;vati++){
+     for(int cti=ctimin;cti<=ctimax;cti++){   
 
-    if (vati > _max_vati)
-    {    // beyond end of grid, so do nothing.
-        return(1);
-    }
+       // if OVERLAP method is used check to see if this WVC falls into meas
+       // region (do the meas and the cell intersect)
+       // skips trivial (meas smaller than WVC case)
+       bool overlaps=false;
+       if(!one_cell){
+         // check if centroid of measurement in WVC case
+	 if(cti0==cti && vati0==vati) overlaps=true;
 
-    //
-    // Note that reverse shifting is not implemented.
-    // Thus, if vati falls before the earliest row in memory, it is considered
-    // out of range instead of trying to back up the buffer.  This limitation
-    // is imposed by BufferedList.
-    //
+         // check if center of WVC inside measurement case
+         float wvc_ctd=cti*_crosstrack_res-0.5*_crosstrack_size;
+         float wvc_atd=(vati+0.5)*_alongtrack_res;
+         float dctd=wvc_ctd-ctd;
+         float datd=wvc_atd-atd;
 
-    if (vati < _ati_offset)
-    {
-        fprintf(stderr, "Grid::Add: alongtrack index = %d out of range\n",
-            vati);
-        return(0);
-    }
+	 // compute cell boundaries ctd aand atd
+	 float c0=wvc_ctd-0.5*_crosstrack_res*overlapFactor;
+	 float c1=wvc_ctd+0.5*_crosstrack_res*overlapFactor;
+	 float a0=wvc_atd-0.5*_alongtrack_res*overlapFactor;
+	 float a1=wvc_atd+0.5*_alongtrack_res*overlapFactor;
+         
+	 if(testr){
+	   printf("%g %g\n",c0,a0);
+	   printf("%g %g\n",c1,a0);
+	   printf("%g %g\n",c1,a1);
+	   printf("%g %g\n",c0,a1);
+	   printf("%g %g\n&\n",c0,a0);
+	 }
+         float dr=fabs(cosang*datd+sinang*dctd);
+         float da=fabs(sinang*datd+cosang*dctd);
+         if(dr<=0.5*rwid && da<=0.5*awid) overlaps=true;
+	   
+	 
+         // check if any side of the measurement intersects a sides of
+         // the
+         // wvc
+         //only necessary if cell dimensions overlap if measurement is
+         // smaller than wvc in one dimension but not the other 
+         
+         if(MAX(rwid,awid)>MIN(_crosstrack_res,_alongtrack_res) &&
+            MIN(rwid,awid)<MAX(_crosstrack_res,_alongtrack_res))
+	   {
+             // corner numbers for one end of each meas edge i0 and
+             // the other end i1
+	     int i0[4]={0,0,1,2};
+             int i1[4]={1,2,3,3};
 
-    //
-    // Determine if the along track index is in memory or not.
-    // If not, read and write rows until it is in range.
-    //
+             //foreach edge of a measuremnt
+             for(int j=0;j<4;j++){
+	       // Does meas edge j overlap any of the wvc edges?
+               // If any measurement edge overlaps a side of the wvc
+               // then overlaps is true and flow drops out of loop.
 
-    while (vati - _ati_offset >= _alongtrack_bins)
-    {
-        // vati is beyond latest row, so need to shift the grid buffer
-        ShiftForward(do_composite);
-    }
+               // Get short names for meas edge end coords
+               float mc0=corn_ctd[i0[j]];
+               float mc1=corn_ctd[i1[j]];
+               float ma0=corn_atd[i0[j]];
+               float ma1=corn_atd[i1[j]];
 
-    //
-    // Convert the along track index into the virtual buffer (vati) to an
-    // index into the grid in memory (ati).
-    //
+               // compute slopes
+	       float dcda= (mc1-mc0)/(ma1-ma0);
+               float dadc=1/dcda;
 
-    int ati = (vati - _ati_offset + _ati_start) % _alongtrack_bins;
+               // compute offsets
+	       float coff=mc1-dcda*ma1;
+	       float aoff=ma1-dadc*mc1;
 
-    // convert the measurement to an offset
+ 
 
-    off_t* offset = new off_t;
-    *offset = meas->offset;
+               // check for overlap between meas edge j and -ati edge of wvc
+               // 1) compute intersection point of the two lines
+               // 2) Is it on the cell side line segment?
+               // 3) Is it on the meas edge line segment?
 
-    OffsetList* offsetlist = _grid[cti][ati].GetHead();
+	       float c=coff+a0*dcda;
+               if(c>c0 && c<=c1){
+		 if(ma0<ma1){
+		   if(a0> ma0 && a0<= ma1){
+		     overlaps=true;
+                     break;
+		   }
+		 }
+		 else  if(a0> ma1 && a0<= ma0){
+		   overlaps=true;
+		   break;
+		 }
+	       }
 
-    if (do_composite == 1)
-    {
-        // Composite slices that fall in the same grid location and spot.
-        // Scan for an offset list with the same spot id.
-        while (offsetlist != NULL)
-        {
-            if (offsetlist->spotId == spot_id)
-            {
-                break;
-            }
-            offsetlist = _grid[cti][ati].GetNext();
-        }
+               // check for overlap between meas edge j and +ati edge of wvc
+	       c=coff+a1*dcda;
+               if(c>c0 && c<=c1){
+		 if(ma0<ma1){
+		   if(a1> ma0 && a1<= ma1){
+		     overlaps=true;
+                     break;
+		   }
+		 }
+		 else  if(a1> ma1 && a1<= ma0){
+		   overlaps=true;
+		   break;
+		 }
+	       }
+		 
+               // check for overlap between meas edge j and -cti edge of wvc
+	       float a=aoff+c0*dadc;
+               if(a>a0 && a<=a1){
+		 if(mc0<mc1){
+		   if(c0> mc0 && c0<= mc1){
+		     overlaps=true;
+                     break;
+		   }
+		 }
+		 else  if(c0> mc1 && c0<= mc0){
+		   overlaps=true;
+		   break;
+		 }
+	       }
 
-        if (offsetlist == NULL)
-        {
-            // Append a new offsetlist (with the new offset) for the new spot
-            offsetlist = new OffsetList;
-            offsetlist->Append(offset);
-            offsetlist->spotId = spot_id;
-            _grid[cti][ati].Append(offsetlist);
-        }
-        else
-        {
-            // Append the offset in the list with the matching spot id.
-            offsetlist->Append(offset);
-        }
-    }
-    else
-    {
-        // Put all slices in the first (and only) offset list at this grid loc.
-        if (offsetlist == NULL)
-        {
-            // Need to create a sublist and attach to the grid square
-            offsetlist = new OffsetList;
-            if (offsetlist == NULL)
-            {
-                fprintf(stderr, "Grid::Add: error allocating memory\n");
-                exit(1);
-            }
-            _grid[cti][ati].Append(offsetlist);
-        }
-        offsetlist->Append(offset);
-    }
+               // check for overlap between meas edge j and +cti edge of wvc
+	       a=aoff+c1*dadc;
+               if(a>a0 && a<=a1){
+		 if(mc0<mc1){
+		   if(c1> mc0 && c1<= mc1){
+		     overlaps=true;
+                     break;
+		   }
+		 }
+		 else  if(c1> mc1 && c1<= mc0){
+		   overlaps=true;
+		   break;
+		 }
+	       }
+	     }	     
+	   }
 
+         if(!overlaps) continue;
+	 if(testr){          
+	   printf("%g %g\n",c0,a0);
+	   printf("%g %g\n",c1,a1);
+	   printf("%g %g\n",c1,a0);
+	   printf("%g %g\n&\n",c0,a1);
+	 }
+       }
+       if ((cti >= _crosstrack_bins) || (cti < 0))
+	 {
+	   fprintf(stderr, "Grid::Add: crosstrack index = %d out of range\n",
+		   cti);
+	   return(0);
+	 }
+
+       //
+       // Negative vati means the point falls before the defined grid start.
+       // For this special case, Add() returns success, but dumps the measurement.
+       // If vati falls inside the defined grid, but in a portion that has been
+       // already output, then an error message is generated (see below).
+       //
+       
+       if (vati < 0)
+	 {
+	   //        delete meas;
+	   return(1);
+	 }
+       
+       if (vati > _max_vati)
+	 {    // beyond end of grid, so do nothing.
+	   return(1);
+	 }
+
+       //
+       // Note that reverse shifting is not implemented.
+       // Thus, if vati falls before the earliest row in memory, it is considered
+       // out of range instead of trying to back up the buffer.  This limitation
+       // is imposed by BufferedList.
+       //
+
+       if (vati < _ati_offset)
+	 {
+	   fprintf(stderr, "Grid::Add: alongtrack index = %d out of range\n",
+		   vati);
+	   return(0);
+	 }
+       
+       //
+       // Determine if the along track index is in memory or not.
+       // If not, read and write rows until it is in range.
+       //
+
+       while (vati - _ati_offset >= _alongtrack_bins)
+	 {
+	   // vati is beyond latest row, so need to shift the grid buffer
+	   ShiftForward(do_composite);
+	 }
+       
+       //
+       // Convert the along track index into the virtual buffer (vati) to an
+       // index into the grid in memory (ati).
+       //
+
+       int ati = (vati - _ati_offset + _ati_start) % _alongtrack_bins;
+       
+       // convert the measurement to an offset
+       
+       off_t* offset = new off_t;
+       *offset = meas->offset;
+
+       OffsetList* offsetlist = _grid[cti][ati].GetHead();
+
+       if (do_composite == 1)
+	 {
+	   // Composite slices that fall in the same grid location and spot.
+	   // Scan for an offset list with the same spot id.
+	   while (offsetlist != NULL)
+	     {
+	       if (offsetlist->spotId == spot_id)
+		 {
+		   break;
+		 }
+	       offsetlist = _grid[cti][ati].GetNext();
+	     }
+	   
+	   if (offsetlist == NULL)
+	     {
+	       // Append a new offsetlist (with the new offset) for the new spot
+	       offsetlist = new OffsetList;
+	       offsetlist->Append(offset);
+	       offsetlist->spotId = spot_id;
+	       _grid[cti][ati].Append(offsetlist);
+	     }
+	   else
+	     {
+	       // Append the offset in the list with the matching spot id.
+	       offsetlist->Append(offset);
+	     }
+	 }
+       else
+	 {
+	   // Put all slices in the first (and only) offset list at this grid loc.
+	   if (offsetlist == NULL)
+	     {
+	       // Need to create a sublist and attach to the grid square
+	       offsetlist = new OffsetList;
+	       if (offsetlist == NULL)
+		 {
+		   fprintf(stderr, "Grid::Add: error allocating memory\n");
+		   exit(1);
+		 }
+	       _grid[cti][ati].Append(offsetlist);
+	     }
+	   offsetlist->Append(offset);
+	 }
+     } // end cti loop
+    } // end vati loop
     //printf("%d %d %f %f\n",cti,vati,ctd,atd);
-
+    if(testr){
+      fflush(stdout);
+      exit(1);
+    }
     return(1);
 }
 

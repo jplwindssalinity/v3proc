@@ -1774,6 +1774,18 @@ ConfigGrid(
 
     grid->Allocate(ct_res, at_res, ct_size, at_size);
 
+    char* methstr=config_list->Get(REGRID_METHOD_KEYWORD);
+    if(strcasecmp(methstr,"centroid")==0){
+      grid->method=Grid::CENTROID;
+    }
+    else if(strcasecmp(methstr,"overlap")==0){
+      grid->method=Grid::OVERLAP;
+      config_list->GetFloat(REGRID_OVERLAP_FACTOR_KEYWORD,&(grid->overlapFactor));
+    }
+    else{
+      fprintf(stderr,"ConfigGrid:Bad regrid method");
+      return(0);
+    }
     return(1);
 }
 

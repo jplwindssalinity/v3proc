@@ -247,6 +247,9 @@ static const char rcs_id_configsimdefs_h[] =
 #define PROCESS_MAX_SLICES_KEYWORD       "PROCESS_MAX_SLICES"
 #define ONEB_CHECKFILE_KEYWORD           "ONEB_CHECKFILE"
 
+
+
+
 //-----//
 // L2A //
 //-----//
@@ -369,6 +372,8 @@ static const char rcs_id_configsimdefs_h[] =
 #define GRID_WINDOW_ALONGTRACK_SIZE_KEYWORD  "GRID_WINDOW_ALONGTRACK_SIZE"
 #define GRID_START_TIME_KEYWORD   "GRID_START_TIME"
 #define GRID_END_TIME_KEYWORD     "GRID_END_TIME"
+#define REGRID_METHOD_KEYWORD     "REGRID_METHOD"
+#define REGRID_OVERLAP_FACTOR_KEYWORD     "REGRID_OVERLAP_FACTOR"
 
 //---------------//
 // Control Stuff //
