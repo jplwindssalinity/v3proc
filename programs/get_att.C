@@ -87,6 +87,7 @@ template class List<Meas>;
 template class List<long>;
 template class List<WindVectorPlus>;
 template class List<MeasSpot>;
+template class List<off_t>;
 template class List<OffsetList>;
 template class List<StringPair>;
 template class TrackerBase<unsigned char>;
@@ -95,6 +96,8 @@ template class BufferedList<OrbitState>;
 template class List<EarthPosition>;
 template class TrackerBase<unsigned short>;
 template class List<AngleInterval>;
+template class std::list<string>;
+template class std::map<string,string,Options::ltstr>;
 
 //-----------//
 // CONSTANTS //
