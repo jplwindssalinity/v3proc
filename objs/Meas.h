@@ -52,7 +52,8 @@ public:
     //-------//
 
     enum MeasTypeE { NONE, VV_MEAS_TYPE, HH_MEAS_TYPE, VH_MEAS_TYPE,
-        HV_MEAS_TYPE, VV_HV_CORR_MEAS_TYPE, HH_VH_CORR_MEAS_TYPE };
+		     HV_MEAS_TYPE, VV_HV_CORR_MEAS_TYPE, HH_VH_CORR_MEAS_TYPE,
+                     C_BAND_VV_MEAS_TYPE, C_BAND_HH_MEAS_TYPE};
 
     //--------------//
     // construction //
