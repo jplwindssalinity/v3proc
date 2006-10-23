@@ -825,6 +825,7 @@ OvwmSim::ScatSim(
 int OvwmSim::CheckTiming(Ovwm* ovwm){
   static int first_call=1;
   static int num_calls=0;
+  static int nBurstInit = 0;
   num_calls++;
   static double worst_so_far=ovwm->ses.bri;
   static double tx_margin=ovwm->ses.bri;
@@ -881,6 +882,13 @@ int OvwmSim::CheckTiming(Ovwm* ovwm){
     } // end of beams loop
     tx_margin=worst_margin; // set static variable tx_margin to the worst
                             // TX margin value
+
+    // get number of burst in air
+
+    nBurstInit = int(ovwm->ses.rxGateDelay/ovwm->ses.bri);
+    cout << "# of burst between tx and rec: " << nBurstInit << endl;
+    //cout << ovwm->ses.rxGateDelay << endl;
+
   } // end of first call
 
 
@@ -888,17 +896,25 @@ int OvwmSim::CheckTiming(Ovwm* ovwm){
   int b=ovwm->cds.currentBeamIdx;
   beamInfo[b].rxTime=beamInfo[b].txTime+ovwm->ses.rxGateDelay;
 
+  int nBurst = int(ovwm->ses.rxGateDelay/ovwm->ses.bri);
+  //printf("n burst: %d\n", nBurst);
+  
+  if(nBurst!=nBurstInit){
+    fprintf(stderr,"Error: number of burst between tx and rec changed!!\n");
+    exit(1);
+  }
+
   // only perform rx/tx and rx overlap checks on last beam event
   if(b==NUMBER_OF_OVWM_BEAMS-1){
 
     // make sure no transmission window overlaps with a receiver window from
     // two or more cycles ago.
-    double r2end=beamInfo[0].lastRxTime-ovwm->ses.bri + 
+    double r2end=beamInfo[0].lastRxTime-nBurst*ovwm->ses.bri + 
       ovwm->ses.GetRxGateWidth(0);
     for(int rb=1;rb<NUMBER_OF_OVWM_BEAMS;rb++){
-      double value=beamInfo[rb].lastRxTime-ovwm->ses.bri + 
+      double value=beamInfo[rb].lastRxTime-nBurst*ovwm->ses.bri + 
       ovwm->ses.GetRxGateWidth(rb);
-      if(value>r2end) value=r2end;
+      if(value>r2end) r2end=value;
     }
     for(int tb=0;tb<NUMBER_OF_OVWM_BEAMS;tb++){
       margin=beamInfo[tb].txTime-r2end;
@@ -917,7 +933,7 @@ int OvwmSim::CheckTiming(Ovwm* ovwm){
       for(int rb=0;rb<NUMBER_OF_OVWM_BEAMS;rb++){
 
         // current cycle check
-	double rstart=beamInfo[rb].rxTime;
+	double rstart=beamInfo[rb].rxTime - (nBurst-1)*ovwm->ses.bri;
 	double rend=rstart+ovwm->ses.GetRxGateWidth(rb);
         
 	if(rstart<tstart){
@@ -936,7 +952,7 @@ int OvwmSim::CheckTiming(Ovwm* ovwm){
 
 
         // previous cycle check
-	rstart=beamInfo[rb].lastRxTime;
+	rstart=beamInfo[rb].lastRxTime - (nBurst-1)*ovwm->ses.bri;
 	rend=rstart+ovwm->ses.GetRxGateWidth(rb);
 
 	if(rstart<tstart){
@@ -956,10 +972,10 @@ int OvwmSim::CheckTiming(Ovwm* ovwm){
     } // end transmit beam loop
 
     // for right now require 4 receiver chains
-    if(ovwm->ses.numReceivers==2){
-      fprintf(stderr,"Error 2 Receiver chain case not yet implemented\n");
-      exit(1);
-    }
+    //if(ovwm->ses.numReceivers==2){
+    //  fprintf(stderr,"Error 2 Receiver chain case not yet implemented\n");
+    //  exit(1);
+    //}
 
     if(worst_so_far>worst_margin) worst_so_far=worst_margin;
 #ifdef DEBUG_BAD_TIMING
@@ -1973,7 +1989,7 @@ OvwmSim::SetMeasurements(
                 if(simRain){
 		  float a,b;
                   int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
-                  printf("s0before %g a %g b %g  lat %g lon %g inc %g\n",s0,a,b,lat*rtd,lon*rtd,meas->incidenceAngle*rtd);
+                  //printf("s0before %g a %g b %g  lat %g lon %g inc %g\n",s0,a,b,lat*rtd,lon*rtd,meas->incidenceAngle*rtd);
 		  if(goodrain) s0= s0/a + b;
 		}
 	      }
@@ -2040,10 +2056,10 @@ OvwmSim::SetMeasurements(
 	  }
 
           // determine range and azimuth width
-          int jmin= center_azim_idx;
-          int jmax= center_azim_idx;
-          int imin=center_range_idx_ave;
-	  int imax=center_range_idx_ave;
+          int jmin= int(center_azim_idx);
+          int jmax= int(center_azim_idx);
+          int imin= int(center_range_idx_ave);
+	  int imax= int(center_range_idx_ave);
 	  for(int i=0;i<nrsteps;i++){
 	    for(int j=0;j<nasteps;j++){
 	      if(_ptr_array[i][j]>0.5*maxdX){
