@@ -1774,6 +1774,7 @@ ConfigGrid(
 
     grid->Allocate(ct_res, at_res, ct_size, at_size);
 
+
     char* methstr=config_list->Get(REGRID_METHOD_KEYWORD);
     if(strcasecmp(methstr,"centroid")==0){
       grid->method=Grid::CENTROID;

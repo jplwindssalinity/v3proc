@@ -375,6 +375,7 @@ static const char rcs_id_configsimdefs_h[] =
 #define REGRID_METHOD_KEYWORD     "REGRID_METHOD"
 #define REGRID_OVERLAP_FACTOR_KEYWORD     "REGRID_OVERLAP_FACTOR"
 
+
 //---------------//
 // Control Stuff //
 //---------------//
