@@ -11,16 +11,17 @@ CDEBUGFLAGS = -O2
 DEBUG =       NODEBUG
 
 INCDIR =      ../../include
+MALLOC_INCDIR =         /usr/include/malloc
 LIBDIR =      ../../lib
 HDFINCDIR =   /sw/include
 
-INCFLAGS =    -I$(HDFINCDIR) -I.
+INCFLAGS =    -I$(HDFINCDIR) -I$(MALLOC_INCDIR) -I.
 
-CFLAGS =      $(CDEBUGFLAGS) -D_NO_PROTO -Wall
+CFLAGS =      $(CDEBUGFLAGS) -D_NO_PROTO -Wall -Wno-deprecated
 
 C++FLAGS =    $(CDEBUGFLAGS) -D__SCAT_GNUCPP__ -DFUNCPROTO -D$(DEBUG) \
               -D_REENTRANT -DXTFUNCPROTO -D__EXTENSIONS__ \
-              $(INCFLAGS) -fno-implicit-templates -DNOPM
+              $(INCFLAGS) -fno-implicit-templates -DNOPM -Wno-deprecated
 
 OBJS = \
 	TempInst.o \
