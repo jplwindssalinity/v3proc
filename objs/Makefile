@@ -8,9 +8,10 @@ SHELL =			/bin/csh
 INCDIR =		../../include
 TARGET_LIB =	../../lib/libSim.a
 HDFINCDIR =     /sw/include
+MALLOC_DIR =    /usr/include/malloc
 #DEBUGFLAGS =    -ggdb2
 DEBUGFLAGS =    -O2
-INCFLAGS =      -I$(INCDIR) -I$(HDFINCDIR) -I.
+INCFLAGS =      -I$(INCDIR) -I$(HDFINCDIR) -I$(MALLOC_DIR) -I.
 
 # CPPFLAGS =		$(DEBUGFLAGS) $(INCFLAGS) -fno-implicit-templates -Wall -Wshadow -Woverloaded-virtual
 CPPFLAGS =		$(DEBUGFLAGS) $(INCFLAGS) -fno-implicit-templates -Wall
