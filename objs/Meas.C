@@ -290,7 +290,7 @@ Meas::WriteAscii(
     fprintf(fp, "A: %g ", A);
     fprintf(fp, "B: %g ", B);
     fprintf(fp, "C: %g ", C);
-    fprintf(fp, "azimuth_width: %g \n", azimuth_width);
+    fprintf(fp, "azimuth_width: %g ", azimuth_width);
     fprintf(fp, "range_width: %g \n", range_width);
 
     return(1);
