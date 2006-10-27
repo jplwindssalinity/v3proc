@@ -104,6 +104,9 @@ Kpm::GetKpm(
     case Meas::HV_MEAS_TYPE:
     case Meas::VV_HV_CORR_MEAS_TYPE:
     case Meas::HH_VH_CORR_MEAS_TYPE:
+    case Meas::C_BAND_VV_MEAS_TYPE:
+    case Meas::C_BAND_HH_MEAS_TYPE:
+
         //-----------------------//
         // this is a total guess //
         //-----------------------//

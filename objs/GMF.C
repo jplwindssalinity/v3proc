@@ -160,6 +160,9 @@ int GMF::ReadOldStyle(
     if (! _Allocate())
         return(0);
 
+    metValid[0]=true;
+    metValid[1]=true;
+
     float value;
     for (int met_idx = 0; met_idx < _metCount; met_idx++)
     {
@@ -237,6 +240,8 @@ int GMF::ReadHighWind(
     if (! _Allocate())
         return(0);
 
+    metValid[0]=true;
+    metValid[1]=true;
     float value;
     for (int met_idx = 0; met_idx < _metCount; met_idx++)
     {
@@ -282,6 +287,216 @@ int GMF::ReadHighWind(
     return(1);
 }
 
+//------------------//
+// GMF:ReadCBand    //
+//------------------//
+
+int GMF::ReadCBand(
+    const char*  filename)
+{
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1)
+        return(0);
+
+
+    _metCount = 7;
+
+    _incCount = 26;
+    _incMin = 16.0 * dtr;
+    _incMax = 66.0 * dtr;
+    _incStep = 2.0 * dtr;
+
+    _spdCount = 100;
+    _spdMin = 0.0;
+    _spdMax = 99.0;
+    _spdStep = 1.0;
+
+    int file_chi_count = 37;
+    _chiCount = 72;
+    _chiStep = two_pi / _chiCount;    // 5 degrees
+
+    if (! _Allocate())
+        return(0);
+
+    metValid[5]=true;
+    metValid[6]=true;
+
+    float value;
+    for (int met_idx = 5; met_idx < 6; met_idx++)
+    {
+        for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
+        {
+            for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
+            {
+                for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+                {
+                    if (read(fd, &value, sizeof(float)) != sizeof(float))
+                    {
+                        close(fd);
+                        return(0);
+                    }
+                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
+                        (float)value;
+
+                    int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
+                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx_2) =
+                        (float)value;
+                }
+            }
+        }
+    }
+
+    //----------------------//
+    // zero the 0 m/s model //
+    //----------------------//
+
+    int spd_idx = 0;
+    for (int met_idx = 5; met_idx < 6; met_idx++)
+    {
+        for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
+        {
+            for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+            {
+                *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
+            }
+        }
+    }
+
+    close(fd);
+    return(1);
+}
+
+
+//------------------//
+// GMF:ReadKuAndC   //
+//------------------//
+
+int GMF::ReadKuAndC(
+		    const char*  ku_filename, const char* c_filename)
+{
+    int fd = open(ku_filename, O_RDONLY);
+    if (fd == -1)
+        return(0);
+
+
+    _metCount = 7;
+
+    _incCount = 26;
+    _incMin = 16.0 * dtr;
+    _incMax = 66.0 * dtr;
+    _incStep = 2.0 * dtr;
+
+    _spdCount = 100;
+    _spdMin = 0.0;
+    _spdMax = 99.0;
+    _spdStep = 1.0;
+
+    int file_chi_count = 37;
+    _chiCount = 72;
+    _chiStep = two_pi / _chiCount;    // 5 degrees
+
+    if (! _Allocate())
+        return(0);
+
+
+    metValid[0]=true;
+    metValid[1]=true;
+    metValid[5]=true;
+    metValid[6]=true;
+
+    float value;
+    for (int met_idx = 0; met_idx < 2; met_idx++)
+    {
+        for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
+        {
+            for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
+            {
+                for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+                {
+                    if (read(fd, &value, sizeof(float)) != sizeof(float))
+                    {
+                        close(fd);
+                        return(0);
+                    }
+                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
+                        (float)value;
+
+                    int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
+                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx_2) =
+                        (float)value;
+                }
+            }
+        }
+    }
+
+    //----------------------//
+    // zero the 0 m/s model //
+    //----------------------//
+
+    int spd_idx = 0;
+    for (int met_idx = 0; met_idx < 2; met_idx++)
+    {
+        for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
+        {
+            for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+            {
+                *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
+            }
+        }
+    }
+
+    close(fd);
+
+    fd = open(c_filename, O_RDONLY);
+    if (fd == -1)
+        return(0);
+
+
+    
+    for (int met_idx = 5; met_idx < 6; met_idx++)
+    {
+        for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
+        {
+            for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
+            {
+                for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+                {
+                    if (read(fd, &value, sizeof(float)) != sizeof(float))
+                    {
+                        close(fd);
+                        return(0);
+                    }
+                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
+                        (float)value;
+
+                    int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
+                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx_2) =
+                        (float)value;
+                }
+            }
+        }
+    }
+
+    //----------------------//
+    // zero the 0 m/s model //
+    //----------------------//
+
+    spd_idx = 0;
+    for (int met_idx = 5; met_idx < 6; met_idx++)
+    {
+        for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
+        {
+            for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+            {
+                *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
+            }
+        }
+    }
+
+    close(fd);
+    return(1);
+}
+
 //----------------------//
 // GMF:ReadPolarimetric //
 //----------------------//
@@ -312,6 +527,12 @@ int GMF::ReadPolarimetric(
     if (! _Allocate())
         return(0);
 
+    metValid[0]=true;
+    metValid[1]=true;
+    metValid[2]=true;
+    metValid[3]=true;
+    metValid[4]=true;
+ 
     int first_line_of_file = 1;
     while(! feof(ifp))
     {

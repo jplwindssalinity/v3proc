@@ -848,7 +848,11 @@ int ConfigAmbigTable(AmbigTable* atab,ConfigList* cfg_list){
 
   char* amb_index_file=cfg_list->Get(AMBIG_INDEX_FILE_KEYWORD); 
   char* amb_table_file=cfg_list->Get(AMBIG_TABLE_FILE_KEYWORD);
-  if( ! atab->Read(amb_index_file, amb_table_file)) return(0);
+  if( ! atab->Read(amb_index_file, amb_table_file)){
+    fprintf(stderr,"Error readinmg AmbigTable %s or AmbigIndex %s\n",
+	    amb_table_file,amb_index_file);
+    return(0);
+  }
   return(1);  
 }
 

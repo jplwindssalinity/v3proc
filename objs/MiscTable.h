@@ -30,6 +30,9 @@ static const char rcs_id_misctable_h[] =
 //    and Chi (relative wind direction).
 //======================================================================
 
+
+
+#define MAX_NUM_METS  7
 class MiscTable
 {
 public:
@@ -69,7 +72,7 @@ protected:
     //--------------//
     // construction //
     //--------------//
-
+   
     int  _GetMaxValueForSpeed(int met_idx, int inc_idx, int spd_idx,
              float* value);
     int  _Allocate();
@@ -122,6 +125,7 @@ protected:
 
     float****  _value;    // the array of values
     float***   _maxValueForSpeed;
+    bool*      metValid;
 };
 
 #endif

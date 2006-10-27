@@ -637,7 +637,7 @@ OvwmSim::ScatSim(
     // determine measurement type from beam //
     //--------------------------------------//
 
-    Meas::MeasTypeE meas_type = PolToMeasType(beam->polarization);
+    Meas::MeasTypeE meas_type = PolToMeasType(beam->polarization,ovwm->ses.txFrequency);
     
     for (Meas* meas = meas_spot.GetHead(); meas; meas = meas_spot.GetNext())
     {

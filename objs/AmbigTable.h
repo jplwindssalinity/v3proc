@@ -64,7 +64,7 @@ class AmbigTable{
   float azi_in_deg_;
   unsigned int Nazi_;
   bool read_table_;
- 
+  bool ambigs_off_; 
   
 };
 

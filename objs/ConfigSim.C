@@ -1516,6 +1516,23 @@ ConfigGMF(
         if (! gmf->ReadOldStyle(gmf_filename))
             return(0);
     }
+    else if (strcasecmp(gmf_format, "C_BAND") == 0)
+    {
+      char* cgmf_filename = config_list->Get(C_BAND_GMF_FILE_KEYWORD);
+      if (cgmf_filename == NULL)
+        return(0);
+      if (! gmf->ReadCBand(cgmf_filename))
+	return(0);
+    }
+    else if (strcasecmp(gmf_format, "KU_AND_C") == 0)
+    {
+
+      char* cgmf_filename = config_list->Get(C_BAND_GMF_FILE_KEYWORD);
+      if (cgmf_filename == NULL)
+        return(0);
+      if (! gmf->ReadKuAndC(gmf_filename,cgmf_filename))
+            return(0);
+    }
     else if (strcasecmp(gmf_format, "POLARIMETRIC") == 0)
     {
         if (! gmf->ReadPolarimetric(gmf_filename))

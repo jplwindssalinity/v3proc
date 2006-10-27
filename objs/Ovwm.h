@@ -432,7 +432,7 @@ public:
 int  SetDelayAndFrequency(Spacecraft* spacecraft, Ovwm* ovwm,
          OvwmTargetInfo* qti = NULL, int estimate_encoder_method = 0);
 int  SetOrbitStepDelayAndFrequency(Spacecraft* spacecraft, Ovwm* ovwm);
-Meas::MeasTypeE  PolToMeasType(PolE pol);
+Meas::MeasTypeE  PolToMeasType(PolE pol,float tx_frequency);
 PolE  MeasTypeToPol(Meas::MeasTypeE meas_type);
 float effective_gate_width_to_slice_bandwidth(float egw);
 

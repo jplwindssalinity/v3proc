@@ -2675,3 +2675,43 @@ SetOrbitStepDelayAndFrequency(
 }
 
 
+//---------------//
+// PolToMeasType //
+//---------------//
+
+Meas::MeasTypeE
+PolToMeasType(
+	      PolE  pol,
+	      float tx_freq)
+{
+  if(tx_freq>7e9){
+    switch(pol)
+      {
+      case V_POL:
+        return(Meas::VV_MEAS_TYPE);
+        break;
+      case H_POL:
+        return(Meas::HH_MEAS_TYPE);
+        break;
+      default:
+        return(Meas::NONE);
+        break;
+      }
+    return(Meas::NONE);
+  }
+  else{
+    switch(pol)
+      {
+      case V_POL:
+        return(Meas::C_BAND_VV_MEAS_TYPE);
+        break;
+      case H_POL:
+        return(Meas::C_BAND_HH_MEAS_TYPE);
+        break;
+      default:
+        return(Meas::NONE);
+        break;
+      }
+    return(Meas::NONE);
+  }
+}

@@ -334,6 +334,7 @@ static const char rcs_id_configsimdefs_h[] =
 //-----//
 
 #define GMF_FILE_KEYWORD                  "GMF_FILE"
+#define C_BAND_GMF_FILE_KEYWORD           "C_BAND_GMF_FILE"
 #define GMF_FILE_FORMAT_KEYWORD           "GMF_FILE_FORMAT"
 #define GMF_PHI_COUNT_KEYWORD             "GMF_PHI_COUNT"
 #define RETRIEVE_USING_KPC_FLAG_KEYWORD   "RETRIEVE_USING_KPC_FLAG"

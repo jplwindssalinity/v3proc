@@ -63,6 +63,8 @@ public:
 
     int  ReadOldStyle(const char* filename);
     int  ReadHighWind(const char* filename);
+    int  ReadKuAndC(const char* ku_filename,const char* c_filename);
+    int  ReadCBand(const char* filename);
     int  ReadPolarimetric(const char* filename);
 
     //---------//

@@ -114,6 +114,11 @@ MiscTable::GetNearestValue(
     // access table //
     //--------------//
 
+    if(!metValid[met_idx]){
+      fprintf(stderr,"Invalid use of MiscTable met_idx %d not assigned in table\n",
+	      met_idx);
+      exit(1);
+    } 
     *value = *(*(*(*(_value + met_idx) + inc_idx) + spd_idx) + chi_idx);
     return(1);
 }
@@ -135,6 +140,12 @@ MiscTable::GetInterpolatedValue(
     //-------------------------//
 
     int met_idx = _MetToIndex(met);
+
+    if(!metValid[met_idx]){
+      fprintf(stderr,"Invalid use of MiscTable met_idx %d not assigned in table\n",
+	      met_idx);
+      exit(1);
+    } 
     float*** table = *(_value + met_idx);
 
     float inc_ridx = INC_TO_REAL_IDX(inc);
@@ -257,6 +268,13 @@ MiscTable::GetMaxValueForSpeed(
     //-------------------------//
 
     int met_idx = _MetToIndex(met);
+
+   if(!metValid[met_idx]){
+     fprintf(stderr,"Invalid use of MiscTable met_idx %d not assigned in table\n",
+	     met_idx);
+     exit(1);
+   } 
+
     float** table = *(_maxValueForSpeed + met_idx);
 
     float inc_ridx = INC_TO_REAL_IDX(inc);
@@ -355,7 +373,12 @@ MiscTable::_GetMaxValueForSpeed(
     int     spd_idx,
     float*  value)
 {
-    float max_value=_value[met_idx][inc_idx][spd_idx][0];
+   if(!metValid[met_idx]){
+     fprintf(stderr,"Invalid use of MiscTable met_idx %d not assigned in table\n",
+	     met_idx);
+     exit(1);
+   } 
+   float max_value=_value[met_idx][inc_idx][spd_idx][0];
 
     for (int chi_idx = 1; chi_idx<_chiCount; chi_idx++)
     {
@@ -384,6 +407,8 @@ MiscTable::_Allocate()
 	if (_value == NULL)
 		return(0);
 
+        metValid=(bool*)malloc(sizeof(bool)*MAX_NUM_METS);
+	for(int i=0;i<MAX_NUM_METS;i++) metValid[i]=false;
 	return(1);
 }
 
@@ -396,7 +421,7 @@ MiscTable::_Deallocate()
 {
   if (_value != NULL){
     free_array((void *)_value, 4, _metCount, _incCount, _spdCount, _chiCount);
-
+    free(metValid);
     _value = NULL;
   }
   if (_maxValueForSpeed !=NULL){
@@ -540,6 +565,12 @@ MiscTable::_MetToIndex(
 	case Meas::VH_MEAS_TYPE:
 	  idx = 4;
 	  break;
+	case Meas::C_BAND_VV_MEAS_TYPE:
+		idx = 5;
+		break;
+	case Meas::C_BAND_HH_MEAS_TYPE:
+		idx = 6;
+		break;
 	default:
 		fprintf(stderr,
 			"MiscTable::_MetToIndex: invalid measurement type %d\n", met);

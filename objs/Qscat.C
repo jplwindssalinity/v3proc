@@ -2932,6 +2932,12 @@ MeasTypeToPol(
     case Meas::Meas::HH_MEAS_TYPE:
         return(H_POL);
         break;
+    case Meas::C_BAND_VV_MEAS_TYPE:
+        return(V_POL);
+        break;
+    case Meas::Meas::C_BAND_HH_MEAS_TYPE:
+        return(H_POL);
+        break;
     default:
         return(NONE);
         break;

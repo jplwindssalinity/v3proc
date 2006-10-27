@@ -358,7 +358,7 @@ OvwmL1AToL1B::Convert(
         //--------------------------------------//
 
         Beam* beam = ovwm->GetCurrentBeam();
-        Meas::MeasTypeE meas_type = PolToMeasType(beam->polarization);
+        Meas::MeasTypeE meas_type = PolToMeasType(beam->polarization,ovwm->ses.txFrequency);
 
         double borelook, boreazim;
 

@@ -13,7 +13,7 @@ const  unsigned int AmbigTable::Azimuth_step_=1;
 const  unsigned int AmbigTable::Nbeam_=4;
 
 AmbigTable::AmbigTable()
-  :read_table_(false)
+  :read_table_(false),ambigs_off_(false)
  
 {
   Nazi_= (unsigned int)int( 360/Azimuth_step_+0.1);//Nazi_= 306 degree/Azimuth_step
@@ -48,6 +48,12 @@ int AmbigTable::Read(char* index_filename, char* table_filename)
   //reset flag
   read_table_=false;
 
+  // No ambiguity table case
+  if(strcasecmp(index_filename,"NONE")==0 
+     && strcasecmp(table_filename,"NONE")==0){
+    ambigs_off_=true;
+    return(1);
+  }
 
   FILE* index_f= fopen(index_filename,"rb");
   if(index_f==NULL){
@@ -171,8 +177,13 @@ double AmbigTable::GetAmbRat1(const unsigned int& beam_number,
   amb_along=0;
   amb_cross=0;
   if(!read_table_) {
-    fprintf(stderr, "AmbigTable::GetAmbRat1: beam pattern has not been read in\n");
-    exit(1);
+    if(ambigs_off_){
+      return(value);
+    }
+    else{
+      fprintf(stderr, "AmbigTable::GetAmbRat1: beam pattern has not been read in\n");
+      exit(1);
+    }
   }
 
   if(beam_number>Nbeam_){
@@ -238,8 +249,13 @@ double AmbigTable::GetAmbRat2(const unsigned int& beam_number,
   amb_along=0;
   amb_cross=0;
   if(!read_table_) {
-    fprintf(stderr, "AmbigTable::GetAmbRat2: beam pattern has not been read in\n");
-    exit(1);
+    if(ambigs_off_){
+      return(value);
+    }
+    else{
+      fprintf(stderr, "AmbigTable::GetAmbRat2: beam pattern has not been read in\n");
+      exit(1);
+    }
   }
 
   if(beam_number>Nbeam_){
@@ -298,8 +314,11 @@ double AmbigTable::GetAmbRat2(const unsigned int& beam_number,
 {
   int value=1;
  if(!read_table_) {
+   if(ambigs_off_) return(0);
+   else{
     fprintf(stderr, "AmbigTable::IsNadirAmbiguous: beam pattern has not been read in\n");
     exit(1);
+   }
   }
 
   if(beam_number>Nbeam_){
