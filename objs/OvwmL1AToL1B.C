@@ -721,7 +721,7 @@ OvwmL1AToL1B::Convert(
                 int nL=ovwm->ses.numRangeLooksAveraged;
                 int nrsteps=(int)ceil(integrationRangeWidthFactor*rangewid*2*nL/integrationStepSize)+1;
                 int nasteps=(int)ceil(integrationAzimuthWidthFactor*azimwid*2/integrationStepSize)+1;
-
+                if(ovwm->ses.numPulses==1) nasteps=_max_int_azim_bins;
                 //cout << integrationRangeWidthFactor*rangewid << endl;
                 //cout << "rng look: " << nL << endl;
                 //cout << "steps (rng, az): " << nrsteps << " " << nasteps << endl;

@@ -1864,7 +1864,7 @@ OvwmSim::SetMeasurements(
 	  int nL=ovwm->ses.numRangeLooksAveraged;
           int nrsteps=(int)ceil(integrationRangeWidthFactor*rangewid*2*nL/integrationStepSize)+1;
           int nasteps=(int)ceil(integrationAzimuthWidthFactor*azimwid*2/integrationStepSize)+1;
-
+          if(ovwm->ses.numPulses==1) nasteps=_max_int_azim_bins;
           if(nrsteps>_max_int_range_bins || nasteps > _max_int_azim_bins){
 	    fprintf(stderr,"Error SetMeasurements too many integrations bins\n");
 	    exit(1);
