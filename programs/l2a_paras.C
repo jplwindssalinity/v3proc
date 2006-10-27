@@ -195,7 +195,7 @@ main(
             float SNR = Es/En;
             while(meas->scanAngle<0) meas->scanAngle+=2*pi;
 	    while(meas->scanAngle>2*pi) meas->scanAngle-=2*pi;
-            if (meas->beamIdx <= 1 && 
+            if (meas->beamIdx ==0 && 
                 (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.))
             {
 
@@ -209,7 +209,7 @@ main(
                s0_OF[l2a.frame.cti] += meas->value;
                X_OF[l2a.frame.cti] += meas->XK;
 
-            } else if (meas->beamIdx <= 1 &&
+            } else if (meas->beamIdx ==0 &&
                        (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.))
             {
 
@@ -223,7 +223,7 @@ main(
                s0_OA[l2a.frame.cti] += meas->value;
                X_OA[l2a.frame.cti] += meas->XK;
 
-            } else if (meas->beamIdx > 1 &&
+            } else if (meas->beamIdx == 1 &&
                 (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.))
             {
 
@@ -237,7 +237,7 @@ main(
                s0_IF[l2a.frame.cti] += meas->value;
                X_IF[l2a.frame.cti] += meas->XK;
 
-            } else if (meas->beamIdx > 1 &&
+            } else if (meas->beamIdx == 1 &&
                        (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.))
             {
 
