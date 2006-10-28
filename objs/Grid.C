@@ -6,7 +6,6 @@
 static const char rcs_id_grid_c[] =
     "@(#) $Id$";
 
-#include <stdio.h>
 #include <malloc.h>
 #include "Grid.h"
 #include "Meas.h"
@@ -28,7 +27,8 @@ Grid::Grid()
 :   _crosstrack_res(0.0), _alongtrack_res(0.0), _crosstrack_size(0.0),
     _alongtrack_size(0.0), _crosstrack_bins(0), _alongtrack_bins(0),
     _start_time(0.0), _end_time(0.0), _max_vati(0), _ati_start(0),
-    _ati_offset(0), _orbit_period(0.0), _grid(NULL)
+    _ati_offset(0), _orbit_period(0.0), _grid(NULL),_writeIndices(false),
+    _indfp(NULL),_plotMode(false)
 {
     return;
 }
@@ -38,6 +38,10 @@ Grid::~Grid()
     if (_grid != NULL)
     {
         free_array(_grid, 2, _crosstrack_bins, _alongtrack_bins);
+    }
+    if (_indfp!=NULL){
+      fclose(_indfp);
+      _indfp=NULL;
     }
     return;
 }
@@ -63,6 +67,24 @@ Grid::SetStartTime(
 
     _start_position = _start_position.Nadir();
     return(1);
+}
+
+// Grid::SetPlotMode
+
+void Grid::SetPlotMode(){ _plotMode=true;}
+
+//------------------//
+// Grid CreateIndicesFile
+//------------------//
+
+void Grid::CreateIndicesFile(char* filename)
+{
+  _writeIndices=true;
+  _indfp=fopen(filename,"w");
+  if(_indfp==NULL){
+    fprintf(stderr,"Grid cannot create Indices file %s\n",filename);
+    exit(1);
+  }
 }
 
 //------------------//
@@ -360,6 +382,7 @@ Grid::Add(
     }
 
     float ctd, atd;
+    int numWVCs=0;
     float measLon, measLat, lonFact, latFact;
     int lonIdx1, lonIdx2, latIdx1, latIdx2;
     double measHLL[3];
@@ -438,12 +461,7 @@ Grid::Add(
     float corn_ctd[4],corn_atd[4];
     float cosang,sinang,rwid,awid;
 
-    // This code is used to set a test condition which writes data for plotting grid examples in Xmgrace
-    bool testr=false;
-    //if(meas->scanAngle>30*dtr && meas->scanAngle<31*dtr){
-    if(false){
-      testr=true;
-    }
+
     if(method==OVERLAP){
       cosang=cos(meas->scanAngle);
       sinang=sin(meas->scanAngle);
@@ -473,7 +491,7 @@ Grid::Add(
 	    off++;
 	}
       }
-      if(testr){
+      if(_plotMode){
 	printf("# For XMGRACE rwid=%g awid=%g scanang=%g\n",
 	       rwid,awid,meas->scanAngle*rtd);
         printf("%g %g\n&\n",ctd,atd);
@@ -521,7 +539,7 @@ Grid::Add(
 	 float a0=wvc_atd-0.5*_alongtrack_res*overlapFactor;
 	 float a1=wvc_atd+0.5*_alongtrack_res*overlapFactor;
          
-	 if(testr){
+	 if(_plotMode){
 	   printf("%g %g\n",c0,a0);
 	   printf("%g %g\n",c1,a0);
 	   printf("%g %g\n",c1,a1);
@@ -636,7 +654,7 @@ Grid::Add(
 	   }
 
          if(!overlaps) continue;
-	 if(testr){          
+	 if(_plotMode){          
 	   printf("%g %g\n",c0,a0);
 	   printf("%g %g\n",c1,a1);
 	   printf("%g %g\n",c1,a0);
@@ -656,7 +674,7 @@ Grid::Add(
        // If vati falls inside the defined grid, but in a portion that has been
        // already output, then an error message is generated (see below).
        //
-       
+       numWVCs++;
        if (vati < 0)
 	 {
 	   //        delete meas;
@@ -752,10 +770,14 @@ Grid::Add(
 	 }
      } // end cti loop
     } // end vati loop
+
+    if(_writeIndices){
+      fprintf(_indfp,"%d %d %d %g %g\n",spot_id,meas->startSliceIdx,numWVCs,atd,ctd);
+    }
     //printf("%d %d %f %f\n",cti,vati,ctd,atd);
-    if(testr){
+    if(_plotMode){
       fflush(stdout);
-      exit(1);
+      exit(0);
     }
     return(1);
 }
@@ -792,9 +814,12 @@ Grid::ShiftForward(
 
     MeasList spot_measList;
 
+ 
     // Write out the earliest row of measurement lists.
     for (int i=0; i < _crosstrack_bins; i++)
     {
+
+      if(!_plotMode){
         //----------------------------------------//
         // convert each offset list to a MeasList //
         //----------------------------------------//
@@ -985,12 +1010,12 @@ Grid::ShiftForward(
             } // offset != NULL
 
         } // composite = 0
-
+      } // end if not _plotMode (Nothing is written to the L2A in plot mode
         //----------------------//
         // free the offset list //
         //----------------------//
 
-        _grid[i][_ati_start].FreeContents();
+      _grid[i][_ati_start].FreeContents();
     }
 
     // Update buffer indices.

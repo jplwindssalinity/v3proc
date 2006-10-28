@@ -9,6 +9,7 @@
 static const char rcs_id_grid_h[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
 #include "Array.h"
 #include "L1B.h"
 #include "L2A.h"
@@ -58,6 +59,9 @@ public:
 
 	int		ShiftForward(int do_composite);
 	int		Flush(int do_composite);
+        void            CreateIndicesFile(char* filename);
+        void            SetPlotMode();
+        FILE*           GetIndFp(){return(_indfp);}
 
 	//-----------//
 	// variables //
@@ -77,7 +81,6 @@ public:
 
         GridMethodE method;
         float overlapFactor;
-
 protected:
 
 	// resolution and sizes are in km
@@ -121,6 +124,12 @@ protected:
 	double			_orbit_period;
 
 	OffsetListList**	_grid;			// the grid of lists of offset lists
+        bool _writeIndices;
+ 
+
+	FILE* _indfp;
+
+        bool _plotMode;
 };
 
 #endif
