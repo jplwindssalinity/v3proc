@@ -5,10 +5,10 @@
 
 //----------------------------------------------------------------------
 // NAME
-//		l1b_to_l2a
+//		l1b_plot_grid
 //
 // SYNOPSIS
-//		l1b_to_l2a <sim_config_file> [indices_file]
+//		l1b_plot_grid <config_file> <spot_id> <pixel_num>
 //
 // DESCRIPTION
 //		Simulates the SeaWinds 1b ground processing of Level 1B to
@@ -23,8 +23,6 @@
 //		<sim_config_file>		The sim_config_file needed listing
 //								all input parameters, input files, and
 //								output files.
-//              [indices_file}     Optional ASCII output file for each meaurement
-//                                 Format is:  spot_id pixel_num num_wvcs_gridded_in atd ctd
 //
 // EXAMPLES
 //		An example of a command line is:
@@ -125,7 +123,7 @@ template class std::map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "[indices_file]",0};
+const char* usage_array[] = { "<sim_config_file>", "<frame_num>", "<spot_id>","<pixel_num>",0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -141,19 +139,15 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 2 && argc!=3 )
+	if (argc != 5 )
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
-
-        // OLD optional argument commented out
-	long int max_record_no=0;
-        //if(argc==3){
-	//  max_record_no=atoi(argv[clidx++]);
-        //	}
-        char* indfile;
-        if(argc==3) indfile=argv[clidx++];
+        long int frame_num=atoi(argv[clidx++]);
+        long int spot_id=atoi(argv[clidx++]);
+	long int pixel_num=atoi(argv[clidx++]);
+ 
 	//---------------------//
 	// read in config file //
 	//---------------------//
@@ -197,8 +191,6 @@ main(
 		exit(1);
 	}
 
-        if(argc==3) grid.CreateIndicesFile(indfile);
-
 	//-------------------------------//
 	// configure the grid start time //
 	//-------------------------------//
@@ -225,11 +217,15 @@ main(
         }
 
 	//------------//
-	// open files //
+	// open file  //
 	//------------//
-
+   
 	grid.l1b.OpenForReading();
-	grid.l2a.OpenForWriting();
+
+        //---------------------------//
+        // set grid to one meas mode //
+        //---------------------------//
+        grid.SetPlotMode();
 
         /* all variable ended with Size are in byte */
 
@@ -295,7 +291,6 @@ main(
         for (;;) {
 
           counter++;
-          if (max_record_no>0 && counter>max_record_no) break;
           if (counter % 100 == 0) {
             fprintf(stderr,"L1B record count = %ld bytes count =%g\n",
                     counter, (double)ftello(grid.l1b.GetInputFp()));
@@ -309,22 +304,24 @@ main(
             if (fread(&spotTime, sizeof(double), 1, grid.l1b.GetInputFp()) != 1) break; // find spot time
             if (fseeko(grid.l1b.GetInputFp(), spotSize-timeSize, SEEK_CUR) == -1) break;
             if (fread(&nm, sizeof(int), 1, grid.l1b.GetInputFp()) != 1) break; // find number of meas
+	      for (int mm=0; mm<nm; mm++) {
 
-            for (int mm=0; mm<nm; mm++) {
-              if (meas->Read(grid.l1b.GetInputFp()) != 1) {
-                fprintf(stderr, "Error in Read of Meas!\n");
-                break;
-                //exit(1);
-              }
-              if(argc==3) fprintf(grid.GetIndFp(),"%d ",(int)counter-1);
-              if (grid.Add(meas, spotTime, ss, use_compositing) != 1) {
-                fprintf(stderr, "Error in Add of Grid!\n");
-                break;
-                //exit(1);
-              }
-            } // meas loop
 
-          } // spot loop
+
+		  if (meas->Read(grid.l1b.GetInputFp()) != 1) {
+		    fprintf(stderr, "Error in Read of Meas!\n");
+		    break;
+		    //exit(1);
+		  }
+		  if(ss==spot_id && counter==frame_num+1 && meas->startSliceIdx==pixel_num){
+		    if (grid.Add(meas, spotTime, ss, use_compositing) != 1) {
+		      fprintf(stderr, "Error in Add of Grid!\n");
+		      break;
+		      //exit(1);
+		    }
+		  }
+	    } // meas_loop
+	  } //spot loop
 
           if (ftello(grid.l1b.GetInputFp()) >= end_byte) break;
 
@@ -336,10 +333,8 @@ main(
 	// Write out data in the grid that hasn't been written yet.
 	//
 
-        grid.Flush(use_compositing);
-
+ 
 	grid.l1b.Close();
-	grid.l2a.Close();
 
         return (0);
 
