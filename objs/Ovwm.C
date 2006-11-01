@@ -1124,6 +1124,7 @@ Ovwm::LocatePixels(
           Vector3 plook_vector;
           if(!FastDopplerRangeToTbfLook(d2,r,local_radius,local_center,spacecraft,u1,u2)){
 	    meas->centroid=EarthPosition(0,0,0);
+	    meas->scanAngle = antenna->txCenterAzimuthAngle;
 #ifdef DEBUG_LOCATE_PIXELS
 	    //  fprintf(stderr,"time =%15.15g azim=%g, range=%g dop=%g Pixel not on surface\n",cds.time,antenna->groundImpactAzimuthAngle*rtd,r,d2);
 #endif	  
