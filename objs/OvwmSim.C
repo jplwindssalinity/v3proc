@@ -20,6 +20,7 @@ static const char rcs_id_ovwmsim_c[] =
 #include "Beam.h"
 #include "Sigma0Map.h"
 
+#define SNR_CUTOFF 1.e-3
 
 //==================//
 // OvwmSimBeamInfo //
@@ -2047,6 +2048,7 @@ OvwmSim::SetMeasurements(
               //----------------------------
 	      float dX=GatGar*_ptr_array[i][j]*integrationStepSize*
 		integrationStepSize/(range*range*range*range);
+              //cout << "gain, ptr: " << i << " " << j << " " << GatGar << " " << _ptr_array[i][j] << endl;
 	      meas->XK+=dX;
 	      Es+=dX*s0;
               // reassign ptr_array to X for later computation of bounds
@@ -2072,6 +2074,7 @@ OvwmSim::SetMeasurements(
 	  }
           meas->azimuth_width=integrationStepSize*(jmax-jmin);
           meas->range_width=integrationStepSize*(imax-imin);
+          //printf("Es: %g\n", Es);
           //cout << "Es: " << Es << endl;
 
 	  if(generate_map){
@@ -2102,7 +2105,12 @@ OvwmSim::SetMeasurements(
           Es*=ksig;
           //cout << "Es after ksig: " << Es << endl;
           En=Es/SNR;
-          //cout << "SNR, Es, En: " << SNR <<  " " << Es << " " << En << endl;
+          //printf("SNR, Es, En: %g %g %g\n", SNR, Es, En);
+
+          if (SNR < SNR_CUTOFF && !sim_l1b_direct) { // deal with L1A pixel with low gain
+            En = N0*float(nL)/ovwm->ses.receivePathLoss;
+          }
+
           meas->EnSlice=En;
 
           //------------------------
@@ -2197,6 +2205,9 @@ OvwmSim::SetMeasurements(
           double kpc2=(1/(float)nL)*(1+2/SNR+1/(SNR*SNR));
 	  var_esn_slice=kpc2*Es*Es;
 
+          if (SNR < SNR_CUTOFF && !sim_l1b_direct) { // deal with L1A pixel with low gain
+            var_esn_slice=0.;
+          }
 
 
 	  if(generate_map)
