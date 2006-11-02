@@ -312,7 +312,7 @@ main(
 
             for (int mm=0; mm<nm; mm++) {
               if (meas->Read(grid.l1b.GetInputFp()) != 1) {
-                fprintf(stderr, "Error in Read of Meas!\n");
+                fprintf(stderr, "Error in Read of Meas in l1b frame %d  spot %d meas %d!\n",counter-1,ss,mm);
                 break;
                 //exit(1);
               }
