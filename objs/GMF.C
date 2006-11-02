@@ -322,7 +322,7 @@ int GMF::ReadCBand(
     metValid[6]=true;
 
     float value;
-    for (int met_idx = 5; met_idx < 6; met_idx++)
+    for (int met_idx = 5; met_idx <= 6; met_idx++)
     {
         for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
         {
@@ -351,7 +351,7 @@ int GMF::ReadCBand(
     //----------------------//
 
     int spd_idx = 0;
-    for (int met_idx = 5; met_idx < 6; met_idx++)
+    for (int met_idx = 5; met_idx <= 6; met_idx++)
     {
         for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
         {
@@ -453,7 +453,7 @@ int GMF::ReadKuAndC(
 
 
     
-    for (int met_idx = 5; met_idx < 6; met_idx++)
+    for (int met_idx = 5; met_idx <= 6; met_idx++)
     {
         for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
         {
@@ -482,7 +482,7 @@ int GMF::ReadKuAndC(
     //----------------------//
 
     spd_idx = 0;
-    for (int met_idx = 5; met_idx < 6; met_idx++)
+    for (int met_idx = 5; met_idx <= 6; met_idx++)
     {
         for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
         {
