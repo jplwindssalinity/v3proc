@@ -772,7 +772,7 @@ Grid::Add(
     } // end vati loop
 
     if(_writeIndices){
-      fprintf(_indfp,"%d %d %d %g %g\n",spot_id,meas->startSliceIdx,numWVCs,atd,ctd);
+      fprintf(_indfp,"%d %d %d %g %g %d %d\n",spot_id,meas->startSliceIdx,numWVCs,atd,ctd,vati0,cti0);
     }
     //printf("%d %d %f %f\n",cti,vati,ctd,atd);
     if(_plotMode){
