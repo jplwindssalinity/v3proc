@@ -2112,7 +2112,10 @@ OvwmSim::SetMeasurements(
           }
 
           meas->EnSlice=En;
-
+        
+          if(meas->startSliceIdx==20){
+	    cout << "MeasType=" << meas_type_map[(int) meas->measType]<<" s0 =" << Es/meas->XK << " Es="<<Es << " En=" << En <<" XK="<< meas->XK << endl;
+	  }
           //------------------------
           // compute bias due to ambiguity
           //------------------------
