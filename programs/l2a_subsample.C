@@ -198,7 +198,7 @@ main(
     off_t ** offset=(off_t**)make_array(sizeof(off_t),2,
 					along_track_bins,
 					l2a_in.header.crossTrackBins);
-    int nm;
+    int nm=0;
     off_t tmp;
     while(nm==0){
       tmp=ftello(ifp);
