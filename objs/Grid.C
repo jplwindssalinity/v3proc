@@ -708,7 +708,7 @@ Grid::Add(
        while (vati - _ati_offset >= _alongtrack_bins)
 	 {
 	   // vati is beyond latest row, so need to shift the grid buffer
-	   ShiftForward(do_composite);
+	   if(!ShiftForward(do_composite)) return(0);
 	 }
        
        //
@@ -797,6 +797,7 @@ Grid::Add(
 // Inputs:
 //    do_composite = flag set to 1 if compositing is desired, 0 otherwise.
 
+#define MAX_MEAS_PER_BIN 5000
 int
 Grid::ShiftForward(
     int  do_composite)
@@ -814,8 +815,11 @@ Grid::ShiftForward(
 
     MeasList spot_measList;
 
- 
+    //----------------------------------------------
     // Write out the earliest row of measurement lists.
+    //----------------------------------------------
+
+    // Loop over cross track bins
     for (int i=0; i < _crosstrack_bins; i++)
     {
 
@@ -826,6 +830,8 @@ Grid::ShiftForward(
 
         if (do_composite == 1)
         {
+	  cerr << "Error:Compositing is broken at the moment!" << endl;
+          exit(1);
             l2a.frame.measList.FreeContents();
 
             for (OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
@@ -872,102 +878,40 @@ Grid::ShiftForward(
               headerWritten = 1;
             }
 
-            char buffer[160000];
             float ss1, ss2, sa1, sa2;
             int ns1, ns2;
 
             OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
             if (offsetlist != NULL)
             {
+	        char* buffer=(char*)malloc(sizeof(char)*MAX_MEAS_PER_BIN*meas_length);
 
-                // remove duplicate meas in offsetlist
-
-                Meas* meas = new Meas;
-                Meas* nextmeas = new Meas;
-
-                off_t* l1b_nextoffset = new off_t;
-                int dup_flag = 0;
-                int dd = 0;
-
+ 		int dd = 0;
+                if (offsetlist->NodeCount()>MAX_MEAS_PER_BIN) {
+                  cerr << "Error Number of measurements for a cell exceeds " <<
+		    MAX_MEAS_PER_BIN << " !!" << endl;
+                  cerr << "Cti = " << i << " Ati =" << _ati_start << endl;
+                  exit(1);
+                } 
                 for (off_t* l1b_offset = offsetlist->GetHead(); l1b_offset;
                             l1b_offset = offsetlist->GetNext()) {
 
-                  if (dup_flag==1) {
-                    l1b_offset = offsetlist->GetPrev();
-                  }
+		  // check for valid offset and seek offset in file
+		  if (fseeko(fp, *l1b_offset, SEEK_SET)==-1) {
+		    return(0);
+		  }
 
-                  //if (fseeko(fp, *l1b_offset+OFFSET_CK_DUP, SEEK_SET)==-1) {
-                  //  return(0);
-                  //}
-                  if (fseeko(fp, *l1b_offset, SEEK_SET)==-1) {
-                    return(0);
-                  }
+ 		  fread(&buffer[dd], sizeof(char), meas_length, fp);
 
-                  //fread(&ss1, sizeof(float), 1, fp);
-                  //fread(&ns1, sizeof(int), 1, fp);
-                  //fread(&sa1, sizeof(float), 1, fp);
-                  meas->Read(fp);
+                  // debugging tool
+                  //if(_ati_start==279 && i==29){
+		  //  cout << i <<  " " << _ati_start << " " << meas_length << endl;
+                  //  cout << l1b_offset << " " << *l1b_offset << " " << dd << endl;
+		  //}
+		  dd += meas_length;
+                }  // end loop through offset list
 
-                  l1b_nextoffset = offsetlist->GetNext();
-
-                  //cout << "offset1: " << *l1b_offset << endl;
-
-                  if (l1b_nextoffset != NULL) {
-
-                    //cout << "offset2: " << *l1b_nextoffset << endl;
-
-                    //if (fseeko(fp, *l1b_nextoffset+OFFSET_CK_DUP, SEEK_SET)==-1) {
-                    //  return(0);
-                    //}
-                    if (fseeko(fp, *l1b_nextoffset, SEEK_SET)==-1) {
-                      return(0);
-                    }
-
-                    //fread(&ss2, sizeof(float), 1, fp);
-                    //fread(&ns2, sizeof(int), 1, fp);
-                    //fread(&sa2, sizeof(float), 1, fp);
-                    nextmeas->Read(fp);
-
-                    //cout << "ss: " << meas->startSliceIdx << " " << nextmeas->startSliceIdx << endl;
-                    //cout << "sa: " << meas->scanAngle << " " << nextmeas->scanAngle << endl;
-                    //if (ss1==ss2 && sa1==sa2) {
-                    //if (meas->startSliceIdx==nextmeas->startSliceIdx
-                    //    && meas->scanAngle==nextmeas->scanAngle) {
-                    if (meas->startSliceIdx==nextmeas->startSliceIdx
-                        && meas->scanAngle==nextmeas->scanAngle
-                        && meas->measType==nextmeas->measType) {
-                      dup_flag = 1;
-                      /* need to remove the element pointed by l1b_offset */
-                      l1b_offset = offsetlist->GetPrev();
-                      l1b_offset = offsetlist->RemoveCurrent();
-                      delete l1b_offset;
-                      l1b_offset = offsetlist->GetCurrent();
-                      //cout << "dup: " << *l1b_offset << endl;
-                      //cout << "type: " << meas->measType << " " << nextmeas->measType << endl;
-                    } else {
-                      dup_flag = 0;
-                      /* put pointer backward */
-                      l1b_offset = offsetlist->GetPrev();
-                      //cout << "not dup: " << *l1b_offset << " " << dd << endl;
-                      /* write record to buffer */
-                      fseeko(fp, *l1b_offset, SEEK_SET);
-                      fread(&buffer[dd], sizeof(char), meas_length, fp);
-                      dd += meas_length;
-                    }
-
-                  } // l1b_nextoffset not NULL
-
-                } // remove duplicate
-
-                delete meas;
-                delete nextmeas;
-
-                /* write out final record */
-
-                l1b_nextoffset = offsetlist->GetTail();
-                fseeko(fp, *l1b_nextoffset, SEEK_SET);
-                fread(&buffer[dd], sizeof(char), meas_length, fp);
-                dd += meas_length;
+ 
 
                 /* write out to l2a file */
 
@@ -979,44 +923,23 @@ Grid::ShiftForward(
 
                 /* get the total count */
 
-                //int nm = offsetlist->NodeCount();
+
                 int nm = dd/meas_length;
 
-                //cout << "# rec: " << nm << " " << dd << endl;
-
-                if (nm>2000) {
-                  cerr << "Number of measurements for a cell exceeds 2000!!" << endl;
-                  exit(1);
-                } 
-
                 fwrite((void *)&nm, sizeof(int), 1, l2a.GetOutputFp()); 
-
-                //int cc = 0;
-
-                //for (off_t* l1b_offset = offsetlist->GetHead(); l1b_offset;
-                //            l1b_offset = offsetlist->GetNext()) {
-                //  if (fseeko(fp, *l1b_offset, SEEK_SET)==-1) {
-                //    return(0);
-                //  }   
-                //  fread(&buffer[cc], sizeof(char), meas_length, fp);
-                //  //fwrite(buffer, sizeof(char), meas_length, l2a.GetOutputFp());
-                //  cc += meas_length;
-                //}
-
                 fwrite(buffer, sizeof(char), nm*meas_length, l2a.GetOutputFp());
-
-                delete l1b_nextoffset;
-
-            } // offset != NULL
-
-        } // composite = 0
+		free(buffer);
+	    } // end if offsetlist != NULL
+	    
+        } // end case composite == 0
       } // end if not _plotMode (Nothing is written to the L2A in plot mode
-        //----------------------//
-        // free the offset list //
-        //----------------------//
+        
+      //----------------------//
+      // free the offset list //
+      //----------------------//
 
       _grid[i][_ati_start].FreeContents();
-    }
+    } // end cross track bin loop
 
     // Update buffer indices.
     _ati_start = (_ati_start + 1) % _alongtrack_bins;
@@ -1043,7 +966,7 @@ Grid::Flush(
 {
     for (int i = 0; i < _alongtrack_bins; i++)
     {
-        ShiftForward(do_composite);
+      if(!ShiftForward(do_composite)) return(0);
     }
 
     return(1);
