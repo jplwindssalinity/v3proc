@@ -547,7 +547,7 @@ Grid::Add(
 	   printf("%g %g\n&\n",c0,a0);
 	 }
          float dr=fabs(cosang*datd+sinang*dctd);
-         float da=fabs(sinang*datd+cosang*dctd);
+         float da=fabs(-sinang*datd+cosang*dctd);
          if(dr<=0.5*rwid && da<=0.5*awid) overlaps=true;
 	   
 	 
@@ -797,7 +797,8 @@ Grid::Add(
 // Inputs:
 //    do_composite = flag set to 1 if compositing is desired, 0 otherwise.
 
-#define MAX_MEAS_PER_BIN 5000
+//#define MAX_MEAS_PER_BIN 5000
+#define MAX_MEAS_PER_BIN 10000
 int
 Grid::ShiftForward(
     int  do_composite)
