@@ -8,14 +8,16 @@
 //    l2a_to_l2b
 //
 // SYNOPSIS
-//    l2a_to_l2b <sim_config_file>
+//    l2a_to_l2b [ -a start:end ] [ -n num_frames ] [ -i ] <sim_config_file>
 //
 // DESCRIPTION
 //    Simulates the SeaWinds 1b ground processing of Level 2A to
 //    Level 2B data.  This program retrieves wind from measurements.
 //
 // OPTIONS
-//    None.
+//    [ -a start:end ]  The range of along track index.
+//    [ -n num_frames ] The maximum frame number.
+//    [ -i ]            Ignore bad l2a.
 //
 // OPERANDS
 //    The following operand is supported:
@@ -101,6 +103,7 @@ template class std::map<string,string,Options::ltstr>;
 //-----------//
 
 #define MAX_ALONG_TRACK_BINS  1624
+#define OPTSTRING "ia:n:"
 
 //-------//
 // HACKS //
@@ -128,7 +131,7 @@ template class std::map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "[max_record_no]", "[ignore_bad_l2a]",0};
+const char* usage_array[] = {"[ -a start:end ]", "[ -n num_frames ]", "[ -i ]", "<sim_config_file>", 0};
 
 
 //--------------//
@@ -147,13 +150,46 @@ main(
     int ignore_bad_l2a=0;
     long int max_record_no = 0;
     const char* command = no_path(argv[0]);
-    if (argc != 2 && argc!=3 && argc!=4)
+    if (argc < 2)
         usage(command, usage_array, 1);
 
-    int clidx = 1;
-    const char* config_file = argv[clidx++];
-    if(argc==3) max_record_no =atoi(argv[clidx++]);
-    if(argc==4) ignore_bad_l2a =atoi(argv[clidx++]);
+    long int start_ati = -100000000;
+    long int end_ati = 100000000;
+
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+      switch(c)
+      {
+        case 'a':
+          if (sscanf(optarg, "%ld:%ld", &start_ati, &end_ati) != 2)
+          {
+            fprintf(stderr, "%s: error determining ati range %s\n",
+                command, optarg);
+            exit(1);
+          }
+          break;
+        case 'n':
+          if (sscanf(optarg, "%ld", &max_record_no) != 1)
+          {
+            fprintf(stderr, "%s: error determining max frame number %s\n",
+                command, optarg);
+            exit(1);
+          }
+          break;
+        case 'i':
+          ignore_bad_l2a=1;
+          break;
+        case '?':
+          usage(command, usage_array, 1);
+          break;
+      }
+    }
+
+    if (argc != optind + 1)
+      usage(command, usage_array, 1);
+
+    const char* config_file = argv[optind++];
 
     //------------------------//
     // tell how far you have  //
@@ -318,9 +354,15 @@ main(
         // end hack
 #endif
 
-        int retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
-        if(frame_number%100==0) fprintf(stderr,"%d l2a frames processed\n",
+        int retval = 1;
+        if (l2a.frame.ati >= start_ati && l2a.frame.ati <= end_ati) {
+          retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
+          if(frame_number%100==0) fprintf(stderr,"%d l2a frames processed\n",
 					frame_number);
+        } else if (l2a.frame.ati > end_ati) {
+          break;
+        }
+
 #ifdef LATLON_LIMIT_HACK
         // start hack
         if (retval != 1)
