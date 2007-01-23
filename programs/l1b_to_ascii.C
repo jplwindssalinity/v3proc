@@ -131,6 +131,14 @@ main(
           if(start_frame>=0) frame_number++;
         }
 
+        fprintf(stderr,"Read frames %d to %d\n",1,frame_number-1);
+        if(start_frame<1) start_frame=1;
+        if(end_frame>=frame_number) end_frame=frame_number-1;
+        if(end_frame>=start_frame)
+          fprintf(stderr,"Wrote frames %d to %d\n",start_frame,end_frame);
+        else
+          fprintf(stderr,"Nothing written\n");
+
         //----------------------//
         // close files and exit //
         //----------------------//
