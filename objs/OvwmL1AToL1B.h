@@ -97,6 +97,7 @@ public:
     float   minSignalToAmbigRatio; // more ambiguous pixels omitted
 
     int     simLandFlag;           // 0 = ignore land, 1 = simulate land
+    int     simCoast;              // 0 = not simulate coast, 1 = simulate coast
 
 protected:
 

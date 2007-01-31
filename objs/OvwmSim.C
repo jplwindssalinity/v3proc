@@ -21,6 +21,8 @@ static const char rcs_id_ovwmsim_c[] =
 #include "Sigma0Map.h"
 
 #define SNR_CUTOFF 1.e-3
+#define dX_THRESHOLD 0.05 // threshold for eliminate meas record with land
+#define E_FACTOR 1.644    // value for sinc square to drop to 1/e
 
 //==================//
 // OvwmSimBeamInfo //
@@ -1459,7 +1461,7 @@ OvwmSim::SetMeasurements(
                 cf->wv[slice_i].dir = 0.0;
             }
         }
-        else if (meas->landFlag == 1)
+        else if (meas->landFlag == 1 && simLandFlag == 0)
         {
             //-------------------------------------------//
             // LAND! Try to use the inner and outer maps //
@@ -1910,7 +1912,8 @@ OvwmSim::SetMeasurements(
               if(ovwm->ses.numPulses!=1){
 		val2=(jj-center_azim_idx)*integrationStepSize;
 		val2/=azimwid;
-		val2*=val2;
+                //val2*=val2;
+                val2*=E_FACTOR;
 	      }
 	      else{
 		val2=1.0;
@@ -1921,7 +1924,14 @@ OvwmSim::SetMeasurements(
                 val1/=rangewid;
                 val1*=val1;
 
-       		_ptr_array[i][j]+=exp(-(val1+val2));
+                //_ptr_array[i][j]+=exp(-(val1+val2));
+                // assume azimuth PTR is sinc function
+                if (val2 != 0.) {
+                  _ptr_array[i][j]+=exp(-val1)*sin(val2)*sin(val2)/val2/val2;
+                } else {
+                  _ptr_array[i][j]+=exp(-val1);
+                }
+                //cout << i << " " << j << " vals: " << val1 << " " << val2 << " " << _ptr_array[i][j] << endl;
                 areaeff+=_ptr_array[i][j]*integrationStepSize*integrationStepSize;
 	      }
 	    }
@@ -1939,6 +1949,8 @@ OvwmSim::SetMeasurements(
 
           // mainloop for computing X and signal energy and noise energy
           meas->XK=0;
+          float dX_land = 0.;
+          float dX_ocean = 0.;
           Es=0;
 	  En=0;
 	  
@@ -2049,6 +2061,11 @@ OvwmSim::SetMeasurements(
 	      float dX=GatGar*_ptr_array[i][j]*integrationStepSize*
 		integrationStepSize/(range*range*range*range);
               //cout << "gain, ptr: " << i << " " << j << " " << GatGar << " " << _ptr_array[i][j] << endl;
+              if (island) {
+                dX_land += dX;
+              } else {
+                dX_ocean += dX;
+              }
 	      meas->XK+=dX;
 	      Es+=dX*s0;
               // reassign ptr_array to X for later computation of bounds
@@ -2056,6 +2073,14 @@ OvwmSim::SetMeasurements(
               if(dX> maxdX) maxdX=dX;
 	    }
 	  }
+
+          if (dX_land/meas->XK >= dX_THRESHOLD && sim_l1b_direct) {
+            meas=meas_spot->RemoveCurrent();
+            delete meas;
+            meas=meas_spot->GetCurrent();
+            slice_i++;
+            continue;
+          }
 
           // determine range and azimuth width
           int jmin= int(center_azim_idx);

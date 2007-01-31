@@ -990,6 +990,7 @@ int ConfigOvwmL1AToL1B(OvwmL1AToL1B* l1a_to_l1b, ConfigList* config_list)
         fprintf(stderr,"Cannot Initialize Land Map\n");
         exit(0);
     }
+    config_list->GetInt(SIM_COAST_KEYWORD,&(l1a_to_l1b->simCoast));
 
     //----------//
     // x-factor //

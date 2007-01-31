@@ -1101,11 +1101,30 @@ GMF::CheckRetrieveCriteria(
 
     for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
     {
-        if (! retrieveOverIce && meas->landFlag != 0)
-            return(0);
-        else if (meas->landFlag == 1 || meas->landFlag == 3)
-            return(0);
-        // For SeaIce landFlag=2
+        // retrieve ocean only
+        if (!retrieveOverIce && !retrieveOverCoast && !(meas->landFlag == 0))
+          return(0);
+
+        // retrieve ocean and ice only
+        if (retrieveOverIce && !retrieveOverCoast &&
+            !(meas->landFlag == 0 || meas->landFlag == 2) )
+          return(0);
+ 
+        // retrieve ocean and coast only
+        if (!retrieveOverIce && retrieveOverCoast &&
+            !(meas->landFlag == 0 || meas->landFlag == 3) )
+          return(0);
+ 
+        // retrieve ocean, ice and coast
+        if (retrieveOverIce && retrieveOverCoast &&
+            !(meas->landFlag == 0 || meas->landFlag == 2 || meas->landFlag == 3) )
+          return(0);
+ 
+        //if (! retrieveOverIce && meas->landFlag != 0 && ! retrieveOverCoast)
+        //    return(0);
+        //else if ((meas->landFlag == 1 || meas->landFlag == 3) && ! retrieveOverCoast)
+        //    return(0);
+        //// For SeaIce landFlag=2
     }
 
     Node<Meas>* current;

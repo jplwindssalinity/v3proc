@@ -13,6 +13,9 @@ static const char rcs_id_l1atol1b_c[] =
 #include "OvwmSigma0.h"
 #include "Ovwm.h"
 
+#define dX_THRESHOLD 0.05 // threshold for eliminate meas record with land
+#define E_FACTOR 1.644    // value for sinc square to drop to 1/e
+
 //==============//
 // OvwmL1AToL1B //
 //==============//
@@ -491,6 +494,8 @@ OvwmL1AToL1B::Convert(
 
             meas->measType = meas_type;
             meas->XK = 0.;
+            float dX_land = 0.;
+            float dX_ocean = 0.;
 
             //--------------------------//
             // ignore land if necessary //
@@ -769,7 +774,8 @@ OvwmL1AToL1B::Convert(
 		    if(ovwm->ses.numPulses!=1){
 		      val2=(jj-center_azim_idx)*integrationStepSize;
 		      val2/=azimwid;
-		      val2*=val2;
+                      //val2*=val2;
+                      val2*=E_FACTOR;
 		    }
 		    else{
 		      val2=1.0;
@@ -779,7 +785,14 @@ OvwmL1AToL1B::Convert(
                       val1/=rangewid;
                       val1*=val1;
 
-                      _ptr_array[i][j]+=exp(-(val1+val2));
+                      //_ptr_array[i][j]+=exp(-(val1+val2));
+                      // assume azimuth PTR is sinc function
+                      if (val2 != 0.) {
+                        _ptr_array[i][j]+=exp(-val1)*sin(val2)*sin(val2)/val2/val2;
+                      } else {
+                        _ptr_array[i][j]+=exp(-val1);
+                      }
+                      //cout << i << " " << j << " vals: " << val1 << " " << val2 << " " << _ptr_array[i][j] << endl;
                       areaeff+=_ptr_array[i][j]*integrationStepSize*integrationStepSize;
                     }
 
@@ -805,6 +818,24 @@ OvwmL1AToL1B::Convert(
                     EarthPosition locgc=gc_to_rangeazim.Backward(locra);
                     locgc+=spot_centroid;
 
+                    //-----------
+                    // check land
+                    //-----------
+
+                    double alt, lat, lon;
+                    if (! locgc.GetAltLonGDLat(&alt, &lon, &lat))
+                      return(0);
+                    LonLat lon_lat;
+                    lon_lat.longitude = lon;
+                    lon_lat.latitude = lat;
+                    int island=0;
+                    if(simCoast){
+                      island=landMap.IsLand(lon, lat);
+                    }
+                    if(island){
+                      meas->landFlag=3;
+                    }
+
                     //-----------------------------
                     // compute gain and range
                     //-----------------------------
@@ -824,6 +855,11 @@ OvwmL1AToL1B::Convert(
                     //----------------------------
                     float dX=GatGar*_ptr_array[i][j]*integrationStepSize*
                      integrationStepSize/(range*range*range*range);
+                    if (island) {
+                      dX_land += dX;
+                    } else {
+                      dX_ocean += dX;
+                    }
                     meas->XK+=dX;
 		    // reassign ptr_array to X for later computation of bounds
 		    _ptr_array[i][j]=dX;
@@ -831,6 +867,15 @@ OvwmL1AToL1B::Convert(
                   } // az steps
 
                 } // rng steps
+
+                if (dX_land/meas->XK >= dX_THRESHOLD) {
+                  meas=meas_spot->RemoveCurrent();
+                  delete meas;
+                  meas=meas_spot->GetCurrent();
+                  slice_i++;
+                  continue;
+                }
+
 		// determine range and azimuth width
 		int jmin= center_azim_idx;
 		int jmax= center_azim_idx;

@@ -1587,6 +1587,11 @@ ConfigGMF(
     else
         gmf->retrieveOverIce = 0;
 
+    if ( config_list->GetInt(RETRIEVE_OVER_COAST_KEYWORD, &tmp_int))
+        gmf->retrieveOverCoast = tmp_int;
+    else
+        gmf->retrieveOverCoast = 0;
+
     if ( config_list->GetInt(RETRIEVE_USING_CRITERIA_FLAG_KEYWORD, &tmp_int))
         gmf->retrieveUsingCriteriaFlag = tmp_int;
     else

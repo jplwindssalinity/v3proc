@@ -151,6 +151,7 @@ public:
     int  retrieveUsingKprsFlag;
     int  retrieveUsingLogVar;
     int  retrieveOverIce;
+    int  retrieveOverCoast;
     int  smartNudgeFlag;
     int  retrieveUsingCriteriaFlag;
 
