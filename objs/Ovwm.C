@@ -2289,6 +2289,26 @@ Ovwm:: FastDopplerRangeToTbfLook(double doppler, double range,
   v2=v[1]/spd;
   v3=v[2]/spd;
 
+  // handle the case with small denominator by rotate by 45 degree
+  int rotFlag = 0;
+  double new2, new3;
+  if (fabs(v3*p1 - p3*v1) < 1.e-5 || fabs(p3) < 1.e-5) {
+    new2 = p2/sqrt(2) - p3/sqrt(2);
+    new3 = p2/sqrt(2) + p3/sqrt(2);
+    p2 = new2;
+    p3 = new3;
+    new2 = v2/sqrt(2) - v3/sqrt(2);
+    new3 = v2/sqrt(2) + v3/sqrt(2);
+    v2 = new2;
+    v3 = new3;
+    rotFlag = 1;
+    // check new values
+    if (fabs(v3*p1 - p3*v1) < 1.e-5 || fabs(p3) < 1.e-5) {
+      cerr << "Denominators in FastDopplerRangeToTbfLook are too small!" << endl;
+      exit(1);
+    }
+  }
+
   double range_in_radius=range/local_radius;
   double A =  (1 - pos_in_rad*pos_in_rad 
 		 - range_in_radius*range_in_radius)
@@ -2315,6 +2335,20 @@ Ovwm:: FastDopplerRangeToTbfLook(double doppler, double range,
      u2[1] = ( -(C*D + E*F) +sqrt( sol))/(D*D + F*F + 1.0);
      u2[0] = C + D*u2[1];
      u2[2] = E + F*u2[1];
+
+     // rotate back to original frame
+     if (rotFlag==1) {
+       new2 = u1[1]/sqrt(2) + u1[2]/sqrt(2);
+       new3 = -u1[1]/sqrt(2) + u1[2]/sqrt(2);
+       u1[1] = new2;
+       u1[2] = new3;
+       new2 = u2[1]/sqrt(2) + u2[2]/sqrt(2);
+       new3 = -u2[1]/sqrt(2) + u2[2]/sqrt(2);
+       u2[1] = new2;
+       u2[2] = new3;
+       //printf("%15.12g %15.12g %15.12g\n", u1[0], u1[1], u1[2]);
+       //printf("%15.12g %15.12g %15.12g\n", u2[0], u2[1], u2[2]);
+     }
      return(1);
   }
   return(0);
