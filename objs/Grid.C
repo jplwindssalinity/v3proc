@@ -798,7 +798,7 @@ Grid::Add(
 //    do_composite = flag set to 1 if compositing is desired, 0 otherwise.
 
 //#define MAX_MEAS_PER_BIN 5000
-#define MAX_MEAS_PER_BIN 10000
+#define MAX_MEAS_PER_BIN 20000
 int
 Grid::ShiftForward(
     int  do_composite)
