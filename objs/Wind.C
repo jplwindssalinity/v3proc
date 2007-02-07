@@ -1096,7 +1096,8 @@ WVC::RedistributeObjs()
 //===========//
 
 WindField::WindField()
-:   _wrap(0), _useFixedSpeed(0), _fixedSpeed(0.0), _field(0)
+:   _wrap(0), _useFixedSpeed(0), _fixedSpeed(0.0),
+    _useFixedDirection(0), _fixedDirection(0.0), _useRandomDirection(0), _field(0)
 {
     return;
 }
@@ -2152,6 +2153,17 @@ WindField::InterpolatedWindVector(
         wv->spd = _fixedSpeed;
     }
 
+    if (_useFixedDirection)
+    {
+        wv->dir = _fixedDirection;
+    }
+
+    if (_useRandomDirection)
+    {
+        Uniform ranDir(pi, 0.0);
+        wv->dir = ranDir.GetNumber();
+    }
+
     return(1);
 }
 
@@ -2165,6 +2177,31 @@ WindField::FixSpeed(
 {
     _useFixedSpeed = 1;
     _fixedSpeed = speed;
+    return(1);
+}
+
+//-------------------------//
+// WindField::FixDirection //
+//-------------------------//
+
+int
+WindField::FixDirection(
+    float  direction)
+{
+    _useFixedDirection = 1;
+    _fixedDirection = direction;
+    return(1);
+}
+
+//----------------------------//
+// WindField::RandomDirection //
+//----------------------------//
+
+int
+WindField::RandomDirection(
+    int  randomFlag)
+{
+    _useRandomDirection = randomFlag;
     return(1);
 }
 

@@ -1442,6 +1442,16 @@ ConfigWindField(
     {
         windfield->FixSpeed(fixed_speed);
     }
+    float fixed_direction;
+    if (config_list->GetFloat(TRUTH_WIND_FIXED_DIRECTION_KEYWORD, &fixed_direction))
+    {
+        windfield->FixDirection(fixed_direction);
+    }
+    int tmp_int;
+    if (config_list->GetInt(TRUTH_WIND_RANDOM_DIRECTION_KEYWORD, &tmp_int))
+    {
+        windfield->RandomDirection(tmp_int);
+    }
     config_list->ExitForMissingKeywords();
 
     //--------------------//

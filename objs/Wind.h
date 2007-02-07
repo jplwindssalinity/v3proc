@@ -10,7 +10,9 @@ static const char rcs_id_wind_h[] =
     "@(#) $Id$";
 
 #include <stdio.h>
+#include "Constants.h"
 #include "Matrix.h"
+#include "Distributions.h"
 #include "AngleInterval.h"
 #include "LonLatWind.h"
 #include "WindVector.h"
@@ -266,6 +268,8 @@ public:
     //----------//
 
     int  FixSpeed(float speed);
+    int  FixDirection(float direction);
+    int  RandomDirection(int randomFlag);
     int  SetAllSpeeds(float speed);
     int  ScaleSpeed(float scale);
     int  FakeEcmwfHiRes(float speed);
@@ -290,9 +294,12 @@ protected:
     Index  _lon;
     Index  _lat;
 
-    int    _wrap;             // flag for longitude wrapping
-    int    _useFixedSpeed;    // flag for using fixed speed
-    float  _fixedSpeed;     // the fixed speed
+    int    _wrap;               // flag for longitude wrapping
+    int    _useFixedSpeed;      // flag for using fixed speed
+    float  _fixedSpeed;         // the fixed speed
+    int    _useFixedDirection;  // flag for using fixed direction
+    float  _fixedDirection;     // the fixed direction
+    int    _useRandomDirection; // flag for using random direction
 
     WindVector***  _field;
 };
