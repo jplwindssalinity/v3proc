@@ -1482,31 +1482,30 @@ OvwmSim::SetMeasurements(
         }
         else if(!simHiRes)
         {
+
             //-----------------//
             // get wind vector //
             //-----------------//
  
 	    WindVector wv;
 
+	    if (! windfield->InterpolatedWindVector(lon_lat, &wv))
+	      {
+		wv.spd = 0.0;
+		wv.dir = 0.0;
+	      }
 
+	    //--------------------------------//
+	    // convert wind vector to sigma-0 //
+	    //--------------------------------//
 
-            if (! windfield->InterpolatedWindVector(lon_lat, &wv))
-            {
-                wv.spd = 0.0;
-                wv.dir = 0.0;
-            }
+	    // chi is defined so that 0.0 means the wind is blowing towards
+	    // the s/c (the opposite direction as the look vector)
+	    float chi = wv.dir - meas->eastAzimuth + pi;
+	      
+	    gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
+					wv.spd, chi, &sigma0);
 
-            //--------------------------------//
-            // convert wind vector to sigma-0 //
-            //--------------------------------//
-
-            // chi is defined so that 0.0 means the wind is blowing towards
-            // the s/c (the opposite direction as the look vector)
-            float chi = wv.dir - meas->eastAzimuth + pi;
-
-            gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
-                wv.spd, chi, &sigma0);
-		
 	    // add rain contamination if simRain
 	    if(simRain){
 	      float a,b;
@@ -1980,7 +1979,10 @@ OvwmSim::SetMeasurements(
               if(simCoast){
 		island=landMap.IsLand(lon, lat);
 	      }
-	      if(island){
+              if(uniformSigmaField){
+		s0=uniformSigmaValue;
+	      }
+	      else if(island){
 		meas->landFlag=3;
 		s0=landSigma0[meas->beamIdx];
 	      }
@@ -2159,7 +2161,8 @@ OvwmSim::SetMeasurements(
 	    lon_lat.latitude = lat;
 	    int island=0;
 	    island=landMap.IsLand(lon, lat);
-	    if(island){
+            if(uniformSigmaField) amb1s0=uniformSigmaValue;
+	    else if(island){
 	      meas->landFlag=3;
 	      amb1s0=landSigma0[meas->beamIdx];
 	    }
@@ -2196,7 +2199,8 @@ OvwmSim::SetMeasurements(
 	    lon_lat.latitude = lat;
 	    int island=0;
 	    island=landMap.IsLand(lon, lat);
-	    if(island){
+            if(uniformSigmaField)amb2s0=uniformSigmaValue;
+	    else if(island){
 	      meas->landFlag=3;
 	      amb2s0=landSigma0[meas->beamIdx];
 	    }
@@ -2237,6 +2241,9 @@ OvwmSim::SetMeasurements(
             var_esn_slice=0.;
           }
 
+          if(!simKpcFlag){
+	    var_esn_slice=0;
+	  }
 
 	  if(generate_map)
 	    kpc_map_[range_index][azimuth_index]=kpc2;
