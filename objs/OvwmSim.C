@@ -1450,115 +1450,115 @@ OvwmSim::SetMeasurements(
         float sigma0;
         float Es, En, var_esn_slice;
 
-
-        if (uniformSigmaField)
-        {
-            sigma0=uniformSigmaValue;
-            if (simVs1BCheckfile)
-            {
-                cf->sigma0[slice_i] = sigma0;
-                cf->wv[slice_i].spd = 0.0;
-                cf->wv[slice_i].dir = 0.0;
-            }
-        }
-        else if (meas->landFlag == 1 && simLandFlag == 0)
-        {
-            //-------------------------------------------//
-            // LAND! Try to use the inner and outer maps //
-            //-------------------------------------------//
-
-            // for now land map option is disallowed; set constant values
-            // for each beam
-            //           sigma0 = inner_map->GetSigma0(lon, lat);
-            sigma0 = landSigma0[meas->beamIdx];
-
-            // This part is INCOMPLETE needs to set other L1A/L1B fields
-            if (simVs1BCheckfile)
-            {
-                cf->sigma0[slice_i] = sigma0;
-                cf->wv[slice_i].spd = 0.0;
-                cf->wv[slice_i].dir = 0.0;
-            }
-        }
-        else if(!simHiRes)
-        {
-
-            //-----------------//
-            // get wind vector //
-            //-----------------//
- 
-	    WindVector wv;
-
-	    if (! windfield->InterpolatedWindVector(lon_lat, &wv))
-	      {
-		wv.spd = 0.0;
-		wv.dir = 0.0;
-	      }
-
-	    //--------------------------------//
-	    // convert wind vector to sigma-0 //
-	    //--------------------------------//
-
-	    // chi is defined so that 0.0 means the wind is blowing towards
-	    // the s/c (the opposite direction as the look vector)
-	    float chi = wv.dir - meas->eastAzimuth + pi;
-	      
-	    gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
-					wv.spd, chi, &sigma0);
-
-	    // add rain contamination if simRain
-	    if(simRain){
-	      float a,b;
-	      int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
-	      if(goodrain) sigma0= sigma0/a + b;
+        if(!simHiRes){
+	  if (uniformSigmaField)
+	    {
+	      sigma0=uniformSigmaValue;
+	      if (simVs1BCheckfile)
+		{
+		  cf->sigma0[slice_i] = sigma0;
+		  cf->wv[slice_i].spd = 0.0;
+		  cf->wv[slice_i].dir = 0.0;
+		}
 	    }
-            if (simVs1BCheckfile)
-            {
-                cf->sigma0[slice_i] = sigma0;
-                cf->wv[slice_i].spd = wv.spd;
-                cf->wv[slice_i].dir = wv.dir;
-            }
+	  else if (meas->landFlag == 1 && simLandFlag == 0)
+	    {
+	      //-------------------------------------------//
+	      // LAND! Try to use the inner and outer maps //
+	      //-------------------------------------------//
 
+	      // for now land map option is disallowed; set constant values
+	      // for each beam
+	      //           sigma0 = inner_map->GetSigma0(lon, lat);
+	      sigma0 = landSigma0[meas->beamIdx];
 
-	    //---------------------------------------------------------------//
-	    // Fuzz the sigma0 by Kpm to simulate the effects of model function
-	    // error.  The resulting sigma0 is the 'true' value.
-	    // It does not map back to the correct wind speed for the
-	    // current beam and geometry because the model function is
-	    // not perfect.
-	    //---------------------------------------------------------------//
-
-	    // Uncorrelated component.
-	    if (simUncorrKpmFlag == 1)
-	      {
-		double kpm2;
-		if (! kp->GetKpm2(meas->measType, wv.spd, &kpm2))
-		  {
-		    printf("Error: Bad Kpm value in OvwmSim::SetMeas\n");
-		    exit(-1);
-		  }
-		Gamma gammaRv(sigma0*sigma0*kpm2,sigma0);
-		sigma0 = gammaRv.GetNumber();
+	      // This part is INCOMPLETE needs to set other L1A/L1B fields
+	      if (simVs1BCheckfile)
+		{
+		  cf->sigma0[slice_i] = sigma0;
+		  cf->wv[slice_i].spd = 0.0;
+		  cf->wv[slice_i].dir = 0.0;
+		}
+	    }
+	  else if(!simHiRes)
+	    {
+	      
+	      //-----------------//
+	      // get wind vector //
+	      //-----------------//
+ 
+	      WindVector wv;
+	      
+	      if (! windfield->InterpolatedWindVector(lon_lat, &wv))
+		{
+		  wv.spd = 0.0;
+		  wv.dir = 0.0;
+		}
+	      
+	      //--------------------------------//
+	      // convert wind vector to sigma-0 //
+	      //--------------------------------//
+	      
+	      // chi is defined so that 0.0 means the wind is blowing towards
+	      // the s/c (the opposite direction as the look vector)
+	      float chi = wv.dir - meas->eastAzimuth + pi;
+	      
+	      gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
+					wv.spd, chi, &sigma0);
+	      
+	      // add rain contamination if simRain
+	      if(simRain){
+		float a,b;
+		int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
+		if(goodrain) sigma0= sigma0/a + b;
 	      }
+	      if (simVs1BCheckfile)
+		{
+		  cf->sigma0[slice_i] = sigma0;
+		  cf->wv[slice_i].spd = wv.spd;
+		  cf->wv[slice_i].dir = wv.dir;
+		}
 
-	    // Correlated component.
-	    if (simCorrKpmFlag == 1)
-	      {
-		sigma0 *= kpmField->GetRV(correlatedKpm, lon_lat);
-	      }
+
+	      //---------------------------------------------------------------//
+	      // Fuzz the sigma0 by Kpm to simulate the effects of model function
+	      // error.  The resulting sigma0 is the 'true' value.
+	      // It does not map back to the correct wind speed for the
+	      // current beam and geometry because the model function is
+	      // not perfect.
+	      //---------------------------------------------------------------//
+
+	      // Uncorrelated component.
+	      if (simUncorrKpmFlag == 1)
+		{
+		  double kpm2;
+		  if (! kp->GetKpm2(meas->measType, wv.spd, &kpm2))
+		    {
+		      printf("Error: Bad Kpm value in OvwmSim::SetMeas\n");
+		      exit(-1);
+		    }
+		  Gamma gammaRv(sigma0*sigma0*kpm2,sigma0);
+		  sigma0 = gammaRv.GetNumber();
+		}
+	      
+	      // Correlated component.
+	      if (simCorrKpmFlag == 1)
+		{
+		  sigma0 *= kpmField->GetRV(correlatedKpm, lon_lat);
+		}
 	
-	    //-------------------------//
-	    // convert Sigma0 to Power //
-	    //-------------------------//
+	      //-------------------------//
+	      // convert Sigma0 to Power //
+	      //-------------------------//
+	      
+	      // Kfactor: either 1.0, taken from table, or X is computed
+	      // directly
+	      float Xfactor = 0.0;
+	      float Kfactor = 1.0;
 	  
-	    // Kfactor: either 1.0, taken from table, or X is computed
-	    // directly
-	    float Xfactor = 0.0;
-	    float Kfactor = 1.0;
-	  
-	    if (computeXfactor)
-	      {
-		if (! ComputeXfactor(spacecraft, ovwm, meas, &Xfactor))
+	      if (computeXfactor)
+		{
+		  if (! ComputeXfactor(spacecraft, ovwm, meas, &Xfactor))
 		  {
 		    meas = meas_spot->RemoveCurrent();
 		    delete meas;
@@ -1566,86 +1566,86 @@ OvwmSim::SetMeasurements(
 		    slice_i++;
 		    continue;
 		  }
-		
-		if (! MeasToEsnX(ovwm, meas, Xfactor, sigma0, &(meas->value),
-				 &Es, &En, &var_esn_slice))
-		  {
-		    return(0);
-		  }
-		meas->XK = Xfactor;
-	      }
-	    else
-	      {
-		Kfactor = 1.0;  // default to use if no Kfactor specified.
-		if (useKfactor)
-		  {
-		    float orbit_position = ovwm->cds.OrbitFraction();
-		    
-		    Kfactor = 
-		      kfactorTable.RetrieveByRelativeSliceNumber(
-								 ovwm->cds.currentBeamIdx,
-								 ovwm->sas.antenna.txCenterAzimuthAngle, orbit_position,
-								 meas->startSliceIdx);
-		  }
-		
-		double Tp = ovwm->ses.txPulseWidth;
-		
-		if (! MeasToEsnK(spacecraft, ovwm, meas, Kfactor*Tp, sigma0,
-				 &(meas->value), &Es, &En, &var_esn_slice, &(meas->XK)))
-		  {
-		    return(0);
-		  }
-	      }
+		  
+		  if (! MeasToEsnX(ovwm, meas, Xfactor, sigma0, &(meas->value),
+				   &Es, &En, &var_esn_slice))
+		    {
+		      return(0);
+		    }
+		  meas->XK = Xfactor;
+		}
+	      else
+		{
+		  Kfactor = 1.0;  // default to use if no Kfactor specified.
+		  if (useKfactor)
+		    {
+		      float orbit_position = ovwm->cds.OrbitFraction();
+		      
+		      Kfactor = 
+			kfactorTable.RetrieveByRelativeSliceNumber(
+								   ovwm->cds.currentBeamIdx,
+								   ovwm->sas.antenna.txCenterAzimuthAngle, orbit_position,
+								   meas->startSliceIdx);
+		    }
+		  
+		  double Tp = ovwm->ses.txPulseWidth;
+		  
+		  if (! MeasToEsnK(spacecraft, ovwm, meas, Kfactor*Tp, sigma0,
+				   &(meas->value), &Es, &En, &var_esn_slice, &(meas->XK)))
+		    {
+		      return(0);
+		    }
+		}
 
 
-	    if (simVs1BCheckfile)
-	      {
-		Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
-		cf->R[slice_i] = (float)rlook.Magnitude();
-		if (computeXfactor)
-		  {
-		    // Antenna gain is not computed when computing X factor
-		    // because the X factor already includes the normalized
-		    // patterns.  Thus, to see what it actually is, we need
-		    // to do the geometry work here that is normally done
-		    // in radar_X() when using the K-factor approach.
-		    gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
-			    &(spacecraft->attitude), &(ovwm->sas.antenna),
-				 ovwm->sas.antenna.txCenterAzimuthAngle);
-		    gc_to_antenna=gc_to_antenna.ReverseDirection();
-		    double roundTripTime = 2.0 * cf->R[slice_i] / speed_light_kps;
-
-		    Beam* beam = ovwm->GetCurrentBeam();
-		    Vector3 rlook_antenna = gc_to_antenna.Forward(rlook);
-		    double r, theta, phi;
-		    rlook_antenna.SphericalGet(&r,&theta,&phi);
-		    if (! beam->GetPowerGainProduct(theta, phi, roundTripTime,
-						    ovwm->sas.antenna.spinRate, &(cf->GatGar[slice_i])))
-		      {
-			cf->GatGar[slice_i] = 1.0;    // set a dummy value.
-		      }
-		  }
-		else
-		  {
-		    double lambda = speed_light_kps / ovwm->ses.txFrequency;
-		    cf->GatGar[slice_i] = meas->XK / Kfactor * (64*pi*pi*pi *
-								cf->R[slice_i] * cf->R[slice_i]*cf->R[slice_i]*
-								cf->R[slice_i] * ovwm->systemLoss) /
-		      (ovwm->ses.transmitPower * ovwm->ses.rxGainEcho *
-		       lambda * lambda);
-		  }
-		
-		cf->idx[slice_i] = meas->startSliceIdx;
-		cf->measType[slice_i] = meas->measType;
-		cf->var_esn_slice[slice_i] = var_esn_slice;
-		cf->Es[slice_i] = Es;
-		cf->En[slice_i] = En;
-		cf->XK[slice_i] = meas->XK;
-		cf->centroid[slice_i] = meas->centroid;
-		cf->azimuth[slice_i] = meas->eastAzimuth;
-		cf->incidence[slice_i] = meas->incidenceAngle;
-	      }
-
+	      if (simVs1BCheckfile)
+		{
+		  Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
+		  cf->R[slice_i] = (float)rlook.Magnitude();
+		  if (computeXfactor)
+		    {
+		      // Antenna gain is not computed when computing X factor
+		      // because the X factor already includes the normalized
+		      // patterns.  Thus, to see what it actually is, we need
+		      // to do the geometry work here that is normally done
+		      // in radar_X() when using the K-factor approach.
+		      gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
+						       &(spacecraft->attitude), &(ovwm->sas.antenna),
+						       ovwm->sas.antenna.txCenterAzimuthAngle);
+		      gc_to_antenna=gc_to_antenna.ReverseDirection();
+		      double roundTripTime = 2.0 * cf->R[slice_i] / speed_light_kps;
+		      
+		      Beam* beam = ovwm->GetCurrentBeam();
+		      Vector3 rlook_antenna = gc_to_antenna.Forward(rlook);
+		      double r, theta, phi;
+		      rlook_antenna.SphericalGet(&r,&theta,&phi);
+		      if (! beam->GetPowerGainProduct(theta, phi, roundTripTime,
+						      ovwm->sas.antenna.spinRate, &(cf->GatGar[slice_i])))
+			{
+			  cf->GatGar[slice_i] = 1.0;    // set a dummy value.
+			}
+		    }
+		  else
+		    {
+		      double lambda = speed_light_kps / ovwm->ses.txFrequency;
+		      cf->GatGar[slice_i] = meas->XK / Kfactor * (64*pi*pi*pi *
+								  cf->R[slice_i] * cf->R[slice_i]*cf->R[slice_i]*
+								  cf->R[slice_i] * ovwm->systemLoss) /
+			(ovwm->ses.transmitPower * ovwm->ses.rxGainEcho *
+			 lambda * lambda);
+		    }
+		  
+		  cf->idx[slice_i] = meas->startSliceIdx;
+		  cf->measType[slice_i] = meas->measType;
+		  cf->var_esn_slice[slice_i] = var_esn_slice;
+		  cf->Es[slice_i] = Es;
+		  cf->En[slice_i] = En;
+		  cf->XK[slice_i] = meas->XK;
+		  cf->centroid[slice_i] = meas->centroid;
+		  cf->azimuth[slice_i] = meas->eastAzimuth;
+		  cf->incidence[slice_i] = meas->incidenceAngle;
+		}
+	    }
 
 	} // end of low res case!
 
