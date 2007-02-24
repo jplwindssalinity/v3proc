@@ -422,7 +422,7 @@ public:
     float     systemLoss;           // dimensionless multiplicative factor
     float     systemTemperature;    // K
     int       useRealAperture;      // turns off SAR simulation/processing.
-
+    float     rngRes, azRes;        // res calculated in LocatePixels
 };
 
 //------------------//

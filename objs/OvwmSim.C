@@ -1823,11 +1823,36 @@ OvwmSim::SetMeasurements(
 
           float rangewid, azimwid; // half widths
 
-          rangewid=ptrTable->GetSemiMinorWidth(range_km, azimuth_km, scan_angle,
-                                         orbit_time, beam_num)/1000.;
-          azimwid=ptrTable->GetSemiMajorWidth(range_km, azimuth_km, scan_angle,
-                                        orbit_time, beam_num)/1000.;
+          rangewid = 0.;
+          azimwid = 0.;
 
+          if (ptrTable->use_PTR_table) {
+
+            rangewid=ptrTable->GetSemiMinorWidth(range_km, azimuth_km, scan_angle,
+                                           orbit_time, beam_num)/1000.;
+            azimwid=ptrTable->GetSemiMajorWidth(range_km, azimuth_km, scan_angle,
+                                          orbit_time, beam_num)/1000.;
+            //cout << "width from Table: " << rangewid << " " << azimwid << endl;
+
+          } else {
+
+            rangewid = ovwm->rngRes/2.;
+            azimwid = ovwm->azRes/2.;
+
+            // correction factor for 1/e as in PTR
+            rangewid *= 1.6;
+            if (beam_id%2==0) { // outer beam
+              azimwid *= 1.2;
+            } else if (beam_id%2==1) { // inner beam
+              azimwid *= 1.4;
+            }
+
+            if (azimwid >= ptrTable->azGroundWidthMax) {
+              azimwid = ptrTable->azGroundWidthMax;
+            }
+            //cout << "width from LP: " << rangewid << " " << azimwid << endl;
+
+          }
 
           if(ovwm->ses.numPulses==1) azimwid=ptrTable->azGroundWidthMax/2;
  
@@ -1867,6 +1892,11 @@ OvwmSim::SetMeasurements(
           int nrsteps=(int)ceil(integrationRangeWidthFactor*rangewid*2*nL/integrationStepSize)+1;
           int nasteps=(int)ceil(integrationAzimuthWidthFactor*azimwid*2/integrationStepSize)+1;
           if(ovwm->ses.numPulses==1) nasteps=_max_int_azim_bins;
+
+          if (!ptrTable->use_PTR_table && nasteps>_max_int_azim_bins) {
+            nasteps = _max_int_azim_bins;
+          }
+
           if(nrsteps>_max_int_range_bins || nasteps > _max_int_azim_bins){
 	    fprintf(stderr,"Error SetMeasurements too many integrations bins\n");
 	    exit(1);

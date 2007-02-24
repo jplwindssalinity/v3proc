@@ -1089,6 +1089,9 @@ Ovwm::LocatePixels(
     int nomr_idx=ses.numRangePixels/2;
     int nomd_idx=ses.numPulses/2;
 
+    EarthPosition ptsRes[2], sep;
+    double incRes;
+
     for (int r_idx = 0; r_idx < ses.numRangePixels; r_idx++){
       
       double r=boresight_range+ses.rangeRes*(r_idx-nomr_idx);
@@ -1114,6 +1117,7 @@ Ovwm::LocatePixels(
       OvwmTargetInfo oti2;
       SphericalTargetInfo(&antenna_frame_to_gc,spacecraft,look2,&oti2,r);
       double d=oti2.dopplerFreq;
+
       for (int d_idx = 0; d_idx < ses.numPulses; d_idx++)
 	{
 	  //----------------------------------------//
@@ -1146,6 +1150,11 @@ Ovwm::LocatePixels(
 	  }
           EarthPosition surfpt=spacecraft->orbitState.rsat+plook_vector*r;
           
+          // get location of two points around the centroid
+          // and in isorange to calculate range resolution
+          if (r_idx==nomr_idx && d_idx==nomd_idx-1) ptsRes[0] = surfpt;
+          if (r_idx==nomr_idx && d_idx==nomd_idx+1) ptsRes[1] = surfpt;
+
 	  //---------------------------//
 	  // generate measurement data //
 	  //---------------------------//
@@ -1161,6 +1170,9 @@ Ovwm::LocatePixels(
 	  
 	  // get incidence angle
 	  meas->incidenceAngle = pi - theta;
+
+          // get centroid inc angle to calculate range resolution
+          if (r_idx==nomr_idx && d_idx==nomd_idx) incRes = meas->incidenceAngle;
 
 	  meas->centroid = surfpt;
 	  meas->scanAngle = antenna->txCenterAzimuthAngle;
@@ -1200,7 +1212,16 @@ Ovwm::LocatePixels(
 	  
 	  meas = meas_spot->GetNext();
 	}
+
     }
+
+    //cout << "inc angle: " << incRes*rtd << endl;
+
+    // calculate resolutions
+    rngRes = speed_light_kps/(2*ses.chirpBandwidth)/sin(incRes);
+    sep = ptsRes[1] - ptsRes[0];
+    azRes = sep.Magnitude()/2.; // factor 2 as we take the two offset from centroid
+
     return(1);
 
     }

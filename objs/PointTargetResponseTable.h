@@ -42,6 +42,7 @@ class PointTargetResponseTable{
 
   float azGroundWidthMax,rngGroundWidthMax;
 
+  int use_PTR_table;
 };
 
 
