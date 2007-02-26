@@ -155,22 +155,10 @@ main(
             for (Meas* meas = l2a.frame.measList.GetHead();
                  meas; meas = l2a.frame.measList.GetNext())
             {
-              if (meas->beamIdx ==0 &&
-                  (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.))
-              {
-                flag[0][0] = 1;
-              } else if (meas->beamIdx == 0 &&
-                         (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.))
-              {
-                flag[0][1] = 1;
-              } else if (meas->beamIdx == 1 &&
-                         (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.))
-              {
-                flag[1][0] = 1;
-              } else if (meas->beamIdx == 1 &&
-                         (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.))
-              {
-                flag[1][1] = 1;
+              if (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.) {
+                flag[meas->beamIdx][0] = 1;
+              } else if (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.) {
+                flag[meas->beamIdx][1] = 1;
               }
             }
 
@@ -271,70 +259,34 @@ main(
                  meas; meas = l2a.frame.measList.GetNext())
             {
 
-              if (meas->beamIdx ==0 &&
-                  (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.))
-              {
+              if (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.) {
 
-                 nMeas[0][0][l2a.frame.cti]++;
-                 nes0[0][0][l2a.frame.cti] += meas->EnSlice/meas->XK;
-                 azAng[0][0][l2a.frame.cti] += meas->eastAzimuth;
-                 incAng[0][0][l2a.frame.cti] += meas->incidenceAngle;
+                 nMeas[meas->beamIdx][0][l2a.frame.cti]++;
+                 nes0[meas->beamIdx][0][l2a.frame.cti] += meas->EnSlice/meas->XK;
+                 azAng[meas->beamIdx][0][l2a.frame.cti] += meas->eastAzimuth;
+                 incAng[meas->beamIdx][0][l2a.frame.cti] += meas->incidenceAngle;
 
-              } else if (meas->beamIdx ==0 &&
-                       (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.))
-              {
+              } else if (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.) {
 
-                 nMeas[0][1][l2a.frame.cti]++;
-                 nes0[0][1][l2a.frame.cti] += meas->EnSlice/meas->XK;
-                 azAng[0][1][l2a.frame.cti] += meas->eastAzimuth;
-                 incAng[0][1][l2a.frame.cti] += meas->incidenceAngle;
-
-              } else if (meas->beamIdx == 1 &&
-                (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.))
-              {
-
-                 nMeas[1][0][l2a.frame.cti]++;
-                 nes0[1][0][l2a.frame.cti] += meas->EnSlice/meas->XK;
-                 azAng[1][0][l2a.frame.cti] += meas->eastAzimuth;
-                 incAng[1][0][l2a.frame.cti] += meas->incidenceAngle;
-
-              } else if (meas->beamIdx == 1 &&
-                       (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.))
-              {
-
-                 nMeas[1][1][l2a.frame.cti]++;
-                 nes0[1][1][l2a.frame.cti] += meas->EnSlice/meas->XK;
-                 azAng[1][1][l2a.frame.cti] += meas->eastAzimuth;
-                 incAng[1][1][l2a.frame.cti] += meas->incidenceAngle;
+                 nMeas[meas->beamIdx][1][l2a.frame.cti]++;
+                 nes0[meas->beamIdx][1][l2a.frame.cti] += meas->EnSlice/meas->XK;
+                 azAng[meas->beamIdx][1][l2a.frame.cti] += meas->eastAzimuth;
+                 incAng[meas->beamIdx][1][l2a.frame.cti] += meas->incidenceAngle;
 
               }
 
             } // meas list loop
 
             // perform averaging
-            if (nMeas[0][0][l2a.frame.cti] > 0) {
-              nes0[0][0][l2a.frame.cti] /= nMeas[0][0][l2a.frame.cti];
-              nes0[0][0][l2a.frame.cti] = 10.*log10(nes0[0][0][l2a.frame.cti]);
-              azAng[0][0][l2a.frame.cti] /= nMeas[0][0][l2a.frame.cti]/rtd;
-              incAng[0][0][l2a.frame.cti] /= nMeas[0][0][l2a.frame.cti]/rtd;
-            }
-            if (nMeas[0][1][l2a.frame.cti] > 0) {
-              nes0[0][1][l2a.frame.cti] /= nMeas[0][1][l2a.frame.cti];
-              nes0[0][1][l2a.frame.cti] = 10.*log10(nes0[0][1][l2a.frame.cti]);
-              azAng[0][1][l2a.frame.cti] /= nMeas[0][1][l2a.frame.cti]/rtd;
-              incAng[0][1][l2a.frame.cti] /= nMeas[0][1][l2a.frame.cti]/rtd;
-            }
-            if (nMeas[1][0][l2a.frame.cti] > 0) {
-              nes0[1][0][l2a.frame.cti] /= nMeas[1][0][l2a.frame.cti];
-              nes0[1][0][l2a.frame.cti] = 10.*log10(nes0[1][0][l2a.frame.cti]);
-              azAng[1][0][l2a.frame.cti] /= nMeas[1][0][l2a.frame.cti]/rtd;
-              incAng[1][0][l2a.frame.cti] /= nMeas[1][0][l2a.frame.cti]/rtd;
-            }
-            if (nMeas[1][1][l2a.frame.cti] > 0) {
-              nes0[1][1][l2a.frame.cti] /= nMeas[1][1][l2a.frame.cti];
-              nes0[1][1][l2a.frame.cti] = 10.*log10(nes0[1][1][l2a.frame.cti]);
-              azAng[1][1][l2a.frame.cti] /= nMeas[1][1][l2a.frame.cti]/rtd;
-              incAng[1][1][l2a.frame.cti] /= nMeas[1][1][l2a.frame.cti]/rtd;
+            for (int bb=0; bb<nbeams; bb++) {
+              for (int ff=0; ff<NDIRS; ff++) {
+                if (nMeas[bb][ff][l2a.frame.cti] > 0) {
+                  nes0[bb][ff][l2a.frame.cti] /= nMeas[bb][ff][l2a.frame.cti];
+                  nes0[bb][ff][l2a.frame.cti] = 10.*log10(nes0[bb][ff][l2a.frame.cti]);
+                  azAng[bb][ff][l2a.frame.cti] /= nMeas[bb][ff][l2a.frame.cti]/rtd;
+                  incAng[bb][ff][l2a.frame.cti] /= nMeas[bb][ff][l2a.frame.cti]/rtd;
+                }
+              }
             }
 
           } // ati check
@@ -346,15 +298,25 @@ main(
 
         for (int ii=0; ii<CROSS_DIST/res; ii++) {
 
-          fprintf(outfileP, "%d %d %f %d %f %f %c %f %d %f %d %f %f %c %f %d %f %d %f %f %c %f %d %f %d %f %f %c %f\n", int((ii+0.5)*res-CROSS_DIST/2),
-                  nMeas[0][0][ii], nes0[0][0][ii], nLook[0][0], azAng[0][0][ii],
-                  incAng[0][0][ii], pol[0][0], ambRatio[0][0], 
-                  nMeas[0][1][ii], nes0[0][1][ii], nLook[0][1], azAng[0][1][ii],
-                  incAng[0][1][ii], pol[0][1], ambRatio[0][1], 
-                  nMeas[1][0][ii], nes0[1][0][ii], nLook[1][0], azAng[1][0][ii],
-                  incAng[1][0][ii], pol[1][0], ambRatio[1][0], 
-                  nMeas[1][1][ii], nes0[1][1][ii], nLook[1][1], azAng[1][1][ii],
-                  incAng[1][1][ii], pol[1][1], ambRatio[1][1]);
+          fprintf(outfileP, "%d ", int((ii+0.5)*res-CROSS_DIST/2));
+
+          for (int bb=0; bb<nbeams-1; bb++) {
+            for (int ff=0; ff<NDIRS; ff++) {
+              fprintf(outfileP, "%d %f %d %f %f %c %f ",
+                  nMeas[bb][ff][ii], nes0[bb][ff][ii], nLook[bb][ff], azAng[bb][ff][ii],
+                  incAng[bb][ff][ii], pol[bb][ff], ambRatio[bb][ff]); 
+ 
+            }
+          }
+
+          for (int bb=nbeams-1; bb<nbeams; bb++) {
+            fprintf(outfileP, "%d %f %d %f %f %c %f %d %f %d %f %f %c %f\n", 
+                nMeas[bb][0][ii], nes0[bb][0][ii], nLook[bb][0], azAng[bb][0][ii],
+                incAng[bb][0][ii], pol[bb][0], ambRatio[bb][0],
+                nMeas[bb][1][ii], nes0[bb][1][ii], nLook[bb][1], azAng[bb][1][ii],
+                incAng[bb][1][ii], pol[bb][1], ambRatio[bb][1]);
+          }
+
         }
 
         //----------------------//
