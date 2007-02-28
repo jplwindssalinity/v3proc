@@ -140,51 +140,21 @@ main(
         firstAti = 0;
         lastAti = 0;
 
-        // search atis such that it gets all beams and all directions data
+        // search first and last atis in l2a file
 	while (l2a.ReadDataRec() && searchFlag && !(firstFlag && lastFlag))
-	{
-          if (l2a.frame.cti == (CENTER_OFFSET+CROSS_DIST/2)/res) { // index of middle of swath
+        {
+          if (!firstFlag) {
+            firstAti = l2a.frame.ati;
+            firstFlag = 1;
+          }
+          lastAti = l2a.frame.ati;
+        }
 
-            // initialize flags
-            for (int bb=0; bb<nbeams; bb++) {
-              for (int ff=0; ff<NDIRS; ff++) {
-                flag[bb][ff] = 0;
-              }
-            }
+        if (lastAti > firstAti) {
+          lastFlag = 1;
+        }
 
-            for (Meas* meas = l2a.frame.measList.GetHead();
-                 meas; meas = l2a.frame.measList.GetNext())
-            {
-              if (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.) {
-                flag[meas->beamIdx][0] = 1;
-              } else if (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.) {
-                flag[meas->beamIdx][1] = 1;
-              }
-            }
-
-            int tmp = 1;
-
-            for (int bb=0; bb<nbeams; bb++) {
-              for (int ff=0; ff<NDIRS; ff++) {
-                tmp *= flag[bb][ff];
-              }
-            }
-
-            if (!firstFlag && tmp==1) {
-              firstFlag = 1;
-              firstAti = l2a.frame.ati;
-              cout << "First ati with all data at swath center: " << firstAti << endl;
-            }
-
-            if (firstFlag && !lastFlag && tmp==0) {
-              lastFlag = 1;
-              lastAti = l2a.frame.ati;
-              cout << "Last ati with all data at swath center: " << lastAti << endl;
-            }
-
-          } // cti == swath center
-
-        } // while loop of l2a
+        //cout << "bound atis: " << firstAti << " " << lastAti << endl;
 
         // modify ati to the right location
         if (searchFlag==1) {
