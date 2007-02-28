@@ -488,30 +488,34 @@ main(
 	// Retrieve Winds
         //-----------------
         WVC wvc;
-        gmf.RetrieveWinds_GS(&meas_list,&kp,&wvc);
-        wvc.SortByObj();
-	WindVectorPlus* first=wvc.ambiguities.GetHead();
-        WindVectorPlus* near=wvc.GetNearestToDirection(dir);
-        if(near==first)skill++;
-        float direrr=ANGDIF(near->dir,dir)*rtd;
-        float spderr=near->spd - true_speed;
-        speed_bias+=spderr;
-        speed_rms+=spderr*spderr;
-        dir_rms+=direrr*direrr;
+        if(meas_list.NodeCount()){
+	  gmf.RetrieveWinds_GS(&meas_list,&kp,&wvc);
+	  wvc.SortByObj();
+	  WindVectorPlus* first=wvc.ambiguities.GetHead();
+	  WindVectorPlus* near=wvc.GetNearestToDirection(dir);
+	  if(near==first)skill++;
+	  float direrr=ANGDIF(near->dir,dir)*rtd;
+	  float spderr=near->spd - true_speed;
+	  speed_bias+=spderr;
+	  speed_rms+=spderr*spderr;
+	  dir_rms+=direrr*direrr;
 
-        //-------------------------
-        // Accumulate error metrics
-	//-------------------------
+	  //-------------------------
+	  // Accumulate error metrics
+	  //-------------------------
 
-        // free MeasList object
-        meas_list.FreeContents();
-      }
+	  // free MeasList object
+	  meas_list.FreeContents();
+	} // end num meas > 0
+      } // end number of samples loop
       
       // normalize metrics
-      speed_rms=sqrt(speed_rms/n);
-      speed_bias=speed_bias/n;
-      dir_rms=sqrt(dir_rms/n);
-      skill=skill/n;
+      if(n!=0){
+	speed_rms=sqrt(speed_rms/n);
+	speed_bias=speed_bias/n;
+	dir_rms=sqrt(dir_rms/n);
+	skill=skill/n;
+      }
 
       // output metrics to file
       fprintf(ofp,"%g %g %g %g %g\n",ctd,dir_rms,speed_rms,speed_bias,skill);
