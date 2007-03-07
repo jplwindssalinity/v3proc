@@ -205,6 +205,25 @@ main(
         }
 
         truth.ReadType(truth_file, truth_type);
+
+       //--------------------------//
+       // use as fixed wind speed? //
+       //--------------------------//
+
+       config_list.DoNothingForMissingKeywords();
+       float fixed_speed; 
+       if (config_list.GetFloat(TRUTH_WIND_FIXED_SPEED_KEYWORD, &fixed_speed))
+       {
+           truth.FixSpeed(fixed_speed);
+       } 
+       float fixed_direction;
+       if (config_list.GetFloat(TRUTH_WIND_FIXED_DIRECTION_KEYWORD, &fixed_direction))
+       { 
+           fixed_direction *= dtr;
+           truth.FixDirection(fixed_direction);
+       }
+       config_list.ExitForMissingKeywords();
+
     }
 
     //------------------//

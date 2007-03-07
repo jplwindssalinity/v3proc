@@ -485,6 +485,12 @@ main(
     {
         truth.FixSpeed(fixed_speed);
     }
+    float fixed_direction;
+    if (config_list.GetFloat(TRUTH_WIND_FIXED_DIRECTION_KEYWORD, &fixed_direction))
+    {
+        fixed_direction *= dtr;
+        truth.FixDirection(fixed_direction);
+    }
     config_list.ExitForMissingKeywords();
 
     //---------------------//
