@@ -91,7 +91,7 @@ main(
 	const char* input_file = argv[clidx++];
 	const char* output_file = argv[clidx++];
 	int nbeams = atoi(argv[clidx++]);
-	int res = atof(argv[clidx++]);
+	float res = atof(argv[clidx++]);
 
 	int ati;
         int searchFlag; // 0: not search, use input ati; 1: search first and last ati
@@ -266,9 +266,9 @@ main(
         } // while, reading loop
 
         // write out info
-        fprintf(outfileP, "%d %d\n", nbeams, res);
+        fprintf(outfileP, "%d %f\n", nbeams, res);
 
-        for (int ii=0; ii<CROSS_DIST/res; ii++) {
+        for (int ii=0; ii<int(CROSS_DIST/res); ii++) {
 
           fprintf(outfileP, "%d ", int((ii+0.5)*res-CROSS_DIST/2));
 
