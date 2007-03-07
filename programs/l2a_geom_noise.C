@@ -270,7 +270,7 @@ main(
 
         for (int ii=0; ii<int(CROSS_DIST/res); ii++) {
 
-          fprintf(outfileP, "%d ", int((ii+0.5)*res-CROSS_DIST/2));
+          fprintf(outfileP, "%f ", (ii+0.5)*res-CROSS_DIST/2);
 
           for (int bb=0; bb<nbeams-1; bb++) {
             for (int ff=0; ff<NDIRS; ff++) {
