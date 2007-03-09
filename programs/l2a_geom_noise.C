@@ -46,7 +46,7 @@ static const char rcs_id[] =
 #include "Tracking.h"
 #include "Tracking.C"
 
-#define XBIN 1000
+#define XBIN 3000
 #define NUM_RANGE_LOOKS_AVERAGED 8
 #define MAX_NBEAMS 4
 #define NDIRS 2
