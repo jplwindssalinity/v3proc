@@ -1911,7 +1911,10 @@ OvwmSim::SetMeasurements(
 
           // 1 range center for each look
           // HACK assumes at most 10 looks average
-          float center_range_idx[10];
+          //
+          // To handle the case with large bandwidth, and so large range look average,
+          // increase the array size to 100
+          float center_range_idx[100];
           float center_range_idx_ave=(nrsteps-1)/2.0;
           for(int n=0;n<nL;n++){
 	    int n2=n-nL/2;
@@ -1983,7 +1986,6 @@ OvwmSim::SetMeasurements(
           Es=0;
 	  En=0;
 	  
-          
           Vector3 center_ra=gc_to_rangeazim.Forward(meas->centroid-spot_centroid);        double maxdX=0;
 	  double r0=center_ra.Get(0);
 	  double a0=center_ra.Get(1);
@@ -2092,7 +2094,7 @@ OvwmSim::SetMeasurements(
               //----------------------------
 	      float dX=GatGar*_ptr_array[i][j]*integrationStepSize*
 		integrationStepSize/(range*range*range*range);
-              //cout << "gain, ptr: " << i << " " << j << " " << GatGar << " " << _ptr_array[i][j] << endl;
+                //cout << "gain, ptr: " << i << " " << j << " " << GatGar << " " << _ptr_array[i][j] << endl;
               if (island) {
                 dX_land += dX;
               } else {
