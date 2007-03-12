@@ -18,7 +18,7 @@ static const char rcs_id_vect_h[] =
 // DESCRIPTION
 //    A Vector.
 //======================================================================
-
+class Mat;
 class Vect
 {
     friend class Mat;
