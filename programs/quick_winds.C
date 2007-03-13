@@ -317,7 +317,7 @@ main(
     // conversion loop //
     //-----------------//
 
-     
+
     for (;;)
     {
       //-----------------------------
@@ -380,6 +380,8 @@ main(
       double speed_rms=0, speed_bias=0, dir_rms=0;
       double skill=0;
 
+      int zero_count = 0;
+
       Uniform randdirgen(pi,pi);
       randdirgen.SetSeed(10023455);
       Gaussian noisegen(1,0);
@@ -389,7 +391,6 @@ main(
       // sample loop
       //--------------
       for(int i=0;i<n;i++){
-
 
 	// get random direction
 
@@ -488,17 +489,21 @@ main(
 	// Retrieve Winds
         //-----------------
         WVC wvc;
-        if(meas_list.NodeCount()){
+        if(meas_list.NodeCount()>1){
 	  gmf.RetrieveWinds_GS(&meas_list,&kp,&wvc);
 	  wvc.SortByObj();
-	  WindVectorPlus* first=wvc.ambiguities.GetHead();
-	  WindVectorPlus* near=wvc.GetNearestToDirection(dir);
-	  if(near==first)skill++;
-	  float direrr=ANGDIF(near->dir,dir)*rtd;
-	  float spderr=near->spd - true_speed;
-	  speed_bias+=spderr;
-	  speed_rms+=spderr*spderr;
-	  dir_rms+=direrr*direrr;
+          if (wvc.ambiguities.NodeCount() > 0) {
+  	    WindVectorPlus* first=wvc.ambiguities.GetHead();
+	    WindVectorPlus* near=wvc.GetNearestToDirection(dir);
+	    if(near==first)skill++;
+	    float direrr=ANGDIF(near->dir,dir)*rtd;
+	    float spderr=near->spd - true_speed;
+	    speed_bias+=spderr;
+	    speed_rms+=spderr*spderr;
+	    dir_rms+=direrr*direrr;
+          } else {
+            zero_count ++;
+          }
 
 	  //-------------------------
 	  // Accumulate error metrics
@@ -510,15 +515,20 @@ main(
       } // end number of samples loop
       
       // normalize metrics
-      if(n!=0){
-	speed_rms=sqrt(speed_rms/n);
-	speed_bias=speed_bias/n;
-	dir_rms=sqrt(dir_rms/n);
-	skill=skill/n;
+      if(n!=0 && zero_count<n){
+	speed_rms=sqrt(speed_rms/(n-zero_count));
+	speed_bias=speed_bias/(n-zero_count);
+	dir_rms=sqrt(dir_rms/(n-zero_count));
+	skill=skill/(n-zero_count);
+      } else {
+	speed_rms=0.;
+	speed_bias=0.;
+	dir_rms=0.;
+	skill=0.;
       }
 
       // output metrics to file
-      fprintf(ofp,"%g %g %g %g %g\n",ctd,dir_rms,speed_rms,speed_bias,skill);
+      fprintf(ofp,"%g %g %g %g %g %d\n",ctd,dir_rms,speed_rms,speed_bias,skill,zero_count);
        
       
     }
