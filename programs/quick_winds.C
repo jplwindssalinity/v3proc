@@ -148,6 +148,7 @@ template class std::map<string,string,Options::ltstr>;
 //-----------//
 
 //#define DEBUG 
+#define NMAXSAMPLES 1000
 
 //-------//
 // HACKS //
@@ -379,6 +380,7 @@ main(
       }
       double speed_rms=0, speed_bias=0, dir_rms=0;
       double skill=0;
+      double retWindSpdMean=0, retWindSpdSd=0;
 
       int zero_count = 0;
 
@@ -386,6 +388,8 @@ main(
       randdirgen.SetSeed(10023455);
       Gaussian noisegen(1,0);
       noisegen.SetSeed(23838478);
+
+      float retWindSpd[NMAXSAMPLES];
 
       //-------------
       // sample loop
@@ -501,8 +505,10 @@ main(
 	    speed_bias+=spderr;
 	    speed_rms+=spderr*spderr;
 	    dir_rms+=direrr*direrr;
+            retWindSpd[i] = near->spd;
           } else {
             zero_count ++;
+            retWindSpd[i] = -1.0;
           }
 
 	  //-------------------------
@@ -512,6 +518,7 @@ main(
 	  // free MeasList object
 	  meas_list.FreeContents();
 	} // end num meas > 0
+
       } // end number of samples loop
       
       // normalize metrics
@@ -527,8 +534,23 @@ main(
 	skill=0.;
       }
 
+      // find standard deviation of retrieved wind speed
+      if (speed_rms != 0.0) {  // perform retrieval
+        float sum2 = 0.;
+
+        for (int ii=0; ii<n; ii++) {
+          if (retWindSpd[ii] != -1.0) {
+            sum2 += retWindSpd[ii]*retWindSpd[ii];
+          }
+        }
+
+        retWindSpdMean = true_speed+speed_bias;
+        retWindSpdSd = sqrt(sum2/(n-zero_count)-retWindSpdMean*retWindSpdMean);
+      }
+
       // output metrics to file
-      fprintf(ofp,"%g %g %g %g %g %d\n",ctd,dir_rms,speed_rms,speed_bias,skill,zero_count);
+      fprintf(ofp,"%g %g %g %g %g %g %g %d\n",ctd,dir_rms,speed_rms,speed_bias,skill,
+                  retWindSpdMean,retWindSpdSd,zero_count);
        
       
     }
