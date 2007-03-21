@@ -208,8 +208,8 @@ main(
     int n=atoi(argv[clidx++]);
     bool use_cband=false;
     bool coast=false;
-    if(argc>=7) use_cband=(bool)atoi(argv[clidx]);
-    if(argc==8) coast=(bool)atoi(argv[clidx]);
+    if(argc>=7) use_cband=(bool)atoi(argv[clidx++]);
+    if(argc==8) coast=(bool)atoi(argv[clidx++]);
 
     printf("Simulating %g m/s using %d samples\n",true_speed,n);
     fflush(stdout);
@@ -274,6 +274,8 @@ main(
     int nbeams, nlooks;
     float gridres;
     int lineno=0;
+#define MAX_NUM_LOOKS 16
+    float bias[MAX_NUM_LOOKS]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     while(1){
       lineno++;
       if (fgets(line, 4096, ifp) != line){
@@ -286,8 +288,25 @@ main(
       else{
 	str=strtok(line," \t");
         nbeams=atoi(str);
+
+
+	nlooks=2*nbeams;
+	if(nlooks>MAX_NUM_LOOKS || nlooks<1){
+	  fprintf(stderr,"Bad number of beams %d and thus looks %d\n",nbeams,nlooks);
+	  fprintf(stderr,"If you need more beams edit MAX_NUM_LOOKS in quick_winds.C and recompile\n");
+	  exit(1);
+	}
 	str=strtok(NULL," \t");
         gridres=atof(str);
+
+	str=strtok(NULL," \t");
+	if(str!=NULL){
+	  bias[0]=pow(10,0.1*atof(str))-1;
+	  for(int c=1;c<nlooks;c++){
+	    str=strtok(NULL," \t");
+	    bias[c]=pow(10,0.1*atof(str))-1;
+	  }
+	}
         break; // done with while loop
       }
     }
@@ -296,13 +315,7 @@ main(
     // setup geometry arrays
     //-----------------------
 
-#define MAX_NUM_LOOKS 16
-    nlooks=2*nbeams;
-    if(nlooks>MAX_NUM_LOOKS || nlooks<1){
-      fprintf(stderr,"Bad number of beams %d and thus looks %d\n",nbeams,nlooks);
-      fprintf(stderr,"If you need more beams edit MAX_NUM_LOOKS in quick_winds.C and recompile\n");
-      exit(1);
-    }
+
 
     float ctd;
     int nmeas[MAX_NUM_LOOKS];
@@ -457,8 +470,9 @@ main(
          
             float s0land=0.1;
             if(!coast) s0land=0;
+            //printf("%g %g %g %g\n",s0true,s0land,sambrat[j],s0land/sambrat[j]);
 	    s0true+=s0land/sambrat[j];
-
+            
 	    // set value, A, B, C
             
             // fudge factors
@@ -476,7 +490,7 @@ main(
 
 
 	    float noise=noisegen.GetNumber()*s0true*kptotal;
-            meas->value=s0true+noise;
+            meas->value=s0true+noise+s0true*bias[j];
             meas->A=1+1.0/(float)nlpm[j];
             meas->B=2.0*s0ne[j]/(float)nlpm[j];
             meas->C=s0ne[j]*s0ne[j]/(float)(nlpm[j]*nlpm[j]);
