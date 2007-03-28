@@ -1406,8 +1406,11 @@ OvwmSim::SetMeasurements(
 
     Vector3 centroid_llh, centroid_xyz_in_meter, centroid_sch_in_meter;
     double centroid_along, centroid_cross;
+    Vector3 loc_llh, loc_xyz_in_meter, loc_sch_in_meter;
+    double loc_along, loc_cross;
     double amb1_along, amb1_cross;//first ambigous point
     double amb2_along, amb2_cross;//second ambigous point
+    double dummy_along, dummy_cross;// dummy placeholders used in amb integration
     while (meas)
     {
  
@@ -1721,6 +1724,7 @@ OvwmSim::SetMeasurements(
 	  // alongtrack wrt boresight
 	  //crosstrack wrt boresight
 	  // amb_along_location, amb_cross_location
+ 
 	  double amb1=ambigTable->GetAmbRat1(beam_id, scanangle,
 					     centroid_along-bore_along,
 					     centroid_cross-bore_cross,
@@ -1823,36 +1827,11 @@ OvwmSim::SetMeasurements(
 
           float rangewid, azimwid; // half widths
 
-          rangewid = 0.;
-          azimwid = 0.;
+          rangewid=ptrTable->GetSemiMinorWidth(range_km, azimuth_km, scan_angle,
+                                         orbit_time, beam_num)/1000.;
+          azimwid=ptrTable->GetSemiMajorWidth(range_km, azimuth_km, scan_angle,
+                                        orbit_time, beam_num)/1000.;
 
-          if (ptrTable->use_PTR_table) {
-
-            rangewid=ptrTable->GetSemiMinorWidth(range_km, azimuth_km, scan_angle,
-                                           orbit_time, beam_num)/1000.;
-            azimwid=ptrTable->GetSemiMajorWidth(range_km, azimuth_km, scan_angle,
-                                          orbit_time, beam_num)/1000.;
-            //cout << "width from Table: " << rangewid << " " << azimwid << endl;
-
-          } else {
-
-            rangewid = ovwm->rngRes/2.;
-            azimwid = ovwm->azRes/2.;
-
-            // correction factor for 1/e as in PTR
-            rangewid *= 1.6;
-            if (beam_id%2==0) { // outer beam
-              azimwid *= 1.2;
-            } else if (beam_id%2==1) { // inner beam
-              azimwid *= 1.4;
-            }
-
-            if (azimwid >= ptrTable->azGroundWidthMax) {
-              azimwid = ptrTable->azGroundWidthMax;
-            }
-            //cout << "width from LP: " << rangewid << " " << azimwid << endl;
-
-          }
 
           if(ovwm->ses.numPulses==1) azimwid=ptrTable->azGroundWidthMax/2;
  
@@ -1892,11 +1871,6 @@ OvwmSim::SetMeasurements(
           int nrsteps=(int)ceil(integrationRangeWidthFactor*rangewid*2*nL/integrationStepSize)+1;
           int nasteps=(int)ceil(integrationAzimuthWidthFactor*azimwid*2/integrationStepSize)+1;
           if(ovwm->ses.numPulses==1) nasteps=_max_int_azim_bins;
-
-          if (!ptrTable->use_PTR_table && nasteps>_max_int_azim_bins) {
-            nasteps = _max_int_azim_bins;
-          }
-
           if(nrsteps>_max_int_range_bins || nasteps > _max_int_azim_bins){
 	    fprintf(stderr,"Error SetMeasurements too many integrations bins\n");
 	    exit(1);
@@ -1911,10 +1885,7 @@ OvwmSim::SetMeasurements(
 
           // 1 range center for each look
           // HACK assumes at most 10 looks average
-          //
-          // To handle the case with large bandwidth, and so large range look average,
-          // increase the array size to 100
-          float center_range_idx[100];
+          float center_range_idx[10];
           float center_range_idx_ave=(nrsteps-1)/2.0;
           for(int n=0;n<nL;n++){
 	    int n2=n-nL/2;
@@ -1986,6 +1957,10 @@ OvwmSim::SetMeasurements(
           Es=0;
 	  En=0;
 	  
+          if(integrateAmbig){
+	    amb1=0;
+	    amb2=0;
+	  }
           Vector3 center_ra=gc_to_rangeazim.Forward(meas->centroid-spot_centroid);        double maxdX=0;
 	  double r0=center_ra.Get(0);
 	  double a0=center_ra.Get(1);
@@ -2089,12 +2064,41 @@ OvwmSim::SetMeasurements(
 	      }
               double GatGar=gain*gain; // assumes 
 	                               // separate transmit and receive feeds
-              //----------------------------
+
+
+              //---------------------------
               // Integrate X and Es
               //----------------------------
 	      float dX=GatGar*_ptr_array[i][j]*integrationStepSize*
 		integrationStepSize/(range*range*range*range);
-                //cout << "gain, ptr: " << i << " " << j << " " << GatGar << " " << _ptr_array[i][j] << endl;
+
+
+	      if(integrateAmbig){
+
+		loc_xyz_in_meter= locgc;
+		loc_xyz_in_meter *=1000.0;//change km to meter
+		xyz_to_llh(r_a, r_e2, loc_xyz_in_meter, loc_llh);
+		sch.xyz_to_sch(loc_xyz_in_meter,loc_sch_in_meter);
+		loc_along= loc_sch_in_meter(0)/1000.0;// km
+		loc_cross= loc_sch_in_meter(1)/1000.0;// km
+		double damb1, damb2;
+		damb1=ambigTable->GetAmbRat1(beam_id, scanangle,
+						   loc_along-bore_along,
+						   loc_cross-bore_cross,
+						   dummy_along,
+						   dummy_cross);
+					 
+		damb2=ambigTable->GetAmbRat2(beam_id, scanangle,
+						   loc_along - bore_along
+						   ,loc_cross - bore_cross, 
+						   dummy_along,
+					     dummy_cross);
+		if(damb1==0) damb1=0.1;
+		if(damb2==0) damb2=0.1;
+		amb1+=dX/damb1;
+                amb2+=dX/damb2;
+	      }
+              //cout << "gain, ptr: " << i << " " << j << " " << GatGar << " " << _ptr_array[i][j] << endl;
               if (island) {
                 dX_land += dX;
               } else {
@@ -2159,6 +2163,12 @@ OvwmSim::SetMeasurements(
 	    /(64*pi*pi*pi*ovwm->systemLoss*N0*float(nL))
             *ovwm->ses.receivePathLoss; // the last term added as noise has this factor
           double SNR=Es*kSNR;
+
+
+          if(integrateAmbig){
+	    amb1/=meas->XK;
+	    amb2/=meas->XK;
+	  }
           meas->XK*=ksig;
           //cout << "XK: " << meas->XK << endl;
           Es*=ksig;
@@ -2313,13 +2323,15 @@ OvwmSim::SetMeasurements(
           //if (slice_i > 100) exit(1);
 
           // Noise subtract/calibrate to get s0 if L1B direct output is desired
-          // INCOMPLETE add sim_l1b_direct to parameter list of method
-
 	  if(sim_l1b_direct){
 	    meas->value-=En;
 	    meas->value/=meas->XK;
+
 	  }
-	  
+
+	  // implement special routine to replace value with Ambiguity ratio
+	  if(replaceValueWithAmbRat) meas->value=amb1+amb2;
+
           //cout << meas->value << endl;
 	  
 	}

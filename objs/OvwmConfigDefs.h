@@ -105,13 +105,14 @@ static const char rcs_id_ovwmconfigdefs_h[] =
 #define PTRTAB_AZIMUTH_MAX_GROUND_WIDTH_KEYWORD  "PTRTAB_AZIMUTH_MAX_GROUND_WIDTH"
 #define PTRTAB_RANGE_MAX_GROUND_WIDTH_KEYWORD  "PTRTAB_RANGE_MAX_GROUND_WIDTH"
 
-//-----------//
-// Tables    //
-//-----------//
+//-------------------------------------------------//
+// Ambiguity and Point target Response Handling    //
+//-------------------------------------------------//
 #define AMBIG_TABLE_FILE_KEYWORD "AMBIG_TABLE_FILE"
 #define AMBIG_INDEX_FILE_KEYWORD "AMBIG_INDEX_FILE"
+#define REPLACE_VALUE_WITH_AMBIG_KEYWORD "REPLACE_VALUE_WITH_AMBIG"
+#define INTEGRATE_AMBIG_KEYWORD "INTEGRATE_AMBIG"
 
-#define USE_PTR_TABLE_KEYWORD                     "USE_PTR_TABLE"
-#define PTRESPONSE_TABLE_AUX_FILE_BEAM_x_KEYWORD  "PTR_TABLE_AUX_FILE_BEAM_x"
+#define PTRESPONSE_TABLE_AUX_FILE_BEAM_x_KEYWORD "PTR_TABLE_AUX_FILE_BEAM_x"
 #define PTRESPONSE_TABLE_DATA_FILE_BEAM_x_KEYWORD "PTR_TABLE_DATA_FILE_BEAM_x"
 #endif

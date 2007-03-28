@@ -668,7 +668,16 @@ ConfigOvwmSim(
       FILE* fptr = fopen(ovwm_sim->simVs1BCheckfile,"w");
       if (fptr != NULL) fclose(fptr);
     }
+    if(! config_list->GetInt(REPLACE_VALUE_WITH_AMBIG_KEYWORD,&(ovwm_sim->replaceValueWithAmbRat))){
+      ovwm_sim->replaceValueWithAmbRat=0;
+    }
+    if(ovwm_sim->replaceValueWithAmbRat){
+      fprintf(stderr,"Warning: Special Mode replacing meas->value with Ambiguity Ratio\n");
+    }
 
+    if(! config_list->GetInt(INTEGRATE_AMBIG_KEYWORD,&(ovwm_sim->integrateAmbig))){
+      ovwm_sim->integrateAmbig=0;
+    }
     config_list->ExitForMissingKeywords();
 
     /****** Exactly one of these must be true ***/
@@ -867,44 +876,36 @@ int ConfigPointTargetResponseTable(PointTargetResponseTable* ptrtab,
   char number[8];
 
 
-    //-------------------------/
+   //-------------------------/
     // Maximal Footprint Size Bounds         /
     //-------------------------/
 
      cfg_list->GetFloat(PTRTAB_AZIMUTH_MAX_GROUND_WIDTH_KEYWORD,&(ptrtab->azGroundWidthMax));
      cfg_list->GetFloat(PTRTAB_RANGE_MAX_GROUND_WIDTH_KEYWORD,&(ptrtab->rngGroundWidthMax));
-     cfg_list->GetInt(USE_PTR_TABLE_KEYWORD,&(ptrtab->use_PTR_table));
 
-     if (ptrtab->use_PTR_table != 0) {
+  for (int beam_idx = 0; beam_idx < NUMBER_OF_OVWM_BEAMS; beam_idx++) {
 
-       for (int beam_idx = 0; beam_idx < NUMBER_OF_OVWM_BEAMS; beam_idx++) {
+    int beam_number = beam_idx + 1;
+    sprintf(number, "%d", beam_number);
 
-         int beam_number = beam_idx + 1;
-         sprintf(number, "%d", beam_number);
+    /* for aux file */
+    substitute_string(PTRESPONSE_TABLE_AUX_FILE_BEAM_x_KEYWORD, "x",
+                     number, keyword);
+    char* ptrauxfile=cfg_list->Get(keyword);
+    if( ! ptrtab->ReadAux(ptrauxfile, beam_number)) {
+      cout << "TTT" << endl;
+      return(0);
+    }
 
-         /* for aux file */
-         substitute_string(PTRESPONSE_TABLE_AUX_FILE_BEAM_x_KEYWORD, "x",
-                          number, keyword);
-         char* ptrauxfile=cfg_list->Get(keyword);
-         if( ! ptrtab->ReadAux(ptrauxfile, beam_number)) {
-           cerr << "Cannot read ptr aux file!" << endl;
-           return(0);
-         }
+    /* for data file */
+    substitute_string(PTRESPONSE_TABLE_DATA_FILE_BEAM_x_KEYWORD, "x",
+                     number, keyword);
+    char* ptrdatafile=cfg_list->Get(keyword);
+    if( ! ptrtab->ReadData(ptrdatafile, beam_number)) return(0);
 
-         /* for data file */
-         substitute_string(PTRESPONSE_TABLE_DATA_FILE_BEAM_x_KEYWORD, "x",
-                          number, keyword);
-         char* ptrdatafile=cfg_list->Get(keyword);
-         if( ! ptrtab->ReadData(ptrdatafile, beam_number)) {
-           cerr << "Cannot read ptr data file!" << endl;
-           return(0);
-         }
+  }
 
-       }
-
-     }
-
-     return(1);  
+  return(1);  
 }
 
 //---------------//

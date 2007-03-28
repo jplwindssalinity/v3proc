@@ -156,7 +156,7 @@ public:
     //-------//
     // flags //
     //-------//
-
+   
     int    simLandFlag;        // 0 = ignore land, 1 = simulate land
     int    uniformSigmaField;  // set all sigma0 values to a constant value
     float  uniformSigmaValue;  // the sigma0 when uniformSigmaField is set
@@ -174,6 +174,11 @@ public:
     int    simKpriFlag;        // 0 = no Kpri, 1 = Kpri
     int    simHiRes;           // 0 = quickSim, 1 = high resolution sim
     int    simRain;            // 0 no rainfield used, 1=rainfield file used
+
+    int    replaceValueWithAmbRat; // 0= nominal operation  1= output s0 valus
+                                  // replaced with ambiguity ratio.
+    int    integrateAmbig;         // 0= compute ambig at pixel centoid only
+                                   // integrate ambiguity ratio
     float    integrationStepSize; // step size of high res sim km
     float    integrationRangeWidthFactor; // multiple of range width to 
                                           // integrate over
