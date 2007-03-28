@@ -68,7 +68,8 @@ template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
 
 const char* usage_array[] = { "<input_file>", "<output_file>",
-			      "<nbeams>", "<res>", "[ati]",0};
+			      "<nbeams>", "<res>", "[compute_ambig]",
+			      "[ati]",0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -95,8 +96,17 @@ main(
 
 	int ati;
         int searchFlag; // 0: not search, use input ati; 1: search first and last ati
+        int computeAmbigFlag; // 0 set Signal to Ambiguity Ratio to 15 dB
+	// 1 assumes meas->value contains Ambiguity to Signal ratio in linear
+        // scale ie. REPLACE_VALUE_WITH_AMBIG = 1 in config file used
+        // to generate l2a
 
-        if (argc > 5) {
+       if (argc > 5) {
+          computeAmbigFlag= atoi(argv[clidx++]);
+        } else {
+          computeAmbigFlag = 0;
+        }
+        if (argc > 6) {
           ati = atoi(argv[clidx++]);
           searchFlag = 0;
         } else {
@@ -176,7 +186,7 @@ main(
 
         char pol[MAX_NBEAMS][NDIRS]; // 2nd index is for fore (0) or after (1)
         int nLook[MAX_NBEAMS][NDIRS];
-        float ambRatio[MAX_NBEAMS][NDIRS];
+        float ambRatio[MAX_NBEAMS][NDIRS][XBIN];
         int nMeas[MAX_NBEAMS][NDIRS][XBIN];
         float nes0[MAX_NBEAMS][NDIRS][XBIN], azAng[MAX_NBEAMS][NDIRS][XBIN];
         float incAng[MAX_NBEAMS][NDIRS][XBIN];
@@ -195,14 +205,7 @@ main(
         // number of look info
         for (int bb=0; bb<nbeams; bb++) {
           for (int ff=0; ff<NDIRS; ff++) {
-            nLook[bb][ff] = 8;
-          }
-        }
-
-        // ambiguity info
-        for (int bb=0; bb<nbeams; bb++) {
-          for (int ff=0; ff<NDIRS; ff++) {
-            ambRatio[bb][ff] = 15;
+            nLook[bb][ff] = 0;
           }
         }
 
@@ -210,6 +213,9 @@ main(
         for (int bb=0; bb<nbeams; bb++) {
           for (int ff=0; ff<NDIRS; ff++) {
             for (int ii=0; ii<XBIN; ii++) {
+
+	      if(!computeAmbigFlag) ambRatio[bb][ff][ii] = 15;
+	      else ambRatio[bb][ff][ii]=0;
               nMeas[bb][ff][ii] = 0;
               nes0[bb][ff][ii] = 0.;
               azAng[bb][ff][ii] = 0;
@@ -236,6 +242,8 @@ main(
                  nes0[meas->beamIdx][0][l2a.frame.cti] += meas->EnSlice/meas->XK;
                  azAng[meas->beamIdx][0][l2a.frame.cti] += meas->eastAzimuth;
                  incAng[meas->beamIdx][0][l2a.frame.cti] += meas->incidenceAngle;
+		 if(computeAmbigFlag)
+		   ambRatio[meas->beamIdx][0][l2a.frame.cti] += meas->value;
 
               } else if (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.) {
 
@@ -244,6 +252,8 @@ main(
                  nes0[meas->beamIdx][1][l2a.frame.cti] += meas->EnSlice/meas->XK;
                  azAng[meas->beamIdx][1][l2a.frame.cti] += meas->eastAzimuth;
                  incAng[meas->beamIdx][1][l2a.frame.cti] += meas->incidenceAngle;
+		 if(computeAmbigFlag)
+		   ambRatio[meas->beamIdx][1][l2a.frame.cti] += meas->value;
 
               }
 
@@ -257,6 +267,11 @@ main(
                   nes0[bb][ff][l2a.frame.cti] = 10.*log10(nes0[bb][ff][l2a.frame.cti]);
                   azAng[bb][ff][l2a.frame.cti] /= nMeas[bb][ff][l2a.frame.cti]/rtd;
                   incAng[bb][ff][l2a.frame.cti] /= nMeas[bb][ff][l2a.frame.cti]/rtd;
+
+		  if(computeAmbigFlag){
+		   ambRatio[bb][ff][l2a.frame.cti] /= nMeas[bb][ff][l2a.frame.cti];
+		   ambRatio[bb][ff][l2a.frame.cti] = -10.*log10(ambRatio[bb][ff][l2a.frame.cti]);
+		  }
                 }
               }
             }
@@ -276,7 +291,7 @@ main(
             for (int ff=0; ff<NDIRS; ff++) {
               fprintf(outfileP, "%d %f %d %f %f %c %f ",
                   nMeas[bb][ff][ii], nes0[bb][ff][ii], nLook[bb][ff], azAng[bb][ff][ii],
-                  incAng[bb][ff][ii], pol[bb][ff], ambRatio[bb][ff]); 
+                  incAng[bb][ff][ii], pol[bb][ff], ambRatio[bb][ff][ii]); 
  
             }
           }
@@ -284,9 +299,9 @@ main(
           for (int bb=nbeams-1; bb<nbeams; bb++) {
             fprintf(outfileP, "%d %f %d %f %f %c %f %d %f %d %f %f %c %f\n", 
                 nMeas[bb][0][ii], nes0[bb][0][ii], nLook[bb][0], azAng[bb][0][ii],
-                incAng[bb][0][ii], pol[bb][0], ambRatio[bb][0],
+                incAng[bb][0][ii], pol[bb][0], ambRatio[bb][0][ii],
                 nMeas[bb][1][ii], nes0[bb][1][ii], nLook[bb][1], azAng[bb][1][ii],
-                incAng[bb][1][ii], pol[bb][1], ambRatio[bb][1]);
+                incAng[bb][1][ii], pol[bb][1], ambRatio[bb][1][ii]);
           }
 
         }
