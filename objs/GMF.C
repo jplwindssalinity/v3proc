@@ -2148,6 +2148,80 @@ GMF::_ObjectiveFunction(
     return(-fv);
 }
 
+
+
+//-------------------------//
+// GMF::_ObjectiveFunction //
+//-------------------------//
+
+float
+GMF::_ObjectiveFunctionFixedTrial(
+    MeasList*  meas_list,
+    float      spd,
+    float      phi,
+    Kp*        kp,
+    float fixed_sigma0)
+{
+    //-----------------------------------------//
+    // initialize the objective function value //
+    //-----------------------------------------//
+
+    float fv = 0.0;
+
+    //-------------------------//
+    // for each measurement... //
+    //-------------------------//
+
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+        //---------------------------------------//
+        // get sigma-0 for the trial wind vector //
+        //---------------------------------------//
+
+        float chi = phi - meas->eastAzimuth + pi;
+        float trial_value;
+        GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
+            &trial_value);
+
+        //------------------------------------------------------------//
+        // find the difference between the trial and measured sigma-0 //
+        //------------------------------------------------------------//
+
+        // Sanity check on measurement
+        double tmp=meas->value;
+        if (! finite(tmp))
+            continue;
+
+        float s = trial_value - meas->value;
+
+        //-------------------------------------------------------//
+        // calculate the expected variance for the trial sigma-0 //
+        //-------------------------------------------------------//
+
+        float var;
+        if(fixed_sigma0>trial_value)
+	  var = GetVariance(meas, spd, chi, fixed_sigma0 , kp);
+        else
+	  var = GetVariance(meas, spd, chi, trial_value , kp);
+        // returns 0 if kp is NULL
+
+        if (var == 0.0)
+        {
+            // variances all turned off, so use uniform weighting.
+            fv += s*s;
+        }
+        else if (retrieveUsingLogVar)
+        {
+            fv += s*s / var + log(var);
+        }
+        else
+        {
+            fv += s*s / var;
+        }
+    }
+    return(-fv);
+}
+
 //-----------------------//
 // GMF::RetrieveWinds_GS //
 //-----------------------//
@@ -3171,6 +3245,71 @@ GMF::CopyBuffersGSToPE(){
   }
   return(1);
 }
+
+
+//-----------------------//
+// Brute Force Retrieval   //
+//-----------------------//
+int  GMF::RetrieveWinds_BruteForce(MeasList* meas_list, Kp* kp, WVC* wvc,
+				   int polar_special, float spdmin, float
+				   spdmax){
+
+  if(spdmin<0){
+    spdmin=_spdMin;
+    spdmax=_spdMax;
+  }
+  float spdstep=0.1;
+  int ndirs=144;
+  float dirstep=two_pi/ndirs;
+  int nspds=int((spdmax-spdmin)/spdstep);
+  float** objs = (float**) make_array(sizeof(float),2,nspds,ndirs);
+
+  for(int i=0;i<nspds;i++){
+    for(int j=0;j<ndirs;j++){
+      float phi=0+dirstep*j;
+      float spd=spdmin+spdstep*i;        
+      objs[i][j]=_ObjectiveFunction(meas_list, spd, phi, kp);
+    }
+  }
+
+  for(int i=0;i<nspds;i++){
+    for(int j=0;j<ndirs;j++){
+      int peak_found=1;
+      for(int i2=i-1;i2<=i+1;i2++){
+	for(int j2=j-1;j2<=j+1;j2++){
+	  if(i2==i && j2==j) continue;
+	  if(i2>=nspds || i2<0) continue;
+	  int j2m=j2;
+          if(j2m<0) j2m=ndirs-1;
+	  if(j2m==ndirs) j2m=0;
+	  if(objs[i2][j2m]>objs[i][j]) peak_found=0;
+	}
+      }
+
+      if(peak_found){
+	WindVectorPlus* wvp = new WindVectorPlus();
+	if (! wvp){
+	  free_array(objs,2,nspds,ndirs);
+	  return(0);
+	}
+	wvp->spd = spdmin+i*spdstep;
+	wvp->dir = j*dirstep;
+	wvp->obj = objs[i][j];
+	if (! wvc->ambiguities.Append(wvp))
+	  {
+	    delete wvp;
+	    free_array(objs,2,nspds,ndirs);
+	    return(0);
+	  }
+      }
+    }
+  }
+  free_array(objs,2,nspds,ndirs);
+
+  return(1);
+  
+}
+
 
 //-------------------//
 // GMF::WriteObjXmgr //

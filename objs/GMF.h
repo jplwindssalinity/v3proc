@@ -141,6 +141,13 @@ public:
     int  Optimize_Wind_Solutions(MeasList* meas_list, Kp* kp, WVC* wvc);
     int  CopyBuffersGSToPE();
 
+    //-----------------------//
+    // Brute Force Retrieval   //
+    //-----------------------//
+    int  RetrieveWinds_BruteForce(MeasList* meas_list, Kp* kp, WVC* wvc,
+				  int polar_special=0, float spdmin=-1,
+				  float spdmax=-1);
+
     //-------//
     // flags //
     //-------//
@@ -164,6 +171,7 @@ public:
     //----------------//
 
     float  _ObjectiveFunction(MeasList* meas_list, float u, float phi, Kp* kp);
+    float  _ObjectiveFunctionFixedTrial(MeasList* meas_list, float u, float phi, Kp* kp, float fixed_sigma0);
     int    _ObjectiveToProbability(float scale, int radius);
 
     //-----------//

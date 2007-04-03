@@ -729,6 +729,39 @@ WVC::GetNearestToDirection(
     return(nearest);
 }
 
+
+WindVectorPlus*
+WVC::GetNearestVector(
+    float  dir,
+    float  spd,
+    int    max_rank)
+{
+    WindVectorPlus* nearest = NULL;
+    float min_dif = 1000000;
+    float u=spd*cos(dir);
+    float v=spd*sin(dir);
+    int rank = 0;
+    for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+        wvp = ambiguities.GetNext())
+    {
+        if (max_rank)
+        {
+            rank++;
+            if (rank > max_rank)
+                break;
+        }
+        float u2=wvp->spd*cos(wvp->dir);
+        float v2=wvp->spd*sin(wvp->dir);
+        float dif = (u2-u)*(u2-u)+(v2-v)*(v2-v);
+        if (dif < min_dif)
+        {
+            min_dif = dif;
+            nearest = wvp;
+        }
+    }
+    return(nearest);
+}
+
 //---------------------------------//
 // WVC::GetNearestRangeToDirection //
 //---------------------------------//

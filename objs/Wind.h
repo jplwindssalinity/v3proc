@@ -149,6 +149,7 @@ public:
     int              SortByObj();
     int              SortByDir();
     WindVectorPlus*  GetNearestToDirection(float dir, int max_rank = 0);
+    WindVectorPlus*  GetNearestVector(float dir, float spd, int max_rank = 0);
     WindVectorPlus*  GetNearestRangeToDirection(float dir);
 
     //-------------//
