@@ -228,6 +228,24 @@ main(
     }
 
 
+    // Determine whether or not Kpm is simulated
+    int sim_kpm;
+
+    config_list.GetInt(SIM_UNCORR_KPM_FLAG_KEYWORD,&sim_kpm);
+
+    // Determine wind Retrieval method
+
+    char* method;
+    int opt_method=0;
+    method=config_list.Get(WIND_RETRIEVAL_METHOD_KEYWORD);
+    if(strcasecmp(method,"GS")==0) opt_method=0;
+    else if(strcasecmp(method,"BRUTE_FORCE")==0) opt_method=1;
+    else{
+      fprintf(stderr,"Warning:Wind retrieval method %s not valid for use in quick_winds\n",method);
+      fprintf(stderr,"Using GS instead\n");
+      opt_method=0;
+    }
+
     //-------------------------------------//
     // read the geophysical model function //
     //-------------------------------------//
@@ -477,8 +495,10 @@ main(
             
             // fudge factors
 	    float SNRff=1;
-            double kpm2;
-            kp.GetKpm2(meas->measType,true_speed,&kpm2);
+            double kpm2=0;
+            if(sim_kpm){
+	      kp.GetKpm2(meas->measType,true_speed,&kpm2);
+	    }
 
             float SNR=s0true/s0ne[j];
 	    SNR*=SNRff;
@@ -493,7 +513,7 @@ main(
             meas->value=s0true+noise+s0true*bias[j];
             meas->A=1+1.0/(float)nlpm[j];
             meas->B=2.0*s0ne[j]/(float)nlpm[j];
-            meas->C=s0ne[j]*s0ne[j]/(float)(nlpm[j]*nlpm[j]);
+            meas->C=s0ne[j]*s0ne[j]/(float)nlpm[j];
             // add measurement to list
 	    meas_list.Append(meas);
 
@@ -508,11 +528,14 @@ main(
         //-----------------
         WVC wvc;
         if(meas_list.NodeCount()>1){
-	  gmf.RetrieveWinds_GS(&meas_list,&kp,&wvc);
+	  if(opt_method==0) gmf.RetrieveWinds_GS(&meas_list,&kp,&wvc);
+	  else gmf.RetrieveWinds_BruteForce(&meas_list,&kp,&wvc);
 	  wvc.SortByObj();
           if (wvc.ambiguities.NodeCount() > 0) {
   	    WindVectorPlus* first=wvc.ambiguities.GetHead();
-	    WindVectorPlus* near=wvc.GetNearestToDirection(dir);
+	    WindVectorPlus* near;
+            if(opt_method==0) near=wvc.GetNearestToDirection(dir);
+            else near=wvc.GetNearestVector(dir,true_speed);
 	    if(near==first)skill++;
 	    float direrr=ANGDIF(near->dir,dir)*rtd;
 	    float spderr=near->spd - true_speed;
