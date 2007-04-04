@@ -206,9 +206,9 @@ main(
     const char* in_file = argv[clidx++];
     const char* out_file = argv[clidx++];
     int n=atoi(argv[clidx++]);
-    bool use_cband=false;
+    int use_cband=0;
     bool coast=false;
-    if(argc>=7) use_cband=(bool)atoi(argv[clidx++]);
+    if(argc>=7) use_cband=atoi(argv[clidx++]);
     if(argc==8) coast=(bool)atoi(argv[clidx++]);
 
     printf("Simulating %g m/s using %d samples\n",true_speed,n);
@@ -447,7 +447,15 @@ main(
 	    meas->startSliceIdx=k;
             meas->numSlices=-1;
 
-	    if(use_cband){
+	    if(use_cband==1){
+	      if(pol[j]=='v' || pol[j]=='V'){
+		meas->measType=Meas::C_BAND_VV_MEAS_TYPE;
+	      }
+	      else{
+		meas->measType=Meas::C_BAND_HH_MEAS_TYPE;
+	      }
+	    }
+	    else if(use_cband==2 && j> (nlooks/2 -1) ){
 	      if(pol[j]=='v' || pol[j]=='V'){
 		meas->measType=Meas::C_BAND_VV_MEAS_TYPE;
 	      }
