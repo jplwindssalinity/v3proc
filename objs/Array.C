@@ -87,6 +87,169 @@ make_array(
     return(ptr);
 }
 
+int    
+write_array(FILE* ofp, void* ptr, int type_size, int ndims, ...){
+      va_list ap;
+    va_start(ap, ndims);
+
+    // The first argument is the size (in bytes) of the data type desired.
+    if (type_size <= 0)
+    {
+        va_end(ap);
+        return(0);
+    }
+
+    // The second argument is the number of dimensions.
+    if (ndims <= 0)
+    {
+        va_end(ap);
+        return(0);
+    }
+
+    // Make an array of dimension sizes, and read from the argument list.
+    int* dimsize = (int*)malloc((size_t)(ndims * sizeof(int)));
+    if (dimsize == NULL)
+    {
+        va_end(ap);
+        return(0);
+    }
+    for (int i=0; i < ndims; i++)
+    {
+        dimsize[i] = va_arg(ap, int);
+    }
+
+   int  retval=dim_write(ofp,ptr,0,ndims,dimsize,type_size);   
+    free(dimsize);
+    va_end(ap);
+    return(retval);
+}
+
+
+int    dim_write(FILE* ofp, void* ptr, int level, int ndims, int dimsize[], int type_size){
+  // bottom level
+  if(level==ndims-1){
+    return(fwrite(ptr,1,type_size*dimsize[level],ofp)==(unsigned)(type_size*dimsize[level]));    
+  }
+  else{
+    void** subptr= (void**)ptr;
+    for(int c=0;c<dimsize[level];c++){
+      if(!dim_write(ofp,subptr[c],level+1,ndims,dimsize,type_size)){
+	return(0);
+      }
+    }
+  }
+  return(1);
+}
+
+int    
+read_array(FILE* ifp, void* ptr, int type_size, int ndims, ...){
+      va_list ap;
+    va_start(ap, ndims);
+
+    // The first argument is the size (in bytes) of the data type desired.
+    if (type_size <= 0)
+    {
+        va_end(ap);
+        return(0);
+    }
+
+    // The second argument is the number of dimensions.
+    if (ndims <= 0)
+    {
+        va_end(ap);
+        return(0);
+    }
+
+    // Make an array of dimension sizes, and read from the argument list.
+    int* dimsize = (int*)malloc((size_t)(ndims * sizeof(int)));
+    if (dimsize == NULL)
+    {
+        va_end(ap);
+        return(0);
+    }
+    for (int i=0; i < ndims; i++)
+    {
+        dimsize[i] = va_arg(ap, int);
+    }
+
+   int  retval=dim_read(ifp,ptr,0,ndims,dimsize,type_size);   
+    free(dimsize);
+    va_end(ap);
+    return(retval);
+}
+
+
+int    dim_read(FILE* ifp, void* ptr, int level, int ndims, int dimsize[], int type_size){
+  // bottom level
+  if(level==ndims-1){
+    return(fread(ptr,1,type_size*dimsize[level],ifp)==(unsigned)(type_size*dimsize[level]));    
+  }
+  else{
+    void** subptr= (void**)ptr;
+    for(int c=0;c<dimsize[level];c++){
+      if(!dim_read(ifp,subptr[c],level+1,ndims,dimsize,type_size)){
+	return(0);
+      }
+    }
+  }
+  return(1);
+}
+//------------//
+// size_array //
+//------------//
+
+// computes the total amount of memory allocated by a make_array command
+// including pointers and data
+unsigned long int
+size_array(
+    int  type_size,
+    int  ndims,
+    ...)
+{
+    va_list ap;
+    va_start(ap, ndims);
+
+    // The first argument is the size (in bytes) of the data type desired.
+    if (type_size <= 0)
+    {
+        va_end(ap);
+        return(0);
+    }
+
+    // The second argument is the number of dimensions.
+    if (ndims <= 0)
+    {
+        va_end(ap);
+        return(0);
+    }
+
+    // Make an array of dimension sizes, and read from the argument list.
+    int* dimsize = (int*)malloc((size_t)(ndims * sizeof(int)));
+    if (dimsize == NULL)
+    {
+        va_end(ap);
+        fprintf(stderr,"Internal error in size_array()");
+        exit(1);
+    }
+
+    unsigned long int retval=0;
+    for (int i=0; i < ndims; i++)
+    {
+        dimsize[i] = va_arg(ap, int);
+        unsigned long int size_this_level=1;
+        for (int j=i; j>=0; j--){
+	  size_this_level*=dimsize[j];
+	}
+	if(i==ndims-1) size_this_level*=type_size;
+	else size_this_level*=sizeof(void*);
+	retval+=size_this_level;
+    }
+
+    free(dimsize);
+    va_end(ap);
+    return(retval);
+}
+
 //------------//
 // free_array //
 //------------//
