@@ -40,7 +40,7 @@ static const char rcs_id_gmf_c[] =
 GMF::GMF()
 :   retrieveUsingKpcFlag(1), retrieveUsingKpmFlag(1), retrieveUsingKpriFlag(1),
     retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), retrieveOverIce(0),
-    smartNudgeFlag(0), retrieveUsingCriteriaFlag(1), minimumAzimuthDiversity(20.0*dtr),
+    smartNudgeFlag(0), retrieveUsingCriteriaFlag(1), minimumAzimuthDiversity(20.0*dtr), cBandWeight(1.0), kuBandWeight(1.0),
     _phiCount(0), _phiStepSize(0.0), _spdTol(DEFAULT_SPD_TOL), _sepAngle(DEFAULT_SEP_ANGLE),
     _smoothAngle(DEFAULT_SMOOTH_ANGLE), _maxSolutions(DEFAULT_MAX_SOLUTIONS),
     _bestSpd(NULL), _bestObj(NULL), _copyObj(NULL), _speed_buffer(NULL),
@@ -114,6 +114,26 @@ GMF::SetPhiCount(
 
     return(1);
 }
+
+
+//---------------------//
+// GMF::SetCBandWeight //
+//---------------------//
+int
+GMF::SetCBandWeight(
+    float  wt)
+{
+  if(wt>=0.5){
+    cBandWeight=1;
+    kuBandWeight=(1-wt)/wt;
+  }
+
+  else{
+    kuBandWeight=1;
+    cBandWeight=wt/(1-wt);
+  }
+}
+
 
 //----------------//
 // GMF::SetSpdTol //
@@ -2123,7 +2143,11 @@ GMF::_ObjectiveFunction(
             continue;
 
         float s = trial_value - meas->value;
-
+        float wt=kuBandWeight;
+	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE || 
+	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
+	  wt=cBandWeight;
+	}
         //-------------------------------------------------------//
         // calculate the expected variance for the trial sigma-0 //
         //-------------------------------------------------------//
@@ -2134,15 +2158,15 @@ GMF::_ObjectiveFunction(
         if (var == 0.0)
         {
             // variances all turned off, so use uniform weighting.
-            fv += s*s;
+            fv += wt*s*s;
         }
         else if (retrieveUsingLogVar)
         {
-            fv += s*s / var + log(var);
+            fv += wt*s*s / var + wt*log(var);
         }
         else
         {
-            fv += s*s / var;
+            fv += wt*s*s / var;
         }
     }
     return(-fv);

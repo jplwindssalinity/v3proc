@@ -56,6 +56,7 @@ public:
 
     int  SetPhiCount(int phi_count);
     int  SetSpdTol(float spd_tol);
+    int  SetCBandWeight(float wt);
 
     //--------------//
     // input/output //
@@ -163,6 +164,9 @@ public:
     int  retrieveUsingCriteriaFlag;
 
     float minimumAzimuthDiversity;
+
+    float cBandWeight;
+    float kuBandWeight;
 
     //protected:
 
