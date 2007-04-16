@@ -71,6 +71,7 @@ static const char rcs_id[] =
 #include "L2AToL2B.h"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "Array.h"
 
 using std::list;
 using std::map; 
@@ -103,7 +104,7 @@ template class std::map<string,string,Options::ltstr>;
 //-----------//
 
 #define MAX_ALONG_TRACK_BINS  1624
-#define OPTSTRING "ia:n:"
+#define OPTSTRING "ia:n:w:"
 
 //-------//
 // HACKS //
@@ -131,7 +132,7 @@ template class std::map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = {"[ -a start:end ]", "[ -n num_frames ]", "[ -i ]", "<sim_config_file>", 0};
+const char* usage_array[] = {"[ -a start:end ]", "[ -n num_frames ]", "[ -i ]", "[ -w c_band_weight_file ]" , "<sim_config_file>", 0};
 
 
 //--------------//
@@ -148,7 +149,13 @@ main(
     //------------------------//
     int frame_number =0;
     int ignore_bad_l2a=0;
+    int use_freq_weights=0;
     long int max_record_no = 0;
+    char weight_file[200];
+    float** weights=NULL;
+    FILE* wfp;
+    int ncti_wt=0, nati_wt=0, first_valid_ati=0, nvalid_ati=0;
+
     const char* command = no_path(argv[0]);
     if (argc < 2)
         usage(command, usage_array, 1);
@@ -177,6 +184,40 @@ main(
             exit(1);
           }
           break;
+
+        case 'w':
+          if (sscanf(optarg, "%s", weight_file) != 1)
+          {
+            fprintf(stderr, "%s: error parsing weight file name %s\n",
+                command, optarg);
+            exit(1);
+          }
+
+	  wfp=fopen(weight_file,"r");
+	  if(!wfp){
+	    fprintf(stderr,"Cannot open file %s\n",weight_file);
+	    exit(1);
+	  }
+	  if(fread(&first_valid_ati,sizeof(int),1,wfp)!=1  ||
+	     fread(&nvalid_ati,sizeof(int),1,wfp)!=1  ||
+	     fread(&ncti_wt,sizeof(int),1,wfp)!=1){
+	    fprintf(stderr,"Error reading from file %s\n",weight_file);
+	    exit(1);
+	  }
+	  nati_wt=first_valid_ati+nvalid_ati;
+	  weights=(float**)make_array(sizeof(float),2,nati_wt,ncti_wt);
+	  for(int a=0;a<nati_wt;a++){
+	    for(int c=0;c<ncti_wt;c++){
+	      weights[a][c]=0.5;
+	    }
+	  }
+	  if(!read_array(wfp,&weights[first_valid_ati],sizeof(float),2,nvalid_ati,ncti_wt)){
+	    fprintf(stderr,"Error reading from file %s\n",weight_file);
+	    exit(1);
+	  }
+          use_freq_weights = 1;
+	  fclose(wfp);
+	  break;
         case 'i':
           ignore_bad_l2a=1;
           break;
@@ -287,6 +328,13 @@ main(
         exit(1);
     }
 
+    if(use_freq_weights && ( l2a.header.crossTrackBins!=ncti_wt )){
+      fprintf(stderr,"Error Size mismatch between L2A and weights file\n");
+      fprintf(stderr,"L2A NATI=%d NCTI=%d, CBandWeights NATI = %d NCTI=%d\n",
+	      l2a.header.alongTrackBins,l2a.header.crossTrackBins,nati_wt,ncti_wt);
+      exit(1);
+    } 
+
     //-----------------------------------------//
     // transfer information to level 2B header //
     //-----------------------------------------//
@@ -353,7 +401,8 @@ main(
         {
         // end hack
 #endif
-
+	if(use_freq_weights)
+	  gmf.SetCBandWeight(weights[l2a.frame.ati][l2a.frame.cti]);
         int retval = 1;
         if (l2a.frame.ati >= start_ati && l2a.frame.ati <= end_ati) {
           retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
@@ -401,5 +450,6 @@ main(
     l2a.Close();
     l2b.Close();
 
+    free_array(weights,2,nati_wt,ncti_wt);
     return (0);
 }
