@@ -21,7 +21,7 @@ static const char rcs_id_ovwmsim_c[] =
 #include "Sigma0Map.h"
 
 #define SNR_CUTOFF 1.e-3
-#define dX_THRESHOLD 0.05 // threshold for eliminate meas record with land
+#define dX_THRESHOLD 0.005 // threshold for eliminate meas record with land
 #define E_FACTOR 1.644    // value for sinc square to drop to 1/e
 
 //==================//
@@ -824,7 +824,6 @@ OvwmSim::ScatSim(
 //-----------------------//
 
 //#define DEBUG_BAD_TIMING
-//#define ALLOW_BAD_TIMING
 int OvwmSim::CheckTiming(Ovwm* ovwm){
   static int first_call=1;
   static int num_calls=0;
@@ -924,9 +923,7 @@ int OvwmSim::CheckTiming(Ovwm* ovwm){
       if(margin<worst_margin) worst_margin=margin;
       if(margin<0){
 	fprintf(stderr,"Error: Tx window MAY overlap Rx Window from 2 cycles back\n");
-#ifndef ALLOW_BAD_TIMING
-	exit(1);
-#endif
+        if(!disableTimingCheck)   exit(1);
       }
     }
     // check for overlap between Tx and Rx in current cycle and last cycle 
@@ -948,9 +945,7 @@ int OvwmSim::CheckTiming(Ovwm* ovwm){
 	if(margin<worst_margin) worst_margin=margin;
 	if(margin<0){
 	  fprintf(stderr,"Error: Tx window (beam %d) overlaps Rx Window (beam %d same cycle)\n",tb+1,rb+1);
-#ifndef ALLOW_BAD_TIMING
-	  exit(1);
-#endif
+	  if(!disableTimingCheck) exit(1);
 	}
 
 
@@ -967,9 +962,8 @@ int OvwmSim::CheckTiming(Ovwm* ovwm){
 	if(margin<worst_margin) worst_margin=margin;
 	if(margin<0){
 	  fprintf(stderr,"Error: Tx window (beam %d) overlaps Rx Window (beam %d last cycle)\n",tb+1,rb+1);
-#ifndef ALLOW_BAD_TIMING
-	  exit(1);
-#endif
+        if(!disableTimingCheck)   exit(1);
+
 	}
       } // end receiver beam loop
     } // end transmit beam loop

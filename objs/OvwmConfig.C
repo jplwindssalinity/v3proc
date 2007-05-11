@@ -679,6 +679,11 @@ ConfigOvwmSim(
       ovwm_sim->integrateAmbig=0;
     }
 
+
+    if(! config_list->GetInt("DISABLE_TIMING_CHECK",&(ovwm_sim->disableTimingCheck))){
+      ovwm_sim->disableTimingCheck=0;
+    }
+
     config_list->ExitForMissingKeywords();
 
     /****** Exactly one of these must be true ***/
