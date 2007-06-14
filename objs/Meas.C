@@ -405,12 +405,12 @@ int32       sliceIndex)   // index in slices
     else
         measType = VV_MEAS_TYPE;
 
-    param = l1bHdf->GetParameter(SLICE_AZIMUTH, UNIT_DEGREES);
+    param = l1bHdf->GetParameter(SLICE_AZIMUTH, UNIT_RADIANS);
     assert(param != 0);
     floatP = (float*)param->data;
     float northAzimuth = *(floatP + pulseIndex * MAX_L1BHDF_NUM_SLICES +
         sliceIndex);
-    eastAzimuth = (450.0 - northAzimuth) * dtr;
+    eastAzimuth = (450.0*dtr - northAzimuth);
     if (eastAzimuth >= two_pi) eastAzimuth -= two_pi;
 
     param = l1bHdf->GetParameter(SLICE_INCIDENCE, UNIT_RADIANS);
