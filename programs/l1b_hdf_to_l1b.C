@@ -57,10 +57,6 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include "BufferedList.h"
-#include "BufferedList.C"
-#include "List.h"
-#include "List.C"
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ConfigList.h"
@@ -71,7 +67,14 @@ static const char rcs_id[] =
 #include "Tracking.h"
 #include "Tracking.C"
 #include "QscatConfig.h"
+#include "List.h"
+#include "List.C"
+#include "BufferedList.h"
+#include "BufferedList.C"
 
+
+using std::list;
+using std::map;
 
 //-----------//
 // TEMPLATES //
@@ -87,11 +90,12 @@ template class List<Meas>;
 template class List<EarthPosition>;
 template class List<MeasSpot>;
 template class List<WindVectorPlus>;
-template class List<long>;
+template class List<off_t>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
-
+template class std::list<string>;
+template class std::map<string,string,Options::ltstr>;
 
 //-----------//
 // CONSTANTS //
