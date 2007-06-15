@@ -2675,8 +2675,14 @@ SetDelayAndFrequency(
         // ideal delay
         float rtt = ovwm->IdealRtt(spacecraft, 1);
         float rx_gate_width=ovwm->GetRxGateWidth();
-        float delay = rtt +
+        float delay;
+        if (ovwm->ses.numPulses == 1) {
+          delay = rtt +
             (ovwm->ses.txPulseWidth - rx_gate_width) / 2.0;
+        } else { // in burst mode
+          delay = rtt +
+            (ovwm->ses.burstLength - rx_gate_width) / 2.0;
+        }
         ovwm->ses.CmdRxGateDelayEu(delay);
     }
 
