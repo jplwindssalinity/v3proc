@@ -215,7 +215,8 @@ main(
     }
     else
     {
-        if (! gmf.ReadOldStyle(gmf_file))
+//        if (! gmf.ReadOldStyle(gmf_file)) //
+        if (! gmf.ReadHighWind(gmf_file))
         {
             fprintf(stderr, "%s: error reading GMF file %s\n", command,
                 gmf_file);
@@ -273,8 +274,10 @@ gen_plot(
     float            inc,
     int              use_log)
 {
+//    float c_speed_table[] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0,
+//        15.0, 20.0, 30.0, 40.0, 50.0, -1.0 };
     float c_speed_table[] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0,
-        15.0, 20.0, 30.0, 40.0, 50.0, -1.0 };
+                              15.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, -1.0 };
     float r_speed_table[] = { 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0,
         20.0, 22.0, 24.0, 26.0, 28.0, 30.0, -1.0 };
 
