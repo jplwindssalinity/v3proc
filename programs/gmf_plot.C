@@ -310,7 +310,9 @@ gen_plot(
     for (int spd_idx = 0; speed_table[spd_idx] > 0; spd_idx++)
     {
         float spd = speed_table[spd_idx];
-        fprintf(ofp, "@ legend string %d %c%g m/s%c\n", legend_string, QUOTES,
+//        fprintf(ofp, "@ legend string %d %c%g m/s%c\n", legend_string, QUOTES,
+//            spd, QUOTES);
+        fprintf(ofp, "@ s%d legend %c%g m/s%c\n", legend_string, QUOTES,
             spd, QUOTES);
         fprintf(ofp, "@ s%d linewidth 3\n", legend_string);
         legend_string++;
