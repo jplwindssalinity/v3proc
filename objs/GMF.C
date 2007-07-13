@@ -5286,3 +5286,146 @@ GMF::RemoveBadCopol(
     delete[] look_idx;
     return(1);
 }
+
+void
+GMF::CalculateSigma0Weights(
+    MeasList* meas_list)
+
+// Code for computing sigma0 weights among WVC's prior to wind retrieval
+// Uses integration of 1/distance^2 over the antenna pattern, relative to
+// the sigma0 centroid within the WVC. Insert the weight in place of the
+// XK (X-factor) value in each measurement in the MeasList.
+
+// Don't know yet whether to put this in GMF:: or L2A::
+// Don't know yet what I don't know...;-)
+
+{
+    LonLat wvc_lon_lat = meas_list->AverageLonLat();
+    // Turn wvc_lon_lat into an EarthPosition at (alt=0.0, wvc_lon_lat)
+    EarthPosition wvc_loc;
+    wvc_loc.SetAltLonGDLat(0.0,wvc_lon_lat.longitude, wvc_lon_lat.latitude);
+    
+
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+
+        float cosang,sinang,rwid,awid;
+
+        cosang = cos(meas->eastAzimuth);
+        sinang = sin(meas->eastAzimuth);
+    
+        rwid   = meas->range_width;
+        awid   = meas->azimuth_width;
+
+        double measHLL[3];
+        float measLon, measLat;
+
+// get alt, lon and lat at measurement centroid
+        meas->centroid.GetAltLonGDLat(measHLL,measHLL+1,measHLL+2); 
+
+        measLon = measHLL[1];
+        measLat = measHLL[2];
+// the following sets up the CoordinateSwitch transformation 
+//   from dlat/dlon to drange/dazimuth
+        double coslon = cos(measHLL[1]);
+        double sinlon = sin(measHLL[1]);
+        double coslat = cos(measHLL[2]);
+        double sinlat = sin(measHLL[2]);
+        
+        double r1 = cosang*coslat*sinlon - sinang*sinlat;
+        double r2 = cosang*coslon;
+        double r3 = cosang*sinlat*sinlon + sinang*coslat;
+        
+        Vector3 rgLook(r1,r2,r3);
+
+        Vector3 zvec = meas->centroid.Normal();
+        Vector3 yvec = zvec & rgLook;
+        Vector3 xvec = yvec & zvec;
+        CoordinateSwitch gc_to_azimrange(xvec,yvec,zvec);
+
+// zero width cases occur when the INTEGRATION_STEP was set coarsely during the simulation.
+    //     if(rwid==0) rwid=0.01; 
+    //     if(awid==0) awid=0.01;
+        if(rwid==0) rwid=0.1;   // 100 meters default, not 10 meters
+        if(awid==0) awid=0.1;
+
+        float integrationStepSize = 0.1;
+      
+        int nr = (int) ceil(rwid/integrationStepSize) + 1;
+        int na = (int) ceil(awid*2.0/integrationStepSize) + 1;
+        float center_range_idx = (nr - 1)/2.0;
+        float center_azim_idx  = (na - 1)/2.0;
+        
+// Allocate response and integration grid CTD and ATD arrays
+        float response[nr][na];
+        float resp_lon[nr][na];
+        float resp_lat[nr][na];
+
+        float sum_resp = 0.0;  // holds normalization integral
+      
+        for(int j=0;j<na;j++){
+            float jj=j;
+            
+            float val1;
+            float val2;
+            val2 = (jj - center_azim_idx)*integrationStepSize;
+            val2/=awid;
+            if (val2 != 0.) {
+                val1=sin(val2)*sin(val2)/val2/val2;  // sinc^2 in azimuth
+            } else {
+                val1=1.0;
+            }
+
+            float x = (jj - center_azim_idx)*integrationStepSize;  // x = d(azimuth)
+          
+            for (int i=0;i<nr;i++){
+                float ii = i;
+              
+                response[i][j] = val1;   // response array value at i,j
+                sum_resp += response[i][j]*integrationStepSize*integrationStepSize;
+              
+                float y = (ii - center_range_idx)*integrationStepSize;  // y=d(range)
+
+                Vector3 locar(x,y,0.0);    // pixel location in azi-range plane
+                
+                EarthPosition locgc = gc_to_azimrange.Backward(locar);
+                double alt, dlat, dlon;
+                if (! locgc.GetAltLonGCLat(&alt, &dlon, &dlat))  // delta lon & lat
+                    return;  
+                
+                resp_lon[i][j] = dlon + measLon;  // turn these into EarthPositions later
+                resp_lat[i][j] = dlat + measLat;
+            
+            } // range steps
+              
+        } // az steps
+
+        float sum_wt = 0.0;
+         
+        for (int i=0;i<nr;i++){
+
+            for (int j=0;j<na;j++){
+                
+//                 float dx = resp_lon[i][j] - wvc_lon_lat.longitude; // replace these with SurfaceDistance
+//                 float dy = resp_lat[i][j] - wvc_lon_lat.latitude;
+//                 float distsq = dx*dx + dy*dy;   // need earth radius
+
+                EarthPosition resp_loc;
+                resp_loc.SetAltLonGDLat(0.0,resp_lon[i][j],resp_lon[i][j]);
+                float distsq = wvc_loc.SurfaceDistance(resp_loc);
+                distsq *=distsq;
+                
+                sum_wt+= response[i][j]*integrationStepSize*integrationStepSize/distsq;
+                
+            }
+        }
+         
+        sum_wt /= sum_resp;   // normalize by the total response
+
+       // Insert weight integral value into the measurement in place of meas->XK
+
+        meas->XK = sum_wt;
+
+    } // loop over measurements
+    return;
+}
