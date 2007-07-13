@@ -148,6 +148,8 @@ public:
     int  RetrieveWinds_BruteForce(MeasList* meas_list, Kp* kp, WVC* wvc,
 				  int polar_special=0, float spdmin=-1,
 				  float spdmax=-1);
+    void CalculateSigma0Weights(MeasList* meas_list);
+    
 
     //-------//
     // flags //
