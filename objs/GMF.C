@@ -132,6 +132,8 @@ GMF::SetCBandWeight(
     kuBandWeight=1;
     cBandWeight=wt/(1-wt);
   }
+
+  return(1);
 }
 
 
@@ -2338,7 +2340,10 @@ GMF::Calculate_Init_Wind_Solutions(
     //
     // Remove Bad Copol Measurements
     //
-    RemoveBadCopol(meas_list,kp);
+    // Commented out because 1) It happens rarely.
+    //  2) It causes RetrieveWinds_S3Rain to bomb
+    //  3) Vpc estimate is may not be accurate for numslices=-1
+    // RemoveBadCopol(meas_list,kp);
 
     //
     // Local Declarations
@@ -4851,6 +4856,165 @@ GMF::EstimateDirMSE(
     retval+=min_dist*min_dist*_bestObj[c];
   }
   return(retval);
+}
+
+//-----------------------//
+// GMF::RetrieveWinds_S3 //
+//-----------------------//
+int
+GMF::RetrieveWinds_S3Rain(
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc)
+{
+  float astep=0.02;
+  float A[4]={1,1,1,1}; // order is hku, vku, hc, vc
+  float B[4]={0,0,0,0};
+  float cbandwt=0.05;
+  SetCBandWeight(cbandwt);  
+
+  // copy Measlist;
+  MeasList ml2;
+  for(Meas* meas=meas_list->GetHead();meas;meas=meas_list->GetNext()){
+    Meas* m = new Meas;
+    m->value=meas->value;
+    m->XK=meas->XK;
+    m->EnSlice=meas->EnSlice;
+    m->bandwidth=meas->bandwidth;
+    m->txPulseWidth=meas->txPulseWidth;
+    m->landFlag=meas->landFlag;
+    m->centroid=meas->centroid;
+    m->measType=meas->measType;
+    m->eastAzimuth=meas->eastAzimuth;
+    m->incidenceAngle=meas->incidenceAngle;
+    m->beamIdx=meas->beamIdx;
+    m->startSliceIdx=meas->startSliceIdx;
+    m->numSlices=meas->numSlices;
+    m->scanAngle=meas->scanAngle;
+    m->A=meas->A;
+    m->B=meas->B;
+    m->C=meas->C;
+    m->azimuth_width=meas->azimuth_width;
+    m->range_width=meas->range_width;
+    ml2.Append(m);
+  }
+
+  // Perform GS retrieval multiple times until maximal first rank obj
+  // is achieved
+  // perform first GS retrieval
+ 
+  WVC* wvcout = wvc;
+  wvc=new WVC;
+  if(!RetrieveWinds_GS(&ml2,kp,wvc,0)){
+    ml2.FreeContents();
+    return(0);
+  }  
+
+  // check for no ambiguities case
+  if(wvc->ambiguities.NodeCount()==0){
+    ml2.FreeContents();
+    return(1);
+  }
+
+  WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+  float bestobj=wvp->obj;
+
+
+  float Aold[4],Bold[4];
+  while(A[0]>0){
+    for(int c=0;c<4;c++){
+      Aold[c]=A[c];
+      Bold[c]=B[c];
+    }  
+    // set up Rain coefficients
+    A[0]-=astep;
+    float a1=A[0];
+    float a2=A[0]*A[0];
+    float a3=a2*A[0];
+    float a4=a3*A[0];
+    float a5=a4*A[0];
+    A[1]=-0.00333+0.6388*a1+0.7322*a2-0.5671*a3+
+      0.2006*a4;
+    A[2]=0.97369+0.07460*log(A[0]);
+    A[3]=0.96833+0.08395*log(A[0]);
+    B[0]=0.1759-0.8290*a1+2.732*a2-5.085*a3+4.487*a4-1.487*a5;
+    B[1]=0.1568-0.6532*a1+2.081*a2-3.912*a3+3.465*a4-1.143*a5;
+    B[2]=-0.0002132-0.008690*log(A[0]);
+    B[3]=-0.0004927-0.0098932*log(A[0]);
+
+    // correct measurements
+    Meas* m2=ml2.GetHead();
+    for(Meas* meas=meas_list->GetHead();meas;meas=meas_list->GetNext()){
+      switch(m2->measType){
+      case Meas::HH_MEAS_TYPE:
+	m2->value=(meas->value-B[0])/A[0];
+	break;
+      case Meas::VV_MEAS_TYPE:
+	m2->value=(meas->value-B[1])/A[1];
+	break;
+      case Meas::C_BAND_HH_MEAS_TYPE:
+	m2->value=(meas->value-B[2])/A[2];
+	break;
+      case Meas::C_BAND_VV_MEAS_TYPE:
+	m2->value=(meas->value-B[3])/A[3];
+	break;
+      default:
+	fprintf(stderr,"Bad measurement type for S3RAIN\n");
+	exit(1);
+      }
+      m2=ml2.GetNext();
+    } // end correct meas loop
+
+    delete wvc;
+    wvc=new WVC;
+    if(!RetrieveWinds_GS(&ml2,kp,wvc,0)){
+      ml2.FreeContents();
+      fprintf(stderr,"Warning: RetrieveWinds_GS failed during rain estimation");
+      return(0);
+    }  
+    if(wvc->ambiguities.NodeCount()==0){
+      ml2.FreeContents();
+      fprintf(stderr,"Warning: RetrieveWinds_GS failed found no ambigs during rain estimation Akuh=%g\n",A[0]);
+      return(0);
+    }
+    WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+    if(wvp->obj< bestobj) break; // last one was best
+    else bestobj=wvp->obj;
+  } // end A,B estimation loop
+  // Perform final S3 retrieval
+
+  // correct measurements
+  Meas* m2=ml2.GetHead();
+  for(Meas* meas=meas_list->GetHead();meas;meas=meas_list->GetNext()){
+    switch(m2->measType){
+    case Meas::HH_MEAS_TYPE:
+      m2->value=(meas->value-Bold[0])/Aold[0];
+      break;
+    case Meas::VV_MEAS_TYPE:
+      m2->value=(meas->value-Bold[1])/Aold[1];
+      break;
+    case Meas::C_BAND_HH_MEAS_TYPE:
+      m2->value=(meas->value-Bold[2])/Aold[2];
+      break;
+    case Meas::C_BAND_VV_MEAS_TYPE:
+      m2->value=(meas->value-Bold[3])/Aold[3];
+      break;
+    default:
+      fprintf(stderr,"Bad measurement type for S3RAIN\n");
+      exit(1);
+    }
+    m2=ml2.GetNext();
+  } // end correct meas loop
+  delete wvc;
+  wvc=wvcout;
+  if(!RetrieveWinds_S3(&ml2,kp,wvc,0)){
+    ml2.FreeContents();
+    return(0);
+  }
+  // put chosen AHku value into wvc
+  wvc->rainProb=Aold[0];
+  ml2.FreeContents();
+  return(1);  
 }
 
 //-----------------------//

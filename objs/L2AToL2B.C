@@ -98,6 +98,11 @@ L2AToL2B::SetWindRetrievalMethod(
         wrMethod = CHEAT;
         return(1);
     }
+    else if (strcasecmp(wr_method, "S3RAIN")==0)
+      {
+	wrMethod = S3RAIN;
+	return(1);
+      }
     else
         return(0);
 }
@@ -165,6 +170,12 @@ L2AToL2B::ConvertAndWrite(
     float ctd, speed, dir;
     WindVectorPlus* wvp;
     static int num = 1;
+
+    //HACK for breakpoint in gdb
+    if(l2a->frame.cti==722 && l2a->frame.ati==2181){
+      int bp=0;
+      bp++;
+    }
     switch (wrMethod)
     {
     case GS:
@@ -234,6 +245,14 @@ L2AToL2B::ConvertAndWrite(
 
     case S3:
         if (! gmf->RetrieveWinds_S3(meas_list, kp, wvc))
+        {
+            delete wvc;
+            return(11);
+        }
+        break;
+
+    case S3RAIN:
+        if (! gmf->RetrieveWinds_S3Rain(meas_list, kp, wvc))
         {
             delete wvc;
             return(11);
