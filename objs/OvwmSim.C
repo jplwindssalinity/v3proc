@@ -1505,9 +1505,14 @@ OvwmSim::SetMeasurements(
 	      
 	      // add rain contamination if simRain
 	      if(simRain){
-		float a,b;
-		int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
-		if(goodrain) sigma0= sigma0/a + b;
+                if (!rainField.flag_3d) {
+		  float a,b;
+		  int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
+		  if(goodrain) sigma0= sigma0/a + b;
+                } else if (rainField.flag_3d) {
+		  printf("Error: Rain 3D model is not implemented in this mode.\n");
+                  exit(-1);
+                }
 	      }
 	      if (simVs1BCheckfile)
 		{
@@ -1681,6 +1686,7 @@ OvwmSim::SetMeasurements(
 	    gain=0;
 	  }
           gain/=maxgain;
+          //cout << gain << endl;
 
 	  if(generate_map)
 	    gain_map_[range_index][azimuth_index]=gain;
@@ -1990,6 +1996,98 @@ OvwmSim::SetMeasurements(
           Vector3 center_ra=gc_to_rangeazim.Forward(meas->centroid-spot_centroid);        double maxdX=0;
 	  double r0=center_ra.Get(0);
 	  double a0=center_ra.Get(1);
+
+          //cout << "r&a: " << r0 << " " << a0 << endl;
+
+          float attn;
+          float **rainRngAz;
+          float Es_rain = 0.;
+          float X_rain = 0.;
+
+          if (simRain && rainField.flag_3d) {
+
+            // find rain attenuation
+            rainField.ComputeAttn(spacecraft, spot_centroid, meas->centroid,
+                                  meas->incidenceAngle, gc_to_rangeazim, &attn);
+            //cout << "rain attn: " << attn << endl;
+
+            // find rain cell locations with same range and doppler as meas centroid
+            rainRngAz = new float*[40];
+            for (int ii=0; ii<40; ii++) {
+              rainRngAz[ii] = new float[2];
+            }
+            rainField.ComputeLoc(spacecraft, meas, spot_centroid, gc_to_rangeazim, rainRngAz);
+
+          }
+
+          if (simRain && rainField.flag_3d) { // find out rain contribution with 3d model
+
+            for (int nn=1; nn<=N_LAYERS; nn++) {
+              //cout << "layer: " << nn << endl;
+
+              X_rain = 0.;
+              float layer_attn;
+              float layer_Es_rain = 0.;
+
+              for (int ii=0; ii<nrsteps; ii++) {
+	        double rr = rainRngAz[nn-1][0]+(ii-center_range_idx_ave)*integrationStepSize;
+
+                for (int jj=0; jj<nasteps; jj++) {
+
+	          double aa = rainRngAz[nn-1][1]+(jj-center_azim_idx)*integrationStepSize;
+                  EarthPosition rainCell;
+                  rainCell.SetPosition(rr, aa, nn*DZ_LAYER);
+                  rainCell = gc_to_rangeazim.Backward(rainCell) + spot_centroid;
+                  //rainCell.Show();
+
+                  // find attn for this layer
+                  if (ii==nrsteps/2 && jj==nasteps/2) {
+                    rainField.ComputeAttn(spacecraft, spot_centroid, rainCell,
+                                          meas->incidenceAngle, gc_to_rangeazim, &layer_attn);
+                    //cout << "layer, attn: " << nn << " " << layer_attn << endl;
+                  }
+
+                  double alt, lon, lat;
+                  if (!rainCell.GetAltLonGDLat(&alt, &lon, &lat))
+                    return (0);
+                  //cout << "alt, lon, lat: " << alt << " " << lon << " " << lat << endl;
+
+                  float rainRefl, rainS0;
+                  rainField.GetRefl(alt,lon,lat,&rainRefl);
+                  //cout << rainRefl << endl;
+                  rainS0 = rainField.const_ZtoSigma*rainRefl*DZ_LAYER*1000.
+                           /cos(meas->incidenceAngle); // 1000. for DZ_LAYER from km to m 
+                  //cout << rainS0 << endl;
+
+                  Vector3 rl = rainCell - spacecraft->orbitState.rsat;
+                  Vector3 rl_ant = gc_to_antenna.Forward(rl);
+                  double range,theta,phi;
+                  rl_ant.SphericalGet(&range,&theta,&phi);
+                  double gain;
+                  if(!beam->GetPowerGain(theta,phi,&gain)){
+                    gain=0;
+                  }
+                  double GatGar=gain*gain; // assumes separate transmit and receive feeds
+                  //cout << range << " " << _ptr_array[ii][jj] << " " << integrationStepSize << endl;
+                  //cout << gain <<  " " << theta*rtd << " " << phi*rtd << endl;
+
+                  float dX=GatGar*_ptr_array[ii][jj]*integrationStepSize*
+                           integrationStepSize/(range*range*range*range);
+                  X_rain += dX;
+                  layer_Es_rain += dX*rainS0;
+
+                  //cout << "rain dX, Es: " << dX << " " << X_rain << " " << rainS0 << " " << layer_Es_rain << endl;
+                } // az step loop
+
+              } // rng step loop
+
+              Es_rain += layer_Es_rain*exp(-2.*layer_attn);
+              //cout << "layer, Es rain: " << nn << " " << Es_rain << endl;
+
+            } // layer loop
+
+          } // simRain && rainField.flag_3d
+
 	  for(int i=0;i<nrsteps;i++){
 	    double r=r0+(i-center_range_idx_ave)*integrationStepSize;
 	    for(int j=0;j<nasteps;j++){
@@ -2035,10 +2133,12 @@ OvwmSim::SetMeasurements(
 
 		// add rain contamination if simRain
                 if(simRain){
-		  float a,b;
-                  int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
-                  //printf("s0before %g a %g b %g  lat %g lon %g inc %g\n",s0,a,b,lat*rtd,lon*rtd,meas->incidenceAngle*rtd);
-		  if(goodrain) s0= s0/a + b;
+                  if (!rainField.flag_3d) {
+		    float a,b;
+                    int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
+                    //printf("s0before %g a %g b %g  lat %g lon %g inc %g\n",s0,a,b,lat*rtd,lon*rtd,meas->incidenceAngle*rtd);
+		    if(goodrain) s0= s0/a + b;
+                  }
 		}
 	      }
 
@@ -2075,7 +2175,13 @@ OvwmSim::SetMeasurements(
 
               //cout << "s0 after corr kpm: " << s0 << endl;
 
-              //exit(1);
+              if (simRain && rainField.flag_3d) {
+                // get splash sigma
+                float rainSpl;
+                rainField.GetSplash(lon,lat,&rainSpl);
+                //cout << "s0 for wind, spl: " << s0 << " " << rainSpl << endl;
+                s0 += rainSpl;
+              }
 
               //-----------------------------        
 	      // compute gain and range
@@ -2091,6 +2197,7 @@ OvwmSim::SetMeasurements(
               double GatGar=gain*gain; // assumes 
 	                               // separate transmit and receive feeds
 
+              //cout << "gain: " << gain << " " << theta*rtd << " " << phi*rtd  << endl;
 
               //----------------------------
               // Integrate X and Es
@@ -2137,6 +2244,14 @@ OvwmSim::SetMeasurements(
               if(dX> maxdX) maxdX=dX;
 	    }
 	  }
+
+          // modify signal strength because of rain
+          if (simRain && rainField.flag_3d) {
+            Es *= exp(-2.*attn);
+            Es += Es_rain;
+          }
+
+          //cout << "target X and E: " << meas->XK << " " << Es << endl;
 
           if (dX_land/meas->XK >= dX_THRESHOLD && sim_l1b_direct) {
             meas=meas_spot->RemoveCurrent();
@@ -2250,9 +2365,28 @@ OvwmSim::SetMeasurements(
 
 	      // add rain contamination if simRain
 	      if(simRain){
-		float a,b;
-		int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
-		if(goodrain) amb1s0= amb1s0/a + b;
+                if (!rainField.flag_3d) {
+                  float a,b;
+                  int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
+                  if(goodrain) amb1s0= amb1s0/a + b;
+                } else if (rainField.flag_3d) {
+                  //cout << lon*rtd << " " << lat*rtd << endl;
+
+                  // get splash
+                  float rainSpl;
+                  rainField.GetSplash(lon, lat, &rainSpl);
+
+                  //cout << "s0: amb1, spl: " << amb1s0 << " " << rainSpl << endl;
+
+                  amb1s0 += rainSpl;
+
+                  float comb1s0;
+                  rainField.ComputeAmbEs(spacecraft, spot_centroid, amb1pos,
+                                         meas->incidenceAngle, gc_to_rangeazim,
+                                         amb1s0, &comb1s0);
+                  amb1s0 = comb1s0;
+                  //cout << "amb1s0 after rain: " << amb1s0 << endl;
+                }
 	      }
 	    }
 	  }
@@ -2288,9 +2422,27 @@ OvwmSim::SetMeasurements(
 
 	      // add rain contamination if simRain
 	      if(simRain){
-		float a,b;
-		int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
-		if(goodrain) amb2s0= amb2s0/a + b;
+                if (!rainField.flag_3d) {
+		  float a,b;
+		  int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
+		  if(goodrain) amb2s0= amb2s0/a + b;
+                } else if (rainField.flag_3d) {
+
+                  // get splash
+                  float rainSpl;
+                  rainField.GetSplash(lon, lat, &rainSpl);
+
+                  //cout << "s0: amb2, spl: " << amb2s0 << " " << rainSpl << endl;
+
+                  amb2s0 += rainSpl;
+
+                  float comb2s0;
+                  rainField.ComputeAmbEs(spacecraft, spot_centroid, amb2pos,
+                                         meas->incidenceAngle, gc_to_rangeazim,
+                                         amb2s0, &comb2s0);
+                  amb2s0 = comb2s0;
+                  //cout << "amb2s0 after rain: " << amb2s0 << endl;
+                }
 	      }
 	    }
 	  }
@@ -2298,6 +2450,7 @@ OvwmSim::SetMeasurements(
 	  Es+=meas->XK*amb1*amb1s0+meas->XK*amb2*amb2s0;
 
           //cout << "Es after amb: " << Es << endl;
+          //exit(1);
 
           //-----------------------
           // compute variance ONLY kpc for now!

@@ -26,6 +26,7 @@ static const char rcs_id_configsim_h[] =
 #include "Kp.h"
 #include "FbbTable.h"
 #include "Rain.h"
+#include "YahyaAntenna.h"
 
 //======================================================================
 // DESCRIPTION
@@ -58,6 +59,7 @@ int  ConfigAttitudeKnowledgeModel(AttDist* attknow, ConfigList* config_list);
 //---------//
 
 int  ConfigAntenna(Antenna* antenna, ConfigList* config_list);
+int  ConfigYahyaAntenna(YahyaAntenna* YahyaAnt, ConfigList* config_list);
 
 //------//
 // Beam //

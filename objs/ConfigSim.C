@@ -10,6 +10,7 @@ static const char rcs_id_configsim_c[] =
 #include <time.h>
 #include "ConfigSim.h"
 #include "ConfigSimDefs.h"
+#include "OvwmConfigDefs.h"
 #include "SpacecraftSim.h"
 #include "XTable.h"
 #include "BYUXTable.h"
@@ -460,6 +461,80 @@ ConfigUniformRandomVelocity(
     return(new_rv);
 }
 ********************************************/
+
+//---------------//
+// ConfigYahyaAntenna //
+//---------------//
+
+int
+ConfigYahyaAntenna(
+    YahyaAntenna*     YahyaAnt,
+    ConfigList*  config_list)
+{
+    //-----------------------//
+    // configure Yahya antenna //
+    //-----------------------//
+
+    float alam,diam,flen,bw1,bw2,theta0,disp,blockage; 
+
+    if (! config_list->GetFloat(ANTENNA_WAVELENGTH_KEYWORD, &alam))
+    {
+        fprintf(stderr,
+            "Could not find antenna wavelength in config file\n");
+        return(0);
+    }
+    if (! config_list->GetFloat(ANTENNA_DIAMETER_KEYWORD, &diam))
+    {
+        fprintf(stderr,
+            "Could not find antenna diameter in config file\n");
+        return(0);
+    }
+    if (! config_list->GetFloat(ANTENNA_FOCAL_LENGTH_KEYWORD, &flen))
+    {
+        fprintf(stderr,
+            "Could not find antenna focal length in config file\n");
+        return(0);
+    }
+    if (! config_list->GetFloat(ANTENNA_FEED_BW1_KEYWORD, &bw1))
+    {
+        fprintf(stderr,
+            "Could not find antenna feed bw1 in config file\n");
+        return(0);
+    }
+    if (! config_list->GetFloat(ANTENNA_FEED_BW2_KEYWORD, &bw2))
+    {
+        fprintf(stderr,
+            "Could not find antenna feed bw2 in config file\n");
+        return(0);
+    }
+    if (! config_list->GetFloat(ANTENNA_THETA0_KEYWORD, &theta0))
+    {
+        fprintf(stderr,
+            "Could not find antenna theta0 in config file\n");
+        return(0);
+    }
+    if (! config_list->GetFloat(ANTENNA_DISPLACEMENT_KEYWORD, &disp))
+    {
+        fprintf(stderr,
+            "Could not find antenna displacement in config file\n");
+        return(0);
+    }
+    if (! config_list->GetFloat(ANTENNA_BLOCKAGE_KEYWORD, &blockage))
+    {
+        fprintf(stderr,
+            "Could not find antenna blockage in config file\n");
+        return(0);
+    }
+
+    YahyaAnt->SetAlam(alam);
+    YahyaAnt->SetDiam(diam);
+    YahyaAnt->SetFlen(flen);
+    YahyaAnt->SetBw1(bw1);
+    YahyaAnt->SetBw2(bw2);
+    YahyaAnt->SetTheta0(theta0);
+    YahyaAnt->SetDisp(disp);
+    YahyaAnt->SetBlockage(blockage);
+}
 
 //---------------//
 // ConfigAntenna //
@@ -1474,32 +1549,80 @@ ConfigWindField(
 int  
 
 ConfigRainField(RainField* rainfield, ConfigList* config_list){
-    char* rainfield_filename1 = config_list->Get(TRUTH_RAIN_FILE_INNERH_KEYWORD);
-    if (rainfield_filename1 == NULL)
-    {
-        fprintf(stderr, "ConfigRainField: can't determine rainfield file\n");
+    if (! config_list->GetInt(USE_3D_RAIN_MODEL_KEYWORD, &rainfield->flag_3d))
         return(0);
-    }
 
-    char* rainfield_filename2 = config_list->Get(TRUTH_RAIN_FILE_OUTERV_KEYWORD);
-    if (rainfield_filename2 == NULL)
-    {
-        fprintf(stderr, "ConfigRainField: can't determine rainfield file\n");
-        return(0);
-    }
+    if (!rainfield->flag_3d) {
 
-    if (!config_list->GetFloat(RAIN_FIELD_LAT_MIN_KEYWORD, &rainfield->lat_min) ||
-	!config_list->GetFloat(RAIN_FIELD_LAT_MAX_KEYWORD, &rainfield->lat_max) ||
-	!config_list->GetFloat(RAIN_FIELD_LON_MIN_KEYWORD, &rainfield->lon_min) ||
-	!config_list->GetFloat(RAIN_FIELD_LON_MAX_KEYWORD, &rainfield->lon_max))
+      char* rainfield_filename1 = config_list->Get(TRUTH_RAIN_FILE_INNERH_KEYWORD);
+      if (rainfield_filename1 == NULL)
       {
-	fprintf(stderr, "ConfigRainField: can't determine range of lat and lon\n");
-	return(0);
+          fprintf(stderr, "ConfigRainField: can't determine rainfield file\n");
+          return(0);
       }
-    if(!rainfield->ReadSVBinary(rainfield_filename1,rainfield_filename2)){
-	fprintf(stderr, "ConfigRainField: can't read rainfield file\n");
-	return(0);      
+
+      char* rainfield_filename2 = config_list->Get(TRUTH_RAIN_FILE_OUTERV_KEYWORD);
+      if (rainfield_filename2 == NULL)
+      {
+          fprintf(stderr, "ConfigRainField: can't determine rainfield file\n");
+          return(0);
+      }
+
+      if (!config_list->GetFloat(RAIN_FIELD_LAT_MIN_KEYWORD, &rainfield->lat_min) ||
+          !config_list->GetFloat(RAIN_FIELD_LAT_MAX_KEYWORD, &rainfield->lat_max) ||
+          !config_list->GetFloat(RAIN_FIELD_LON_MIN_KEYWORD, &rainfield->lon_min) ||
+          !config_list->GetFloat(RAIN_FIELD_LON_MAX_KEYWORD, &rainfield->lon_max))
+      {
+          fprintf(stderr, "ConfigRainField: can't determine range of lat and lon\n");
+          return(0);
+      }
+      if(!rainfield->ReadSVBinary(rainfield_filename1,rainfield_filename2)){
+          fprintf(stderr, "ConfigRainField: can't read rainfield file\n");
+          return(0);      
+      }
+
+    } else if (rainfield->flag_3d) {
+
+      char* rainfield_filename1 = config_list->Get(RAIN_REFL_ATTN_FILE_KEYWORD);
+      if (rainfield_filename1 == NULL)
+      {
+          fprintf(stderr, "ConfigRainField: can't determine rainfield file\n");
+          return(0);
+      }
+
+      char* rainfield_filename2 = config_list->Get(RAIN_SPLASH_FILE_KEYWORD);
+      if (rainfield_filename2 == NULL)
+      {
+          fprintf(stderr, "ConfigRainField: can't determine rainfield file\n");
+          return(0);
+      }
+
+      if (!config_list->GetFloat(RAIN_FIELD_LAT_MIN_KEYWORD, &rainfield->lat_min) ||
+          !config_list->GetFloat(RAIN_FIELD_LAT_MAX_KEYWORD, &rainfield->lat_max) ||
+          !config_list->GetFloat(RAIN_FIELD_LON_MIN_KEYWORD, &rainfield->lon_min) ||
+          !config_list->GetFloat(RAIN_FIELD_LON_MAX_KEYWORD, &rainfield->lon_max))
+      {
+          fprintf(stderr, "ConfigRainField: can't determine range of lat and lon\n");
+          return(0);
+      }
+
+      if(!rainfield->ReadSV3DData(rainfield_filename1,rainfield_filename2)){
+          fprintf(stderr, "ConfigRainField: can't read rainfield file\n");
+          return(0);      
+      }
+
+      // calculate constant from reflectivity to sigma0
+      float base_tx_frequency;   // GHz
+      if (! config_list->GetFloat(BASE_TRANSMIT_FREQUENCY_KEYWORD,
+          &base_tx_frequency))
+      {
+          return(0);      
+      }
+      float lambda = speed_light_kps/base_tx_frequency/1.e6;
+      rainfield->const_ZtoSigma = pow(pi,5)*DIELECTRIC_WATER_CONST_SQ/pow(lambda,4)/1.e18; // last factor convert Z from mm^6/m^3 to m^6/m^3
+
     }
+
     return(1);
 }
 //-----------//
