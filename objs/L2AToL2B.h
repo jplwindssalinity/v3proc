@@ -102,6 +102,8 @@ public:
     int                   useRandomInit;
     int                   useNudgeStream;
 
+    int                   useSigma0Weights;
+
     //-----------------------------------------//
     // Parameters for Peak Splitting Algorithm //
     //-----------------------------------------//

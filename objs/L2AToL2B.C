@@ -22,7 +22,7 @@ L2AToL2B::L2AToL2B()
     smartNudgeFlag(0), wrMethod(GS), useNudgeThreshold(0), useNMF(0),
     useRandomInit(0), useNudgeStream(0), onePeakWidth(0.0), twoPeakSep(181.0),
     probThreshold(0.0), streamThreshold(0.0), useHurricaneNudgeField(0),
-    hurricaneRadius(0)
+    hurricaneRadius(0), useSigma0Weights(0)
 {
     return;
 }
@@ -161,6 +161,12 @@ L2AToL2B::ConvertAndWrite(
     {
         return(4);
     }
+
+    if (useSigma0Weights == 1)
+    {
+        gmf->CalculateSigma0Weights(meas_list);
+    }
+    
 
     //---------------//
     // retrieve wind //
