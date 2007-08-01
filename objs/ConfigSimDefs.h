@@ -298,6 +298,8 @@ static const char rcs_id_configsimdefs_h[] =
 #define FAR_SWATH_NUDGE_THRESHOLD_KEYWORD      "FAR_SWATH_NUDGE_THRESHOLD"
 #define USE_NARROW_MEDIAN_FILTER_KEYWORD       "USE_NARROW_MEDIAN_FILTER"
 #define USE_RANDOM_RANK_INIT_KEYWORD           "USE_RANDOM_RANK_INIT"
+#define USE_SIGMA0_SPATIAL_WEIGHTS_KEYWORD     "USE_SIGMA0_SPATIAL_WEIGHTS"
+
 
 //------------------//
 // Spacecraft State //
