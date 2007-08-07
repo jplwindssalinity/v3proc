@@ -165,6 +165,14 @@ L2AToL2B::ConvertAndWrite(
     if (useSigma0Weights == 1)
     {
         gmf->CalculateSigma0Weights(meas_list);
+
+        // modify the Kp C coefficient to apply the sigma0 weights to the measurements
+        float correlation_length = 25.;       
+        for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+        {
+            meas->C+=1.0/(correlation_length*correlation_length*meas->XK);  // meas->XK holds the sigma0 weight
+        }
+
     }
     
 
