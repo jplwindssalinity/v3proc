@@ -5510,10 +5510,10 @@ GMF::CalculateSigma0Weights(
 // zero width cases occur when the INTEGRATION_STEP was set coarsely during the simulation.
     //     if(rwid==0) rwid=0.01; 
     //     if(awid==0) awid=0.01;
-        if(rwid==0) rwid=0.1;   // 100 meters default, not 10 meters
-        if(awid==0) awid=0.1;
+        if(rwid==0) rwid=0.5;   // 100 meters default, not 10 meters
+        if(awid==0) awid=0.5;
 
-        float integrationStepSize = 0.1;
+        float integrationStepSize = 0.5;
       
         int nr = (int) ceil(rwid/integrationStepSize) + 1;
         int na = (int) ceil(awid*2.0/integrationStepSize) + 1;
@@ -5553,12 +5553,20 @@ GMF::CalculateSigma0Weights(
                 Vector3 locar(x,y,0.0);    // pixel location in azi-range plane
                 
                 EarthPosition locgc = gc_to_azimrange.Backward(locar);
+                locgc += meas->centroid;
+                
                 double alt, dlat, dlon;
                 if (! locgc.GetAltLonGCLat(&alt, &dlon, &dlat))  // delta lon & lat
+                {
+                    fprintf(stderr, "Problem in locgc CoordinateSwitch\n");
                     return;  
+                }
                 
-                resp_lon[i][j] = dlon + measLon;  // turn these into EarthPositions later
-                resp_lat[i][j] = dlat + measLat;
+                
+//                 resp_lon[i][j] = dlon + measLon;  // turn these into EarthPositions later
+//                 resp_lat[i][j] = dlat + measLat;
+                resp_lon[i][j] = dlon;  // turn these into EarthPositions later
+                resp_lat[i][j] = dlat;
             
             } // range steps
               
@@ -5575,7 +5583,7 @@ GMF::CalculateSigma0Weights(
 //                 float distsq = dx*dx + dy*dy;   // need earth radius
 
                 EarthPosition resp_loc;
-                resp_loc.SetAltLonGDLat(0.0,resp_lon[i][j],resp_lon[i][j]);
+                resp_loc.SetAltLonGDLat(0.0,resp_lon[i][j],resp_lat[i][j]);
                 float distsq = wvc_loc.SurfaceDistance(resp_loc);
                 distsq *=distsq;
                 
