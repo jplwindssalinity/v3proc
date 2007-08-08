@@ -22,7 +22,7 @@ L2AToL2B::L2AToL2B()
     smartNudgeFlag(0), wrMethod(GS), useNudgeThreshold(0), useNMF(0),
     useRandomInit(0), useNudgeStream(0), onePeakWidth(0.0), twoPeakSep(181.0),
     probThreshold(0.0), streamThreshold(0.0), useHurricaneNudgeField(0),
-    hurricaneRadius(0), useSigma0Weights(0)
+    hurricaneRadius(0), useSigma0Weights(0), sigma0WeightCorrLength(25.0)
 {
     return;
 }
@@ -167,7 +167,7 @@ L2AToL2B::ConvertAndWrite(
         gmf->CalculateSigma0Weights(meas_list);
 
         // modify the Kp C coefficient to apply the sigma0 weights to the measurements
-        float correlation_length = 25.;       
+        float correlation_length = sigma0WeightCorrLength;       
         for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
         {
             meas->C+=1.0/(correlation_length*correlation_length*meas->XK);  // meas->XK holds the sigma0 weight

@@ -1260,6 +1260,10 @@ ConfigL2AToL2B(
         return(0);
     l2a_to_l2b->useSigma0Weights = tmp_int;
 
+    if (! config_list->GetFloat(SSW_CORRELATION_LENGTH_KEYWORD, &tmp_float))
+        return(0);
+    l2a_to_l2b->sigma0WeightCorrLength = tmp_float;
+
     char* wr_method = config_list->Get(WIND_RETRIEVAL_METHOD_KEYWORD);
     if (wr_method == NULL)
         return(0);

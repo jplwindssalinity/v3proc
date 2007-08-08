@@ -103,7 +103,8 @@ public:
     int                   useNudgeStream;
 
     int                   useSigma0Weights;
-
+    float                 sigma0WeightCorrLength;
+    
     //-----------------------------------------//
     // Parameters for Peak Splitting Algorithm //
     //-----------------------------------------//
