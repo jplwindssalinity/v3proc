@@ -1286,13 +1286,17 @@ ConfigL2AToL2B(
         return(0);
     l2a_to_l2b->useAmbiguityWeights = tmp_int;
 
-    if (! config_list->GetInt(USE_SIGMA0_SPATIAL_WEIGHTS_KEYWORD, &tmp_int))
-        return(0);
-    l2a_to_l2b->useSigma0Weights = tmp_int;
+    config_list->DoNothingForMissingKeywords();
+    
+        if (! config_list->GetInt(USE_SIGMA0_SPATIAL_WEIGHTS_KEYWORD, &tmp_int))
+            return(0);
+        l2a_to_l2b->useSigma0Weights = tmp_int;
 
-    if (! config_list->GetFloat(SSW_CORRELATION_LENGTH_KEYWORD, &tmp_float))
-        return(0);
-    l2a_to_l2b->sigma0WeightCorrLength = tmp_float;
+        if (! config_list->GetFloat(SSW_CORRELATION_LENGTH_KEYWORD, &tmp_float))
+            return(0);
+        l2a_to_l2b->sigma0WeightCorrLength = tmp_float;
+
+    config_list->ExitForMissingKeywords();
 
     char* wr_method = config_list->Get(WIND_RETRIEVAL_METHOD_KEYWORD);
     if (wr_method == NULL)
