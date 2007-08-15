@@ -2246,7 +2246,8 @@ GMF::_ObjectiveFunctionNew(
         float s = trial_value - meas->value;
 
         float t = meas->XK;
-        float wt = 0.5*(1.0 + tanh(0.5*(t - 1.0)));
+//        float wt = 0.5*(1.0 + tanh(0.5*(t - 1.0)));
+        float wt = 1.0/(1.0 + (1.0/t));
 
         sumwt += wt;     // sum weights for renormalization
         num += 1;        // count good measurements
