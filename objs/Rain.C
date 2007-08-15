@@ -248,9 +248,20 @@ RainField::ReadSV3DData(
     return(0);
   }
 
+  // for 54 degree inc angle
   for(int ee=0;ee<2;ee++){ // there are 2 estimates
     for(int jj=0;jj<num_lats;jj++){
       if(fread(&(sB[ee][jj][0]),sizeof(float),num_lons,fp)!=(unsigned)num_lons){
+        fclose(fp);
+        return(0);
+      }
+    }
+  }
+
+  // for 46 degree inc angle
+  for(int ee=0;ee<2;ee++){ // there are 2 estimates
+    for(int jj=0;jj<num_lats;jj++){
+      if(fread(&(sB[ee+2][jj][0]),sizeof(float),num_lons,fp)!=(unsigned)num_lons){
         fclose(fp);
         return(0);
       }
@@ -273,7 +284,7 @@ int RainField::_Allocate(){
     vB3=(float***) make_array(sizeof(float),3,num_hgts,num_lats,num_lons);
     A3=(float***) make_array(sizeof(float),3,num_hgts,num_lats,num_lons);
     hgtInc = (float*) make_array(sizeof(float), 1, num_hgts);
-    sB=(float***) make_array(sizeof(float),3,2,num_lats,num_lons);
+    sB=(float***) make_array(sizeof(float),3,4,num_lats,num_lons);
     if(A3==NULL || vB3==NULL || hgtInc==NULL || sB==NULL) return(0);
   }
   return(1);
@@ -294,7 +305,7 @@ int RainField::_Deallocate(){
     free_array((void*)vB3,3,num_hgts,num_lats,num_lons);
     free_array((void*)A3,3,num_hgts,num_lats,num_lons);
     free_array((void*)hgtInc,1,num_hgts);
-    free_array((void*)sB,3,2,num_lats,num_lons);
+    free_array((void*)sB,3,4,num_lats,num_lons);
     vB3 = NULL;
     A3 = NULL;
     hgtInc = NULL;
@@ -548,8 +559,11 @@ int
 RainField::GetSplash(
     double lon,
     double lat,
+    float inc,
     float *rainSpl)
 {
+  int beam = (inc<inc_thresh)*2; 
+
   float lonmin = _lon.GetMin();
   int wrap_factor = (int)ceil((lonmin - lon) / two_pi);
   lon = lon + (float)wrap_factor * two_pi;
@@ -582,10 +596,10 @@ RainField::GetSplash(
   //cout << lat_coef[0] << " " << lat_coef[1] << endl;
   float corner_u[2][2];
 
-  corner_u[0][0] = sB[0][lat_idx[0]][lon_idx[0]];
-  corner_u[0][1] = sB[0][lat_idx[1]][lon_idx[0]];
-  corner_u[1][0] = sB[0][lat_idx[0]][lon_idx[1]];
-  corner_u[1][1] = sB[0][lat_idx[1]][lon_idx[1]];
+  corner_u[0][0] = sB[beam][lat_idx[0]][lon_idx[0]];
+  corner_u[0][1] = sB[beam][lat_idx[1]][lon_idx[0]];
+  corner_u[1][0] = sB[beam][lat_idx[0]][lon_idx[1]];
+  corner_u[1][1] = sB[beam][lat_idx[1]][lon_idx[1]];
 
   //cout << corner_u[0][0] << endl;
   //cout << corner_u[0][1] << endl;

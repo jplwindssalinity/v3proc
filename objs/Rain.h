@@ -57,7 +57,7 @@ public:
     int GetRefl(double alt, double lon, double lat, float* cellRefl);
     int ComputeLoc(Spacecraft* spacecraft, Meas* meas, EarthPosition spot_centroid,
                     CoordinateSwitch gc_to_rangeazim, float** rainRngAz);
-    int GetSplash(double lon, double lat, float* rainSpl);
+    int GetSplash(double lon, double lat, float inc, float* rainSpl);
     int ComputeAmbEs(Spacecraft* spacecraft, EarthPosition spot_centroid,
                      EarthPosition target, float incAngle,
                      CoordinateSwitch gc_to_rangeazim, float ambs0, float* combs0);

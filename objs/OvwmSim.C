@@ -982,12 +982,12 @@ int OvwmSim::CheckTiming(Ovwm* ovwm){
     }
 #endif 
   
-#ifdef DEBUG2_BAD_TIMING
+#ifdef DEBUG_BAD_TIMING
   double tstart=beamInfo[0].txTime-startTime;
   double tend=beamInfo[0].txTime+ovwm->ses.burstLength-startTime;
   double rstart=beamInfo[0].rxTime-startTime;
   double rend=beamInfo[0].rxTime+ovwm->ses.GetRxGateWidth(1)-startTime;
-  // fprintf(stderr,"%d ts %g te %g rs %g re %g bl %g pri %g npul %d\n", 0,tstart,tend,rstart,rend,ovwm->ses.burstLength,ovwm->ses.pri, ovwm->ses.numPulses);
+  fprintf(stderr,"%d ts %g te %g rs %g re %g bl %g pri %g npul %d\n", 0,tstart,tend,rstart,rend,ovwm->ses.burstLength,ovwm->ses.pri, ovwm->ses.numPulses);
 
   for(int i=1;i<NUMBER_OF_OVWM_BEAMS;i++){
       double tstart2=beamInfo[i].txTime-startTime;
@@ -1999,7 +1999,7 @@ OvwmSim::SetMeasurements(
 
           //cout << "r&a: " << r0 << " " << a0 << endl;
 
-          float attn;
+          float attn = 0.;
           float **rainRngAz;
           float Es_rain = 0.;
           float X_rain = 0.;
@@ -2178,7 +2178,7 @@ OvwmSim::SetMeasurements(
               if (simRain && rainField.flag_3d) {
                 // get splash sigma
                 float rainSpl;
-                rainField.GetSplash(lon,lat,&rainSpl);
+                rainField.GetSplash(lon, lat, meas->incidenceAngle, &rainSpl);
                 //cout << "s0 for wind, spl: " << s0 << " " << rainSpl << endl;
                 s0 += rainSpl;
               }
@@ -2245,13 +2245,16 @@ OvwmSim::SetMeasurements(
 	    }
 	  }
 
+          //cout << "target X and E before rain effect: " << meas->XK << " " << Es << endl;
+
           // modify signal strength because of rain
           if (simRain && rainField.flag_3d) {
             Es *= exp(-2.*attn);
             Es += Es_rain;
           }
 
-          //cout << "target X and E: " << meas->XK << " " << Es << endl;
+          //cout << "rain (scat, attn): " << Es_rain << " " << attn << endl;
+          //cout << "target E with rain: " << Es << endl;
 
           if (dX_land/meas->XK >= dX_THRESHOLD && sim_l1b_direct) {
             meas=meas_spot->RemoveCurrent();
@@ -2374,7 +2377,7 @@ OvwmSim::SetMeasurements(
 
                   // get splash
                   float rainSpl;
-                  rainField.GetSplash(lon, lat, &rainSpl);
+                  rainField.GetSplash(lon, lat, meas->incidenceAngle, &rainSpl);
 
                   //cout << "s0: amb1, spl: " << amb1s0 << " " << rainSpl << endl;
 
@@ -2430,7 +2433,7 @@ OvwmSim::SetMeasurements(
 
                   // get splash
                   float rainSpl;
-                  rainField.GetSplash(lon, lat, &rainSpl);
+                  rainField.GetSplash(lon, lat, meas->incidenceAngle, &rainSpl);
 
                   //cout << "s0: amb2, spl: " << amb2s0 << " " << rainSpl << endl;
 
