@@ -2249,14 +2249,19 @@ GMF::_ObjectiveFunctionNew(
 //        float wt = 0.5*(1.0 + tanh(0.5*(t - 1.0)));
         float wt = 1.0/(1.0 + (1.0/t));
 
+//         sumwt += wt;     // sum weights for renormalization
+//         num += 1;        // count good measurements
+
+        float wt1=kuBandWeight;
+ 	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE || 
+ 	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
+ 	  wt1=cBandWeight;
+	}
+
+        wt *= wt1;
         sumwt += wt;     // sum weights for renormalization
         num += 1;        // count good measurements
 
-//        float wt=kuBandWeight;
-// 	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE || 
-// 	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
-// 	  wt=cBandWeight;
-//	}
 
         //-------------------------------------------------------//
         // calculate the expected variance for the trial sigma-0 //
