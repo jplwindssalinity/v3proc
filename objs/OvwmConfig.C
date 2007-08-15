@@ -534,15 +534,13 @@ ConfigOvwmSim(
 
     int use_land_map;
     config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land_map);
+    if(!ConfigLandMap(&(ovwm_sim->landMap),config_list))
+    {
+        fprintf(stderr,"Cannot Initialize Land Map\n");
+        exit(0);
+    }
     if (use_land_map)
     {
-        char* landfile = config_list->Get(LANDMAP_FILE_KEYWORD);
-        if (! ovwm_sim->landMap.Initialize(landfile, use_land_map))
-        {
-            fprintf(stderr, "Cannot Initialize Land Map\n");
-            return(0);
-        }
-        
 	config_list->GetInt(SIM_COAST_KEYWORD,&(ovwm_sim->simCoast));
 	char keyword[1024];
 	char number[8];
@@ -558,10 +556,7 @@ ConfigOvwmSim(
             &(ovwm_sim->landSigma0[beam_idx]));
 	}
     }
-    else
-    {
-        ovwm_sim->landMap.Initialize(NULL, use_land_map);
-    }
+
     
     //-----------------//
     // Rain field      //
@@ -1005,10 +1000,7 @@ int ConfigOvwmL1AToL1B(OvwmL1AToL1B* l1a_to_l1b, ConfigList* config_list)
     // Read in the land map file            //
     //--------------------------------------//
 
-    char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
-    int use_land;
-    config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land);
-    if (! l1a_to_l1b->landMap.Initialize(landfile,use_land))
+    if(!ConfigLandMap(&(l1a_to_l1b->landMap),config_list))
     {
         fprintf(stderr,"Cannot Initialize Land Map\n");
         exit(0);

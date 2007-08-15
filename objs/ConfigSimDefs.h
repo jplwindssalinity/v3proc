@@ -156,6 +156,9 @@ static const char rcs_id_configsimdefs_h[] =
 //---------//
 
 #define LANDMAP_FILE_KEYWORD            "LANDMAP_FILE"
+#define LANDMAP_TYPE_KEYWORD            "LANDMAP_TYPE"
+#define LANDMAP_LAT_START_KEYWORD            "LANDMAP_LAT_START"
+#define LANDMAP_LON_START_KEYWORD            "LANDMAP_LON_START"
 #define USE_LANDMAP_KEYWORD             "USE_LANDMAP"
 #define LAND_SIGMA0_INNER_BEAM_KEYWORD  "LAND_SIGMA0_INNER_BEAM"  // linear
 #define LAND_SIGMA0_OUTER_BEAM_KEYWORD  "LAND_SIGMA0_OUTER_BEAM"  // linear

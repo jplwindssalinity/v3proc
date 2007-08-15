@@ -32,6 +32,36 @@ static const char rcs_id_configsim_c[] =
 #include "GenericGeom.h"
 #include "ETime.h"
 
+
+
+
+//-------------//
+// LandMap     //
+//-------------//
+int ConfigLandMap(LandMap* lmap, ConfigList* config_list){
+
+    char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD); 
+    config_list->DoNothingForMissingKeywords();
+    char* landfiletype = config_list->Get(LANDMAP_TYPE_KEYWORD);
+    config_list->ExitForMissingKeywords();
+    char * nomstring="OLD_STYLE";
+    if(!landfiletype){
+      landfiletype=nomstring;
+    }
+    float lm_lat_start=0, lm_lon_start=0;
+    int use_land;
+    config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land);
+    if(use_land && strcasecmp(landfiletype,"LANDUSE")==0){
+      config_list->GetFloat(LANDMAP_LAT_START_KEYWORD,&lm_lat_start);
+      config_list->GetFloat(LANDMAP_LON_START_KEYWORD,&lm_lon_start);
+    }
+
+    if (!lmap->Initialize(landfile,use_land,landfiletype,lm_lon_start*dtr,lm_lat_start*dtr))
+    {
+      return(0);
+    }
+    return(1);
+}
 //------------------//
 // ConfigSpacecraft //
 //------------------//

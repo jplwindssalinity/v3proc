@@ -41,14 +41,19 @@ public:
     LandMap();
     ~LandMap();
 
-    int  Initialize(char* filename, int use_map);
+    int  Initialize(char* filename, int use_map, char* lmtype=NULL, float lonstart=0, float latstart=0);
 
     int  IsLand(float lon, float lat);
     int  IsLand(LonLat* lon_lat);
 
 protected:
 
-    int  Read(char* filename);
+    int  IsLandUSGS(float lon, float lat);
+    int  IsLandSimple(float lon, float lat);
+    int  IsLandOld(float lon, float lat);
+    int  ReadOld(char* filename);
+    int  ReadSimple(char* filename);
+    int  ReadUSGS(char* filename);
     int  _Allocate();
     int  _Deallocate();
 
@@ -61,6 +66,11 @@ protected:
     int              _mapLatDim;
     int              _mapLonDim;
     int              _usemap;
+    float            _lat_start;
+    float            _lon_start;
+    float            _lonResolution;
+    float            _latResolution;
+    int landmap_type;  // 0 = LandMap, 1= SimpleLandMap, 2= USGS Landuse map
 };
 
 //======================================================================
@@ -85,6 +95,7 @@ public:
     SimpleLandMap();
     ~SimpleLandMap();
 
+    int  Initialize(char* filename, int use_map);
     int  Read(const char* filename);
     int  Write(const char* filename);
     int  GetType(float lon, float lat);
@@ -107,6 +118,7 @@ protected:
     //-----------//
 
     char**  _map;
+    int     _usemap;
     int     _lonSamples;
     int     _latSamples;
     float   _lonResolution;

@@ -33,6 +33,10 @@ static const char rcs_id_configsim_h[] =
 //    These functions are used to initialize components and their
 //    simulators.
 //======================================================================
+//-------------//
+// LandMap     //
+//-------------//
+int ConfigLandMap(LandMap* lmap, ConfigList* config_list);
 
 //------------//
 // Spacecraft //
