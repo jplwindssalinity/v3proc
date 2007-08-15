@@ -2216,6 +2216,8 @@ GMF::_ObjectiveFunctionNew(
     //-----------------------------------------//
 
     float fv = 0.0;
+    float sumwt = 0.0;
+    float num = 0.0;
 
     //-------------------------//
     // for each measurement... //
@@ -2246,6 +2248,9 @@ GMF::_ObjectiveFunctionNew(
         float t = meas->XK;
         float wt = 0.5*(1.0 + tanh(0.5*(t - 1.0)));
 
+        sumwt += wt;     // sum weights for renormalization
+        num += 1;        // count good measurements
+
 //        float wt=kuBandWeight;
 // 	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE || 
 // 	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
@@ -2273,7 +2278,7 @@ GMF::_ObjectiveFunctionNew(
             fv += wt*s*s / var;
         }
     }
-    return(-fv);
+    return(-fv*num/sumwt);
 }
 
 //-------------------------//
