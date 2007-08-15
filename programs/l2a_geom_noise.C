@@ -8,11 +8,12 @@
 //		l2a_geom_noise
 //
 // SYNOPSIS
-//	      l2a_geom_noise <input_file> <output_file> <nbeams> <res> [ati]
+//	      l2a_geom_noise <input_file> <output_file> <nbeams> <res>
+//                           [compute_ambig] [avg_n_lines] [ati]
 //
 // DESCRIPTION
 //          Reads l2a file to get geometry and noise info for a specific ati
-//          and all cti. Then, output the average info to an ASCII file
+//          or average nlines and all cti. Then, output the average info to an ASCII file
 //
 //      OPTIONS
 //
@@ -68,7 +69,7 @@ template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
 
 const char* usage_array[] = { "<input_file>", "<output_file>",
-			      "<nbeams>", "<res>", "[compute_ambig]",
+			      "<nbeams>", "<res>", "[compute_ambig]", "[avg_n_lines]",
 			      "[ati]",0};
 
 //--------------//
@@ -101,12 +102,19 @@ main(
         // scale ie. REPLACE_VALUE_WITH_AMBIG = 1 in config file used
         // to generate l2a
 
-       if (argc > 5) {
+        int numLines; // number of ati lines for average
+
+        if (argc > 5) {
           computeAmbigFlag= atoi(argv[clidx++]);
         } else {
           computeAmbigFlag = 0;
         }
         if (argc > 6) {
+          numLines = atoi(argv[clidx++]);
+        } else {
+          numLines = 1;
+        }
+        if (argc > 7) {
           ati = atoi(argv[clidx++]);
           searchFlag = 0;
         } else {
@@ -184,6 +192,16 @@ main(
 
         }
 
+        int atiStart, atiEnd;
+
+        // set start and end ati
+        atiStart = ati - numLines/2;
+        if (numLines%2 == 0) {
+          atiEnd = ati + numLines/2 - 1;
+        } else {
+          atiEnd = ati + numLines/2;
+        }
+
         char pol[MAX_NBEAMS][NDIRS]; // 2nd index is for fore (0) or after (1)
         int nLook[MAX_NBEAMS][NDIRS];
         float ambRatio[MAX_NBEAMS][NDIRS][XBIN];
@@ -228,9 +246,9 @@ main(
 	// copy desired frames //
 	//---------------------//
 
-	while (l2a.ReadDataRec() && l2a.frame.ati <= ati)
+	while (l2a.ReadDataRec() && l2a.frame.ati <= atiEnd)
 	{
-          if (l2a.frame.ati == ati) {
+          if (l2a.frame.ati >= atiStart && l2a.frame.ati <= atiEnd) {
             for (Meas* meas = l2a.frame.measList.GetHead();
                  meas; meas = l2a.frame.measList.GetNext())
             {
@@ -259,23 +277,6 @@ main(
 
             } // meas list loop
 
-            // perform averaging
-            for (int bb=0; bb<nbeams; bb++) {
-              for (int ff=0; ff<NDIRS; ff++) {
-                if (nMeas[bb][ff][l2a.frame.cti] > 0) {
-                  nes0[bb][ff][l2a.frame.cti] /= nMeas[bb][ff][l2a.frame.cti];
-                  nes0[bb][ff][l2a.frame.cti] = 10.*log10(nes0[bb][ff][l2a.frame.cti]);
-                  azAng[bb][ff][l2a.frame.cti] /= nMeas[bb][ff][l2a.frame.cti]/rtd;
-                  incAng[bb][ff][l2a.frame.cti] /= nMeas[bb][ff][l2a.frame.cti]/rtd;
-
-		  if(computeAmbigFlag){
-		   ambRatio[bb][ff][l2a.frame.cti] /= nMeas[bb][ff][l2a.frame.cti];
-		   ambRatio[bb][ff][l2a.frame.cti] = -10.*log10(ambRatio[bb][ff][l2a.frame.cti]);
-		  }
-                }
-              }
-            }
-
           } // ati check
 
         } // while, reading loop
@@ -285,12 +286,29 @@ main(
 
         for (int ii=0; ii<int(CROSS_DIST/res); ii++) {
 
+          // perform averaging
+          for (int bb=0; bb<nbeams; bb++) {
+            for (int ff=0; ff<NDIRS; ff++) {
+              if (nMeas[bb][ff][ii] > 0) {
+                nes0[bb][ff][ii] /= nMeas[bb][ff][ii];
+                nes0[bb][ff][ii] = 10.*log10(nes0[bb][ff][ii]);
+                azAng[bb][ff][ii] /= nMeas[bb][ff][ii]/rtd;
+                incAng[bb][ff][ii] /= nMeas[bb][ff][ii]/rtd;
+
+                if(computeAmbigFlag){
+                 ambRatio[bb][ff][ii] /= nMeas[bb][ff][ii];
+                 ambRatio[bb][ff][ii] = -10.*log10(ambRatio[bb][ff][ii]);
+                }
+              }
+            }
+          }
+
           fprintf(outfileP, "%f ", (ii+0.5)*res-CROSS_DIST/2);
 
           for (int bb=0; bb<nbeams-1; bb++) {
             for (int ff=0; ff<NDIRS; ff++) {
               fprintf(outfileP, "%d %f %d %f %f %c %f ",
-                  nMeas[bb][ff][ii], nes0[bb][ff][ii], nLook[bb][ff], azAng[bb][ff][ii],
+                  nMeas[bb][ff][ii]/numLines, nes0[bb][ff][ii], nLook[bb][ff], azAng[bb][ff][ii],
                   incAng[bb][ff][ii], pol[bb][ff], ambRatio[bb][ff][ii]); 
  
             }
@@ -298,9 +316,9 @@ main(
 
           for (int bb=nbeams-1; bb<nbeams; bb++) {
             fprintf(outfileP, "%d %f %d %f %f %c %f %d %f %d %f %f %c %f\n", 
-                nMeas[bb][0][ii], nes0[bb][0][ii], nLook[bb][0], azAng[bb][0][ii],
+                nMeas[bb][0][ii]/numLines, nes0[bb][0][ii], nLook[bb][0], azAng[bb][0][ii],
                 incAng[bb][0][ii], pol[bb][0], ambRatio[bb][0][ii],
-                nMeas[bb][1][ii], nes0[bb][1][ii], nLook[bb][1], azAng[bb][1][ii],
+                nMeas[bb][1][ii]/numLines, nes0[bb][1][ii], nLook[bb][1], azAng[bb][1][ii],
                 incAng[bb][1][ii], pol[bb][1], ambRatio[bb][1][ii]);
           }
 
