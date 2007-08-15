@@ -170,7 +170,14 @@ L2AToL2B::ConvertAndWrite(
         float correlation_length = sigma0WeightCorrLength;       
         for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
         {
-            meas->C+=1.0/(correlation_length*correlation_length*meas->XK);  // meas->XK holds the sigma0 weight
+
+            meas->XK *= correlation_length*correlation_length;
+            
+            //          meas->C+=1.0/(correlation_length*correlation_length*meas->XK);  // meas->XK holds the sigma0 weight
+//            meas->A*=(1.0+1.0/(correlation_length*correlation_length*meas->XK));  // meas->XK holds the sigma0 weight
+//            printf("Beam %d Inc %g scan %g aziwidth %g ranwidth %g XK %g\n",meas->beamIdx,meas->incidenceAngle*rtd,
+//                   meas->scanAngle*rtd,meas->azimuth_width,meas->range_width,meas->XK);
+            
         }
 
     }

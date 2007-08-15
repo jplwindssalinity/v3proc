@@ -40,7 +40,7 @@ static const char rcs_id_gmf_c[] =
 GMF::GMF()
 :   retrieveUsingKpcFlag(1), retrieveUsingKpmFlag(1), retrieveUsingKpriFlag(1),
     retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), retrieveOverIce(0),
-    smartNudgeFlag(0), retrieveUsingCriteriaFlag(1), minimumAzimuthDiversity(20.0*dtr), cBandWeight(1.0), kuBandWeight(1.0),
+    smartNudgeFlag(0), retrieveUsingCriteriaFlag(1), minimumAzimuthDiversity(20.0*dtr), cBandWeight(1.0), kuBandWeight(1.0),objectiveFunctionMethod(0),
     _phiCount(0), _phiStepSize(0.0), _spdTol(DEFAULT_SPD_TOL), _sepAngle(DEFAULT_SEP_ANGLE),
     _smoothAngle(DEFAULT_SMOOTH_ANGLE), _maxSolutions(DEFAULT_MAX_SOLUTIONS),
     _bestSpd(NULL), _bestObj(NULL), _copyObj(NULL), _speed_buffer(NULL),
@@ -2106,9 +2106,39 @@ GMF::GetVariance(
 //-------------------------//
 // GMF::_ObjectiveFunction //
 //-------------------------//
-
 float
 GMF::_ObjectiveFunction(
+    MeasList*  meas_list,
+    float      spd,
+    float      phi,
+    Kp*        kp )
+{
+    //-------------------------------------------//
+    // dummy _objectiveFunction object to direct //
+    // the choice of objective function methods  //
+    // to use in the wind retrieval              //
+    //-------------------------------------------//
+
+    float fv = 0.0;
+    
+    switch (objectiveFunctionMethod)
+    {
+        case 0:
+            fv = _ObjectiveFunctionOld(meas_list, spd, phi, kp);
+            break;
+        case 1:
+            fv = _ObjectiveFunctionNew(meas_list, spd, phi, kp);
+            break;
+        default:
+            fv = _ObjectiveFunctionOld(meas_list, spd, phi, kp);
+            break;       
+    }
+    return(fv);
+}
+
+
+float
+GMF::_ObjectiveFunctionOld(
     MeasList*  meas_list,
     float      spd,
     float      phi,
@@ -2174,7 +2204,77 @@ GMF::_ObjectiveFunction(
     return(-fv);
 }
 
+float
+GMF::_ObjectiveFunctionNew(
+    MeasList*  meas_list,
+    float      spd,
+    float      phi,
+    Kp*        kp )
+{
+    //-----------------------------------------//
+    // initialize the objective function value //
+    //-----------------------------------------//
 
+    float fv = 0.0;
+
+    //-------------------------//
+    // for each measurement... //
+    //-------------------------//
+
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+        //---------------------------------------//
+        // get sigma-0 for the trial wind vector //
+        //---------------------------------------//
+
+        float chi = phi - meas->eastAzimuth + pi;
+        float trial_value;
+        GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
+            &trial_value);
+
+        //------------------------------------------------------------//
+        // find the difference between the trial and measured sigma-0 //
+        //------------------------------------------------------------//
+
+        // Sanity check on measurement
+        double tmp=meas->value;
+        if (! finite(tmp))
+            continue;
+
+        float s = trial_value - meas->value;
+
+        float t = meas->XK;
+        float wt = 0.5*(1.0 + tanh(0.5*(t - 1.0)));
+
+//        float wt=kuBandWeight;
+// 	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE || 
+// 	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
+// 	  wt=cBandWeight;
+//	}
+
+        //-------------------------------------------------------//
+        // calculate the expected variance for the trial sigma-0 //
+        //-------------------------------------------------------//
+
+        float var = GetVariance(meas, spd, chi, trial_value, kp);
+        // returns 0 if kp is NULL
+
+        if (var == 0.0)
+        {
+            // variances all turned off, so use uniform weighting.
+            fv += wt*s*s;
+        }
+        else if (retrieveUsingLogVar)
+        {
+            fv += wt*s*s / var + wt*log(var);
+        }
+        else
+        {
+            fv += wt*s*s / var;
+        }
+    }
+    return(-fv);
+}
 
 //-------------------------//
 // GMF::_ObjectiveFunction //

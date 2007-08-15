@@ -1769,6 +1769,11 @@ ConfigGMF(
     else
         gmf->retrieveUsingCriteriaFlag = 1;
 
+    if ( config_list->GetInt(OBJECTIVE_FUNCTION_METHOD_KEYWORD, &tmp_int))
+        gmf->objectiveFunctionMethod = tmp_int;
+    else
+        gmf->objectiveFunctionMethod = 0;
+
     config_list->ExitForMissingKeywords();
 
     float tmp_float;
