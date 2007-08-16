@@ -11,8 +11,8 @@ static const char rcs_id_landmap_c[] =
 #include "Array.h"
 #include "Constants.h"
 #include "LandMap.h"
+#include "Misc.h"
 
-#define USGS_BLOCK_SIZE 10*dtr
 //=========//
 // LandMap //
 //=========//
@@ -44,6 +44,8 @@ LandMap::Initialize(
     float latstart)
 {
     _usemap = use_map;
+    _lat_start=latstart;
+    _lon_start=lonstart;
     if (_usemap != 0)
     {
       if(lmtype==NULL ||
@@ -76,8 +78,7 @@ LandMap::Initialize(
 	return(0);
       }
     }
-    _lat_start=latstart;
-    _lon_start=lonstart;
+
     return(1);
 }
 
@@ -152,36 +153,51 @@ LandMap::ReadSimple(
 }
 
 
-
+#define USGS_BLOCK_SIZE (10*dtr)
+#define USGS_BLOCK_PIXELS 1200
+#define USGS_NLATS 21600
+#define USGS_NLONS 43200
 int
 LandMap::ReadUSGS(
     char*  filename)
-{
-    FILE* ifp = fopen(filename, "r");
-    if (ifp == NULL)
-        return(0);
+{   
+  sprintf(usgs_dir,"%s",filename);
+  _lat_start=floor(_lat_start/USGS_BLOCK_SIZE+0.00001)*USGS_BLOCK_SIZE;
+  _lon_start=floor(_lon_start/USGS_BLOCK_SIZE+0.00001)*USGS_BLOCK_SIZE;
+  int ilon0,ilon1,ilat0,ilat1;
+  ilon0=int((_lon_start+pi)*USGS_NLONS/two_pi + 0.0001) %USGS_NLONS+1;
+  ilat0=int((_lat_start+pi/2)*USGS_NLATS/pi + 0.1)+1;
+  ilon1=ilon0+USGS_BLOCK_PIXELS-1;
+  ilat1=ilat0+USGS_BLOCK_PIXELS-1;
+  char fullname[200];
+  sprintf(fullname,"%s/%5.5d-%5.5d.%5.5d-%5.5d",usgs_dir,ilon0,ilon1,ilat0,ilat1);
+  FILE* ifp = fopen(fullname, "r");
+  if (ifp == NULL){
+    fprintf(stderr,"Cannot open filename %s\n",fullname);
+    return(0);
+  }
 
-    if (! _Allocate())
+  if (! _Allocate())
     {
-        fclose(ifp);
-        return(0);
+      fclose(ifp);
+      return(0);
     }
 
-    int size = sizeof(char) * _mapLonDim;
-    for (int lat_idx = 0; lat_idx < _mapLatDim; lat_idx++)
+  int size = sizeof(char) * _mapLonDim;
+  for (int lat_idx = 0; lat_idx < _mapLatDim; lat_idx++)
     {
-        if (fread((void *)*(_map + lat_idx), size, 1, ifp) != 1)
+      if (fread((void *)*(_map + lat_idx), size, 1, ifp) != 1)
         {
-            fclose(ifp);
-            return(0);
+	  fclose(ifp);
+	  return(0);
         }
     }
+  
+  _lonResolution = 10.0*dtr / _mapLonDim;
+  _latResolution = 10.0*dtr / _mapLatDim;
 
-    _lonResolution = 10.0*dtr / _mapLonDim;
-    _latResolution = 10.0*dtr / _mapLatDim;
-
-    fclose(ifp);
-    return(1);
+  fclose(ifp);
+  return(1);
 }
 
 //-----------------//
@@ -266,15 +282,16 @@ LandMap::IsLandUSGS(
     if (_usemap == 0)
         return(0);
     while(lon<_lon_start) lon += two_pi;    // to make sure it is in range
-    while(lon>=_lon_start+USGS_BLOCK_SIZE) lon -= two_pi;    // to make sure it is in range
+    while(lon>=_lon_start+_mapLonDim) lon -= two_pi;    // to make sure it is in range
 
-    // outside of landmap returns land
+    // outside of landmap calls ExpandUSGS
     if( lon <_lon_start || lat < _lat_start ||
-	lat >= _lat_start+USGS_BLOCK_SIZE  || 
-	lon >= _lon_start+USGS_BLOCK_SIZE) return(1);
+	lat >= _lat_start+(_mapLatDim-1)*_latResolution  || 
+	lon >= _lon_start+(_mapLonDim-1)*_lonResolution ){
+      return(ExpandUSGS(lon,lat));
+    }
     int lon_idx = (int)((lon-_lon_start) / _lonResolution);
     int lat_idx = (int)((lat-_lat_start) / _latResolution);
-    lon_idx = lon_idx % _mapLonDim;
 
     int flag = (int)*(*(_map + lat_idx) + lon_idx);
     if (flag != 16)
@@ -283,6 +300,83 @@ LandMap::IsLandUSGS(
         return(0);
 }
 
+int LandMap::ExpandUSGS(float lon, float lat){
+
+  // free old map
+  _Deallocate();
+
+  
+  // compute new lat lon bounds
+  float minlat=MIN(_lat_start,lat);
+  float maxlat=MAX(_lat_start,lat);
+
+  while(lon<_lon_start-pi) lon+=two_pi;
+  while(lon>_lon_start+pi) lon-=two_pi;
+  float minlon=MIN(_lon_start,lon);
+  float maxlon=MAX(_lon_start,lon);
+  _mapLonDim=int(ceil((maxlon-minlon)/USGS_BLOCK_SIZE))*USGS_BLOCK_PIXELS;
+  _mapLatDim=int(ceil((maxlat-minlat)/USGS_BLOCK_SIZE))*USGS_BLOCK_PIXELS;
+  if(_mapLonDim==0) _mapLonDim=USGS_BLOCK_PIXELS;
+  if(_mapLatDim==0) _mapLatDim=USGS_BLOCK_PIXELS;
+  _lon_start=minlon;
+  _lat_start=minlat;
+  _lat_start=floor(_lat_start/USGS_BLOCK_SIZE+0.00001)*USGS_BLOCK_SIZE;
+  _lon_start=floor(_lon_start/USGS_BLOCK_SIZE+0.00001)*USGS_BLOCK_SIZE;
+
+  // reAllocate
+  _Allocate();
+
+  // read in appropriate files
+  int ilon0,ilon1,ilat0,ilat1;
+  ilon0=int((_lon_start+pi)*USGS_NLONS/two_pi + 0.0001) %USGS_NLONS+1;
+  ilat0=int((_lat_start+pi/2)*USGS_NLATS/pi + 0.1)+1;
+  ilon1=ilon0+USGS_BLOCK_PIXELS-1;
+  ilat1=ilat0+USGS_BLOCK_PIXELS-1;
+
+  int Nlatblocks=_mapLatDim/USGS_BLOCK_PIXELS;
+  int Nlonblocks=_mapLonDim/USGS_BLOCK_PIXELS;
+
+  for(int i=0;i<Nlatblocks;i++){
+    for(int j=0;j<Nlonblocks;j++){
+      int ilo0=ilon0+j*USGS_BLOCK_PIXELS;
+      int ilo1=ilon1+j*USGS_BLOCK_PIXELS;
+      int ila0=ilat0+i*USGS_BLOCK_PIXELS;
+      int ila1=ilat1+i*USGS_BLOCK_PIXELS;
+      char fullname[200];
+      sprintf(fullname,"%s/%5.5d-%5.5d.%5.5d-%5.5d",usgs_dir,ilo0,ilo1,ila0,ila1);
+      FILE* ifp = fopen(fullname, "r");
+      if (ifp == NULL){
+	fprintf(stderr,"Cannot open filename %s\n",fullname);
+	return(0);
+      }
+      int latoff=i*USGS_BLOCK_PIXELS;
+      int lonoff=j*USGS_BLOCK_PIXELS;
+      int size = sizeof(char) * USGS_BLOCK_PIXELS;
+      for (int lat_idx = 0; lat_idx < USGS_BLOCK_PIXELS; lat_idx++)
+	{
+          unsigned char* ptr = (*(_map+latoff+lat_idx)+lonoff);
+	  if (fread((void *)ptr, size, 1, ifp) != 1)
+	    {
+	      fclose(ifp);
+	      return(0);
+	    }
+	}
+      fclose(ifp);
+    }
+  }
+  // output flag value 
+
+  int lon_idx = (int)((lon-_lon_start) / _lonResolution);
+  int lat_idx = (int)((lat-_lat_start) / _latResolution);
+  
+  int flag = (int)*(*(_map + lat_idx) + lon_idx);
+  if (flag != 16)
+    return(1);
+  else
+    return(0);
+
+}
+					     
 //-----------------//
 // LandMap::IsLand //
 //-----------------//

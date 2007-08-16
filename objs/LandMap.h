@@ -54,6 +54,8 @@ protected:
     int  ReadOld(char* filename);
     int  ReadSimple(char* filename);
     int  ReadUSGS(char* filename);
+    int  ExpandUSGS(float lon, float lat); // expands map and
+                                           // returns landflag value
     int  _Allocate();
     int  _Deallocate();
 
@@ -61,6 +63,7 @@ protected:
     // variables //
     //-----------//
 
+    char usgs_dir[100];
     unsigned char**  _map;
     int              _pixelsPerDegree;
     int              _mapLatDim;
