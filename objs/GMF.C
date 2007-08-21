@@ -2246,18 +2246,18 @@ GMF::_ObjectiveFunctionNew(
         float s = trial_value - meas->value;
 
         float t = meas->XK;
-//        float wt = 0.5*(1.0 + tanh(0.5*(t - 1.0)));
         float wt = 1.0/(1.0 + (1.0/t));
 
-//         sumwt += wt;     // sum weights for renormalization
-//         num += 1;        // count good measurements
+        //       float wt1=kuBandWeight;
+        float wt1=1.0;
+// 	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE ||
+//	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
+// 	  wt1=cBandWeight;
+// 	  wt1=0.1;
+//	}
 
-        float wt1=kuBandWeight;
- 	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE || 
- 	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
- 	  wt1=cBandWeight;
-	}
-
+        //       printf("wts: t %g wt %g wt1 %g meastype %d\n",t,wt,wt1,(int)meas->measType);
+        
         wt *= wt1;
         sumwt += wt;     // sum weights for renormalization
         num += 1;        // count good measurements
@@ -2284,6 +2284,8 @@ GMF::_ObjectiveFunctionNew(
             fv += wt*s*s / var;
         }
     }
+    //   printf("Norm %g\n",num/sumwt);
+    
     return(-fv*num/sumwt);
 }
 
@@ -5667,7 +5669,7 @@ GMF::CalculateSigma0Weights(
                 locgc += meas->centroid;
                 
                 double alt, dlat, dlon;
-                if (! locgc.GetAltLonGCLat(&alt, &dlon, &dlat))  // delta lon & lat
+                if (! locgc.GetAltLonGDLat(&alt, &dlon, &dlat))  // delta lon & lat
                 {
                     fprintf(stderr, "Problem in locgc CoordinateSwitch\n");
                     return;  
@@ -5698,7 +5700,7 @@ GMF::CalculateSigma0Weights(
                 float distsq = wvc_loc.SurfaceDistance(resp_loc);
                 distsq *=distsq;
                 
-                sum_wt+= response[i][j]*integrationStepSize*integrationStepSize/distsq;
+                sum_wt+= response[i][j]*integrationStepSize*integrationStepSize*distsq;
                 
             }
         }
@@ -5707,7 +5709,7 @@ GMF::CalculateSigma0Weights(
 
        // Insert weight integral value into the measurement in place of meas->XK
 
-        meas->XK = sum_wt;
+        meas->XK = 1.0/sum_wt;
 
     } // loop over measurements
     return;
