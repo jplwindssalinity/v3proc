@@ -463,6 +463,14 @@ main(
 		meas->measType=Meas::C_BAND_HH_MEAS_TYPE;
 	      }
 	    }
+	    else if(use_cband==3 && j>=(nlooks-2*2)){ // assumed last 2 beams are C-band
+	      if(pol[j]=='v' || pol[j]=='V'){
+		meas->measType=Meas::C_BAND_VV_MEAS_TYPE;
+	      }
+	      else{
+		meas->measType=Meas::C_BAND_HH_MEAS_TYPE;
+	      }
+	    }
 	    else{
 	      if(pol[j]=='v' || pol[j]=='V'){
 		meas->measType=Meas::VV_MEAS_TYPE;
