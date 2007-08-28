@@ -2248,13 +2248,13 @@ GMF::_ObjectiveFunctionNew(
         float t = meas->XK;
         float wt = 1.0/(1.0 + (1.0/t));
 
-        //       float wt1=kuBandWeight;
-        float wt1=1.0;
-// 	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE ||
-//	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
-// 	  wt1=cBandWeight;
+        float wt1=kuBandWeight;
+//        float wt1=1.0;
+ 	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE ||
+	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
+ 	  wt1=cBandWeight;
 // 	  wt1=0.1;
-//	}
+	}
 
         //       printf("wts: t %g wt %g wt1 %g meastype %d\n",t,wt,wt1,(int)meas->measType);
         
