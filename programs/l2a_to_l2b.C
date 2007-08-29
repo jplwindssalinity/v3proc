@@ -104,7 +104,7 @@ template class std::map<string,string,Options::ltstr>;
 //-----------//
 
 #define MAX_ALONG_TRACK_BINS  1624
-#define OPTSTRING "ia:n:w:"
+#define OPTSTRING "iWa:n:w:"
 
 //-------//
 // HACKS //
@@ -132,7 +132,7 @@ template class std::map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = {"[ -a start:end ]", "[ -n num_frames ]", "[ -i ]", "[ -w c_band_weight_file ]" , "<sim_config_file>", 0};
+const char* usage_array[] = {"[ -a start:end ]", "[ -n num_frames ]", "[ -i ]","[ -W ]", "[ -w c_band_weight_file ]" , "<sim_config_file>", 0};
 
 
 //--------------//
@@ -150,6 +150,7 @@ main(
     int frame_number =0;
     int ignore_bad_l2a=0;
     int use_freq_weights=0;
+    int calc_cband_weights=0; // new
     long int max_record_no = 0;
     char weight_file[200];
     float** weights=NULL;
@@ -218,6 +219,10 @@ main(
           use_freq_weights = 1;
 	  fclose(wfp);
 	  break;
+
+        case 'W':
+          calc_cband_weights = 1;
+          break;
         case 'i':
           ignore_bad_l2a=1;
           break;
@@ -403,6 +408,56 @@ main(
 #endif
 	if(use_freq_weights)
 	  gmf.SetCBandWeight(weights[l2a.frame.ati][l2a.frame.cti]);
+
+        if (calc_cband_weights) {
+//  first find all C-band measurements and average the sigma0
+
+            float ave_cband_V = 0.0;  // "V-pol" is 54-deg H-pol in sim
+            float ave_cband_H = 0.0;  // "H-pol" is 46-deg H-pol in sim
+            int n_cband_V = 0;
+            int n_cband_H = 0;
+    
+            for (Meas* meas = l2a.frame.measList.GetHead(); meas; meas = l2a.frame.measList.GetNext()){
+                if (meas->measType==Meas::C_BAND_VV_MEAS_TYPE){
+                    n_cband_V++;
+                    ave_cband_V += meas->value;
+                }
+            
+                if (meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
+                    n_cband_H++;
+                    ave_cband_H += meas->value;
+                }
+            
+            }
+            if (n_cband_V){
+                ave_cband_V /= n_cband_V;
+            }
+            if (n_cband_H){
+                ave_cband_H /= n_cband_H;
+            }
+    
+
+// then determine weight based on value of mean sigma0 relative to
+// threshold value (weight at threshold = 0.5??).  threshold determined
+// by [tbd] the a0 at the speed at which the Ku-band model becomes double-
+// valued.
+            float thr_V = 0.013;
+            float thr_H = 0.04;
+            float t = 0.0;
+            float wt = 0.0;
+    
+// weight ranges from 0.1 to 0.9 with the 0.5 point at the threshold
+
+            t = 0.5*((ave_cband_V/thr_V) + (ave_cband_H/thr_H));
+            if (t < 0.1) t = 0.1;
+    
+            wt = t/(1.0 + t);
+
+// use GMF::SetCBandWeight() to set the relative C and Ku weights used in wind retrieval
+            gmf.SetCBandWeight(wt);
+    
+        }
+
         int retval = 1;
         if (l2a.frame.ati >= start_ati && l2a.frame.ati <= end_ati) {
           retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
