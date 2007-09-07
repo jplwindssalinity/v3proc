@@ -282,7 +282,7 @@ LandMap::IsLandUSGS(
     if (_usemap == 0)
         return(0);
     while(lon<_lon_start) lon += two_pi;    // to make sure it is in range
-    while(lon>=_lon_start+_mapLonDim) lon -= two_pi;    // to make sure it is in range
+    while(lon>=_lon_start+_mapLonDim*_lonResolution) lon -= two_pi;    // to make sure it is in range
 
     // outside of landmap calls ExpandUSGS
     if( lon <_lon_start || lat < _lat_start ||

@@ -11,6 +11,7 @@ static const char rcs_id_HDF_l1b_h[] =
 
 #include "L1B.h"
 #include "L1BHdfFile.h"
+#include "LandMap.h"
 
 #ifndef MAX_L1BHDF_NUM_PULSES
 #define MAX_L1BHDF_NUM_PULSES   100
@@ -108,6 +109,8 @@ public:
 
 	int		ReadL1BHdfDataRec(void);        // get data at next index
 	int		ReadL1BHdfDataRec(int32 index); // get data at specific index
+	int		ReadL1BHdfDataRecCoastal(CoastalMaps* lmap, Antenna* ant);        // get data at next index read data necessary for accurate coastal processing
+	int		ReadL1BHdfDataRecCoastal(int32 index, CoastalMaps* lmap, Antenna* ant); // get data at specific index compute quantities needed for coastal processing
 
     float   configBandwidth;                // band width from config file
     float   configTxPulseWidth;             // tx pulse width from config file

@@ -13,12 +13,14 @@ static const char rcs_id_measurement_c[] =
 #include "L1BHdf.h"
 #include "L2AHdf.h"
 #include "Meas.h"
+#include "InstrumentGeom.h"
 #include "Beam.h"
 #include "Constants.h"
 #include "LonLat.h"
 #include "GenericGeom.h"
 #include "Parameter.h"
 #include "ETime.h"
+#include "Array.h"
 
 #ifndef IS_EVEN
 #define IS_EVEN(x) (x % 2 == 0 ? 1 : 0)
@@ -306,6 +308,7 @@ Meas::FreeContents()
     outline.FreeContents();
     return;
 }
+
 
 int
 Meas::UnpackL1BHdf(
@@ -905,6 +908,28 @@ MeasSpot::Read(
     return(1);
 }
 
+// Be careful using this function it is poorly named
+// It uses hardcoded constants for chirp rate and carrier frequency
+// It ignores any quantities which are constant for a given footprint, i.e., RxGATEDELAY, chirpstartfreq,etc
+
+#define NOMINAL_QUIKSCAT_TRANSMIT_FREQUENCY 13.403e9
+#define NOMINAL_QUIKSCAT_CHIRPRATE 2.50729323e8
+float
+MeasSpot::NominalQuikScatBaseBandFreq(Vector3 pos){
+  Vector3 gclook= pos - scOrbitState.rsat;
+  double range=gclook.Magnitude(); 
+  gclook/=range;
+  Vector3 vspot(-w_earth * pos.Get(1),
+        w_earth * pos.Get(0), 0);
+  Vector3 vrel = scOrbitState.vsat - vspot;
+  double lambda = speed_light_kps / NOMINAL_QUIKSCAT_TRANSMIT_FREQUENCY;
+  double rtt= 2.0 * range/speed_light_kps;
+  float rangefreq=NOMINAL_QUIKSCAT_CHIRPRATE*rtt;
+  float dopplerfreq=2.0 * ( vrel % gclook)/lambda;
+  return(rangefreq+dopplerfreq);
+  return(0.0);
+}
+
 int
 MeasSpot::UnpackL1BHdf(
 L1BHdf*      l1bHdf,    // SVT L1BHdf object
@@ -925,7 +950,7 @@ int32        pulseIndex)   // index of the pulses (max of 100)
     Itime itime;
     if (l1bHdf->GetTime(hdfIndex, &itime) != HdfFile::OK)
     {
-        fprintf(stderr, "Fail to get time on HDF index %ld\n", hdfIndex);
+        fprintf(stderr, "Fail to get time on HDF index %d\n", hdfIndex);
         return 0;
     }
     time = (double) itime.sec - ITIME_DEFAULT_SEC + (double)(itime.ms)/1000.0;
@@ -944,7 +969,7 @@ int32        pulseIndex)   // index of the pulses (max of 100)
     }
     else
     {
-        fprintf(stderr, "Fail to get time on HDF index %ld\n", hdfIndex);
+        fprintf(stderr, "Fail to get time on HDF index %d\n", hdfIndex);
         return 0;
     }
 
@@ -1093,6 +1118,369 @@ MeasSpotList::Read(
     }
     return(1);
 }
+
+
+#define COAST_NXSTEPS 20
+#define COAST_NYSTEPS 120
+
+//----------------------------//
+// MeasSpotList::UnpackL1BHdfCoastal //
+//----------------------------//
+
+int
+MeasSpotList::UnpackL1BHdfCoastal(
+    L1BHdf*  l1bHdf,
+    int32    hdfIndex,
+    CoastalMaps* lmap,
+    Antenna* ant)    // index in the HDF
+{
+    assert(l1bHdf != 0);
+    FreeContents();
+
+    Parameter* param = l1bHdf->GetParameter(NUM_PULSES, UNIT_DN);
+    assert(param != 0);
+    int num_pulses = (int)(*((char*)(param->data)));
+
+    for (int i = 0; i < num_pulses; i++)
+    {
+        //-------------------------------------------------------
+        // the bit 0-1 in sigma0_mode_flag must be 0 - meas pulse
+        // otherwise, skip this pulse
+        //-------------------------------------------------------
+        param = l1bHdf->GetParameter(SIGMA0_MODE_FLAG, UNIT_DN);
+        assert(param != 0);
+        unsigned short* ushortP = (unsigned short*) (param->data);
+        unsigned short sliceModeFlags = *(ushortP + i);
+        if ((sliceModeFlags & 0x0003) != 0){
+	  continue;
+	}
+
+	param = l1bHdf->GetParameter(FREQUENCY_SHIFT, UNIT_HZ);
+	assert(param != 0);
+	float *dfptr = (float*)(param->data);
+	float df = *(dfptr+i);
+ 
+
+        MeasSpot* new_meas_spot = new MeasSpot();
+        if (! new_meas_spot->UnpackL1BHdf(l1bHdf, hdfIndex, i))
+            return(0);
+
+        // empty spot case
+	if (new_meas_spot->NodeCount()==0){
+	  delete new_meas_spot;
+	  continue;
+	}
+#define SCAN_ANGLE_OFFSET (0.0 *dtr)
+	// Compute Axes of SpotFrame 
+	// x= vector from centroid of slice 1 to slice NumSlices
+        // y = z cross x
+	// z = surface normal at spot centroid
+
+        // Compute Coordinate Switch from GC Frame to AntennaFrame
+        CoordinateSwitch gc_to_antenna;
+        Meas* firstmeas=new_meas_spot->GetHead();
+        // use average of 4th and 5th slice as default spot_centroid 
+        Meas* fourthmeas, *fifthmeas;
+	for(int k=0;k<3;k++){
+	  fourthmeas=new_meas_spot->GetNext();
+	}
+	fifthmeas=new_meas_spot->GetNext();
+        EarthPosition spot_centroid((fourthmeas->centroid+fifthmeas->centroid)/2);
+
+
+        // LATLON limits HACK
+        double spcalt,spclat,spclon;
+        spot_centroid.GetAltLonGDLat(&spcalt,&spclon,&spclat);
+
+       
+#define MIN_SPCLAT (33.5*dtr)
+#define MAX_SPCLAT (40.5*dtr)
+
+#define MIN_SPCLON (234.5*dtr)
+#define MAX_SPCLON (241.5*dtr)
+
+        if(spclat<MIN_SPCLAT  || spclon < MIN_SPCLON 
+	   || spclat>MAX_SPCLAT || spclon > MAX_SPCLON){
+	  delete new_meas_spot;
+	  continue;
+	}
+        Vector3 look=spot_centroid - new_meas_spot->scOrbitState.rsat;
+	float rtt=2*look.Magnitude()/speed_light_kps;
+        look=look/look.Magnitude();
+	ant->SetTxCenterAzimuthAngle((firstmeas->scanAngle)+SCAN_ANGLE_OFFSET);
+	gc_to_antenna = AntennaFrameToGC(&(new_meas_spot->scOrbitState),
+				   &(new_meas_spot->scAttitude), 
+				   ant,
+				   ant->txCenterAzimuthAngle);
+	gc_to_antenna=gc_to_antenna.ReverseDirection();
+        
+        // Find SpotCentroid
+	EarthPosition nominal_spot_centroid;
+	
+        // Compute Coordinate Switch from Spot Frame to GC
+        // Hardest part is to compute the y-axis of spot frame
+        // along the slice edges
+    
+        // First compute y as range vector, z normal, x y cross z
+ 
+        Vector3 zvec0=spot_centroid.Normal();
+        Vector3 yvec0=zvec0 & look;
+	yvec0=yvec0/yvec0.Magnitude();
+        Vector3 xvec0=yvec0 & zvec0;
+	xvec0=xvec0/xvec0.Magnitude();
+
+        // DEBUG TOOLS
+	printf("look:%g %g %g\n",look.Get(0),look.Get(1),look.Get(2));
+	printf("xvec0:%g %g %g\n",xvec0.Get(0),xvec0.Get(1),xvec0.Get(2));
+	printf("yvec0:%g %g %g\n",yvec0.Get(0),yvec0.Get(1),yvec0.Get(2));
+	printf("zvec0:%g %g %g\n",zvec0.Get(0),zvec0.Get(1),zvec0.Get(2));
+	
+	// compute four points about the centroid
+        Vector3 b[2];
+	b[0]=spot_centroid+xvec0+yvec0; 
+	b[1]=spot_centroid-xvec0+yvec0;
+
+
+        // compute basebandfrequency of each point
+        float bbf[2];
+	for(int k=0;k<2;k++){
+	  bbf[k]=new_meas_spot->NominalQuikScatBaseBandFreq(b[k]);
+	}
+        // compute baseband frequency of centroid
+        float bbfcent=new_meas_spot->NominalQuikScatBaseBandFreq(spot_centroid);
+        // find another point on equi-freq line with centroid
+        float dbbfdx0=(bbf[0]-bbf[1])/2.0;
+        Vector3 p2=b[1]+xvec0*((bbfcent-bbf[1])/dbbfdx0);
+
+
+        // DEBUG TOOLS
+	printf("spot_centroid:%g %g %g bbf %g\n",spot_centroid.Get(0),spot_centroid.Get(1),spot_centroid.Get(2),bbfcent);
+ 	printf("b[0]:%g %g %g bbf %g\n",b[0].Get(0),b[0].Get(1),b[0].Get(2),bbf[0]);
+	printf("b[1]:%g %g %g bbf %g\n",b[1].Get(0),b[1].Get(1),b[1].Get(2),bbf[1]);
+	printf("p2:%g %g %g bbf %g\n",p2.Get(0),p2.Get(1),p2.Get(2),bbfcent);
+
+        // now set up spot frame Coordinate Switch
+        Vector3 yvec=p2-spot_centroid;
+        yvec=yvec/yvec.Magnitude();
+        Vector3 zvec=zvec0;
+        Vector3 xvec = yvec & zvec;
+        xvec=xvec/xvec.Magnitude();
+       // DEBUG TOOLS
+	printf("xvec:%g %g %g\n",xvec.Get(0),xvec.Get(1),xvec.Get(2));
+	printf("yvec:%g %g %g\n",yvec.Get(0),yvec.Get(1),yvec.Get(2));
+	printf("zvec:%g %g %g\n",zvec.Get(0),zvec.Get(1),zvec.Get(2));
+
+        CoordinateSwitch gc_to_spotframe(xvec,yvec,zvec);
+
+        // estimate dtheta in antenna poitning due to observed frequency_shift
+	Vector3 look0=spot_centroid-new_meas_spot->scOrbitState.rsat;
+        
+        // Start  Debug tools
+        /****
+	double vx=new_meas_spot->scOrbitState.vsat.Get(0);
+        double vy=new_meas_spot->scOrbitState.vsat.Get(1);
+	double lx=look0.Get(0);
+	double ly=look0.Get(1);
+        printf("vx %g vy %g lx %g ly %g scanang %g appang %g\n", vx,vy,lx,ly,firstmeas->scanAngle*rtd,
+	       atan2(ly-vy,lx-vx)*rtd);
+        float r,p,y;
+        new_meas_spot->scAttitude.GetRPY(&r,&p,&y);
+	printf("roll %g pitch %g yaw %g\n",r*rtd,p*rtd,y*rtd);
+	***/
+        // end DEBUG TOOLS
+        
+	Vector3 antenna_look0=gc_to_antenna.Forward(look0);
+	double theta0,phi0,range0;
+	antenna_look0.SphericalGet(&range0,&theta0,&phi0);
+
+        // Debug Tools
+        // START DEBUG TOOLS
+	printf("antenna_look0: range0 %g theta0 %g phi0 %g\n",range0,theta0*rtd,phi0*rtd);
+        /***
+	CoordinateSwitch gc_to_antenna_a = AntennaFrameToGC(&(new_meas_spot->scOrbitState),
+				   &(new_meas_spot->scAttitude), 
+				   ant,
+				   -firstmeas->scanAngle);
+        gc_to_antenna_a=gc_to_antenna_a.ReverseDirection();
+
+	Vector3 antenna_looka=gc_to_antenna_a.Forward(look0);
+	double theta_a,phi_a,range_a;
+	antenna_looka.SphericalGet(&range_a,&theta_a,&phi_a);
+	printf("antenna_looka: rangea %g thetaa %g phia %g\n",range_a,theta_a*rtd,phi_a*rtd);
+
+
+	CoordinateSwitch gc_to_antenna_b = AntennaFrameToGC(&(new_meas_spot->scOrbitState),
+				   &(new_meas_spot->scAttitude), 
+				   ant,
+				   -firstmeas->scanAngle - pi/2);
+
+        gc_to_antenna_b=gc_to_antenna_b.ReverseDirection();
+
+	Vector3 antenna_lookb=gc_to_antenna_b.Forward(look0);
+	double theta_b,phi_b,range_b;
+	antenna_lookb.SphericalGet(&range_b,&theta_b,&phi_b);
+	printf("antenna_lookb: rangeb %g thetab %g phib %g\n",range_b,theta_b*rtd,phi_b*rtd);
+        ****/
+        // END DEBUG TOOLS
+
+        //HACK
+        //df=0;
+        Vector3 spot_centroid_adj=xvec0*(df/dbbfdx0)+spot_centroid;
+
+	Vector3 look1=spot_centroid_adj-new_meas_spot->scOrbitState.rsat;
+	Vector3 antenna_look1=gc_to_antenna.Forward(look1);
+	double theta1,phi1,range1;
+	antenna_look1.SphericalGet(&range1,&theta1,&phi1);
+	float dtheta=theta1-theta0;
+        if(df==0) dtheta=0; 
+        //debug tools
+	printf("df %g range0 %g theta0 %g phi0 %g range1 %g theta1 %g phi1 %g\n",df,range0,theta0,phi0,range1,theta1,phi1);
+
+	// loop over slices
+        int im=0;
+
+	float ***gain=(float***)make_array(sizeof(float),3,8,COAST_NXSTEPS,COAST_NYSTEPS);
+
+	float lands0[8];
+        for(Meas* meas=new_meas_spot->GetHead();meas;meas=new_meas_spot->GetNext()){
+          // Compute Integration bounds of each Slice in Spot Frame
+	  //meas->scanAngle=-(meas->scanAngle)+SCAN_ANGLE_OFFSET;
+	  float sum=0.0;
+	  float landsum=0.0;
+          lands0[im]=0;
+          float ymin=-60;
+          float ymax=60;
+
+	  float bbf0=new_meas_spot->NominalQuikScatBaseBandFreq(meas->centroid);
+	  float bbf1=new_meas_spot->NominalQuikScatBaseBandFreq(meas->centroid+xvec*0.1);
+	  float bw=meas->bandwidth;
+	  float dbbfdx=(bbf1-bbf0)/0.1;
+          float xmin=-(bw/2)/dbbfdx;
+          float xmax=(bw/2)/dbbfdx;
+	  if(xmin>xmax){
+	    float tmp=xmin;
+	    xmin=xmax;
+	    xmax=tmp;
+	  }
+	  int nxsteps=COAST_NXSTEPS;
+          double dx=(xmax-xmin)/nxsteps;
+	  int nysteps=COAST_NYSTEPS;
+          double dy=(ymax-ymin)/nysteps;
+	  // debug tools
+          // printf("dbbfdx %g xmin %g xmax %g \n ",dbbfdx,xmin,xmax);
+	  for(int ix=0;ix<nxsteps;ix++){
+	    for(int iy=0;iy<nysteps;iy++){
+	      float x=xmin+dx/2 + dx*ix;
+	      float y=ymin+dy/2 +dy*iy;
+              Vector3 pspot(x,y,0);
+              // DEBUGTOOLS
+              //printf("pspot %g %g %g \n",x,y,0.0);
+	      EarthPosition p=gc_to_spotframe.Backward(pspot)+meas->centroid;
+              //DEBUGTOOLS
+              //printf("p %g %g %g \n",p.Get(0),p.Get(1),p.Get(2));
+	      double lon,lat,alt;
+	      p.GetAltLonGDLat(&alt,&lon,&lat);
+	      int land=lmap->IsLand(lon,lat);
+	      
+	      Vector3 look=p-new_meas_spot->scOrbitState.rsat;
+              Vector3 antenna_look=gc_to_antenna.Forward(look);
+              double theta,phi,range,g2;
+              antenna_look.SphericalGet(&range,&theta,&phi);
+
+              // START DEBUG TOOLS 
+              /***
+              printf("range %g theta %g dtheta %g phi %g  beam_idx %d\n",range,theta*rtd,dtheta*rtd,phi*rtd,meas->beamIdx);
+	      double elook,eazim;
+	      ant->beam[meas->beamIdx].GetElectricalBoresight(&elook,&eazim);
+              printf("elook %g eazim %g antazim %g\n",elook*rtd,eazim*rtd, ant->txCenterAzimuthAngle*rtd);
+	      EarthPosition ahead1min=new_meas_spot->scOrbitState.rsat+new_meas_spot->scOrbitState.vsat*60.0;
+	      double alon,alat,sclon,sclat,clon,clat,blon,blat;
+	      ahead1min.GetAltLonGDLat(&alt,&alon,&alat);
+	      new_meas_spot->scOrbitState.rsat.GetAltLonGDLat(&alt,&sclon,&sclat);
+	      meas->centroid.GetAltLonGDLat(&alt,&clon,&clat);
+              Vector3 bs_antenna;
+              bs_antenna.SphericalSet(range,elook,eazim);
+              EarthPosition bs=new_meas_spot->scOrbitState.rsat+gc_to_antenna.Backward(bs_antenna);
+ 	      bs.GetAltLonGDLat(&alt,&blon,&blat);            
+	      printf("lon %g lat %g clon %g clat %g sclon %g sclat %g alon %g alat %g blon %g blat %g\n", lon*rtd,lat*rtd,
+	      clon*rtd,clat*rtd,sclon*rtd,sclat*rtd,alon*rtd,alat*rtd,blon*rtd,blat*rtd); 
+              ****/
+              // END DEBUGTOOLS
+
+	      if(!ant->beam[meas->beamIdx].GetPowerGainProduct(theta+dtheta,phi,rtt,ant->spinRate,&g2)) g2=0.0;
+
+              //exit(0);
+	      float dW=g2*dx*dy/(range*range*range*range);
+              //printf("%g %g %g %d\n",lon*rtd,lat*rtd,dW,meas->startSliceIdx);
+	      sum+=dW;
+	      if(land){
+		landsum+=dW;
+		float landpix;
+		if(lmap->lands0Read) landpix=lmap->GetPrecomputedLands0(meas,lon,lat);
+		else{
+		  landpix=meas->value; // no correction if lands0 not read
+		}
+		if(landpix<-10) landpix=meas->value; // no correction at boundaries;
+                lands0[im]+=dW*landpix;
+	      }
+
+	      gain[im][ix][iy]=dW;
+	    }
+	  }
+          //printf("%g %d %d %g %g %g %g\n",meas->scanAngle*rtd,meas->beamIdx,meas->startSliceIdx,sum,(sum/meas->XK),meas->XK,df);
+          //fflush(stdout);
+          meas->EnSlice/=meas->XK;
+	  meas->XK=landsum/sum;
+          if(landsum>0){
+	    lands0[im]/=landsum;
+	  }
+	  else lands0[im]=0;
+	  im++;
+	}
+
+
+
+ 
+ 
+       im=0;
+       for(Meas* meas=new_meas_spot->GetHead();meas;meas=new_meas_spot->GetNext()){
+	          float ymin=-60;
+          float ymax=60;
+
+	  float bbf0=new_meas_spot->NominalQuikScatBaseBandFreq(meas->centroid);
+	  float bbf1=new_meas_spot->NominalQuikScatBaseBandFreq(meas->centroid+xvec*0.1);
+	  float bw=meas->bandwidth;
+	  float dbbfdx=(bbf1-bbf0)/0.1;
+          float xmin=-(bw/2)/dbbfdx;
+          float xmax=(bw/2)/dbbfdx;
+	  if(xmin>xmax){
+	    float tmp=xmin;
+	    xmin=xmax;
+	    xmax=tmp;
+	  }
+	  int nxsteps=COAST_NXSTEPS;
+          double dx=(xmax-xmin)/nxsteps;
+	  int nysteps=COAST_NYSTEPS;
+          double dy=(ymax-ymin)/nysteps;
+	  float s0_corr=(meas->value - meas->XK*lands0[im])/(1-meas->XK);
+	  if(meas->XK >= 0.5 ){
+	    s0_corr=meas->value;
+	    meas->landFlag=1;
+	  }
+	  lmap->Accumulate(meas,s0_corr,&gc_to_spotframe,gain[im],xmin,dx,nxsteps,ymin,dy,nysteps);
+          // debug tool
+          printf("CheckLandCorr: lands0 %g  landfrac %g  s0uncorr %g  s0corr %g\n",lands0[im],meas->XK,meas->value,s0_corr);
+	  meas->value=s0_corr;
+ 	  im++;
+       }
+       free_array(gain,3,8,COAST_NXSTEPS,COAST_NYSTEPS);
+       if(! Append(new_meas_spot)) return(0);
+
+    }
+    return(1);
+}
+
+
 
 //----------------------------//
 // MeasSpotList::UnpackL1BHdf //

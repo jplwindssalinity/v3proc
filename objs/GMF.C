@@ -5130,6 +5130,35 @@ GMF::RetrieveWinds_S3Rain(
   return(1);  
 }
 
+#define USE_CORRECTED 1
+int
+GMF::RetrieveWinds_CoastSpecial(
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc,
+    int        s4_flag)
+{
+  objectiveFunctionMethod=1; // make sure it uses weights in wind retrieval
+  SetCBandWeight(0);
+  Meas* m=meas_list->GetHead();
+  while(m){
+    double thresh=S0_FLAG_LANDCORR_THRESH;
+    if(USE_CORRECTED){
+      thresh=S0_CORR_LANDCORR_THRESH;
+      m->value=m->value-m->EnSlice;
+    }
+    if(m->EnSlice>=thresh){
+      m=meas_list->RemoveCurrent();
+      delete m;
+      m=meas_list->GetCurrent();
+    }
+    else{
+      m->XK=1/(1/m->XK -1);
+      m=meas_list->GetNext();
+    }
+  }
+  return(RetrieveWinds_S3(meas_list,kp,wvc,s4_flag));
+}
 //-----------------------//
 // GMF::RetrieveWinds_S3 //
 //-----------------------//

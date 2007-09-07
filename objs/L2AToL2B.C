@@ -103,6 +103,11 @@ L2AToL2B::SetWindRetrievalMethod(
 	wrMethod = S3RAIN;
 	return(1);
       }
+    else if (strcasecmp(wr_method, "CoastSpecial")==0)
+      {
+	wrMethod = CoastSpecial;
+	return(1);
+      }
     else
         return(0);
 }
@@ -274,6 +279,15 @@ L2AToL2B::ConvertAndWrite(
 
     case S3RAIN:
         if (! gmf->RetrieveWinds_S3Rain(meas_list, kp, wvc))
+        {
+            delete wvc;
+            return(11);
+        }
+        break;
+
+
+    case CoastSpecial:
+        if (! gmf->RetrieveWinds_CoastSpecial(meas_list, kp, wvc))
         {
             delete wvc;
             return(11);
@@ -460,6 +474,8 @@ L2AToL2B::InitAndFilter(
     switch(wrMethod)
     {
     case S3:
+    case S3RAIN:
+    case CoastSpecial:
         special=1;
         break;
     case S4:

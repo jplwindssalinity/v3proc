@@ -112,6 +112,8 @@ public:
     int    RetrieveWinds_S2(MeasList* meas_list, Kp* kp, WVC* wvc);
     int    RetrieveWinds_S3(MeasList* meas_list, Kp* kp, WVC* wvc,
                int s4_flag = 0);
+    int    RetrieveWinds_CoastSpecial(MeasList* meas_list, Kp* kp, WVC* wvc,
+               int s4_flag = 0);
     int    RetrieveWinds_S3Rain(MeasList* meas_list, Kp* kp, WVC* wvc);
     int    BuildDirectionRanges(WVC* wvc, float threshold);
     int    BuildDirectionRangesByMSE(WVC* wvc, float threshold);

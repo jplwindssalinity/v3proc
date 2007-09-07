@@ -125,6 +125,7 @@ L1BHdf::ReadL1BHdfDataRec(void)
 
 } // L1BHdf::ReadL1BHdfDataRec
 
+
 int
 L1BHdf::ReadL1BHdfDataRec(
 int32   index)   // next HDF data index
@@ -150,5 +151,48 @@ int32   index)   // next HDF data index
     }
 
     return(frame.spotList.UnpackL1BHdf(this, index));
+
+} // L1BHdf::ReadL1BHdfDataRec
+
+
+int
+L1BHdf::ReadL1BHdfDataRecCoastal(CoastalMaps* lmap, Antenna* ant)
+{
+    // get next index if more data
+    int32 index;
+    if (GetNextIndex(index) != HdfFile::OK)
+        return 0;
+
+    return(ReadL1BHdfDataRecCoastal(index,lmap,ant));
+
+} // L1BHdf::ReadL1BHdfDataRec
+
+int
+L1BHdf::ReadL1BHdfDataRecCoastal(
+				 int32   index, 
+				 CoastalMaps* lmap,
+				 Antenna* ant)   // next HDF data index
+{
+    Parameter* param = 0;
+    for (int i=0; i < l1bMeasTableSize; i++)
+    {
+        param = l1bMeasTable[i].param;
+        if (param == 0)
+        {
+            fprintf(stderr, "NULL parameter: id = %d, unit = %d\n",
+                           l1bMeasTable[i].paramId, l1bMeasTable[i].unitId);
+            return 0;
+        }
+        int rc = param->extractFunc(this, param->sdsIDs, index,
+                               1, 1, param->data, 0);
+        if (rc <= 0)
+        {
+            fprintf(stderr, "Error occured when extracting L1B: %s\n",
+                               param->paramName);
+            return 0;
+        }
+    }
+
+    return(frame.spotList.UnpackL1BHdfCoastal(this, index,lmap,ant));
 
 } // L1BHdf::ReadL1BHdfDataRec

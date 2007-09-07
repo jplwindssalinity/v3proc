@@ -11,10 +11,11 @@ static const char rcs_id_meas_h[] =
 
 #include "mfhdf.h"
 
-#include "Beam.h"
+#include "Antenna.h"
 #include "LonLat.h"
 #include "Ephemeris.h"
 #include "Attitude.h"
+#include "CoastalMaps.h"
 #include "List.h"
 
 
@@ -265,10 +266,12 @@ public:
     int  WriteAscii(FILE* fp);
     int  Read(FILE* fp);
 
+    float NominalQuikScatBaseBandFreq(Vector3 pos);
     int  UnpackL1BHdf(L1BHdf*     l1bHdf,
                       int32       hdfIndex,    // index in the HDF
                       int32       pulseIndex); //index of the pulses(100)
 
+ 
 	//-----------//
 	// variables //
 	//-----------//
@@ -308,6 +311,10 @@ public:
 
     int  UnpackL1BHdf(L1BHdf*     l1bHdf,
                       int32       hdfIndex);  // index in the HDF
+    int  UnpackL1BHdfCoastal(L1BHdf*     l1bHdf,
+			    int32       hdfIndex,
+			     CoastalMaps* lmap,
+			     Antenna* ant);  // index in the HDF
 
     //---------//
     // freeing //
