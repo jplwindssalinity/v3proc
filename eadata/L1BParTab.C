@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.12  1999/09/30 23:01:39  sally
+// update 9/30/99
+//
 // 
 //    Rev 1.7   23 Jun 1999 11:55:58   sally
 // Barry changed some entries
@@ -500,7 +503,7 @@ const ParTabEntry L1BParTab[] =
   },
   { FREQUENCY_SHIFT, "Shift in Baseband Frequency", SOURCE_L1B,
                 MEAS_POWER, "frequency_shift", 1, {
-      { UNIT_HZ, "Hz", DATA_INT2_100, 0, ExtractData2D_100, pr_int2_100 }
+      { UNIT_HZ, "Hz", DATA_FLOAT4_100, 0, ExtractData2D_100_int2_float, pr_float4_6_100 }
     }
   },
   { CELL_AZIMUTH, "Azimuth for whole pulse", SOURCE_L1B,
