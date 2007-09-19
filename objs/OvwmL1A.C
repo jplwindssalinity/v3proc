@@ -466,8 +466,8 @@ OvwmL1AFrame::WriteAscii(
         gcAltitude, gcLongitude, gcLatitude);
     fprintf(ofp, "X: %g   Y: %g   Z: %g\n", gcX, gcY, gcZ);
     fprintf(ofp, "VelX: %g   VelY: %g   VelZ: %g\n", velX, velY, velZ);
-    fprintf(ofp, "Roll: %g   Pitch: %g   Yaw: %g\n", attitude.GetRoll() * dtr,
-        attitude.GetPitch() * dtr, attitude.GetYaw() * dtr);
+    fprintf(ofp, "Roll: %g   Pitch: %g   Yaw: %g\n", attitude.GetRoll() * rtd,
+        attitude.GetPitch() * rtd, attitude.GetYaw() * rtd);
 
     //fprintf(ofp, "Cal Position: %d\n", calPosition);
 
