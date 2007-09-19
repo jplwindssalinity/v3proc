@@ -198,7 +198,7 @@ RainField::ReadSV3DData(
   }
 
   for(int kk=0;kk<num_hgts;kk++){
-    for(int jj=0;jj<num_lons;jj++){
+    for(int jj=0;jj<num_lats;jj++){
       if(fread(&(A3[kk][jj][0]),sizeof(float),num_lons,fp)!=(unsigned)num_lons){
         fclose(fp);
         return(0);
