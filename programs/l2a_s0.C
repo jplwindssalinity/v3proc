@@ -76,7 +76,7 @@ template class List<Meas>;
 template class List<MeasSpot>;
 template class BufferedList<OrbitState>;
 template class List<OrbitState>;
-template class List<long>;
+template class List<off_t>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;

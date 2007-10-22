@@ -72,6 +72,8 @@ static const char rcs_id[] =
 #include "Distributions.h"
 #include "AngleInterval.h"
 
+using std::list;
+using std::map;
 //-----------//
 // TEMPLATES //
 //-----------//
@@ -82,11 +84,13 @@ template class List<WindVectorPlus>;
 template class List<MeasSpot>;
 template class BufferedList<OrbitState>;
 template class List<OrbitState>;
-template class List<long>;
+template class List<off_t>;
 template class List<OffsetList>;
 template class List<AngleInterval>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
+template class std::list<string>;
+template class std::map<string,string,Options::ltstr>;
 
 //-----------//
 // CONSTANTS //
@@ -104,7 +108,7 @@ template class TrackerBase<unsigned short>;
 #define SPD_RES        0.1 // m/s
 #define DIR_RES        1.0 // Degrees
 #define OPTSTRING      "f:hsig"
-#define MAX_SPEED      50 // m/s
+#define MAX_SPEED      100 // m/s
 
 //--------//
 // MACROS //
