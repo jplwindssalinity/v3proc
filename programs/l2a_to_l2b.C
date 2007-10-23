@@ -18,6 +18,7 @@
 //    [ -a start:end ]  The range of along track index.
 //    [ -n num_frames ] The maximum frame number.
 //    [ -i ]            Ignore bad l2a.
+//    [ -R ]     Remove measurements more than 10 stds from average
 //
 // OPERANDS
 //    The following operand is supported:
@@ -104,7 +105,7 @@ template class std::map<string,string,Options::ltstr>;
 //-----------//
 
 #define MAX_ALONG_TRACK_BINS  1624
-#define OPTSTRING "iWa:n:w:"
+#define OPTSTRING "iWRa:n:w:"
 
 //-------//
 // HACKS //
@@ -132,7 +133,7 @@ template class std::map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = {"[ -a start:end ]", "[ -n num_frames ]", "[ -i ]","[ -W ]", "[ -w c_band_weight_file ]" , "<sim_config_file>", 0};
+const char* usage_array[] = {"[ -a start:end ]", "[-R]","[ -n num_frames ]", "[ -i ]","[ -W ]", "[ -w c_band_weight_file ]" , "<sim_config_file>", 0};
 
 
 //--------------//
@@ -156,7 +157,8 @@ main(
     float** weights=NULL;
     FILE* wfp;
     int ncti_wt=0, nati_wt=0, first_valid_ati=0, nvalid_ati=0;
-
+    bool opt_remove_outlying_s0=false;
+    
     const char* command = no_path(argv[0]);
     if (argc < 2)
         usage(command, usage_array, 1);
@@ -177,6 +179,11 @@ main(
             exit(1);
           }
           break;
+
+        case 'R':
+            opt_remove_outlying_s0=true;
+            break;
+            
         case 'n':
           if (sscanf(optarg, "%ld", &max_record_no) != 1)
           {
@@ -459,6 +466,8 @@ main(
         }
 
         int retval = 1;
+        if(opt_remove_outlying_s0) gmf.RemoveBadCopol(&(l2a.frame.measList),&kp);
+        
         if (l2a.frame.ati >= start_ati && l2a.frame.ati <= end_ati) {
           retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
           if(frame_number%100==0) fprintf(stderr,"%d l2a frames processed\n",

@@ -5531,8 +5531,8 @@ GMF::RemoveBadCopol(
 {
     // Compute look_indices, sums, and counts
 
-    float sum[4] = {0.0, 0.0, 0.0, 0.0};
-    int count[4] = {0, 0, 0, 0};
+    float sum[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    int count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     int nc = meas_list->NodeCount();
     int* look_idx = new int[nc];
     Meas* meas = meas_list->GetHead();
@@ -5551,6 +5551,18 @@ GMF::RemoveBadCopol(
                 look_idx[c] = 2;
             else
                 look_idx[c] = 3;
+            break;
+        case Meas::C_BAND_HH_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                look_idx[c] = 4;
+            else
+                look_idx[c] = 5;
+            break;
+        case Meas::C_BAND_VV_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                look_idx[c] = 6;
+            else
+                look_idx[c] = 7;
             break;
         default:
             look_idx[c] = -1;
@@ -5577,7 +5589,12 @@ GMF::RemoveBadCopol(
         {
             double s0_ave = (sum[d] - meas->value) / (count[d] - 1);
             double vpc;
-            kp->GetVpc(meas, s0_ave, &vpc);
+            if(meas->numSlices!=1) kp->GetVpc(meas, s0_ave, &vpc);
+            else{
+                float alpha=meas->A - 1.0;
+                vpc=(alpha*s0_ave+meas->B) * s0_ave + meas->C;
+                
+            }
             float std = sqrt(vpc);
             if (fabs(s0_ave-meas->value) > 10.0 * std)
             {

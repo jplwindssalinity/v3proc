@@ -235,6 +235,10 @@ int read_meas_file(FILE* mfp, GMF* gmf, Kp* kp,
           mtype=Meas::HH_MEAS_TYPE;
         else if (strcasecmp(str1,"VV")==0)
           mtype=Meas::VV_MEAS_TYPE;
+        else if (strcasecmp(str1,"CVV")==0)
+          mtype=Meas::C_BAND_VV_MEAS_TYPE;
+        else if (strcasecmp(str1,"CHH")==0)
+          mtype=Meas::C_BAND_HH_MEAS_TYPE;
         else if (strcasecmp(str1,"VVHV")==0)
           mtype=Meas::VV_HV_CORR_MEAS_TYPE;
         else if (strcasecmp(str1,"HHVH")==0)
@@ -337,6 +341,10 @@ int read_s0_meas_file(FILE* mfp, MeasList* meas_list, int gs_flag){
           {
                 new_meas->measType = Meas::HH_MEAS_TYPE;
           }
+          else if (strcasecmp(typestring,"CVV")==0)
+                new_meas->measType=Meas::C_BAND_VV_MEAS_TYPE;
+          else if (strcasecmp(typestring,"CHH")==0)
+                new_meas->measType=Meas::C_BAND_HH_MEAS_TYPE;
             else if (strcasecmp(typestring, "VH") == 0)
           {
                 new_meas->measType = Meas::VH_MEAS_TYPE;
