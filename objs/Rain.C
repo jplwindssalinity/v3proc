@@ -133,6 +133,13 @@ RainField::ReadSVBinary(
     // set up indices  //
     //-----------------//
     if(i==0){
+      if(_wrap){
+        _lon.SpecifyWrappedCenters(lon_min * dtr, lon_max * dtr, num_lons);
+      }
+      else{
+        _lon.SpecifyCenters(lon_min * dtr, lon_max * dtr, num_lons);
+      }
+      _lat.SpecifyCenters(lat_min * dtr, lat_max * dtr, num_lats);
     }
     fclose(fp);
     
@@ -702,6 +709,7 @@ RainField::ComputeLoc(
   Vector3 alpha = gc_to_rangeazim.Forward(spacecraft->orbitState.rsat - spot_centroid);
 
   Vector3 center_ra=gc_to_rangeazim.Forward(meas->centroid-spot_centroid);
+  //center_ra.Show();
 
   double v1, v2, v3, a1, a2, a3, b1, b2, b3, AA, BB, CC;
 
