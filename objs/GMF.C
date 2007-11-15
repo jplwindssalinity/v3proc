@@ -2129,6 +2129,9 @@ GMF::_ObjectiveFunction(
         case 1:
             fv = _ObjectiveFunctionNew(meas_list, spd, phi, kp);
             break;
+        case 2:
+	    fv = _ObjectiveFunctionMeasVar(meas_list, spd, phi, kp);
+            break;
         default:
             fv = _ObjectiveFunctionOld(meas_list, spd, phi, kp);
             break;       
@@ -2200,6 +2203,160 @@ GMF::_ObjectiveFunctionOld(
         {
             fv += wt*s*s / var;
         }
+    }
+    return(-fv);
+
+}
+
+float
+GMF::_ObjectiveFunctionMeasVar(
+    MeasList*  meas_list,
+    float      spd,
+    float      phi,
+    Kp*        kp)
+{
+    //-----------------------------------------//
+    // initialize the objective function value //
+    //-----------------------------------------//
+
+    float fv = 0.0;
+
+    // estimate variances from measurements
+    float varest[8]={0,0,0,0,0,0,0,0};
+    float meanest[8]={0,0,0,0,0,0,0,0};
+    int nmeas[8]={0,0,0,0,0,0,0,0};
+    int nc = meas_list->NodeCount();
+    int* look_idx = new int[nc];
+    Meas* meas = meas_list->GetHead();
+    for (int c = 0; c < nc; c++)
+    {
+        switch (meas->measType)
+        {
+        case Meas::HH_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      look_idx[c] = 0;
+
+            else
+                look_idx[c] = 1;
+            break;
+        case Meas::VV_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                look_idx[c] = 2;
+            else
+                look_idx[c] = 3;
+            break;
+        case Meas::C_BAND_HH_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                look_idx[c] = 4;
+            else
+                look_idx[c] = 5;
+            break;
+        case Meas::C_BAND_VV_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                look_idx[c] = 6;
+            else
+                look_idx[c] = 7;
+            break;
+        default:
+            look_idx[c] = -1;
+            break;
+        }
+        if (look_idx[c] >= 0)
+        {
+            varest[look_idx[c]] += meas->value*meas->value;
+            meanest[look_idx[c]] += meas->value;
+            nmeas[look_idx[c]]++;
+        }
+        meas = meas_list->GetNext();
+    }
+    for(int i=0;i<8;i++){
+      meanest[i]/=nmeas[i];
+      varest[i]=(varest[i]-nmeas[i]*meanest[i]*meanest[i])/(nmeas[i]-1);
+    }
+    //-------------------------//
+    // for each measurement... //
+    //-------------------------//
+    delete look_idx;
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+        //---------------------------------------//
+        // get sigma-0 for the trial wind vector //
+        //---------------------------------------//
+      int lidx=-1;
+        switch (meas->measType)
+        {
+        case Meas::HH_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      lidx = 0;
+
+            else
+                lidx = 1;
+            break;
+        case Meas::VV_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                lidx = 2;
+            else
+                lidx = 3;
+            break;
+        case Meas::C_BAND_HH_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                lidx = 4;
+            else
+                lidx = 5;
+            break;
+        case Meas::C_BAND_VV_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                lidx = 6;
+            else
+                lidx = 7;
+            break;
+        default:
+            lidx = -1;
+            break;
+        }
+        float chi = phi - meas->eastAzimuth + pi;
+        float trial_value;
+        GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
+            &trial_value);
+
+	// HACK uses EnSlice as A (rain atten) and bandwidth as B (rain BackSc)
+	trial_value=trial_value*meas->EnSlice + meas->bandwidth;
+
+        //------------------------------------------------------------//
+        // find the difference between the trial and measured sigma-0 //
+        //------------------------------------------------------------//
+
+        // Sanity check on measurement
+        double tmp=meas->value;
+        if (! finite(tmp))
+            continue;
+
+        float s = trial_value - meas->value;
+        float wt=kuBandWeight;
+	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE || 
+	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
+	  wt=cBandWeight;
+	}
+        //-------------------------------------------------------//
+        // calculate the expected variance for the trial sigma-0 //
+        //-------------------------------------------------------//
+
+        float var = varest[lidx];
+        if(nmeas[lidx]==1)var=0.1; // downweights singleton measmts
+        if (var == 0.0)
+        {
+            // variances all turned off, so use uniform weighting.
+            fv += wt*s*s;
+        }
+        else if (retrieveUsingLogVar)
+        {
+            fv += wt*s*s / var + wt*log(var);
+        }
+        else
+        {
+            fv += wt*s*s / var;
+        }
+	//printf("fv %g wt %g s %g var %g A %g B %g\n",fv,wt,s,var,meas->EnSlice,meas->bandwidth);
     }
     return(-fv);
 }
@@ -4970,7 +5127,7 @@ GMF::EstimateDirMSE(
   }
   return(retval);
 }
-
+/**
 //-----------------------//
 // GMF::RetrieveWinds_S3 //
 //-----------------------//
@@ -4980,7 +5137,8 @@ GMF::RetrieveWinds_S3Rain(
     Kp*        kp,
     WVC*       wvc)
 {
-  float astep=0.02;
+  //float astep=0.02;
+  float astep=0.1;
   float A[4]={1,1,1,1}; // order is hku, vku, hc, vc
   float B[4]={0,0,0,0};
   float cbandwt=0.05;
@@ -5048,12 +5206,17 @@ GMF::RetrieveWinds_S3Rain(
     float a5=a4*A[0];
     A[1]=-0.00333+0.6388*a1+0.7322*a2-0.5671*a3+
       0.2006*a4;
-    A[2]=0.97369+0.07460*log(A[0]);
-    A[3]=0.96833+0.08395*log(A[0]);
+    float CBscale=20.0;
+    //A[2]=0.97369+0.07460*log(A[0]);
+    //A[3]=0.96833+0.08395*log(A[0]);
+    A[2]=1.0;
+    A[3]=1.0;
     B[0]=0.1759-0.8290*a1+2.732*a2-5.085*a3+4.487*a4-1.487*a5;
     B[1]=0.1568-0.6532*a1+2.081*a2-3.912*a3+3.465*a4-1.143*a5;
-    B[2]=-0.0002132-0.008690*log(A[0]);
-    B[3]=-0.0004927-0.0098932*log(A[0]);
+    //B[2]=-0.0002132-0.008690*log(A[0]);
+    //B[3]=-0.0004927-0.0098932*log(A[0]);
+    B[2]=-CBscale*0.01*log(A[0]);
+    B[3]=-CBscale*0.01*log(A[0]);
 
     // correct measurements
     Meas* m2=ml2.GetHead();
@@ -5098,18 +5261,26 @@ GMF::RetrieveWinds_S3Rain(
 
   // correct measurements
   Meas* m2=ml2.GetHead();
+  float CHHave=0;
+  float CVVave=0;
+  int nCHH=0;
+  int nCVV=0;
   for(Meas* meas=meas_list->GetHead();meas;meas=meas_list->GetNext()){
     switch(m2->measType){
     case Meas::HH_MEAS_TYPE:
-      m2->value=(meas->value-Bold[0])/Aold[0];
+       m2->value=(meas->value-Bold[0])/Aold[0];
       break;
     case Meas::VV_MEAS_TYPE:
       m2->value=(meas->value-Bold[1])/Aold[1];
       break;
     case Meas::C_BAND_HH_MEAS_TYPE:
+      CHHave+=meas->value;
+      nCHH++;
       m2->value=(meas->value-Bold[2])/Aold[2];
       break;
     case Meas::C_BAND_VV_MEAS_TYPE:
+      CVVave+=meas->value;
+      nCVV++;
       m2->value=(meas->value-Bold[3])/Aold[3];
       break;
     default:
@@ -5118,8 +5289,262 @@ GMF::RetrieveWinds_S3Rain(
     }
     m2=ml2.GetNext();
   } // end correct meas loop
+  CVVave/=nCVV;
+  CHHave/=nCHH;
   delete wvc;
   wvc=wvcout;
+   
+  // don't retrieve highly contaminated cells
+  if((nCHH && Bold[2]> 0.5*CHHave) || (nCVV && Bold[3] > 0.5*CVVave)){
+    ml2.FreeContents();
+    return(0);
+  }
+  if(!RetrieveWinds_S3(&ml2,kp,wvc,0)){
+    ml2.FreeContents();
+    return(0);
+  }
+  // put chosen AHku value into wvc
+  wvc->rainProb=Aold[0];
+  ml2.FreeContents();
+  return(1);  
+}
+**/
+
+//-----------------------//
+// GMF::RetrieveWinds_S3 //
+//-----------------------//
+int
+GMF::RetrieveWinds_S3Rain(
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc)
+{
+  //float astep=0.02;
+  float astep=0.1;
+  float A[4]={1,1,1,1}; // order is hku, vku, hc, vc
+  float B[4]={0,0,0,0};
+  float cbandwt=0.05;
+  SetCBandWeight(cbandwt);  
+
+  // copy Measlist;
+  MeasList ml2;
+  for(Meas* meas=meas_list->GetHead();meas;meas=meas_list->GetNext()){
+    Meas* m = new Meas;
+    m->value=meas->value;
+    m->XK=meas->XK;
+    m->EnSlice=1;
+    m->bandwidth=0;
+    m->txPulseWidth=meas->txPulseWidth;
+    m->landFlag=meas->landFlag;
+    m->centroid=meas->centroid;
+    m->measType=meas->measType;
+    m->eastAzimuth=meas->eastAzimuth;
+    m->incidenceAngle=meas->incidenceAngle;
+    m->beamIdx=meas->beamIdx;
+    m->startSliceIdx=meas->startSliceIdx;
+    m->numSlices=meas->numSlices;
+    m->scanAngle=meas->scanAngle;
+    m->A=meas->A;
+    m->B=meas->B;
+    m->C=meas->C;
+    m->azimuth_width=meas->azimuth_width;
+    m->range_width=meas->range_width;
+    ml2.Append(m);
+  }
+
+  // Perform GS retrieval multiple times until maximal first rank obj
+  // is achieved
+  // perform first GS retrieval
+ 
+  WVC* wvcout = wvc;
+  wvc=new WVC;
+  if(!RetrieveWinds_S3(&ml2,kp,wvc,0)){
+    ml2.FreeContents();
+    return(0);
+  }  
+
+  // check for no ambiguities case
+  if(wvc->ambiguities.NodeCount()==0){
+    ml2.FreeContents();
+    return(1);
+  }
+
+  WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+  
+  float bestprob=0;
+  /*
+  for(int c=0;c<_phiCount;c++){
+    bestprob+=exp(wvc->directionRanges.bestObj[c]/2.0);
+  }
+  */
+  int dri=int(wvcout->nudgeWV->dir/(2*pi/_phiCount) +0.5);
+  while(dri<0)dri+=_phiCount;
+  while(dri>_phiCount-1)dri-=_phiCount;
+  bestprob=wvc->directionRanges.bestObj[dri];
+
+  float bestA=1;
+  // float bestprob=wvp->obj;
+  
+  float Aold[4],Bold[4];
+  float Atrial[20]={0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.15,0.1,0.08,0.06,0.04,0.02,0.01,0.008,0.006,0.004,0.002,0.001};
+  for(int ai=0;ai<1;ai++){
+    if(bestA==A[0]){
+      for(int c=0;c<4;c++){
+	Aold[c]=A[c];
+	Bold[c]=B[c];
+      }  
+    }
+    // set up Rain coefficients
+    
+    A[0]=Atrial[ai];
+    float a1=A[0];
+    float a2=A[0]*A[0];
+    float a3=a2*A[0];
+    float a4=a3*A[0];
+    float a5=a4*A[0];
+    A[1]=-0.00333+0.6388*a1+0.7322*a2-0.5671*a3+
+      0.2006*a4;
+    float CBscale=1.0;
+    A[2]=0.97369+0.07460*log(A[0]);
+    A[3]=0.96833+0.08395*log(A[0]);
+    //A[2]=1.0;
+    //A[3]=1.0;
+    //B[0]=0.1759-0.8290*a1+2.732*a2-5.085*a3+4.487*a4-1.487*a5;
+    //B[1]=0.1568-0.6532*a1+2.081*a2-3.912*a3+3.465*a4-1.143*a5;
+    B[0]=-0.0524*log(A[0])-0.0040*log(A[0])*log(A[0]);
+    B[1]=-0.0540*log(A[0])-0.0042*log(A[0])*log(A[0]);
+    //B[2]=-0.0002132-0.008690*log(A[0]);
+    //B[3]=-0.0004927-0.0098932*log(A[0]);
+    B[2]=-0.0082*log(A[0])-5.4066E-04*log(A[0])*log(A[0]);
+    B[3]=-0.0092*log(A[0])-5.888E-04*log(A[0])*log(A[0]);
+
+    // correct measurements
+    Meas* m2=ml2.GetHead();
+    for(Meas* meas=meas_list->GetHead();meas;meas=meas_list->GetNext()){
+      switch(m2->measType){
+      case Meas::HH_MEAS_TYPE:
+	m2->EnSlice=A[0];
+	m2->bandwidth=B[0];
+	break;
+      case Meas::VV_MEAS_TYPE:
+	m2->EnSlice=A[1];
+	m2->bandwidth=B[1];
+	break;
+      case Meas::C_BAND_HH_MEAS_TYPE:
+	m2->EnSlice=A[2];
+	m2->bandwidth=B[2];
+	break;
+      case Meas::C_BAND_VV_MEAS_TYPE:
+	m2->EnSlice=A[3];
+	m2->bandwidth=B[3];
+	break;
+      default:
+	fprintf(stderr,"Bad measurement type for S3RAIN\n");
+	exit(1);
+      }
+      m2=ml2.GetNext();
+    } // end correct meas loop
+
+    delete wvc;
+    wvc=new WVC;
+    if (_phiCount != H2_PHI_COUNT)
+      SetPhiCount(H2_PHI_COUNT);
+    Calculate_Init_Wind_Solutions(&ml2, kp, wvc);
+    if(!CopyBuffersGSToPE()){
+      ml2.FreeContents();
+      fprintf(stderr,"Warning: copyBuffersGSToPE failed during rain estimation");
+      return(0);
+    }  
+    if(wvc->ambiguities.NodeCount()==0){
+      //fprintf(stderr,"Warning: RetrieveWinds_GS failed found no ambigs during rain estimation Akuh=%g\n",A[0]);
+      break; 
+    }
+    WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+
+    
+    float bestprob2=0;
+    /*
+    for(int c=0;c<_phiCount;c++){
+      bestprob2+=exp(wvc->directionRanges.bestObj[c]/2.0);
+    }
+    */
+
+    int dri=(int)floor(wvcout->nudgeWV->dir/(pi*2/_phiCount) +0.5);
+    while(dri<0)dri+=_phiCount;
+    while(dri>_phiCount-1)dri-=_phiCount;
+    bestprob2=_bestObj[dri];
+    // float bestprob2=wvp->obj;
+
+    if(bestprob2>bestprob){
+      bestA=A[0];
+      bestprob=bestprob2;
+    }
+    if(bestprob2<0.9*bestprob) break; // keeps from entering SLOW SLOW retrieval
+                                      // case
+    //if(bestprob2 < bestprob) break; // last one was best
+    //else bestprob=bestprob2;
+  } // end A,B estimation loop
+  // Perform final S3 retrieval
+
+  // correct measurements
+  Meas* m2=ml2.GetHead();
+  float CHHave=0;
+  float CVVave=0;
+  int nCHH=0;
+  int nCVV=0;
+  for(Meas* meas=meas_list->GetHead();meas;meas=meas_list->GetNext()){
+    switch(m2->measType){
+      case Meas::HH_MEAS_TYPE:
+	m2->EnSlice=Aold[0];
+	m2->bandwidth=Bold[0];
+	break;
+      case Meas::VV_MEAS_TYPE:
+	m2->EnSlice=Aold[1];
+	m2->bandwidth=Bold[1];
+	break;
+      case Meas::C_BAND_HH_MEAS_TYPE:
+	m2->EnSlice=Aold[2];
+	m2->bandwidth=Bold[2];
+	CHHave+=meas->value;
+	nCHH++;
+	break;
+      case Meas::C_BAND_VV_MEAS_TYPE:
+	m2->EnSlice=Aold[3];
+	m2->bandwidth=Bold[3];
+	CVVave+=meas->value;
+	nCVV++;
+	break;
+      default:
+	fprintf(stderr,"Bad measurement type for S3RAIN\n");
+	exit(1);
+    }
+    m2=ml2.GetNext();
+  } // end correct meas loop
+  CVVave/=nCVV;
+  CHHave/=nCHH;
+  delete wvc;
+  wvc=wvcout;
+   
+  // don't retrieve highly contaminated cells
+  /*
+  if((nCHH && Bold[2]> 0.5*CHHave) || (nCVV && Bold[3] > 0.5*CVVave)){
+    ml2.FreeContents();
+    return(0);
+  }
+  */
+
+  // Throw out Ku measurements that are attenuated too much.
+  if(Aold[0]<0.1){
+    Meas* m=ml2.GetHead();
+    while(m){
+      if(m->measType==Meas::HH_MEAS_TYPE || m->measType==Meas::VV_MEAS_TYPE){
+	m=ml2.RemoveCurrent();
+	delete m;
+	m=ml2.GetCurrent();
+      }
+      else m=ml2.GetNext();
+    }
+  }
   if(!RetrieveWinds_S3(&ml2,kp,wvc,0)){
     ml2.FreeContents();
     return(0);
