@@ -21,7 +21,7 @@ static const char rcs_id_ovwmsim_c[] =
 #include "Sigma0Map.h"
 
 #define SNR_CUTOFF 1.e-3
-#define dX_THRESHOLD 0.005 // threshold for eliminate meas record with land
+#define dX_THRESHOLD 0.0025 // threshold for eliminate meas record with land
 #define E_FACTOR 1.644    // value for sinc square to drop to 1/e
 
 //==================//
@@ -920,6 +920,7 @@ int OvwmSim::CheckTiming(Ovwm* ovwm){
     }
     for(int tb=0;tb<NUMBER_OF_OVWM_BEAMS;tb++){
       margin=beamInfo[tb].txTime-r2end;
+      //printf("beam and margin: %d %12.8f\n", tb, margin);
       if(margin<worst_margin) worst_margin=margin;
       if(margin<0){
 	fprintf(stderr,"Error: Tx window MAY overlap Rx Window from 2 cycles back\n");
@@ -1425,7 +1426,9 @@ OvwmSim::SetMeasurements(
 
 	
         // Compute Land Flag
-        meas->landFlag = landMap.IsLand(lon, lat);
+        if (lon != 0. && lat != 0.) {
+          meas->landFlag = landMap.IsLand(lon, lat);
+        }
 
         //--------------------------//
         // ignore land if necessary //
@@ -1811,7 +1814,6 @@ OvwmSim::SetMeasurements(
             continue;
 	  }
 	   
-
 	  // compute point target response array for pixel
 
           Vector3 offset = meas->centroid - spot_centroid; // offset in xyz frame
@@ -2106,6 +2108,7 @@ OvwmSim::SetMeasurements(
 	      LonLat lon_lat;
 	      lon_lat.longitude = lon;
 	      lon_lat.latitude = lat;
+              //cout << "latlon: " << lat*rtd << " " << lon*rtd << endl;
               int island=0;
               if(simCoast){
 		island=landMap.IsLand(lon, lat);
@@ -2130,13 +2133,16 @@ OvwmSim::SetMeasurements(
 
 		gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
 					  wv.spd, chi, &s0); 
+                //cout << "wind: " << wv.spd << " " << chi << endl;
 
 		// add rain contamination if simRain
                 if(simRain){
                   if (!rainField.flag_3d) {
 		    float a,b;
                     int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
-                    //printf("s0before %g a %g b %g  lat %g lon %g inc %g\n",s0,a,b,lat*rtd,lon*rtd,meas->incidenceAngle*rtd);
+                    //if (i==nrsteps/2 && j==nasteps/2) {
+                    //  printf("flag %d, s0 before %g, a %g, b %g, s0 after %g, lat %g, lon %g, inc %g\n",goodrain,s0,a,b,s0/a+b,lat*rtd,lon*rtd,meas->incidenceAngle*rtd);
+                    //}
 		    if(goodrain) s0= s0/a + b;
                   }
 		}
