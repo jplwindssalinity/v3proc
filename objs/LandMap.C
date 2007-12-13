@@ -165,7 +165,8 @@ LandMap::ReadUSGS(
   _lat_start=floor(_lat_start/USGS_BLOCK_SIZE+0.00001)*USGS_BLOCK_SIZE;
   _lon_start=floor(_lon_start/USGS_BLOCK_SIZE+0.00001)*USGS_BLOCK_SIZE;
   int ilon0,ilon1,ilat0,ilat1;
-  ilon0=int((_lon_start+pi)*USGS_NLONS/two_pi + 0.0001) %USGS_NLONS+1;
+  //ilon0=int((_lon_start+pi)*USGS_NLONS/two_pi + 0.0001) %USGS_NLONS+1;
+  ilon0=int((_lon_start+pi)*USGS_NLONS/two_pi + 0.001) %USGS_NLONS+1;
   ilat0=int((_lat_start+pi/2)*USGS_NLATS/pi + 0.1)+1;
   ilon1=ilon0+USGS_BLOCK_PIXELS-1;
   ilat1=ilat0+USGS_BLOCK_PIXELS-1;
@@ -282,12 +283,13 @@ LandMap::IsLandUSGS(
     if (_usemap == 0)
         return(0);
     while(lon<_lon_start) lon += two_pi;    // to make sure it is in range
-    while(lon>=_lon_start+_mapLonDim*_lonResolution) lon -= two_pi;    // to make sure it is in range
+    while(lon>=_lon_start+_mapLonDim*_lonResolution && lon>=pi) lon -= two_pi;    // to make sure it is in range
 
     // outside of landmap calls ExpandUSGS
     if( lon <_lon_start || lat < _lat_start ||
 	lat >= _lat_start+(_mapLatDim-1)*_latResolution  || 
 	lon >= _lon_start+(_mapLonDim-1)*_lonResolution ){
+        //printf("expand %f %f %f %f %d %d %g %g\n", _lat_start, _lon_start, lat, lon, _mapLatDim, _mapLonDim, _latResolution, _lonResolution);
       return(ExpandUSGS(lon,lat));
     }
     int lon_idx = (int)((lon-_lon_start) / _lonResolution);
@@ -328,7 +330,8 @@ int LandMap::ExpandUSGS(float lon, float lat){
 
   // read in appropriate files
   int ilon0,ilon1,ilat0,ilat1;
-  ilon0=int((_lon_start+pi)*USGS_NLONS/two_pi + 0.0001) %USGS_NLONS+1;
+  //ilon0=int((_lon_start+pi)*USGS_NLONS/two_pi + 0.0001) %USGS_NLONS+1;
+  ilon0=int((_lon_start+pi)*USGS_NLONS/two_pi + 0.001) %USGS_NLONS+1;
   ilat0=int((_lat_start+pi/2)*USGS_NLATS/pi + 0.1)+1;
   ilon1=ilon0+USGS_BLOCK_PIXELS-1;
   ilat1=ilat0+USGS_BLOCK_PIXELS-1;
