@@ -38,7 +38,8 @@ public:
     //------//
 
     enum WindRetrievalMethodE { GS, GS_FIXED, H1, H2, H3, S1, S2, S3, S4,
-				POLAR_SPECIAL, CHEAT , S3RAIN, CoastSpecial};
+				POLAR_SPECIAL, CHEAT , S3RAIN, CoastSpecial,
+                                CoastSpecialGS, HurrSp1};
 
     //--------------//
     // construction //
@@ -67,6 +68,7 @@ public:
     //------------------------------------------//
 
     int  Cheat(MeasList* meas_list, WVC* wvc);
+    int  HurrSp1Top(GMF* gmf, Kp* kp, MeasList* meas_list, WVC* wvc);
 
     //-----------//
     // debugging //
@@ -102,9 +104,7 @@ public:
     int                   useRandomInit;
     int                   useNudgeStream;
 
-    int                   useSigma0Weights;
-    float                 sigma0WeightCorrLength;
-    
+     
     //-----------------------------------------//
     // Parameters for Peak Splitting Algorithm //
     //-----------------------------------------//
@@ -130,6 +130,11 @@ public:
     WindField      hurricaneField;
     float          hurricaneRadius;  // km
     EarthPosition  hurricaneCenter;
+
+
+    int                   useSigma0Weights;
+    float                 sigma0WeightCorrLength;
+
 };
 
 #endif

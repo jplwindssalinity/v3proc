@@ -108,6 +108,16 @@ L2AToL2B::SetWindRetrievalMethod(
 	wrMethod = CoastSpecial;
 	return(1);
       }
+    else if (strcasecmp(wr_method, "CoastSpecialGS")==0)
+      {
+	wrMethod = CoastSpecialGS;
+	return(1);
+      }
+    else if (strcasecmp(wr_method, "HurrSp1")==0)
+      {
+	wrMethod = HurrSp1;
+	return(1);
+      }
     else
         return(0);
 }
@@ -294,6 +304,14 @@ L2AToL2B::ConvertAndWrite(
         }
         break;
 
+    case CoastSpecialGS:
+      if (! gmf->RetrieveWinds_CoastSpecial(meas_list, kp, wvc,0,0))
+        {
+            delete wvc;
+            return(11);
+        }
+        break;
+
     case S4:
         if (! gmf->RetrieveWinds_S3(meas_list, kp, wvc,1))
         {
@@ -323,6 +341,14 @@ L2AToL2B::ConvertAndWrite(
         }
         break;
 
+    case HurrSp1:
+      if (! HurrSp1Top(gmf,kp,meas_list, wvc))
+        {
+	  delete wvc;
+	  return(15);
+        }
+        break;
+
     case CHEAT:
         if (! Cheat(meas_list, wvc))
         {
@@ -341,6 +367,10 @@ L2AToL2B::ConvertAndWrite(
     }
     wvc->lonLat = meas_list->AverageLonLat();
 
+    // use weighted average to get position
+    if(wrMethod == CoastSpecial){
+      wvc->lonLat = meas_list->AverageLonLat(1);       
+    }
     //-------------------------//
     // determine grid indicies //
     //-------------------------//
@@ -391,6 +421,32 @@ L2AToL2B::Cheat(
     return(1);
 }
 
+//-----------------------//
+// L2AToL2B:: HurrSp1Top //
+//-----------------------//
+
+int
+L2AToL2B::HurrSp1Top(
+    GMF* gmf,
+    Kp* kp,
+    MeasList*  meas_list,
+    WVC*       wvc)
+{
+  // Set nudge vector to start out with
+    wvc->lonLat = meas_list->AverageLonLat();
+    WindVectorPlus* wvp = new WindVectorPlus;
+    if (! nudgeField.InterpolatedWindVector(wvc->lonLat, wvp))
+    {
+      delete wvp;
+        return(0);
+    }
+    wvp->obj = 0;
+    wvc->nudgeWV=wvp;
+ 
+    if(!gmf->RetrieveWinds_HurrSp1(meas_list,kp,wvc)) return(0);
+    return(1);
+}
+
 //-------------------------//
 // L2AToL2B::InitAndFilter //
 //-------------------------//
@@ -407,9 +463,12 @@ L2AToL2B::InitAndFilter(
     // Copy Interpolated NudgeVectors to Wind Vector Cells //
     //-----------------------------------------------------//
 
-    if (useNudging && ! l2b->frame.swath.nudgeVectorsRead)
+    if (useNudging && ! l2b->frame.swath.nudgeVectorsRead && !smartNudgeFlag)
     {
         l2b->frame.swath.GetNudgeVectors(&nudgeField);
+    }
+    else if(useNudging && ! l2b->frame.swath.nudgeVectorsRead){
+      l2b->frame.swath.GetNudgeVectors(&nudgeVctrField);
     }
     if (useHurricaneNudgeField)
     {
@@ -481,6 +540,10 @@ L2AToL2B::InitAndFilter(
     case S4:
         special=2;
         break;
+    case HurrSp1:
+      //medianFilterMaxPasses=0;
+	special=1;
+	break;
     default:
         special=0;
         break;
