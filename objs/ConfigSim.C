@@ -1351,8 +1351,24 @@ ConfigL2AToL2B(
         if (nudge_windfield == NULL)
             return(0);
 
-        if (tmp_int)
+        if (l2a_to_l2b->smartNudgeFlag)
         {
+            if (!config_list->GetFloat(NUDGE_WINDFIELD_LAT_MIN_KEYWORD,
+                                       &l2a_to_l2b->nudgeVctrField.latMin) ||
+                !config_list->GetFloat(NUDGE_WINDFIELD_LAT_MAX_KEYWORD,
+                                       &l2a_to_l2b->nudgeVctrField.latMax) ||
+                !config_list->GetFloat(NUDGE_WINDFIELD_LON_MIN_KEYWORD,
+                                       &l2a_to_l2b->nudgeVctrField.lonMin) ||
+                !config_list->GetFloat(NUDGE_WINDFIELD_LON_MAX_KEYWORD,
+                                       &l2a_to_l2b->nudgeVctrField.lonMax))
+            {
+              fprintf(stderr, "Config NudgeVectorField:  can't determine range of lat and lon\n");
+              return(0);
+            }
+            l2a_to_l2b->nudgeVctrField.lonMax*=dtr;
+            l2a_to_l2b->nudgeVctrField.lonMin*=dtr;
+            l2a_to_l2b->nudgeVctrField.latMax*=dtr;
+            l2a_to_l2b->nudgeVctrField.latMin*=dtr;
             if (! l2a_to_l2b->nudgeVctrField.ReadVctr(nudge_windfield))
                 return(0);
         }
