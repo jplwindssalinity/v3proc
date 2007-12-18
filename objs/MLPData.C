@@ -193,7 +193,7 @@ MLPData::Allocate(){
 /*** if either of the parameters old_inpt_ptrs or old_outpt_ptrs is NULL ***/
 /*** then the old pointers are not returned                              ***/
 int 
-MLPData::Shuffle(float** old_inpt_ptrs=NULL, float** old_outpt_ptrs=NULL){
+MLPData::Shuffle(float** old_inpt_ptrs, float** old_outpt_ptrs){
   float* tmp;
   int rand_no,c;
   

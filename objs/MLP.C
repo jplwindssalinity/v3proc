@@ -7,7 +7,7 @@
 #include "Distributions.h"
 
 MLP::MLP()
-  : nin(0), nout(0), hn(0), outputSigmoidFlag(1)
+  : nin(0), nout(0), hn(0), outputSigmoidFlag(0)
 {
   return;
 }
@@ -30,7 +30,7 @@ MLP::~MLP(){
 
 /*** randomly initialize an MLP ****/
 int MLP::RandomInitialize(float range_min, float range_max, int num_inputs, 
-	      int num_outputs, int num_hidden_units, long int seed=0){
+	      int num_outputs, int num_hidden_units, long int seed){
   int c,d;
 
   nin=num_inputs;
@@ -384,10 +384,10 @@ int MLP::Read(FILE* ifp){
   Allocate();
 
   /**** get weights between input and hidden units ****/
-  get_floats_array(win[0],(nin+1)*hn,ifp);
+  for(int c=0;c<hn;c++) get_floats_array(win[c],(nin+1),ifp);
 
   /**** get weights between hidden and outputs units ****/
-  get_floats_array(whid[0],(nin+1)*nout,ifp);
+  for(int c=0;c<nout;c++) get_floats_array(whid[c],(hn+1),ifp);
   return(1);
 }
 int MLP::Read(char* filename){
@@ -492,14 +492,11 @@ int MLP::ReadDelta(char* filename){
   if(!ifp) return(0);
 
   if(!Read(ifp)) return(0);
+  /**** get weights between input and hidden units ****/
+  for(int c=0;c<hn;c++) get_floats_array(dwin[c],(nin+1),ifp);
 
-  /**** get weights updates between input and hidden units ****/
-  get_floats_array(dwin[0],(nin+1)*hn,ifp);
-
-  /**** get weights updates between hidden and outputs units ****/
-  get_floats_array(dwhid[0],(hn+1)*nout,ifp);
-
-  fclose(ifp);
+  /**** get weights between hidden and outputs units ****/
+  for(int c=0;c<nout;c++) get_floats_array(dwhid[c],(hn+1),ifp);
   return(1);
 }
 
