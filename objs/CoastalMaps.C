@@ -393,11 +393,13 @@ CoastalMaps::_ResampleGainMap( Meas* meas, CoordinateSwitch* gc_to_spot, float**
 			       int nxsteps, float ymin, float dy, int nysteps){
   // compute max gain
   float max_gain=0;
-  for(int i=0;i<nxsteps;i++){
+   for(int i=0;i<nxsteps;i++){
     for(int j=0;j<nysteps;j++){
       if(gain[i][j]>max_gain) max_gain=gain[i][j];
     }
   }  
+  double erad=6378.0;
+  double areafactor=erad*erad*_latres*_lonres*fabs(cos(_latstart+_latres*_nlats/2))/dx/dy;
   for(int i=0;i<_nlats;i++){
     for(int j=0;j<_nlons;j++){
       double lat=_latstart+_latres/2+i*_latres;
@@ -415,7 +417,7 @@ CoastalMaps::_ResampleGainMap( Meas* meas, CoordinateSwitch* gc_to_spot, float**
 	_g[i][j]=0.0;
       }
       else{
-	_g[i][j]=gain[ix][iy];
+	_g[i][j]=gain[ix][iy]*areafactor;
       }
       if(_g[i][j]<max_gain*SLICE_GAIN_THRESH) _g[i][j]=0.0;
     }
