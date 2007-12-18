@@ -1164,9 +1164,41 @@ WindSwath::GetNudgeVectors(
             WVC* wvc = swath[cti][ati];
             if (! wvc)
                 continue;
+            /*** Not sure why we have this check
+	    /*** Commenting out for now
+            /*** May effect coastal retrieval or cause bug
+            /*** in HurrSp1 retrieval
+            if (! wvc->ambiguities.NodeCount())
+	      continue;
+	    ***/
             wvc->nudgeWV = new WindVectorPlus;
             if (! nudge_field->InterpolatedWindVector(wvc->lonLat,
-                wvc->nudgeWV))
+						       wvc->nudgeWV))
+            {
+                delete wvc->nudgeWV;
+                wvc->nudgeWV=NULL;
+            }
+        }
+    }
+    nudgeVectorsRead = 1;
+    return(1);
+}
+
+
+int
+WindSwath::GetNudgeVectors(
+    WindVectorField*  nudge_field)
+{
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+            wvc->nudgeWV = new WindVectorPlus;
+            if (! nudge_field->InterpolateVectorField(wvc->lonLat,
+						      wvc->nudgeWV,0))
             {
                 delete wvc->nudgeWV;
                 wvc->nudgeWV=NULL;
@@ -2630,13 +2662,19 @@ WindSwath::GetMedianBySorting(
       WVC* other_wvc = swath[i][j];
       if (! other_wvc)
         continue;
-
+      
       WindVectorPlus* other_wvp = other_wvc->selected;
       if (! other_wvp)
         continue;
-
+      
       x[count] = other_wvp->spd * cos(other_wvp->dir);
       y[count] = other_wvp->spd * sin(other_wvp->dir);
+      if(isnan(x[count]) || isnan(y[count])){
+        fprintf(stderr,"Fatal Error NaN produced in WindSwath::GetMedianBysorting\n");
+	exit(1);
+        // should never happen
+	//  continue;
+      }
       count++;
     }
     }
@@ -2653,7 +2691,8 @@ WindSwath::GetMedianBySorting(
     y_med=0.5*(y[count/2-1] + y[count/2]);
   }
   wvp->spd=sqrt(x_med*x_med + y_med*y_med);
-  wvp->dir=acos(x_med/wvp->spd);
+  if(wvp->spd==0) wvp->dir=0;
+  else wvp->dir=acos(x_med/wvp->spd);
   if(y_med<0) wvp->dir=two_pi-wvp->dir;
   wvp->obj=-(float)HUGE_VAL;
   delete[] x;
