@@ -99,10 +99,15 @@ public:
     // variables //
     //-----------//
 
-    Vector  dir;
-    Vector  spd;
-    Vector  lon;
-    Vector  lat;
+    float* dir;
+    float*  spd;
+    float*  lon;
+    float*  lat;
+    float lonMin;
+    float lonMax;
+    float latMin;
+    float latMax;
+    int numUsed;
 };
 
 //======================================================================

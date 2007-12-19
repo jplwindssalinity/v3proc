@@ -81,19 +81,25 @@ WindVectorPlus::ReadL2B(
 // WindVectorField //
 //=================//
 
+
+
+
+
 WindVectorField::WindVectorField()
+ :dir(NULL)
 {
-    return;
+
 }
 
-WindVectorField::~WindVectorField()
-{
-    lon.Free();
-    lat.Free();
-    dir.Free();
-    spd.Free();
-    return;
+WindVectorField::~WindVectorField(){
+  if(dir!=NULL){
+    free(dir);
+    free(spd);
+    free(lon);
+    free(lat);
+  }
 }
+
 
 //---------------------------//
 // WindVectorField::ReadVctr //
@@ -115,12 +121,13 @@ WindVectorField::ReadVctr(
     // allocate 1 rev //
     //----------------//
 
-    int revsize = 16000;
-    lon.Allocate(revsize);
-    lat.Allocate(revsize);
-    spd.Allocate(revsize);
-    dir.Allocate(revsize);
+    int revsize = 100000;
+    lon= (float*)malloc(sizeof(float)*revsize);
+    lat= (float*)malloc(sizeof(float)*revsize);
+    spd= (float*)malloc(sizeof(float)*revsize);
+    dir= (float*)malloc(sizeof(float)*revsize);
 
+ 
     //------------//
     // read field //
     //------------//
@@ -128,7 +135,7 @@ WindVectorField::ReadVctr(
     float llon, llat, lspd, ldir;
     int idx=0;
 
-    // first read
+    // first read 4 byte header
     if (fread((void *)&ldir, sizeof(float), 1, fp) != 1)
     {
         fclose(fp);
@@ -145,15 +152,23 @@ WindVectorField::ReadVctr(
         return(0);
     }
 
-
+    
     while(! feof(fp))
     {
-        idx++;
+        if(idx>=revsize){
+	  fprintf(stderr,"Max VectorWindField size exceeded\n");
+          exit(1);
+	}
 
-        lon.SetElement(idx - 1, (double)llon);
-        lat.SetElement(idx - 1, (double)llat);
-        spd.SetElement(idx - 1, (double)lspd);
-        dir.SetElement(idx - 1, (double)ldir);
+        while(llon<lonMin)llon+=2*pi;
+        while(llon>lonMax)llon-=2*pi;
+        if(llat>=latMin && llat<=latMax && llon>=lonMin){
+          idx++;
+	  lon[idx - 1]=llon;
+	  lat[idx - 1]=llat;
+	  spd[idx - 1]=lspd;
+	  dir[idx - 1]=ldir;
+	}
 
         //-----------//
         // next read //
@@ -169,9 +184,10 @@ WindVectorField::ReadVctr(
         }
     }
 
-
+    numUsed=idx;
+    fprintf(stderr,"found %d nudge vectors in bounding box\n",numUsed);
+    fprintf(stderr,"Lat=[%g,%g],lon=[%g,%g]\n",latMin*rtd,latMax*rtd,lonMin*rtd,lonMax*rtd);
     fclose(fp);
-
     return(idx);
 }
 
@@ -187,8 +203,6 @@ WindVectorField::InterpolateVectorField(
 {
     // find size of windfield
 
-    int sz = dir.GetSize();
-
     // get earth position of lon_lat
 
     EarthPosition cell25;
@@ -200,35 +214,41 @@ WindVectorField::InterpolateVectorField(
 
     // loop through and find position closest
 
-    double distance;
+    double distance=1000000.0;
     int good_idx = -1;
-
-    for (int i = 0; i < sz; i++)
+    int ic=-1;
+    
+    for (int i = 0; i < numUsed; i++)
     {
         EarthPosition cell50;
         double llat, llon;
 
-        lon.GetElement(i, &llon);
-        lat.GetElement(i, &llat);
+        llon=lon[i];
+        llat=lat[i];
         cell50.SetAltLonGCLat(alt, llon, llat);
 
-        distance = cell50.SurfaceDistance(cell25);
-        if (i == 0)
-          fprintf(stderr,"Surface Distance: %g\n",distance);
+        double d = cell50.SurfaceDistance(cell25);
 
-        if (distance < bound)
+        if (d<distance)
         {
-            double dir_value, spd_value;
-            dir.GetElement(i, &dir_value);
-            spd.GetElement(i, &spd_value);
-            nwv->SetSpdDir(spd_value, dir_value);
-            good_idx = i;
+	  distance=d;
+	  ic=i;
         }
+    }
+    if(distance< bound){
+      double dir_value, spd_value;
+      dir_value=dir[ic];
+      spd_value=spd[ic];
+      nwv->SetSpdDir(spd_value, dir_value);
+      good_idx = ic;
     }
 
     if (good_idx == -1)
     {
         fprintf(stderr,"Couldn't find 50km cell\n");
+        fprintf(stderr,"d=%g\n lat=%g lon=%g nlat=%g nlon=%g nspd=%g ndir=%g\n",
+		distance,lon_lat.latitude*rtd,lon_lat.longitude*rtd,lat[ic]*rtd,lon[ic]*rtd,spd[ic],dir[ic]*rtd);
+
         return(0);
     }
 
@@ -1218,12 +1238,13 @@ WindField::ReadSV(
                 return(0);
 
             wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
+	   
             *(*(_field + lon_idx) + lat_idx) = wv;
         }
     }
 
-    _wrap = 1;
-
+    // Turned wrap off to avoid out of bounds wind field usage with SV fields
+    _wrap = 0;
     return(1);
 }
 
