@@ -111,10 +111,11 @@ public:
                int h3_and_s1_flag = 0);
     int    RetrieveWinds_S2(MeasList* meas_list, Kp* kp, WVC* wvc);
     int    RetrieveWinds_S3(MeasList* meas_list, Kp* kp, WVC* wvc,
-               int s4_flag = 0);
+			    int s4_flag = 0,float prior_dir=0);
     int    RetrieveWinds_CoastSpecial(MeasList* meas_list, Kp* kp, WVC* wvc,
-               int s4_flag = 0);
-    int    RetrieveWinds_S3Rain(MeasList* meas_list, Kp* kp, WVC* wvc);
+				      int s4_flag = 0, int dirth_flag=1);
+    int    RetrieveWinds_S3Rain(MeasList* meas_list, Kp* kp, WVC* wvc, int dirth_flag=1,float prior_dir=0);
+    int    RetrieveWinds_HurrSp1(MeasList* meas_list, Kp* kp, WVC* wvc);
     int    BuildDirectionRanges(WVC* wvc, float threshold);
     int    BuildDirectionRangesByMSE(WVC* wvc, float threshold);
     int    BruteForceGetMinEstimateMSE(float* peak_dir, int num_peaks,
@@ -136,13 +137,13 @@ public:
     //-------------------//
 
     int  RetrieveWinds_GS(MeasList* meas_list, Kp* kp, WVC* wvc,
-             int polar_special=0);
+			  int polar_special=0, float prior_dir=0);
     int  Calculate_Init_Wind_Solutions(MeasList* meas_list, Kp* kp, WVC* wvc,
-             int polar_special=0);
+				       int polar_special=0, float prior_dir=0);
     int  FindMultiSpeedRidge(MeasList* meas_list, Kp* kp, int dir_idx,
-             float* max_sep, float* min_sep);
+			     float* max_sep, float* min_sep, float prior_dir=0);
     int  RemoveBadCopol(MeasList* meas_list, Kp* kp);
-    int  Optimize_Wind_Solutions(MeasList* meas_list, Kp* kp, WVC* wvc);
+    int  Optimize_Wind_Solutions(MeasList* meas_list, Kp* kp, WVC* wvc, float prior_dir=0);
     int  CopyBuffersGSToPE();
 
     //-----------------------//
@@ -150,7 +151,7 @@ public:
     //-----------------------//
     int  RetrieveWinds_BruteForce(MeasList* meas_list, Kp* kp, WVC* wvc,
 				  int polar_special=0, float spdmin=-1,
-				  float spdmax=-1);
+				  float spdmax=-1,float prior_dir=0);
     void CalculateSigma0Weights(MeasList* meas_list);
     
 
@@ -181,11 +182,15 @@ public:
     // wind retrieval //
     //----------------//
 
-    float  _ObjectiveFunction(MeasList* meas_list, float u, float phi, Kp* kp);
+    float  _ObjectiveFunction(MeasList* meas_list, float u, float phi, Kp* kp, float phi_prior=0.0);
     float  _ObjectiveFunctionOld(MeasList* meas_list, float u, float phi, Kp* kp);
     float  _ObjectiveFunctionNew(MeasList* meas_list, float u, float phi, Kp* kp);
+
+    float  _ObjectiveFunctionDirPrior(MeasList* meas_list, float u, float phi, Kp* kp, float phi_prior=0);
+
     float  _ObjectiveFunctionMeasVar(MeasList* meas_list, float u, float phi, Kp* kp);
     float  _ObjectiveFunctionMeasVarWt(MeasList* meas_list, float u, float phi, Kp* kp);
+
     float  _ObjectiveFunctionFixedTrial(MeasList* meas_list, float u, float phi, Kp* kp, float fixed_sigma0);
     int    _ObjectiveToProbability(float scale, int radius);
 

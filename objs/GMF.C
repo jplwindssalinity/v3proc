@@ -1121,6 +1121,8 @@ GMF::CheckRetrieveCriteria(
     // check for land contamination //
     //------------------------------//
 
+#define SPECIAL_COAST
+#ifndef SPECIAL_COAST
     for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
     {
         // retrieve ocean only
@@ -1148,6 +1150,7 @@ GMF::CheckRetrieveCriteria(
         //    return(0);
         //// For SeaIce landFlag=2
     }
+#endif
 
     Node<Meas>* current;
 
@@ -2111,7 +2114,8 @@ GMF::_ObjectiveFunction(
     MeasList*  meas_list,
     float      spd,
     float      phi,
-    Kp*        kp )
+    Kp*        kp,
+    float phi_prior)
 {
     //-------------------------------------------//
     // dummy _objectiveFunction object to direct //
@@ -2129,12 +2133,18 @@ GMF::_ObjectiveFunction(
         case 1:
             fv = _ObjectiveFunctionNew(meas_list, spd, phi, kp);
             break;
+
         case 2:
 	    fv = _ObjectiveFunctionMeasVar(meas_list, spd, phi, kp);
             break;
         case 3:
 	    fv = _ObjectiveFunctionMeasVarWt(meas_list, spd, phi, kp);
             break;
+
+        case 4:
+	    fv = _ObjectiveFunctionDirPrior(meas_list,spd,phi,kp,phi_prior);
+	    break;
+
         default:
             fv = _ObjectiveFunctionOld(meas_list, spd, phi, kp);
             break;       
@@ -2449,6 +2459,95 @@ GMF::_ObjectiveFunctionNew(
     return(-fv*num/sumwt);
 }
 
+
+float
+GMF::_ObjectiveFunctionDirPrior(
+    MeasList*  meas_list,
+    float      spd,
+    float      phi,
+    Kp*        kp,
+    float      phi_prior)
+{
+    //-----------------------------------------//
+    // initialize the objective function value //
+    //-----------------------------------------//
+
+    float fv = 0.0;
+    float sumwt = 0.0;
+    float num = 0.0;
+
+    //-------------------------//
+    // for each measurement... //
+    //-------------------------//
+
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+        //---------------------------------------//
+        // get sigma-0 for the trial wind vector //
+        //---------------------------------------//
+
+        float chi = phi - meas->eastAzimuth + pi;
+        float trial_value;
+        GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
+            &trial_value);
+
+        //------------------------------------------------------------//
+        // find the difference between the trial and measured sigma-0 //
+        //------------------------------------------------------------//
+
+        // Sanity check on measurement
+        double tmp=meas->value;
+        if (! finite(tmp))
+            continue;
+
+        float s = trial_value - meas->value;
+
+        float t = meas->XK;
+        float wt = 1.0/(1.0 + (1.0/t));
+
+        float wt1=kuBandWeight;
+//        float wt1=1.0;
+ 	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE ||
+	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
+ 	  wt1=cBandWeight;
+// 	  wt1=0.1;
+	}
+
+        //       printf("wts: t %g wt %g wt1 %g meastype %d\n",t,wt,wt1,(int)meas->measType);
+        
+        wt *= wt1;
+        sumwt += wt;     // sum weights for renormalization
+        num += 1;        // count good measurements
+
+
+        //-------------------------------------------------------//
+        // calculate the expected variance for the trial sigma-0 //
+        //-------------------------------------------------------//
+
+        float var = GetVariance(meas, spd, chi, trial_value, kp);
+        // returns 0 if kp is NULL
+
+        if (var == 0.0)
+        {
+            // variances all turned off, so use uniform weighting.
+            fv += wt*s*s;
+        }
+        else if (retrieveUsingLogVar)
+        {
+            fv += wt*s*s / var + wt*log(var);
+        }
+        else
+        {
+            fv += wt*s*s / var;
+        }
+    }
+    //   printf("Norm %g\n",num/sumwt);
+    float dirdif=ANGDIF(phi,phi_prior);
+    fv= -fv*num/sumwt - num*(pow(dirdif/(20*dtr),2));
+    return(fv);
+}
+
+
 float
 GMF::_ObjectiveFunctionMeasVarWt(
     MeasList*  meas_list,
@@ -2614,6 +2713,7 @@ GMF::_ObjectiveFunctionMeasVarWt(
     return(-fv);
 }
 
+
 //-------------------------//
 // GMF::_ObjectiveFunction //
 //-------------------------//
@@ -2695,13 +2795,14 @@ GMF::RetrieveWinds_GS(
     MeasList*  meas_list,
     Kp*        kp,
     WVC*       wvc,
-    int        polar_special)
+    int        polar_special,
+    float      prior_dir)
 {
 //
 //  Step 1:  Find an initial set of coarse wind solutions.
 //
 
-    Calculate_Init_Wind_Solutions(meas_list, kp, wvc, polar_special);
+  Calculate_Init_Wind_Solutions(meas_list, kp, wvc, polar_special,prior_dir);
 
     WindVectorPlus* wvp = NULL;
 
@@ -2715,7 +2816,7 @@ GMF::RetrieveWinds_GS(
 //  Step 2:  Iterate to find an optimized set of wind solutions.
 //
 
-    Optimize_Wind_Solutions(meas_list,kp,wvc);
+    Optimize_Wind_Solutions(meas_list,kp,wvc,prior_dir);
 
 //  Step 3:  Rank the optimized wind solutions for use in ambiguity
 //           removal.
@@ -2767,7 +2868,8 @@ GMF::Calculate_Init_Wind_Solutions(
     MeasList*  meas_list,
     Kp*        kp,
     WVC*       wvc,
-    int        polar_special)
+    int        polar_special,
+    float        prior_dir)
 {
     // Description:
     //   This routine calculates an initial set of wind solutions
@@ -2842,7 +2944,7 @@ GMF::Calculate_Init_Wind_Solutions(
     for (k = 2; k <= num_dir_samples - 1; k++)
     {
         if (polar_special) {
-            tmp = FindMultiSpeedRidge(meas_list, kp, k, &tmp2, &tmp3);
+	  tmp = FindMultiSpeedRidge(meas_list, kp, k, &tmp2, &tmp3,prior_dir);
             if (tmp > multiridge)
                 multiridge = tmp;
             if (tmp > 1) {
@@ -2864,11 +2966,11 @@ GMF::Calculate_Init_Wind_Solutions(
         plus_speed  = center_speed + WIND_SPEED_INTV_INIT;
 
         minus_objective = _ObjectiveFunction(meas_list, minus_speed,
-            dtr * angle, kp);
+					     dtr * angle, kp, prior_dir);
         center_objective = _ObjectiveFunction(meas_list, center_speed,
-            dtr * angle, kp);
+					      dtr * angle, kp, prior_dir);
         plus_objective = _ObjectiveFunction(meas_list, plus_speed,
-            dtr * angle, kp);
+					    dtr * angle, kp,prior_dir);
 
         //
         // Move the triplet in the speed dimension until center_objective
@@ -2917,7 +3019,7 @@ GMF::Calculate_Init_Wind_Solutions(
                if (good_speed)
                 {
                     minus_objective = _ObjectiveFunction(meas_list,
-                                        minus_speed,dtr*angle,kp);
+							 minus_speed,dtr*angle,kp,prior_dir);
                 }
             }
 
@@ -2954,7 +3056,7 @@ GMF::Calculate_Init_Wind_Solutions(
                if   (good_speed)
                 {
                     plus_objective = _ObjectiveFunction(meas_list,
-                                        plus_speed,dtr*angle,kp);
+							plus_speed,dtr*angle,kp,prior_dir);
                 }
             }
         }    // while loop
@@ -2978,7 +3080,7 @@ GMF::Calculate_Init_Wind_Solutions(
             // Re-evaluate objective function to avoid interpolation bumps
             // that introduce artificial peaks.
             _objective_buffer[k] = _ObjectiveFunction(meas_list,
-                                        _speed_buffer[k],dtr*angle,kp);
+						      _speed_buffer[k],dtr*angle,kp,prior_dir);
 #else
             _objective_buffer [k] = center_objective
                                 - (diff_objective_1*diff_objective_1
@@ -3123,7 +3225,8 @@ GMF::FindMultiSpeedRidge(
     Kp*        kp,
     int        dir_idx,
     float*     max_sep,
-    float*     min_sep)
+    float*     min_sep,
+    float      prior_dir)
 {
     float  center_speed;
     float  minus_speed;
@@ -3164,8 +3267,8 @@ GMF::FindMultiSpeedRidge(
     spd_spacing = WIND_SPEED_INTV_INIT;
     center_speed = LOWER_SPEED_BOUND + spd_spacing;
     plus_speed=LOWER_SPEED_BOUND + 2*spd_spacing;
-    minus_objective=_ObjectiveFunction(meas_list,minus_speed,angle,kp);
-    center_objective=_ObjectiveFunction(meas_list,center_speed,angle,kp);
+    minus_objective=_ObjectiveFunction(meas_list,minus_speed,angle,kp,prior_dir);
+    center_objective=_ObjectiveFunction(meas_list,center_speed,angle,kp,prior_dir);
 
     if( minus_objective>center_objective )
     {
@@ -3177,7 +3280,7 @@ GMF::FindMultiSpeedRidge(
     }
       int offset=1;
       while(plus_speed <= UPPER_SPEED_BOUND){
-    plus_objective=_ObjectiveFunction(meas_list,plus_speed,angle,kp);
+	plus_objective=_ObjectiveFunction(meas_list,plus_speed,angle,kp,prior_dir);
     if(plus_objective <= center_objective &&
            minus_objective <= center_objective){
       speed_peaks[ridge_count]=center_speed;
@@ -3212,7 +3315,7 @@ GMF::FindMultiSpeedRidge(
     ridge_count++;
         // recompute exactly at boundary
         center_objective = _ObjectiveFunction(meas_list, UPPER_SPEED_BOUND,
-            angle, kp);
+					      angle, kp,prior_dir);
     if(center_objective >= best_center_objective){
       best_center_objective=center_objective;
           best_center_speed=UPPER_SPEED_BOUND;
@@ -3234,7 +3337,7 @@ GMF::FindMultiSpeedRidge(
                             * (diff_objective_1 / diff_objective_2)
                             * spd_spacing;
         _objective_buffer[dir_idx] = _ObjectiveFunction(meas_list,
-                     _speed_buffer[dir_idx],angle,kp);
+							_speed_buffer[dir_idx],angle,kp,prior_dir);
       }
 
       for(int c=0;c<ridge_count;c++){
@@ -3253,7 +3356,8 @@ int
 GMF::Optimize_Wind_Solutions(
     MeasList*    meas_list,
     Kp*            kp,
-    WVC*        wvc)
+    WVC*        wvc,
+    float      prior_dir)
 {
 
 //
@@ -3355,7 +3459,7 @@ GMF::Optimize_Wind_Solutions(
                if (i_dir == 0  ||  i_spd == 0)
                 {
                     current_objective[i][j] = _ObjectiveFunction(meas_list,
-                                        speed,dtr*direction,kp);
+								 speed,dtr*direction,kp,prior_dir);
 
                     if (current_objective [i][j] > maximum_objective)
                     {
@@ -3399,7 +3503,7 @@ GMF::Optimize_Wind_Solutions(
                             WIND_DIR_INTV_OPTI;
 
                         current_objective[i][j] = _ObjectiveFunction(meas_list,
-                                            speed,dtr*direction,kp);
+								     speed,dtr*direction,kp,prior_dir);
 
                            if (current_objective [i][j] > maximum_objective)
                         {
@@ -3470,7 +3574,7 @@ GMF::Optimize_Wind_Solutions(
                                 direction = center_dir + (float)(i_dir) *
                                   WIND_DIR_INTV_OPTI;
                                 saved_objective[i][j] = _ObjectiveFunction(
-                                    meas_list,speed,dtr*direction,kp);
+									   meas_list,speed,dtr*direction,kp,prior_dir);
                             }
                             else
                             {
@@ -3648,7 +3752,7 @@ GMF::Optimize_Wind_Solutions(
 //   Estimate the final value of likelihood.
 //
                 wr_mle[ambig] = _ObjectiveFunction(meas_list,
-                    wr_wind_speed[ambig],dtr*wr_wind_dir[ambig],kp);
+						   wr_wind_speed[ambig],dtr*wr_wind_dir[ambig],kp,prior_dir);
 
 //
 //   Estimate the RMS speed and direction errors.
@@ -3682,7 +3786,7 @@ GMF::Optimize_Wind_Solutions(
                   // calculate partial objective function
           MeasList ml;
           ml.Append(meas);
-                  float partial_obj=_ObjectiveFunction(&ml,wvp->spd,wvp->dir,kp);
+	  float partial_obj=_ObjectiveFunction(&ml,wvp->spd,wvp->dir,kp,prior_dir);
           float sigma0_over_snr=meas->EnSlice / meas->XK / meas->txPulseWidth;
           printf("%g %g %g %g %g %g %g %g\n",partial_obj,sigma0_over_snr,
              meas->EnSlice, meas->XK, meas->txPulseWidth, meas->A, meas->B, meas->C);
@@ -3719,7 +3823,7 @@ GMF::CopyBuffersGSToPE(){
 //-----------------------//
 int  GMF::RetrieveWinds_BruteForce(MeasList* meas_list, Kp* kp, WVC* wvc,
 				   int polar_special, float spdmin, float
-				   spdmax){
+				   spdmax,float prior_dir){
 
   if(spdmin<0){
     spdmin=_spdMin;
@@ -3735,7 +3839,7 @@ int  GMF::RetrieveWinds_BruteForce(MeasList* meas_list, Kp* kp, WVC* wvc,
     for(int j=0;j<ndirs;j++){
       float phi=0+dirstep*j;
       float spd=spdmin+spdstep*i;        
-      objs[i][j]=_ObjectiveFunction(meas_list, spd, phi, kp);
+      objs[i][j]=_ObjectiveFunction(meas_list, spd, phi, kp,prior_dir);
     }
   }
 
@@ -5295,188 +5399,7 @@ GMF::EstimateDirMSE(
   }
   return(retval);
 }
-/**
-//-----------------------//
-// GMF::RetrieveWinds_S3 //
-//-----------------------//
-int
-GMF::RetrieveWinds_S3Rain(
-    MeasList*  meas_list,
-    Kp*        kp,
-    WVC*       wvc)
-{
-  //float astep=0.02;
-  float astep=0.1;
-  float A[4]={1,1,1,1}; // order is hku, vku, hc, vc
-  float B[4]={0,0,0,0};
-  float cbandwt=0.05;
-  SetCBandWeight(cbandwt);  
 
-  // copy Measlist;
-  MeasList ml2;
-  for(Meas* meas=meas_list->GetHead();meas;meas=meas_list->GetNext()){
-    Meas* m = new Meas;
-    m->value=meas->value;
-    m->XK=meas->XK;
-    m->EnSlice=meas->EnSlice;
-    m->bandwidth=meas->bandwidth;
-    m->txPulseWidth=meas->txPulseWidth;
-    m->landFlag=meas->landFlag;
-    m->centroid=meas->centroid;
-    m->measType=meas->measType;
-    m->eastAzimuth=meas->eastAzimuth;
-    m->incidenceAngle=meas->incidenceAngle;
-    m->beamIdx=meas->beamIdx;
-    m->startSliceIdx=meas->startSliceIdx;
-    m->numSlices=meas->numSlices;
-    m->scanAngle=meas->scanAngle;
-    m->A=meas->A;
-    m->B=meas->B;
-    m->C=meas->C;
-    m->azimuth_width=meas->azimuth_width;
-    m->range_width=meas->range_width;
-    ml2.Append(m);
-  }
-
-  // Perform GS retrieval multiple times until maximal first rank obj
-  // is achieved
-  // perform first GS retrieval
- 
-  WVC* wvcout = wvc;
-  wvc=new WVC;
-  if(!RetrieveWinds_GS(&ml2,kp,wvc,0)){
-    ml2.FreeContents();
-    return(0);
-  }  
-
-  // check for no ambiguities case
-  if(wvc->ambiguities.NodeCount()==0){
-    ml2.FreeContents();
-    return(1);
-  }
-
-  WindVectorPlus* wvp=wvc->ambiguities.GetHead();
-  float bestobj=wvp->obj;
-
-
-  float Aold[4],Bold[4];
-  while(A[0]>0){
-    for(int c=0;c<4;c++){
-      Aold[c]=A[c];
-      Bold[c]=B[c];
-    }  
-    // set up Rain coefficients
-    A[0]-=astep;
-    float a1=A[0];
-    float a2=A[0]*A[0];
-    float a3=a2*A[0];
-    float a4=a3*A[0];
-    float a5=a4*A[0];
-    A[1]=-0.00333+0.6388*a1+0.7322*a2-0.5671*a3+
-      0.2006*a4;
-    float CBscale=20.0;
-    //A[2]=0.97369+0.07460*log(A[0]);
-    //A[3]=0.96833+0.08395*log(A[0]);
-    A[2]=1.0;
-    A[3]=1.0;
-    B[0]=0.1759-0.8290*a1+2.732*a2-5.085*a3+4.487*a4-1.487*a5;
-    B[1]=0.1568-0.6532*a1+2.081*a2-3.912*a3+3.465*a4-1.143*a5;
-    //B[2]=-0.0002132-0.008690*log(A[0]);
-    //B[3]=-0.0004927-0.0098932*log(A[0]);
-    B[2]=-CBscale*0.01*log(A[0]);
-    B[3]=-CBscale*0.01*log(A[0]);
-
-    // correct measurements
-    Meas* m2=ml2.GetHead();
-    for(Meas* meas=meas_list->GetHead();meas;meas=meas_list->GetNext()){
-      switch(m2->measType){
-      case Meas::HH_MEAS_TYPE:
-	m2->value=(meas->value-B[0])/A[0];
-	break;
-      case Meas::VV_MEAS_TYPE:
-	m2->value=(meas->value-B[1])/A[1];
-	break;
-      case Meas::C_BAND_HH_MEAS_TYPE:
-	m2->value=(meas->value-B[2])/A[2];
-	break;
-      case Meas::C_BAND_VV_MEAS_TYPE:
-	m2->value=(meas->value-B[3])/A[3];
-	break;
-      default:
-	fprintf(stderr,"Bad measurement type for S3RAIN\n");
-	exit(1);
-      }
-      m2=ml2.GetNext();
-    } // end correct meas loop
-
-    delete wvc;
-    wvc=new WVC;
-    if(!RetrieveWinds_GS(&ml2,kp,wvc,0)){
-      ml2.FreeContents();
-      fprintf(stderr,"Warning: RetrieveWinds_GS failed during rain estimation");
-      return(0);
-    }  
-    if(wvc->ambiguities.NodeCount()==0){
-      ml2.FreeContents();
-      fprintf(stderr,"Warning: RetrieveWinds_GS failed found no ambigs during rain estimation Akuh=%g\n",A[0]);
-      return(0);
-    }
-    WindVectorPlus* wvp=wvc->ambiguities.GetHead();
-    if(wvp->obj< bestobj) break; // last one was best
-    else bestobj=wvp->obj;
-  } // end A,B estimation loop
-  // Perform final S3 retrieval
-
-  // correct measurements
-  Meas* m2=ml2.GetHead();
-  float CHHave=0;
-  float CVVave=0;
-  int nCHH=0;
-  int nCVV=0;
-  for(Meas* meas=meas_list->GetHead();meas;meas=meas_list->GetNext()){
-    switch(m2->measType){
-    case Meas::HH_MEAS_TYPE:
-       m2->value=(meas->value-Bold[0])/Aold[0];
-      break;
-    case Meas::VV_MEAS_TYPE:
-      m2->value=(meas->value-Bold[1])/Aold[1];
-      break;
-    case Meas::C_BAND_HH_MEAS_TYPE:
-      CHHave+=meas->value;
-      nCHH++;
-      m2->value=(meas->value-Bold[2])/Aold[2];
-      break;
-    case Meas::C_BAND_VV_MEAS_TYPE:
-      CVVave+=meas->value;
-      nCVV++;
-      m2->value=(meas->value-Bold[3])/Aold[3];
-      break;
-    default:
-      fprintf(stderr,"Bad measurement type for S3RAIN\n");
-      exit(1);
-    }
-    m2=ml2.GetNext();
-  } // end correct meas loop
-  CVVave/=nCVV;
-  CHHave/=nCHH;
-  delete wvc;
-  wvc=wvcout;
-   
-  // don't retrieve highly contaminated cells
-  if((nCHH && Bold[2]> 0.5*CHHave) || (nCVV && Bold[3] > 0.5*CVVave)){
-    ml2.FreeContents();
-    return(0);
-  }
-  if(!RetrieveWinds_S3(&ml2,kp,wvc,0)){
-    ml2.FreeContents();
-    return(0);
-  }
-  // put chosen AHku value into wvc
-  wvc->rainProb=Aold[0];
-  ml2.FreeContents();
-  return(1);  
-}
-**/
 
 //-----------------------//
 // GMF::RetrieveWinds_S3 //
@@ -5716,6 +5639,7 @@ GMF::RetrieveWinds_S3Rain(
   if(!RetrieveWinds_S3(&ml2,kp,wvc,0)){
     ml2.FreeContents();
     return(0);
+>>>>>>> 3.74
   }
   // put chosen AHku value into wvc
   wvc->rainProb=Aold[0];
@@ -5724,14 +5648,14 @@ GMF::RetrieveWinds_S3Rain(
 }
 
 #define USE_CORRECTED 1
+
 int
-GMF::RetrieveWinds_CoastSpecial(
+GMF::RetrieveWinds_HurrSp1(
     MeasList*  meas_list,
     Kp*        kp,
-    WVC*       wvc,
-    int        s4_flag)
-{
-  objectiveFunctionMethod=1; // make sure it uses weights in wind retrieval
+    WVC*       wvc){
+  objectiveFunctionMethod=2; // use priors
+  //objectiveFunctionMethod=1; // don't use priors
   SetCBandWeight(0);
   Meas* m=meas_list->GetHead();
   while(m){
@@ -5739,18 +5663,101 @@ GMF::RetrieveWinds_CoastSpecial(
     if(USE_CORRECTED){
       thresh=S0_CORR_LANDCORR_THRESH;
       m->value=m->value-m->EnSlice;
+      
     }
-    if(m->EnSlice>=thresh){
+    if(fabs(m->EnSlice)>=thresh){
       m=meas_list->RemoveCurrent();
       delete m;
       m=meas_list->GetCurrent();
-    }
+    }      
     else{
       m->XK=1/(1/m->XK -1);
       m=meas_list->GetNext();
     }
   }
-  return(RetrieveWinds_S3(meas_list,kp,wvc,s4_flag));
+  if(!RetrieveWinds_S3Rain(meas_list,kp,wvc,0,wvc->nudgeWV->dir)) return(0); // raincorr
+  //if(!RetrieveWinds_GS(meas_list,kp,wvc,0,wvc->nudgeWV->dir)) return(0); // no raincorr priors
+  //if(!RetrieveWinds_S3(meas_list,kp,wvc,0,wvc->nudgeWV->dir)) return(0);  // no raincorr no priors
+  if(!wvc->ambiguities.NodeCount()!=0)wvc->selected=wvc->ambiguities.GetHead();
+  return(1);
+}
+int
+GMF::RetrieveWinds_CoastSpecial(
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc,
+    int        s4_flag,
+    int        dirth_flag)
+{
+  objectiveFunctionMethod=1; // make sure it uses weights in wind retrieval
+  SetCBandWeight(0);
+  MeasList removed;
+  Meas* m=meas_list->GetHead();
+  int num_removed=0;
+  while(m){
+    double thresh=S0_FLAG_LANDCORR_THRESH;
+    if(USE_CORRECTED){
+      thresh=S0_CORR_LANDCORR_THRESH;
+      m->value=m->value-m->EnSlice;
+    }
+    if(m->EnSlice>=thresh || m->EnSlice<0){
+      m=meas_list->RemoveCurrent();
+      removed.Append(m);
+      m=meas_list->GetCurrent();
+      num_removed++;
+    }
+    // throw out all measurements half way over land regardless of lands0
+    else if(m->landFlag==1){
+      m=meas_list->RemoveCurrent();
+      removed.Append(m);
+      m=meas_list->GetCurrent();  
+      num_removed++;
+    }
+    
+    else{
+      m->XK=1/(1/m->XK -1);
+      m=meas_list->GetNext();
+    }
+  }
+  // near land throw some measurements further away from land 
+  if(num_removed){
+    LonLat latlon=removed.AverageLonLat();
+    EarthPosition e;
+    e.SetAltLonGDLat(0,latlon.longitude,latlon.latitude);
+    float d[1000]; // that should be big enough
+    int i=0;
+    for(m=meas_list->GetHead();m;m=meas_list->GetNext()){
+      d[i]=e.SurfaceDistance(m->centroid);
+      i++;
+    }
+    sort_increasing(d,i);
+    float dthresh=d[3];
+    if(i>4+num_removed) dthresh=d[i-num_removed-1];
+    if(meas_list->NodeCount()>1){
+      i=0;
+      m=meas_list->GetHead();
+      while(m){
+	if(d[i]>dthresh){
+	  m=meas_list->RemoveCurrent();
+	  removed.Append(m);
+	  m=meas_list->GetCurrent();  
+	}
+	else{
+	  m=meas_list->GetNext();
+	}
+	i++;
+      }
+    }
+    removed.FreeContents();
+  }
+  int retval=0;
+  if(dirth_flag) retval = RetrieveWinds_S3(meas_list,kp,wvc,s4_flag);
+  else retval=RetrieveWinds_GS(meas_list,kp,wvc);
+  
+  for(m=meas_list->GetHead();m;m=meas_list->GetNext()){
+    m->XK=1/((1/m->XK)+1);
+  }
+  return(retval);
 }
 //-----------------------//
 // GMF::RetrieveWinds_S3 //
@@ -5764,7 +5771,8 @@ GMF::RetrieveWinds_S3(
     MeasList*  meas_list,
     Kp*        kp,
     WVC*       wvc,
-    int        s4_flag)
+    int        s4_flag,
+    float prior_dir)
 {
     //--------------------------------//
     // generate coarse solution curve //
@@ -5772,8 +5780,8 @@ GMF::RetrieveWinds_S3(
 
     if (_phiCount != H2_PHI_COUNT)
         SetPhiCount(H2_PHI_COUNT);
-    Calculate_Init_Wind_Solutions(meas_list, kp, wvc);
-    Optimize_Wind_Solutions(meas_list, kp, wvc);
+    Calculate_Init_Wind_Solutions(meas_list, kp, wvc,0,prior_dir);
+    Optimize_Wind_Solutions(meas_list, kp, wvc,prior_dir);
     if (! CopyBuffersGSToPE())
         return(0);
     wvc->Rank_Wind_Solutions();
