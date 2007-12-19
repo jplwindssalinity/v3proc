@@ -100,6 +100,8 @@ OBJS = \
 	Metrics.o \
 	Misc.o \
 	MiscTable.o \
+	MLP.o \
+	MLPData.o\
 	PMeas.o \
 	PointList.o \
 	PointTargetResponseTable.o \
