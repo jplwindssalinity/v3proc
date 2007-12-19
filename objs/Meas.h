@@ -167,7 +167,7 @@ public:
     // info //
     //------//
 
-    LonLat  AverageLonLat();
+    LonLat  AverageLonLat(int wtbyXK=0);
 
     //---------//
     // freeing //

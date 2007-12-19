@@ -704,13 +704,19 @@ MeasList::ReadL2AHdfCell(
 //-------------------------//
 
 LonLat
-MeasList::AverageLonLat()
+MeasList::AverageLonLat(int wtbyXK)
 {
     EarthPosition sum;
     sum.SetPosition(0.0, 0.0, 0.0);
     for (Meas* meas = GetHead(); meas; meas = GetNext())
     {
+   
+      if(wtbyXK){
+        sum += meas->centroid*meas->XK;
+      }
+      else{
         sum += meas->centroid;
+      }
     }
 
     // The center of the earth is at 0,0,0 (geocentric coords)
@@ -1193,6 +1199,12 @@ MeasSpotList::UnpackL1BHdfCoastal(
         spot_centroid.GetAltLonGDLat(&spcalt,&spclon,&spclat);
 
        
+	//#define MIN_SPCLAT (23*dtr)
+	//#define MAX_SPCLAT (32*dtr)
+
+	//#define MIN_SPCLON (267*dtr)
+	//#define MAX_SPCLON (276*dtr)
+
 #define MIN_SPCLAT (33.5*dtr)
 #define MAX_SPCLAT (40.5*dtr)
 
@@ -1368,6 +1380,8 @@ MeasSpotList::UnpackL1BHdfCoastal(
           double dy=(ymax-ymin)/nysteps;
 	  // debug tools
           // printf("dbbfdx %g xmin %g xmax %g \n ",dbbfdx,xmin,xmax);
+
+          double sumg=0;
 	  for(int ix=0;ix<nxsteps;ix++){
 	    for(int iy=0;iy<nysteps;iy++){
 	      float x=xmin+dx/2 + dx*ix;
@@ -1425,8 +1439,15 @@ MeasSpotList::UnpackL1BHdfCoastal(
 	      }
 
 	      gain[im][ix][iy]=dW;
+	      sumg+=dW;
 	    }
 	  }
+	  for(int ix=0;ix<nxsteps;ix++){
+	    for(int iy=0;iy<nysteps;iy++){
+	      gain[im][ix][iy]/=sumg;
+	    }
+	  }
+	  
           //printf("%g %d %d %g %g %g %g\n",meas->scanAngle*rtd,meas->beamIdx,meas->startSliceIdx,sum,(sum/meas->XK),meas->XK,df);
           //fflush(stdout);
           meas->EnSlice/=meas->XK;
