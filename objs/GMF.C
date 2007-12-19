@@ -5408,7 +5408,8 @@ int
 GMF::RetrieveWinds_S3Rain(
     MeasList*  meas_list,
     Kp*        kp,
-    WVC*       wvc)
+    WVC*       wvc,
+    float      prior_dir)
 {
   //float astep=0.02;
   float astep=0.1;
@@ -5449,7 +5450,7 @@ GMF::RetrieveWinds_S3Rain(
  
   WVC* wvcout = wvc;
   wvc=new WVC;
-  if(!RetrieveWinds_S3(&ml2,kp,wvc,0)){
+  if(!RetrieveWinds_S3(&ml2,kp,wvc,0,prior_dir)){
     ml2.FreeContents();
     return(0);
   }  
@@ -5540,7 +5541,7 @@ GMF::RetrieveWinds_S3Rain(
     wvc=new WVC;
     if (_phiCount != H2_PHI_COUNT)
       SetPhiCount(H2_PHI_COUNT);
-    Calculate_Init_Wind_Solutions(&ml2, kp, wvc);
+    Calculate_Init_Wind_Solutions(&ml2, kp, wvc,prior_dir);
     if(!CopyBuffersGSToPE()){
       ml2.FreeContents();
       fprintf(stderr,"Warning: copyBuffersGSToPE failed during rain estimation");
@@ -5636,10 +5637,10 @@ GMF::RetrieveWinds_S3Rain(
       else m=ml2.GetNext();
     }
   }
-  if(!RetrieveWinds_S3(&ml2,kp,wvc,0)){
+  if(!RetrieveWinds_S3(&ml2,kp,wvc,0,prior_dir)){
     ml2.FreeContents();
     return(0);
->>>>>>> 3.74
+
   }
   // put chosen AHku value into wvc
   wvc->rainProb=Aold[0];
@@ -5675,7 +5676,7 @@ GMF::RetrieveWinds_HurrSp1(
       m=meas_list->GetNext();
     }
   }
-  if(!RetrieveWinds_S3Rain(meas_list,kp,wvc,0,wvc->nudgeWV->dir)) return(0); // raincorr
+  if(!RetrieveWinds_S3Rain(meas_list,kp,wvc,wvc->nudgeWV->dir)) return(0); // raincorr
   //if(!RetrieveWinds_GS(meas_list,kp,wvc,0,wvc->nudgeWV->dir)) return(0); // no raincorr priors
   //if(!RetrieveWinds_S3(meas_list,kp,wvc,0,wvc->nudgeWV->dir)) return(0);  // no raincorr no priors
   if(!wvc->ambiguities.NodeCount()!=0)wvc->selected=wvc->ambiguities.GetHead();

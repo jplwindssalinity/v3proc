@@ -114,7 +114,7 @@ public:
 			    int s4_flag = 0,float prior_dir=0);
     int    RetrieveWinds_CoastSpecial(MeasList* meas_list, Kp* kp, WVC* wvc,
 				      int s4_flag = 0, int dirth_flag=1);
-    int    RetrieveWinds_S3Rain(MeasList* meas_list, Kp* kp, WVC* wvc, int dirth_flag=1,float prior_dir=0);
+    int    RetrieveWinds_S3Rain(MeasList* meas_list, Kp* kp, WVC* wvc,float prior_dir=0);
     int    RetrieveWinds_HurrSp1(MeasList* meas_list, Kp* kp, WVC* wvc);
     int    BuildDirectionRanges(WVC* wvc, float threshold);
     int    BuildDirectionRangesByMSE(WVC* wvc, float threshold);
