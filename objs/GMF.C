@@ -2132,6 +2132,9 @@ GMF::_ObjectiveFunction(
         case 2:
 	    fv = _ObjectiveFunctionMeasVar(meas_list, spd, phi, kp);
             break;
+        case 3:
+	    fv = _ObjectiveFunctionMeasVarWt(meas_list, spd, phi, kp);
+            break;
         default:
             fv = _ObjectiveFunctionOld(meas_list, spd, phi, kp);
             break;       
@@ -2320,7 +2323,7 @@ GMF::_ObjectiveFunctionMeasVar(
             &trial_value);
 
 	// HACK uses EnSlice as A (rain atten) and bandwidth as B (rain BackSc)
-	trial_value=trial_value*meas->EnSlice + meas->bandwidth;
+//	trial_value=trial_value*meas->EnSlice + meas->bandwidth;
 
         //------------------------------------------------------------//
         // find the difference between the trial and measured sigma-0 //
@@ -2444,6 +2447,171 @@ GMF::_ObjectiveFunctionNew(
     //   printf("Norm %g\n",num/sumwt);
     
     return(-fv*num/sumwt);
+}
+
+float
+GMF::_ObjectiveFunctionMeasVarWt(
+    MeasList*  meas_list,
+    float      spd,
+    float      phi,
+    Kp*        kp)
+{
+    //-----------------------------------------//
+    // initialize the objective function value //
+    //-----------------------------------------//
+
+    float fv = 0.0;
+    float sumwt = 0.0;
+    float num = 0.0;
+
+    // estimate variances from measurements
+    float varest[8]={0,0,0,0,0,0,0,0};
+    float meanest[8]={0,0,0,0,0,0,0,0};
+    int nmeas[8]={0,0,0,0,0,0,0,0};
+    int nc = meas_list->NodeCount();
+    int* look_idx = new int[nc];
+    Meas* meas = meas_list->GetHead();
+    for (int c = 0; c < nc; c++)
+    {
+        switch (meas->measType)
+        {
+        case Meas::HH_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      look_idx[c] = 0;
+
+            else
+                look_idx[c] = 1;
+            break;
+        case Meas::VV_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                look_idx[c] = 2;
+            else
+                look_idx[c] = 3;
+            break;
+        case Meas::C_BAND_HH_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                look_idx[c] = 4;
+            else
+                look_idx[c] = 5;
+            break;
+        case Meas::C_BAND_VV_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                look_idx[c] = 6;
+            else
+                look_idx[c] = 7;
+            break;
+        default:
+            look_idx[c] = -1;
+            break;
+        }
+        if (look_idx[c] >= 0)
+        {
+            varest[look_idx[c]] += meas->value*meas->value;
+            meanest[look_idx[c]] += meas->value;
+            nmeas[look_idx[c]]++;
+        }
+        meas = meas_list->GetNext();
+    }
+    for(int i=0;i<8;i++){
+      meanest[i]/=nmeas[i];
+      varest[i]=(varest[i]-nmeas[i]*meanest[i]*meanest[i])/(nmeas[i]-1);
+    }
+
+    //-------------------------//
+    // for each measurement... //
+    //-------------------------//
+    delete look_idx;
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+        //---------------------------------------//
+        // get sigma-0 for the trial wind vector //
+        //---------------------------------------//
+      int lidx=-1;
+        switch (meas->measType)
+        {
+        case Meas::HH_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      lidx = 0;
+
+            else
+                lidx = 1;
+            break;
+        case Meas::VV_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                lidx = 2;
+            else
+                lidx = 3;
+            break;
+        case Meas::C_BAND_HH_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                lidx = 4;
+            else
+                lidx = 5;
+            break;
+        case Meas::C_BAND_VV_MEAS_TYPE:
+            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                lidx = 6;
+            else
+                lidx = 7;
+            break;
+        default:
+            lidx = -1;
+            break;
+        }
+        float chi = phi - meas->eastAzimuth + pi;
+        float trial_value;
+        GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
+            &trial_value);
+
+	// HACK uses EnSlice as A (rain atten) and bandwidth as B (rain BackSc)
+//	trial_value=trial_value*meas->EnSlice + meas->bandwidth;
+
+        //------------------------------------------------------------//
+        // find the difference between the trial and measured sigma-0 //
+        //------------------------------------------------------------//
+
+        // Sanity check on measurement
+        double tmp=meas->value;
+        if (! finite(tmp))
+            continue;
+
+        float s = trial_value - meas->value;
+
+        float t = meas->XK;
+        float wt = 1.0/(1.0 + (1.0/t));
+
+        float wt1=kuBandWeight;
+	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE || 
+	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
+	  wt1=cBandWeight;
+	}
+
+        wt *= wt1;
+        sumwt += wt;     // sum weights for renormalization
+        num += 1;        // count good measurements
+
+        //-------------------------------------------------------//
+        // calculate the expected variance for the trial sigma-0 //
+        //-------------------------------------------------------//
+
+        float var = varest[lidx];
+        if(nmeas[lidx]==1)var=0.1; // downweights singleton measmts
+        if (var == 0.0)
+        {
+            // variances all turned off, so use uniform weighting.
+            fv += wt*s*s;
+        }
+        else if (retrieveUsingLogVar)
+        {
+            fv += wt*s*s / var + wt*log(var);
+        }
+        else
+        {
+            fv += wt*s*s / var;
+        }
+	//printf("fv %g wt %g s %g var %g A %g B %g\n",fv,wt,s,var,meas->EnSlice,meas->bandwidth);
+    }
+    return(-fv);
 }
 
 //-------------------------//

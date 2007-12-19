@@ -185,6 +185,7 @@ public:
     float  _ObjectiveFunctionOld(MeasList* meas_list, float u, float phi, Kp* kp);
     float  _ObjectiveFunctionNew(MeasList* meas_list, float u, float phi, Kp* kp);
     float  _ObjectiveFunctionMeasVar(MeasList* meas_list, float u, float phi, Kp* kp);
+    float  _ObjectiveFunctionMeasVarWt(MeasList* meas_list, float u, float phi, Kp* kp);
     float  _ObjectiveFunctionFixedTrial(MeasList* meas_list, float u, float phi, Kp* kp, float fixed_sigma0);
     int    _ObjectiveToProbability(float scale, int radius);
 
