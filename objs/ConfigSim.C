@@ -564,6 +564,7 @@ ConfigYahyaAntenna(
     YahyaAnt->SetTheta0(theta0);
     YahyaAnt->SetDisp(disp);
     YahyaAnt->SetBlockage(blockage);
+    return(1);
 }
 
 //---------------//
@@ -1288,6 +1289,17 @@ ConfigL2AToL2B(
 
     config_list->DoNothingForMissingKeywords();
     
+        if (! config_list->GetInt("NEURAL_NET_TRAIN_ATI", &tmp_int))
+	  l2a_to_l2b->ann_train_ati=0;
+        else l2a_to_l2b->ann_train_ati=tmp_int;
+	if (! config_list->GetFloat(INCLINATION_KEYWORD, &tmp_float))
+	  l2a_to_l2b->orbitInclination=0;
+        else l2a_to_l2b->orbitInclination=tmp_float*pi/180;
+
+	if (! config_list->GetFloat("NEURAL_NET_TRAIN_DIRECTION_OFFSET", &tmp_float))
+	  l2a_to_l2b->ann_train_diroff=0;
+        else l2a_to_l2b->ann_train_diroff=tmp_float*pi/180;
+
         if (! config_list->GetInt(USE_SIGMA0_SPATIAL_WEIGHTS_KEYWORD, &tmp_int))
             return(0);
         l2a_to_l2b->useSigma0Weights = tmp_int;
@@ -1316,13 +1328,24 @@ ConfigL2AToL2B(
     if (use_nudging)
     {
         //------------------------//
-        // configure nudging flag //
+        // configure nudging flags //
         //------------------------//
 
         if (! config_list->GetInt(SMART_NUDGE_FLAG_KEYWORD, &tmp_int))
             return(0);
         l2a_to_l2b->smartNudgeFlag = tmp_int;
 
+        config_list->DoNothingForMissingKeywords();
+        if (! config_list->GetInt("ARRAY_NUDGING", &tmp_int))
+	  tmp_int=0;
+        l2a_to_l2b->arrayNudgeFlag = tmp_int;
+
+        if(l2a_to_l2b->arrayNudgeFlag && l2a_to_l2b->smartNudgeFlag){
+	  fprintf(stderr,"Use either SMART or ARRAY nudging but not both!\n");
+	  exit(1);
+	}
+
+        config_list->ExitForMissingKeywords();
         //-----------------------//
         // configure nudge field //
         //-----------------------//
@@ -1371,6 +1394,9 @@ ConfigL2AToL2B(
             l2a_to_l2b->nudgeVctrField.latMin*=dtr;
             if (! l2a_to_l2b->nudgeVctrField.ReadVctr(nudge_windfield))
                 return(0);
+        }
+        else if(l2a_to_l2b->arrayNudgeFlag){
+	  l2a_to_l2b->ReadNudgeArray(nudge_windfield);
         }
         else
         {

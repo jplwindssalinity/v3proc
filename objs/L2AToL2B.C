@@ -11,7 +11,12 @@ static const char rcs_id_l2atol2b_c[] =
 #include "L2AToL2B.h"
 #include "Constants.h"
 #include "Misc.h"
-
+#include "MLPData.h"
+#include "MLP.h"
+#include "Interpolate.h"
+#include "Wind.h"
+#include "Array.h"
+#define NOMINAL_TRACK_LENGTH (1624*25)
 //==========//
 // L2AToL2B //
 //==========//
@@ -22,14 +27,63 @@ L2AToL2B::L2AToL2B()
     smartNudgeFlag(0), wrMethod(GS), useNudgeThreshold(0), useNMF(0),
     useRandomInit(0), useNudgeStream(0), onePeakWidth(0.0), twoPeakSep(181.0),
     probThreshold(0.0), streamThreshold(0.0), useHurricaneNudgeField(0),
-    hurricaneRadius(0), useSigma0Weights(0), sigma0WeightCorrLength(25.0)
+    hurricaneRadius(0), useSigma0Weights(0), sigma0WeightCorrLength(25.0), 
+    arrayNudgeFlag(0), arrayNudgeSpd(NULL),arrayNudgeDir(NULL)
 {
     return;
 }
 
 L2AToL2B::~L2AToL2B()
 {
+  if(arrayNudgeSpd){
+    free_array(arrayNudgeSpd,2,arrayNudgeNati,arrayNudgeNcti);
+    free_array(arrayNudgeDir,2,arrayNudgeNati,arrayNudgeNcti);
+    arrayNudgeSpd=NULL;
+    arrayNudgeDir=NULL;
+  }
     return;
+}
+
+int
+L2AToL2B::ReadNudgeArray(char* filename){
+  FILE * ifp=fopen(filename,"r");
+  if(ifp==NULL){
+    fprintf(stderr,"L2AToL2B::ReadNudgeArray cannot open file %s\n",filename);
+    exit(1);
+  }
+  int ati1;
+  int nati,ncti;
+  if( !fread(&ati1,sizeof(int),1,ifp)==1 ||
+      !fread(&nati,sizeof(int),1,ifp)==1 ||
+      !fread(&ncti,sizeof(int),1,ifp)==1 ){
+    fprintf(stderr,"L2AToL2B::ReadNudgeArray error reading file %s\n",filename);
+    exit(1);
+  }
+  arrayNudgeNcti=ncti;
+  arrayNudgeNati=nati+ati1;
+  if(arrayNudgeSpd!=NULL){
+    fprintf(stderr,"L2AToL2B::ReadNudgeArray ran twice!\n");
+    exit(1);
+  }
+  arrayNudgeSpd=(float**) make_array(sizeof(float),2,arrayNudgeNati,arrayNudgeNcti);
+  arrayNudgeDir=(float**) make_array(sizeof(float),2,arrayNudgeNati,arrayNudgeNcti);
+  
+  for(int a=0;a<arrayNudgeNati;a++){
+    for(int c=0;c<arrayNudgeNcti;c++){
+      arrayNudgeSpd[a][c]=-1;
+      arrayNudgeDir[a][c]=0;
+    }
+  }
+  if( ! read_array(ifp,&arrayNudgeSpd[ati1],sizeof(float),2,nati,ncti) ||
+      ! read_array(ifp,&arrayNudgeDir[ati1],sizeof(float),2,nati,ncti)){
+
+    fprintf(stderr,"L2AToL2B::ReadNudgeArray error reading arrays from file %s\n",filename);
+    exit(1);
+ 
+  }
+
+
+  return(1);
 }
 
 //----------------------------------//
@@ -121,6 +175,1447 @@ L2AToL2B::SetWindRetrievalMethod(
     else
         return(0);
 }
+
+
+#define OMIT_VAR_IN_ANN 0
+#define USE_CTD_INPUT 2
+//---------------------------//
+// L2AToL2B::NeuralNetRetrieve//
+//---------------------------//
+// retrieve using a neural network
+ float  
+
+ 
+ L2AToL2B::NeuralNetRetrieve(L2A* l2a, L2B* l2b, MLPDataArray* spdnet, MLPDataArray* dirnet, GMF* gmf, Kp* kp, int need_all_looks){
+
+    
+    gmf->objectiveFunctionMethod=0;
+    MeasList* meas_list = &(l2a->frame.measList);
+
+    if(arrayNudgeFlag & l2b->frame.swath.GetCrossTrackBins()!=arrayNudgeNcti){
+      fprintf(stderr,"Resolution mismatch between Nudge Array and L2B swath\n");
+      exit(1);
+    }
+ 
+
+    //-----------------------------------//
+    // check for missing wind field data //
+    //-----------------------------------//
+    // this should be handled by some kind of a flag!
+
+    int any_zero = 0;
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+        if (! meas->value)
+        {
+            any_zero = 1;
+            break;
+        }
+    }
+    if (any_zero)
+    {
+        return(-1);
+    }
+    //-----------------------------------//
+    // check for wind retrieval criteria //
+    //-----------------------------------//
+
+    if (! gmf->CheckRetrieveCriteria(meas_list))
+    {
+        return(-1);
+    }
+
+
+    if (useSigma0Weights == 1)
+    {
+        gmf->CalculateSigma0Weights(meas_list);
+
+        // modify the Kp C coefficient to apply the sigma0 weights to the measurements
+        float correlation_length = sigma0WeightCorrLength;       
+        for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+        {
+
+            meas->XK *= correlation_length*correlation_length;
+            
+        }
+	gmf->objectiveFunctionMethod=1;
+    }
+
+
+    //-----------------//
+    // Get Nudge Field //
+    //-----------------//
+
+    WVC* wvc = new WVC();
+    float ctd, speed;
+    wvc->lonLat=meas_list->AverageLonLat();
+    wvc->nudgeWV=new WindVectorPlus;
+    if(smartNudgeFlag){
+      if (! nudgeVctrField.InterpolateVectorField(wvc->lonLat,
+						  wvc->nudgeWV,0))
+	  {
+	    delete wvc->nudgeWV;
+	    wvc->nudgeWV=NULL;
+	    delete wvc;
+	    return(-1);
+	  }
+    }
+    else if ( arrayNudgeFlag){
+      if(l2a->frame.ati>=arrayNudgeNati){
+	    delete wvc->nudgeWV;
+	    wvc->nudgeWV=NULL;
+	    delete wvc;
+	    return(-1);
+      }
+      float nspd=arrayNudgeSpd[l2a->frame.ati][l2a->frame.cti];
+      if(nspd<0){
+	    delete wvc->nudgeWV;
+	    wvc->nudgeWV=NULL;
+	    delete wvc;
+	    return(-1);
+      }
+      else{
+        wvc->nudgeWV->spd=nspd;
+        wvc->nudgeWV->dir=arrayNudgeDir[l2a->frame.ati][l2a->frame.cti];
+      }
+    }
+    else if (! nudgeField.InterpolatedWindVector(wvc->lonLat,
+						 wvc->nudgeWV))
+	  {
+	    delete wvc->nudgeWV;
+	    wvc->nudgeWV=NULL;
+	    delete wvc;
+	    return(-1);
+	  }
+    // determine nudge wind direction relative to swath
+    float diroff=GetNeuralDirectionOffset(l2a); 
+    float reldir=diroff+wvc->nudgeWV->dir; 
+    while(reldir<0)reldir+=2*pi;
+    while(reldir>2*pi)reldir-=2*pi;
+    //--------------------------
+    // compute speed assuming nudge direction is correct
+    //---------------------------
+    //ctd = (l2a->frame.cti - l2a->header.zeroIndex) *
+    //l2a->header.crossTrackResolution;
+    ctd=(l2a->frame.cti+0.5)*l2a->header.crossTrackResolution-950.0;
+
+    MLP* smlp=spdnet->getMLP(reldir,ctd);
+   
+    float dummyout;
+    
+    // compute inputs to speed mlp
+    int nc = meas_list->NodeCount();
+    int nmeas[8]={0,0,0,0,0,0,0,0};
+    int look_idx=-1;
+
+    // for now we will assume if the input vector is size 16 the it has Ku and C inputs
+    // if it is size 8 it has Ku-only
+    int nlooks=(spdnet->nMLPin)-USE_CTD_INPUT;
+    if(!OMIT_VAR_IN_ANN) nlooks/=2;
+
+    float mlpinvec[18]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    float mlpinvec2[85];
+    float wtsum[8]={0,0,0,0,0,0,0,0};
+    Meas* meas = meas_list->GetHead();
+    for (int c = 0; c < nc; c++)
+      {
+	switch (meas->measType)
+	  {
+	  case Meas::HH_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+		      look_idx = 0;
+		    
+	    else
+	      look_idx = 1;
+	    break;
+	  case Meas::VV_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      look_idx = 2;
+	    else
+	      look_idx = 3;
+	    break;
+	  case Meas::C_BAND_HH_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      look_idx = 4;
+	    else
+	      look_idx = 5;
+	    break;
+	  case Meas::C_BAND_VV_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      look_idx = 6;
+	    else
+	      look_idx = 7;
+	    break;
+	  default:
+	    look_idx = -1;
+	    break;
+	  }
+        if( look_idx >= 4 && nlooks <= 4 ){
+	  fprintf(stderr,"NeuralNetRetrieve error: Speed Net too small to include C-band data\n");
+	  exit(1);
+	}  
+	if (look_idx >= 0)
+	  {
+	    if(!OMIT_VAR_IN_ANN){
+	      mlpinvec[nlooks+look_idx] += meas->value*meas->value;
+	    }
+  
+            float wt=1;
+            if(useSigma0Weights){
+	      wt=1.0/(1.0+(1.0/meas->XK));
+	    }
+	    mlpinvec[look_idx] += meas->value*wt;
+            wtsum[look_idx]+=wt;
+	    nmeas[look_idx]++;
+	  }
+	meas = meas_list->GetNext();
+      }
+    
+    
+    if(nmeas[3]==0) return(-1);
+    for(int i=0;i<nlooks;i++){
+      if(!useSigma0Weights) wtsum[i]=1;
+      else if(nmeas[i]>=1) wtsum[i]/=nmeas[i];
+      if(nmeas[i] > 1){
+	mlpinvec[i]/=wtsum[i]*nmeas[i];
+        if(!OMIT_VAR_IN_ANN){
+	  mlpinvec[i+nlooks]/=(wtsum[i]*nmeas[i]);
+	}
+      }
+      else if(nmeas[i]==0){
+        if(need_all_looks){
+	  return(-1);
+	}
+	mlpinvec[i]=0;
+        if(!OMIT_VAR_IN_ANN)
+	  mlpinvec[i+nlooks]=0.1;
+      }
+    }
+    // inpctd_case
+    if(USE_CTD_INPUT){
+      mlpinvec[spdnet->nMLPin-1]=ctd;
+    }
+    // inpctd and reldir
+    if(USE_CTD_INPUT==2){
+      mlpinvec[spdnet->nMLPin-2]=reldir;
+    }
+
+    smlp->Forward(&dummyout,mlpinvec);
+    speed=smlp->outp[0];
+
+ 
+    // compute best speed array
+    _phiCount=72; // It uses all 72 even if the neural net array is smaller
+    float phistep=2*pi/_phiCount;
+    wvc->directionRanges.dirIdx.SpecifyWrappedCenters(0, 2*pi, _phiCount);
+    wvc->directionRanges.bestObj = (float*)malloc(sizeof(float)*_phiCount);
+    wvc->directionRanges.bestSpd = (float*)malloc(sizeof(float)*_phiCount);
+    for(int c=0;c<_phiCount;c++){
+      float phi=(c)*phistep;
+      float reldir=phi+diroff;
+      while(reldir<0)reldir+=2*pi;
+      while(reldir>2*pi)reldir-=2*pi;
+      smlp=spdnet->getMLP(reldir,ctd);
+      // check for reldir dependency in network
+      if(USE_CTD_INPUT==2) mlpinvec[spdnet->nMLPin-2]=reldir;
+      smlp->Forward(&dummyout,mlpinvec);
+      wvc->directionRanges.bestSpd[c]=smlp->outp[0];
+    }
+    if (useSigma0Weights == 1){
+        float cwt;
+  
+        // network does not include c-band inputs
+	if(nlooks<=4) cwt=0;
+   
+        // no C-band measurements in file
+        else if(nmeas[4]==0 && nmeas[5]==0 && nmeas[6]==0 && nmeas[7]==0){
+	  cwt=0;
+	}
+        else{
+	  cwt=0.5;   // weights them equally for now.. Need to talk to Scott about this....
+	}
+        gmf->SetCBandWeight(cwt); // only used if dirnet is NULL, not used to compute speed
+    }
+
+    float* _bestObj=wvc->directionRanges.bestObj;
+    float* _bestSpd = wvc->directionRanges.bestSpd;
+    if(dirnet!=NULL){
+      MLP* dmlp;
+      double sumprob=0;
+      // compute directional probabilities
+      for(int c=0;c<_phiCount;c++){
+	float phi=(c)*phistep;
+	float reldir=phi+diroff;
+	while(reldir<0)reldir+=2*pi;
+	while(reldir>2*pi)reldir-=2*pi;
+	dmlp=dirnet->getMLP(reldir,ctd);
+	// check for reldir dependency in network
+	if(USE_CTD_INPUT) mlpinvec[spdnet->nMLPin-2]=reldir;
+	dmlp->Forward(&dummyout,mlpinvec);
+        
+        double prob=dmlp->outp[0];
+	if(prob<0) prob=0;
+        prob=pow(prob,2.0);
+        sumprob+=prob;
+	wvc->directionRanges.bestObj[c]=prob;
+# define DEBUGANDSTOP 0
+        
+
+      }
+      if(l2a->frame.cti==20 && DEBUGANDSTOP){
+	     fprintf(stderr,"     Best_obj (from network directly)   = \n");
+	     for (int c=0;c<_phiCount/8;c++){
+	       int i=8*c;
+	       float* x = _bestObj;
+	       float k= 1;
+	       fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		       k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+	     }
+	     exit(1);
+      }      
+      for(int c=0;c<_phiCount;c++){
+	wvc->directionRanges.bestObj[c]/=sumprob;
+	if(wvc->directionRanges.bestObj[c]<=0) wvc->directionRanges.bestObj[c]=-99;
+	else wvc->directionRanges.bestObj[c]=2*log(wvc->directionRanges.bestObj[c]);
+      }
+    }
+    // if dirnet is null compute directional probabilites directly from speeds
+    else{
+      for(int c=0;c<_phiCount;c++){
+	float phi=c*2*pi/_phiCount;
+	wvc->directionRanges.bestObj[c]=gmf->_ObjectiveFunction(meas_list,wvc->directionRanges.bestSpd[c],phi,kp,0);
+       } 
+    }  
+ 
+    float sum = 0.0;
+    float scale = _bestObj[0];
+    for (int c = 1; c < _phiCount; c++)
+      {
+	if (scale < _bestObj[c])
+	  scale = _bestObj[c];
+      }
+    for (int c = 0; c < _phiCount; c++)
+      {
+	_bestObj[c] = exp((_bestObj[c] -  scale) / 2);
+	sum += _bestObj[c];
+      }
+    for (int c = 0; c < _phiCount; c++)
+	{
+	  _bestObj[c] /= sum;
+	}
+    int DEBUG = 0;
+    int PRINTALLINPUTS=0;
+    if(DEBUG && PRINTALLINPUTS){
+      for(int k=0;k<spdnet->nMLPin;k++) printf("%g ",mlpinvec[k]);
+      printf("%g\n",wvc->nudgeWV->spd);
+    }
+    if(l2a->frame.cti==67 && l2a->frame.ati==1475) DEBUG=1;
+    if(DEBUG){
+      fprintf(stderr,"   Before MakeAmbigs-----------\n");
+      fprintf(stderr,"     speed=%g nudgevctr(spd,dir)=(%g,%g)\n",
+	      speed, wvc->nudgeWV->spd, wvc->nudgeWV->dir*180/pi);
+      fprintf(stderr,"     MLPINVEC   = %g %g %g %g %g\n",
+	      mlpinvec[0],mlpinvec[1],mlpinvec[2],mlpinvec[3],mlpinvec[4]);
+
+      fprintf(stderr,"     Best_spd   = \n");
+      for (int c=0;c<_phiCount/8;c++){
+	int i=8*c;
+	float* x = _bestSpd;
+        float k= 1;
+	  fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		  k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+      }
+      fprintf(stderr,"     Best_obj (percent)   = \n");
+      for (int c=0;c<_phiCount/8;c++){
+	int i=8*c;
+	float* x = _bestObj;
+        float k= 100;
+	  fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		  k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+      }
+    }
+    MakeAmbigsFromDirectionArrays(wvc,0);
+    if(DEBUG){
+      fprintf(stderr,"   After MakeAmbigs before BuildDirectionRanges-----------\n");
+      fprintf(stderr,"     Best_spd   = \n");
+      for (int c=0;c<_phiCount/8;c++){
+	int i=8*c;
+	float* x = _bestSpd;
+        float k= 1;
+	  fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		  k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+      }
+      fprintf(stderr,"     Best_obj (percent)   = \n");
+      for (int c=0;c<_phiCount/8;c++){
+	int i=8*c;
+	float* x = _bestObj;
+        float k= 100;
+	fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+      }
+      fprintf(stderr,"     Ambiguities        = \n");
+      for(int i=0;i<wvc->ambiguities.NodeCount();i++){
+	WindVectorPlus* wvp=wvc->ambiguities.GetByIndex(i);
+	fprintf(stderr,"      #%d spd=%g dir=%g obj=%g\n",
+		i,wvp->spd,wvp->dir*180/pi,wvp->obj);     
+      }
+    }
+    BuildDirectionRanges(wvc, 0.8);// uses 80% threshold 
+    if(DEBUG){
+      fprintf(stderr,"   After BuildDirectionRanges-----------\n");
+      fprintf(stderr,"     Best_spd   = \n");
+      for (int c=0;c<_phiCount/8;c++){
+	int i=8*c;
+	float* x = _bestSpd;
+        float k= 1;
+	  fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		  k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+      }
+      fprintf(stderr,"     Best_obj (percent)   = \n");
+      for (int c=0;c<_phiCount/8;c++){
+	int i=8*c;
+	float* x = _bestObj;
+        float k= 100;
+	fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+      }
+      fprintf(stderr,"     Ambiguities        = \n");
+      for(int i=0;i<wvc->ambiguities.NodeCount();i++){
+	WindVectorPlus* wvp=wvc->ambiguities.GetByIndex(i);
+        AngleInterval* ai=wvc->directionRanges.GetByIndex(i);
+	fprintf(stderr,"      #%d spd=%g dir=%g obj=%g left=%g right=%g\n",
+		i,wvp->spd,wvp->dir*180/pi,wvp->obj,ai->left*180/pi,ai->right*180/pi);     
+      }
+    }
+    if(DEBUG){
+      WindVectorPlus* wvp=wvc->ambiguities.GetByIndex(0);
+      if(wvp){
+	fprintf(stderr,"%d %g %g %g %g %g %g %g\n",l2a->frame.ati, wvc->nudgeWV->dir*180/pi, wvp->dir*180/pi,ANGDIF(wvc->nudgeWV->dir,wvp->dir)*180/pi,diroff,wvc->nudgeWV->spd,wvp->spd,speed);
+	       }
+    }
+    l2b->frame.swath.Add(l2a->frame.cti,l2a->frame.ati,wvc);
+    return(speed);
+
+ }
+
+
+//---------------------------//
+// L2AToL2B::HybridNeuralNetRetrieve//
+//---------------------------//
+// retrieve using a neural network Dirnet estimates "trues0s" used to get obj
+ float  
+
+ 
+ L2AToL2B::HybridNeuralNetRetrieve(L2A* l2a, L2B* l2b, MLPDataArray* spdnet, MLPDataArray* dirnet, GMF* gmf, Kp* kp, int need_all_looks){
+
+    
+    gmf->objectiveFunctionMethod=0;
+    MeasList* meas_list = &(l2a->frame.measList);
+
+    if(arrayNudgeFlag & l2b->frame.swath.GetCrossTrackBins()!=arrayNudgeNcti){
+      fprintf(stderr,"Resolution mismatch between Nudge Array and L2B swath\n");
+      exit(1);
+    }
+ 
+
+    //-----------------------------------//
+    // check for missing wind field data //
+    //-----------------------------------//
+    // this should be handled by some kind of a flag!
+
+    int any_zero = 0;
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+        if (! meas->value)
+        {
+            any_zero = 1;
+            break;
+        }
+    }
+    if (any_zero)
+    {
+        return(-1);
+    }
+    //-----------------------------------//
+    // check for wind retrieval criteria //
+    //-----------------------------------//
+
+    if (! gmf->CheckRetrieveCriteria(meas_list))
+    {
+        return(-1);
+    }
+
+
+    if (useSigma0Weights == 1)
+    {
+        gmf->CalculateSigma0Weights(meas_list);
+
+        // modify the Kp C coefficient to apply the sigma0 weights to the measurements
+        float correlation_length = sigma0WeightCorrLength;       
+        for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+        {
+
+            meas->XK *= correlation_length*correlation_length;
+            
+        }
+	gmf->objectiveFunctionMethod=1;
+    }
+
+
+    //-----------------//
+    // Get Nudge Field //
+    //-----------------//
+
+    WVC* wvc = new WVC();
+    float ctd, speed;
+    wvc->lonLat=meas_list->AverageLonLat();
+    wvc->nudgeWV=new WindVectorPlus;
+    if(smartNudgeFlag){
+      if (! nudgeVctrField.InterpolateVectorField(wvc->lonLat,
+						  wvc->nudgeWV,0))
+	  {
+	    delete wvc->nudgeWV;
+	    wvc->nudgeWV=NULL;
+	    delete wvc;
+	    return(-1);
+	  }
+    }
+    else if ( arrayNudgeFlag){
+      if(l2a->frame.ati>=arrayNudgeNati){
+	    delete wvc->nudgeWV;
+	    wvc->nudgeWV=NULL;
+	    delete wvc;
+	    return(-1);
+      }
+      float nspd=arrayNudgeSpd[l2a->frame.ati][l2a->frame.cti];
+      if(nspd<0){
+	    delete wvc->nudgeWV;
+	    wvc->nudgeWV=NULL;
+	    delete wvc;
+	    return(-1);
+      }
+      else{
+        wvc->nudgeWV->spd=nspd;
+        wvc->nudgeWV->dir=arrayNudgeDir[l2a->frame.ati][l2a->frame.cti];
+      }
+    }
+    else if (! nudgeField.InterpolatedWindVector(wvc->lonLat,
+						 wvc->nudgeWV))
+	  {
+	    delete wvc->nudgeWV;
+	    wvc->nudgeWV=NULL;
+	    delete wvc;
+	    return(-1);
+	  }
+    // determine nudge wind direction relative to swath
+    float diroff=GetNeuralDirectionOffset(l2a); 
+    float reldir=diroff+wvc->nudgeWV->dir; 
+    while(reldir<0)reldir+=2*pi;
+    while(reldir>2*pi)reldir-=2*pi;
+    //--------------------------
+    // compute speed assuming nudge direction is correct
+    //---------------------------
+    //ctd = (l2a->frame.cti - l2a->header.zeroIndex) *
+    //l2a->header.crossTrackResolution;
+    ctd=(l2a->frame.cti+0.5)*l2a->header.crossTrackResolution-950.0;
+
+    MLP* smlp=spdnet->getMLP(reldir,ctd);
+   
+    float dummyout;
+    
+    // compute inputs to speed mlp
+    int nc = meas_list->NodeCount();
+    int nmeas[8]={0,0,0,0,0,0,0,0};
+    int look_idx=-1;
+
+    // for now we will assume if the input vector is size 16 the it has Ku and C inputs
+    // if it is size 8 it has Ku-only
+    int nlooks=(spdnet->nMLPin)-USE_CTD_INPUT;
+    if(!OMIT_VAR_IN_ANN) nlooks/=2;
+
+    float mlpinvec[18]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    float mlpinvec2[85];
+    float eastaz[8]={0,0,0,0,0,0,0,0};
+    float inc[8]={0,0,0,0,0,0,0,0};
+    Meas::MeasTypeE mtype[8]={Meas::HH_MEAS_TYPE,Meas::HH_MEAS_TYPE,Meas::VV_MEAS_TYPE,Meas::VV_MEAS_TYPE,Meas::C_BAND_HH_MEAS_TYPE,Meas::C_BAND_HH_MEAS_TYPE,Meas::C_BAND_VV_MEAS_TYPE,Meas::C_BAND_VV_MEAS_TYPE};
+    float wtsum[8]={0,0,0,0,0,0,0,0};
+    Meas* meas = meas_list->GetHead();
+    for (int c = 0; c < nc; c++)
+      {
+	switch (meas->measType)
+	  {
+	  case Meas::HH_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+		      look_idx = 0;
+		    
+	    else
+	      look_idx = 1;
+	    break;
+	  case Meas::VV_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      look_idx = 2;
+	    else
+	      look_idx = 3;
+	    break;
+	  case Meas::C_BAND_HH_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      look_idx = 4;
+	    else
+	      look_idx = 5;
+	    break;
+	  case Meas::C_BAND_VV_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      look_idx = 6;
+	    else
+	      look_idx = 7;
+	    break;
+	  default:
+	    look_idx = -1;
+	    break;
+	  }
+        if( look_idx >= 4 && nlooks <= 4 ){
+	  fprintf(stderr,"NeuralNetRetrieve error: Speed Net too small to include C-band data\n");
+	  exit(1);
+	}  
+	if (look_idx >= 0)
+	  {
+	    if(!OMIT_VAR_IN_ANN){
+	      mlpinvec[nlooks+look_idx] += meas->value*meas->value;
+	    }
+  
+            float wt=1;
+            if(useSigma0Weights){
+	      wt=1.0/(1.0+(1.0/meas->XK));
+	    }
+	    mlpinvec[look_idx] += meas->value*wt;
+            wtsum[look_idx]+=wt;
+	    float az=meas->eastAzimuth;
+	    while(az>eastaz[look_idx]/nmeas[look_idx]+pi) az-=2*pi;
+            while(az<eastaz[look_idx]/nmeas[look_idx]-pi) az+=2*pi;
+	    nmeas[look_idx]++;
+	    eastaz[look_idx]+=az;
+            inc[look_idx]+=meas->incidenceAngle;
+	  }
+	meas = meas_list->GetNext();
+      }
+    
+    
+    if(nmeas[3]==0) return(-1);
+    for(int i=0;i<nlooks;i++){
+      if(!useSigma0Weights) wtsum[i]=1;
+      else if(nmeas[i]>=1) wtsum[i]/=nmeas[i];
+      if(nmeas[i] > 1){
+	mlpinvec[i]/=wtsum[i]*nmeas[i];
+        eastaz[i]/=nmeas[i];
+	inc[i]/=nmeas[i];
+        if(!OMIT_VAR_IN_ANN){
+	  mlpinvec[i+nlooks]/=(wtsum[i]*nmeas[i]);
+	}
+      }
+      else if(nmeas[i]==0){
+        if(need_all_looks){
+	  return(-1);
+	}
+	mlpinvec[i]=0;
+        if(!OMIT_VAR_IN_ANN)
+	  mlpinvec[i+nlooks]=0.1;
+      }
+    }
+    // inpctd_case
+    if(USE_CTD_INPUT){
+      mlpinvec[spdnet->nMLPin-1]=ctd;
+    }
+    // inpctd and reldir
+    if(USE_CTD_INPUT==2){
+      mlpinvec[spdnet->nMLPin-2]=reldir;
+    }
+
+    smlp->Forward(&dummyout,mlpinvec);
+    speed=smlp->outp[0];
+
+ 
+    // compute best speed array
+    _phiCount=72; // It uses all 72 even if the neural net array is smaller
+    float phistep=2*pi/_phiCount;
+    wvc->directionRanges.dirIdx.SpecifyWrappedCenters(0, 2*pi, _phiCount);
+    wvc->directionRanges.bestObj = (float*)malloc(sizeof(float)*_phiCount);
+    wvc->directionRanges.bestSpd = (float*)malloc(sizeof(float)*_phiCount);
+    for(int c=0;c<_phiCount;c++){
+      float phi=(c)*phistep;
+      float reldir=phi+diroff;
+      while(reldir<0)reldir+=2*pi;
+      while(reldir>2*pi)reldir-=2*pi;
+      smlp=spdnet->getMLP(reldir,ctd);
+      // check for reldir dependency in network
+      if(USE_CTD_INPUT==2) mlpinvec[spdnet->nMLPin-2]=reldir;
+      smlp->Forward(&dummyout,mlpinvec);
+      wvc->directionRanges.bestSpd[c]=smlp->outp[0];
+    }
+    if (useSigma0Weights == 1){
+        float cwt;
+  
+        // network does not include c-band inputs
+	if(nlooks<=4) cwt=0;
+   
+        // no C-band measurements in file
+        else if(nmeas[4]==0 && nmeas[5]==0 && nmeas[6]==0 && nmeas[7]==0){
+	  cwt=0;
+	}
+        else{
+	  cwt=0.5;   // weights them equally for now.. Need to talk to Scott about this....
+	}
+        gmf->SetCBandWeight(cwt); // only used if dirnet is NULL, not used to compute speed
+    }
+
+    float* _bestObj=wvc->directionRanges.bestObj;
+    float* _bestSpd = wvc->directionRanges.bestSpd;
+    if(dirnet!=NULL){
+      MLP* dmlp;
+      // compute directional probabilities
+      for(int c=0;c<_phiCount;c++){
+	float phi=(c)*phistep;
+	float reldir=phi+diroff;
+	while(reldir<0)reldir+=2*pi;
+	while(reldir>2*pi)reldir-=2*pi;
+	dmlp=dirnet->getMLP(reldir,ctd);
+	// check for reldir dependency in network
+	if(USE_CTD_INPUT) mlpinvec[spdnet->nMLPin-2]=reldir;
+        float dirinvec[3];
+        dirinvec[0]=wvc->directionRanges.bestSpd[c];
+        dirinvec[1]=reldir;
+	dirinvec[2]=ctd;
+	dmlp->Forward(&dummyout,dirinvec);
+        double obj=0.0;
+        float s0mag=0.0;
+	for(int i=0;i<nlooks;i++){
+	  s0mag+=mlpinvec[i]*mlpinvec[i];
+	}
+        s0mag=sqrt(s0mag/nlooks);
+	for(int i=0;i<nlooks;i++){
+	  if(nmeas[i]==0) continue;
+	  float ts0=dmlp->outp[i]/100.0;
+	  float s0=mlpinvec[i]/s0mag;
+          float var=0.06; // HACK this is how well the first QuikSCAT ANN
+	                     // estimated sigma0 on 090112
+	  float chi=phi-eastaz[i]+pi;
+          obj-=(ts0-s0)*(ts0-s0)/var;
+	}
+	wvc->directionRanges.bestObj[c]=obj;
+
+      }
+    }
+    // if dirnet is null compute directional probabilites directly from speeds
+    else{
+      for(int c=0;c<_phiCount;c++){
+	float phi=c*2*pi/_phiCount;
+	wvc->directionRanges.bestObj[c]=gmf->_ObjectiveFunction(meas_list,wvc->directionRanges.bestSpd[c],phi,kp,0);
+       } 
+    }  
+ 
+    float sum = 0.0;
+    float scale = _bestObj[0];
+    for (int c = 1; c < _phiCount; c++)
+      {
+	if (scale < _bestObj[c])
+	  scale = _bestObj[c];
+      }
+    for (int c = 0; c < _phiCount; c++)
+      {
+	_bestObj[c] = exp((_bestObj[c] -  scale) / 2);
+	sum += _bestObj[c];
+      }
+    for (int c = 0; c < _phiCount; c++)
+	{
+	  _bestObj[c] /= sum;
+	}
+    int DEBUG = 0;
+    int PRINTALLINPUTS=0;
+    if(DEBUG && PRINTALLINPUTS){
+      for(int k=0;k<spdnet->nMLPin;k++) printf("%g ",mlpinvec[k]);
+      printf("%g\n",wvc->nudgeWV->spd);
+    }
+    if(l2a->frame.cti==67 && l2a->frame.ati==1475) DEBUG=1;
+    if(DEBUG){
+      fprintf(stderr,"   Before MakeAmbigs-----------\n");
+      fprintf(stderr,"     speed=%g nudgevctr(spd,dir)=(%g,%g)\n",
+	      speed, wvc->nudgeWV->spd, wvc->nudgeWV->dir*180/pi);
+      fprintf(stderr,"     MLPINVEC   = %g %g %g %g %g\n",
+	      mlpinvec[0],mlpinvec[1],mlpinvec[2],mlpinvec[3],mlpinvec[4]);
+
+      fprintf(stderr,"     Best_spd   = \n");
+      for (int c=0;c<_phiCount/8;c++){
+	int i=8*c;
+	float* x = _bestSpd;
+        float k= 1;
+	  fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		  k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+      }
+      fprintf(stderr,"     Best_obj (percent)   = \n");
+      for (int c=0;c<_phiCount/8;c++){
+	int i=8*c;
+	float* x = _bestObj;
+        float k= 100;
+	  fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		  k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+      }
+    }
+    MakeAmbigsFromDirectionArrays(wvc,0);
+    if(DEBUG){
+      fprintf(stderr,"   After MakeAmbigs before BuildDirectionRanges-----------\n");
+      fprintf(stderr,"     Best_spd   = \n");
+      for (int c=0;c<_phiCount/8;c++){
+	int i=8*c;
+	float* x = _bestSpd;
+        float k= 1;
+	  fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		  k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+      }
+      fprintf(stderr,"     Best_obj (percent)   = \n");
+      for (int c=0;c<_phiCount/8;c++){
+	int i=8*c;
+	float* x = _bestObj;
+        float k= 100;
+	fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+      }
+      fprintf(stderr,"     Ambiguities        = \n");
+      for(int i=0;i<wvc->ambiguities.NodeCount();i++){
+	WindVectorPlus* wvp=wvc->ambiguities.GetByIndex(i);
+	fprintf(stderr,"      #%d spd=%g dir=%g obj=%g\n",
+		i,wvp->spd,wvp->dir*180/pi,wvp->obj);     
+      }
+    }
+    BuildDirectionRanges(wvc, 0.8);// uses 80% threshold 
+    if(DEBUG){
+      fprintf(stderr,"   After BuildDirectionRanges-----------\n");
+      fprintf(stderr,"     Best_spd   = \n");
+      for (int c=0;c<_phiCount/8;c++){
+	int i=8*c;
+	float* x = _bestSpd;
+        float k= 1;
+	  fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		  k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+      }
+      fprintf(stderr,"     Best_obj (percent)   = \n");
+      for (int c=0;c<_phiCount/8;c++){
+	int i=8*c;
+	float* x = _bestObj;
+        float k= 100;
+	fprintf(stderr,"      %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
+		k*x[i],k*x[i+1],k*x[i+2],k*x[i+3],k*x[i+4],k*x[i+5],k*x[i+6],k*x[i+7]);
+      }
+      fprintf(stderr,"     Ambiguities        = \n");
+      for(int i=0;i<wvc->ambiguities.NodeCount();i++){
+	WindVectorPlus* wvp=wvc->ambiguities.GetByIndex(i);
+        AngleInterval* ai=wvc->directionRanges.GetByIndex(i);
+	fprintf(stderr,"      #%d spd=%g dir=%g obj=%g left=%g right=%g\n",
+		i,wvp->spd,wvp->dir*180/pi,wvp->obj,ai->left*180/pi,ai->right*180/pi);     
+      }
+    }
+    if(DEBUG){
+      WindVectorPlus* wvp=wvc->ambiguities.GetByIndex(0);
+      if(wvp){
+	fprintf(stderr,"%d %g %g %g %g %g %g %g\n",l2a->frame.ati, wvc->nudgeWV->dir*180/pi, wvp->dir*180/pi,ANGDIF(wvc->nudgeWV->dir,wvp->dir)*180/pi,diroff,wvc->nudgeWV->spd,wvp->spd,speed);
+	       }
+    }
+    l2b->frame.swath.Add(l2a->frame.cti,l2a->frame.ati,wvc);
+    return(speed);
+
+ }
+
+#define INTERP_RATIO 8
+#define MERGE_BORDERS 0
+int
+L2AToL2B::BuildDirectionRanges(
+     WVC*   wvc,
+     float threshold){
+     //---------------->>>>>>>>>>>>>>>>>>>>>>>> debugging tools
+     static int wvcno=0;
+     // static FILE* dbg=fopen("debugfile","w");
+     wvcno++;
+     if(wvcno==48839){
+       int c=0;
+       c=c+1; // breakpoint placeholder for gdb
+     }
+     //---------------->>>>>>>>>>>>>>>>>>>>>>>> debugging tools
+     int pdfarraysize=_phiCount;
+     float pdfstepsize=2*pi/_phiCount;
+     float _phiStepSize=pdfstepsize;
+     float* pdf =  wvc->directionRanges.bestObj;
+
+     // Method reduce size of probability bins by a factor of INTERP_RATIO
+     // in order to eliminate quantization effects.
+     // Cubic Spline Interpolation is used.
+
+     if(INTERP_RATIO>1){
+
+       pdfarraysize*=INTERP_RATIO;
+       pdfstepsize/=INTERP_RATIO;
+       pdf=new float[pdfarraysize];
+       float sum=0.0;
+       float* _bestObj = wvc->directionRanges.bestObj;
+       float* _bestSpd = wvc->directionRanges.bestSpd;
+       // Set up arrays for wraparound cubic spline
+       // By including four extra wrapped points on each end
+       double* xarray = new double[_phiCount+8];
+       double* yarray = new double[_phiCount+8];
+       for(int i = 0; i<4;i++){
+	 xarray[i]=_phiStepSize*(i-4);
+	 yarray[i]=_bestObj[i+_phiCount-4];
+       }
+       for(int i=4;i<_phiCount+4;i++){
+	 xarray[i]=_phiStepSize*(i-4);
+	 yarray[i]=_bestObj[i-4];
+       }
+       for(int i=_phiCount+4;i<_phiCount+8;i++){
+	 xarray[i]=_phiStepSize*(i-4);
+	 yarray[i]=_bestObj[i-_phiCount-4];
+       }
+
+       // Compute second derivates for cubic spline
+       double* y2array = new double[_phiCount+8];
+       cubic_spline(xarray,yarray,_phiCount+8,1e+40,1e+40,y2array);
+
+       double xvalue, yvalue;
+       for(int c=0;c<pdfarraysize;c++){
+
+         // compute interpolation direction
+	 xvalue=c*pdfstepsize;
+
+         //Interpolate
+         interpolate_cubic_spline(xarray,yarray,y2array,_phiCount+8,xvalue,
+                  &yvalue);
+
+         // To eliminate gross errors from spline
+         // bound below by 0.5*min two neighboring original samples
+         // and above by 2.0* max two neighboring original samples
+
+         int idxleft=int(xvalue/_phiStepSize)%_phiCount;
+         int idxright=(idxleft+1)%_phiCount;
+         float lower_bound=_bestObj[idxleft];
+         float upper_bound=_bestObj[idxright];
+         if(lower_bound > upper_bound){
+	   lower_bound=_bestObj[idxright];
+	   upper_bound=_bestObj[idxleft];
+	 }
+         lower_bound*=0.5;
+         upper_bound*=2;
+         if(yvalue<lower_bound) yvalue=lower_bound;
+         if(yvalue>upper_bound) yvalue=upper_bound;
+         pdf[c]=yvalue;
+         sum+=pdf[c];
+       }
+
+       for(int c=0;c<pdfarraysize;c++) pdf[c]/=sum;
+
+       delete[] xarray;
+       delete[] yarray;
+       delete[] y2array;
+     } // END If( INTERP_RATIO > 1)
+
+     int num=wvc->ambiguities.NodeCount();
+     if(num==0) return(1);
+     AngleInterval* range=new AngleInterval[num];
+
+     // Initialize Ranges to Width 0
+     int offset=0;
+     for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();wvp;
+     wvp=wvc->ambiguities.GetNext(), offset++){
+       range[offset].SetLeftRight(wvp->dir,wvp->dir);
+     }
+
+     // Initialize intermediate variables
+     float prob_sum=0;
+     int* dir_include=new int[pdfarraysize];
+     for(int c=0;c<pdfarraysize;c++) dir_include[c]=0;
+     int* left_idx= new int[num];
+     int* right_idx=new int[num];
+     for(int c=0;c<num;c++){
+        left_idx[c]=int(floor(range[c].left/pdfstepsize));
+        right_idx[c]=(left_idx[c]+1)%pdfarraysize;
+     }
+     //Add the maximal probability among directions not included in range
+     //to prob_sum, and expand ranges accordingly.
+     float max=0.0;
+     while(1){
+
+       // Determine maximum available directions by sliding down the
+       // peaks on both sides
+       max=0.0;
+       int max_idx=-1;
+       int right=0;
+       for(int c=0;c<num;c++){
+     if(pdf[left_idx[c]]>max && !dir_include[left_idx[c]]){
+       max=pdf[left_idx[c]];
+       right=0;
+       max_idx=c;
+     }
+     if(pdf[right_idx[c]]>max && !dir_include[right_idx[c]]){
+       max=pdf[right_idx[c]];
+       right=1;
+       max_idx=c;
+     }
+       }
+       if(max==0.0){
+	 fprintf(stderr,"GMF::BuildDirectionRanges() Max=0.0????? wvcno=%d\n",wvcno);
+         fprintf(stderr,"max=%g prob_sum=%g thresh=%g\n",max,prob_sum,threshold);
+         for(int c=0;c<num;c++)
+       fprintf(stderr,"%d left %d right %d\n",c,left_idx[c],right_idx[c]);
+
+         break;
+       }
+       // Add maximum to total included probability
+       prob_sum+=max;
+       
+       // Break if threshold reached
+       if(prob_sum>threshold) break;
+
+       // Expand range to include best available direction
+       //  and update intermediate variables
+       if(right){
+	 float tmp_left=range[max_idx].left;
+         float tmp_right=right_idx[max_idx]*pdfstepsize+0.5*pdfstepsize;
+         dir_include[right_idx[max_idx]]=1;
+	 range[max_idx].SetLeftRight(tmp_left,tmp_right);
+	 right_idx[max_idx]++;
+	 right_idx[max_idx]%=pdfarraysize;
+       }
+       else{
+	 float tmp_right=range[max_idx].right;
+         float tmp_left=left_idx[max_idx]*pdfstepsize-0.5*pdfstepsize;
+         dir_include[left_idx[max_idx]]=1;
+	 range[max_idx].SetLeftRight(tmp_left,tmp_right);
+	 left_idx[max_idx]--;
+	 if(left_idx[max_idx]<0) left_idx[max_idx]+=pdfarraysize;
+       }
+     }
+
+
+     //  2) Merge bordering intervals (for now but if this causes problems then
+     //   eliminate this step and replace with trough finding.
+
+
+     if(MERGE_BORDERS){
+
+       // Merge bordering intervals.
+       for(int c=0;c<num-1;c++){
+	 for(int d=c+1; d< num; d++){
+	   if(range[c].left == range[d].right){
+	     // incorporate range d into range c
+	     range[c].left = range[d].left;
+	     // eliminate range[d]
+	     for(int e=d;e<num-1;e++){
+	       range[e]=range[e+1];
+	     }
+	     num--;
+	     // eliminate ambiguity d
+	     wvc->ambiguities.GetByIndex(d);
+	     WindVectorPlus* wvp=wvc->ambiguities.RemoveCurrent();
+	     delete wvp;
+	   }
+	   else if(range[c].right == range[d].left){
+	     // incorporate range d into range c
+	     range[c].right = range[d].right;
+	     // eliminate range[d]
+	     for(int e=d;e<num-1;e++){
+	       range[e]=range[e+1];
+	     }
+	     num--;
+	     // eliminate ambiguity d
+	     wvc->ambiguities.GetByIndex(d);
+	     WindVectorPlus* wvp=wvc->ambiguities.RemoveCurrent();
+	     delete wvp;
+	   }
+	 }
+       }
+       
+     }
+
+     for(int c=0;c<num;c++){
+       AngleInterval* ai=new AngleInterval;
+       *ai=range[c];
+       wvc->directionRanges.Append(ai);
+     }
+
+     //------------------------------------------>>>> debugging tools
+     //for(int c=0;c<pdfarraysize;c++)
+     //  fprintf(dbg,"%g %g PDF:WVC#%d\n",c*pdfstepsize*rtd,pdf[c],wvcno);
+     //fprintf(dbg,"& PDF:WVC#%d\n",wvcno);
+     //for(int c=0;c<_phiCount;c++)
+     //  fprintf(dbg,"%g %g BestObj:WVC#%d\n",c*_phiStepSize*rtd,_bestObj[c],wvcno);
+     //fprintf(dbg,"& BestObj:WVC#%d\n",wvcno);
+     //for(int c=0;c<num;c++)
+     //      fprintf(dbg,"%d %g Left:WVC#%d\n",c,rtd*range[c].left,wvcno);
+     //fprintf(dbg,"& Left:WVC#%d\n",wvcno);
+     //for(int c=0;c<num;c++)
+     //      fprintf(dbg,"%d %g Right:WVC#%d\n",c,rtd*range[c].right,wvcno);
+     //fprintf(dbg,"& Right:WVC#%d\n",wvcno);
+     //------------------------------------------>>>> debugging tools
+
+     if (INTERP_RATIO > 1) delete[] pdf;
+     delete[] range;
+     delete[] dir_include;
+     delete[] left_idx;
+     delete[] right_idx;
+     return(1);
+}
+
+//------------------------------------------//
+// Routine to compute direction offset for  //
+// along track and cross track index        //
+//------------------------------------------//
+/*** Obsolete version
+float L2AToL2B::GetNeuralDirectionOffset(L2A* l2a){
+
+  // diroff is the value to add to the reldir form the neural network
+  // to get the truedir.
+  //
+  // The direction used in training the network is
+  // traindir=reldir+ann_train_diroff;
+  //
+  // Since the direction offset was only approximated in neural net training
+  // we need to subtract out the actual spacecraft velocity vector at the
+  // training atd and ctd to get the truereldir, i.e., 
+  // the angle counterclockwise from 
+  // the velocity vector to the downwind direction
+  // truereldir=ann_train_diroff - training_spacecraft_velocity_CCW_fromeast
+  //
+  // Finally the true dir is computed by adding the true spacecraft velocity 
+  // vector at the current time
+  // true_dir=truereldir+current_spacecraft_velocity_CCW_fromeast;
+  // so diroff=truedir-reldir=ann_train_diroff-train_scvel+current_scvel
+
+  // If we ever eliminate the diroff computation in the training we
+  // will need to eliminate this check
+  if(ann_train_diroff==0){
+    fprintf(stderr,"L2AToL2B:GetNeuralDirectionOffset: ann_train_diroff is 0. Fix config file\n");
+    exit(0);
+  }
+
+  if(ann_train_ati==0){
+    fprintf(stderr,"L2AToL2B:GetNeuralDirectionOffset: ann_train_ati is 0. Fix config file\n");
+    exit(0);
+  }
+
+  if(orbitInclination==0){
+    fprintf(stderr,"L2AToL2B:GetNeuralDirectionOffset: orbitInclination is 0. Fix config file\n");
+    exit(0);
+  }
+
+
+  float ctd = (l2a->frame.cti - l2a->header.zeroIndex) *
+  l2a->header.crossTrackResolution;
+  float atd = l2a->frame.ati*l2a->header.alongTrackResolution;
+  float train_atd = ann_train_ati*l2a->header.alongTrackResolution;
+
+  float train_scvelang = GetSpacecraftVelocityAngle(train_atd,ctd);
+  float scvelang = GetSpacecraftVelocityAngle(atd,ctd);
+  
+  float diroff=ann_train_diroff-train_scvelang+scvelang;
+  int DEBUG =0;
+  if(DEBUG && l2a->frame.cti==17){
+    float atdratio=atd/(NOMINAL_TRACK_LENGTH);
+    int c=(int)(360*atdratio);
+    if(c==360) c=0;
+    fprintf(stderr,"\nDUMP of WVC ati=%d cti=%d\n",l2a->frame.ati,l2a->frame.cti);
+      fprintf(stderr,"   After diroff computation-----------\n");
+      fprintf(stderr,"   ctd=%g atd=%g atdratio=%g diroff=%g gclat=%g train_atd=%g\n",ctd,atd,atdratio,diroff*180/pi,atdToNadirLat[c]*180/pi,train_atd);
+      fprintf(stderr,"   ann_train_diroff=%g train_scvelang=%g scvelang=%g\n",ann_train_diroff*180/pi,train_scvelang*180/pi,scvelang*180/pi);
+  }
+  while(diroff>two_pi) diroff-=two_pi;
+  while(diroff<0) diroff+=two_pi;
+  return(diroff);
+}
+*****/
+
+
+float L2AToL2B::GetNeuralDirectionOffset(L2A* l2a){
+    int n=0;
+    float az=0;
+    float azave=0;
+    MeasList* meas_list= &(l2a->frame.measList);
+    int look_idx=0;
+    Meas* meas = meas_list->GetHead();
+    int nc=meas_list->NodeCount();
+    for (int c = 0; c < nc; c++)
+      {
+	switch (meas->measType)
+	  {
+	  case Meas::HH_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+		      look_idx = 0;
+		    
+	    else
+	      look_idx = 1;
+	    break;
+	  case Meas::VV_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      look_idx = 2;
+	    else
+	      look_idx = 3;
+	    break;
+	  case Meas::C_BAND_HH_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      look_idx = 4;
+	    else
+	      look_idx = 5;
+	    break;
+	  case Meas::C_BAND_VV_MEAS_TYPE:
+	    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+	      look_idx = 6;
+	    else
+	      look_idx = 7;
+	    break;
+	  default:
+	    look_idx = -1;
+	    break;
+	  }
+	if (look_idx == 3)
+	  {
+	    az=meas->eastAzimuth;
+	    while(az>azave/n+pi) az-=2*pi;
+            while(az<azave/n-pi) az+=2*pi;
+            n++;
+	    azave+=az;
+	  }
+  
+	meas = meas_list->GetNext();
+      }
+    azave/=n;
+    return(-azave);
+}
+
+float
+L2AToL2B::computeGroundTrackParameters(){
+  float rp=r2_earth; //polar radius
+  float re=r1_earth; // equatorial radius
+  float z=-sqrt((re*re*rp*rp)/(rp*rp/tan(orbitInclination)/tan(orbitInclination)+re*re));
+  float tano=tan(orbitInclination);
+  float y=z/tano;
+  float zmin=z;
+  float zmax=-z;
+  float x=0;
+  EarthPosition p(x,y,z);
+  EarthPosition p0=p;
+  double alt,gclat,lon;
+  double lat[2001];
+  double atd[2001];
+  p.GetAltLonGCLat(&alt,&lon,&gclat);
+  lat[0]=gclat;
+  atd[0]=0;
+  for(int c=1;c<2001;c++){
+    if(c<=1000) z=zmin+c*(zmax-zmin)/1000.0;
+    else z=zmax-(c-1000)*(zmax-zmin)/1000.0;
+    y=z/tano;
+    x=re*sqrt(1-y*y/re/re-z*z/rp/rp);
+    if(c>1000)x=-x;
+    // numerical precision bug fix
+    if(c==2000 || c==1000) x=0;
+    EarthPosition pnext(x,y,z);
+    double dp=pnext.SurfaceDistance(p);
+    groundTrackLength+=dp;
+    atd[c]=groundTrackLength;
+    p=pnext;
+    p.GetAltLonGCLat(&alt,&lon,&gclat);
+    lat[c]=gclat;
+  }
+  for(int c=0;c<2001;c++){
+    atd[c]/=groundTrackLength;
+  }
+  p=p0;
+  p.GetAltLonGCLat(&alt,&lon,&gclat);
+  atdToNadirLat[0]=gclat;
+  int i=0;
+  for(int c=1;c<360;c++){
+    float a=c/360.0;
+    while(atd[i]<a && i< 2000 ) i++;
+    int i0=i-1;
+    int i1=i;
+    double w1=(a-atd[i0])/(atd[i1]-atd[i0]);
+    double w0=1-w1;
+    atdToNadirLat[c]=w0*lat[i0]+w1*lat[i1];
+  }
+  return(groundTrackLength);
+}
+// Routine to estimate spacecraft velocity vector
+// Or more precisely the vector from (atd,ctd) to (atd+epsilon,ctd)
+// CCW from east
+float
+L2AToL2B::GetSpacecraftVelocityAngle(float atd, float ctd){
+  static float gtl=computeGroundTrackParameters(); // static so this is only called once
+  gtl=groundTrackLength; // avoids compiler warning
+
+  // compute constants
+
+  // estimate ground track as an ellipse
+  float re=r1_earth;  // equatorial radius of earth
+  float rp=r2_earth;  // polar radius
+ 
+
+  // approximate mean anomaly from along track distance
+  float atd_ratio=atd/(NOMINAL_TRACK_LENGTH);
+
+  
+  // compute latitude at  along track distance atd and ctd=0
+  int i0=(int)(360*atd_ratio);
+  if(i0==360) i0 = 0;
+  int i1=i0+1;
+  if(i1==360) i1=0;
+  float w1=atd_ratio-i0/360.0;
+  if(w1>360.0) w1=0;
+  float w0=1.0-w1;
+  float nadirgclat=atdToNadirLat[i0]*w0+atdToNadirLat[i1]*w1;
+
+  // compute nadir x,y,z coordinates
+  double slat=sin(nadirgclat);
+  double nadrad=re*(1.0-flat*slat*slat);
+  float z=slat*nadrad;
+  float y=z/tan(orbitInclination);
+  float x=sqrt(1-z*z/rp/rp -y*y/re/re)*sqrt(re*re);
+  if(atd_ratio>0.5) x=-x;
+
+  // compute coordinates for atd,ctd and cross track direction
+  Vector3 nadir(x,y,z);
+  double slattop=sin(atdToNadirLat[180]);
+  double toprad=re*(1.0-flat*slattop*slattop);
+  double ztop=toprad*slattop;
+  Vector3 top(0,ztop/tan(orbitInclination),ztop);
+  Vector3 ctddir=top & nadir;
+  ctddir=ctddir/ctddir.Magnitude();
+  float ctangle=ctd/nadir.Magnitude(); // approximation assumes local radius doesn't change
+                                        // much within swath
+  float normaldist;//distance between ground track great circle and ctd parallel
+  normaldist=ctd*sin(ctangle)/ctangle;
+  
+  Vector3  loc=nadir+ctddir*normaldist;
+  loc=loc/(loc.Magnitude());
+  float locgclat=asin(loc.Get(2));
+  // first compute surface vector without earth rotation
+  Vector3 sc_dir=loc & ctddir;
+  if(atd_ratio>0.5) sc_dir=-sc_dir;
+  Vector3 north(0,0,1);
+  Vector3 east=north & loc;
+  float northcomp= sc_dir%north;
+  float eastcomp=sc_dir%east;
+  
+
+  // add in Earth rotation
+  float scspeed=groundTrackLength/6000;       // ground speed at nadir (approximate)
+                                              // assumes 100 min orbit
+
+  float rotspeed=cos(locgclat)*re*pi/(12*3600);
+  northcomp=northcomp*scspeed;  eastcomp=eastcomp*scspeed-rotspeed;
+  
+
+  // compute angle CCW from east
+  float outangle=atan2(northcomp,eastcomp);
+  return(outangle);
+}
+
+//------------------------------------------//
+// Routine to complete construction of WVC  //
+// from neural net outputs                  //
+//------------------------------------------//
+int  L2AToL2B::MakeAmbigsFromDirectionArrays(WVC* wvc, float diroff){
+  int peaks[4];
+  static int wvcno=0;
+  wvcno++;
+     if(wvcno==48839){
+       int c=0;
+       c=c+1; // breakpoint placeholder for gdb
+     }
+  float* probs=wvc->directionRanges.bestObj;
+  float* spds =wvc->directionRanges.bestSpd;
+  static float finespd[360];
+  static float fineprob[360];
+  static int mask[1000];
+  if(_phiCount>1000){
+    fprintf(stderr,"L2AToL2B::MakeAmbigsFromDirectionArrays: Phi count too large!!!\n");
+    exit(1);
+  }  
+
+  // spline interpolate
+  //---------  Only linear interpolation for now !!!!
+  // shift is performed during interpolation
+
+  float phistep=2*pi/_phiCount;
+  float cstep=pi/180;
+  for(int c=0;c<360;c++){
+    
+    float idx=diroff/phistep+c*cstep/phistep;
+    while(idx<0) idx+=_phiCount;
+    while(idx>=_phiCount) idx-=_phiCount;
+    int i0=(int)(idx);
+    int i1=i0+1;
+    if(i1==_phiCount) i1=0;
+    float w1= idx-i0;
+    float w0=1-w1;
+
+    finespd[c]=spds[i0]*w0+spds[i1]*w1;
+    fineprob[c]=probs[i0]*w0+probs[i1]*w1;
+  }
+  // find peaks
+  for(int c=0;c<360;c++) mask[c]=0;
+  for(int p=0;p<4;p++){
+    peaks[p]=-1;
+    float maxp=0;
+    // find maximum remaining peak
+    for(int c=0;c<360;c++){
+      if(fineprob[c]>maxp && mask[c]==0){
+	peaks[p]=c;
+        maxp=fineprob[c];
+      }
+    }
+    // exclude shoulders around peak
+    if(peaks[p]!=-1){
+      mask[peaks[p]]=1;
+      // positive shoulder
+      for(int c=(peaks[p]+1)%360;c!=peaks[p];c=((c+1)%360)){
+	int c0=(c-1)%360;
+	if(c0==-1) c0=359;
+        if(fineprob[c]<=fineprob[c0]){
+	  mask[c]=1;
+	}
+        else{
+	  break;
+	}
+      }
+
+
+      // negative shoulder
+      for(int c=(peaks[p]-1+360)%360;c!=peaks[p];c=((c-1+360)%360)){
+	int c0=(c+1)%360;
+        if(fineprob[c]<=fineprob[c0]){
+	  mask[c]=1;
+	}
+        else{
+	  break;
+	}
+      }
+
+    }
+  }
+  //----------- shift arrays
+  for(int c=0;c<_phiCount;c++){
+    int fineidx=(int)(c*360/_phiCount +0.5);
+    probs[c]=fineprob[fineidx];
+    spds[c]=finespd[fineidx];
+  }
+
+  //------------ create ambiguities
+  for(int p=0;p<4;p++){
+    if(peaks[p]==-1) break;
+    WindVectorPlus* wvp= new WindVectorPlus();
+    wvp->spd=finespd[peaks[p]];
+    wvp->dir=peaks[p]*pi/180;
+    wvp->obj=2*log(fineprob[peaks[p]]);
+    wvc->ambiguities.Append(wvp);
+    wvp=NULL;
+  }
+
+  
+  return(1);
+}    
 
 //---------------------------//
 // L2AToL2B::ConvertAndWrite //
@@ -463,12 +1958,15 @@ L2AToL2B::InitAndFilter(
     // Copy Interpolated NudgeVectors to Wind Vector Cells //
     //-----------------------------------------------------//
 
-    if (useNudging && ! l2b->frame.swath.nudgeVectorsRead && !smartNudgeFlag)
+    if (useNudging && ! l2b->frame.swath.nudgeVectorsRead && !smartNudgeFlag &&!arrayNudgeFlag)
     {
         l2b->frame.swath.GetNudgeVectors(&nudgeField);
     }
-    else if(useNudging && ! l2b->frame.swath.nudgeVectorsRead){
+    else if(useNudging && ! l2b->frame.swath.nudgeVectorsRead && smartNudgeFlag){
       l2b->frame.swath.GetNudgeVectors(&nudgeVctrField);
+    }
+    else if(useNudging && ! l2b->frame.swath.nudgeVectorsRead && arrayNudgeFlag){
+      l2b->frame.swath.GetNudgeVectors(arrayNudgeSpd,arrayNudgeDir,arrayNudgeNati,arrayNudgeNcti);
     }
     if (useHurricaneNudgeField)
     {
@@ -635,3 +2133,4 @@ L2AToL2B::WriteSolutionCurves(
 
     return(1);
 }
+

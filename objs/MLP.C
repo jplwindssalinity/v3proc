@@ -7,12 +7,81 @@
 #include "Distributions.h"
 
 MLP::MLP()
-  : nin(0), nout(0), hn(0), outputSigmoidFlag(0)
+  : nin(0), nout(0), hn(0), outputSigmoidFlag(0),htab(NULL)
 {
   return;
 }
 
-MLP::~MLP(){  
+MLP::MLP(const MLP& m)
+  : nin(m.nin), nout(m.nout), hn(m.hn), outputSigmoidFlag(m.outputSigmoidFlag),htab(NULL)
+{
+  Allocate();
+  for(int c=0;c<nout;c++){
+    for(int d=0;d<hn+1;d++){
+      whid[c][d]=m.whid[c][d];
+    }
+  }
+
+  for(int c=0;c<hn;c++){
+    for(int d=0;d<nin+1;d++){
+      win[c][d]=m.win[c][d];
+    }
+  }
+}
+
+// modifies weights to work on unnormalized data set
+int
+MLP::postproc(float* bias, float* std){
+  for(int c=0;c<hn;c++){
+    for(int d=0;d<nin;d++){
+      win[c][nin]-=win[c][d]*bias[d]/std[d];
+      win[c][d]/=std[d];
+    }
+  }
+  return(1);
+}
+
+int
+MLP::preproc(float* bias, float* std){
+  for(int c=0;c<hn;c++){
+    for(int d=0;d<nin;d++){
+      win[c][d]*=std[d];
+      win[c][nin]+=win[c][d]*bias[d]/std[d];
+    }
+  }
+  return(1);
+}
+MLP
+MLP::operator=(const MLP& m)
+{
+  Deallocate();
+  nin=m.nin;
+  nout=m.nout;
+  hn=m.hn;
+  outputSigmoidFlag=m.outputSigmoidFlag;
+  Allocate();
+  for(int c=0;c<nout;c++){
+    for(int d=0;d<hn+1;d++){
+      whid[c][d]=m.whid[c][d];
+      dwhid[c][d]=m.dwhid[c][d]; 
+    }
+  }
+
+  for(int c=0;c<hn;c++){
+    for(int d=0;d<nin+1;d++){
+      win[c][d]=m.win[c][d];
+      dwin[c][d]=m.dwin[c][d];
+    }
+  }
+  return(*this);
+}
+
+
+MLP::~MLP(){
+  Deallocate();
+}
+int
+MLP::Deallocate(){  
   if(nin!=0){
     free_array((void*)win,2,hn,nin+1);
     free_array((void*)dwin,2,hn,nin+1);
@@ -26,6 +95,8 @@ MLP::~MLP(){
     nout=0;
     hn=0;
   }
+  if(htab!=NULL) free_array((void*)htab,2,hn);
+  return(1);
 }
 
 /*** randomly initialize an MLP ****/
@@ -55,6 +126,9 @@ int MLP::RandomInitialize(float range_min, float range_max, int num_inputs,
   }
   return(1);
 }
+
+
+
 
 /*** allocate an MLP ****/
 int MLP::Allocate(){
@@ -117,6 +191,247 @@ float MLP::Train(MLPData* pattern,
   return(sum);
 }
 
+
+
+/** train MLP using Variable Step Search ***/
+float MLP::TrainVSS(MLPData* pattern, int epochno){
+  int num_patterns,num_inputs,num_outputs,fvno;
+  float sum=0;  
+
+  /*** assign learning parameters ***/
+  float d0=0.25;
+  float c1=0.35;
+  float h=2.0;
+  int nmax = 4; // recommended value
+  nmax=20; // my choice
+  float c2=1;
+  float pruneratio = 0.0001;
+  /*** get constants ***/
+  num_patterns=pattern->num_samps;
+  num_outputs=pattern->num_outpts;
+  num_inputs=pattern->num_inpts;
+
+  if(num_outputs!=nout){
+    fprintf(stderr,"MLP::Train: Error nout mismatch\n");
+    exit(1);
+  }
+  if(num_inputs!=nin){
+    fprintf(stderr,"MLP::Train: Error nin mismatch\n");
+    exit(1);
+  }
+
+  if(epochno==0) {
+    VSSInit(d0,num_patterns);
+  }
+
+  // Update hidden output table
+  for(int j=0;j<hn;j++){
+    UpdateHiddenTable(pattern,j);
+  }
+
+
+  /*** Update each parameter in input layer ***/
+  if(nout!=1){
+    fprintf(stderr,"TrainVSS: Only work for nout=1 for now!\n");
+    exit(1);
+  }
+  float *ptr, *dptr;
+  for(int c=0;c<hn;c++){
+     ptr=&(whid[0][c]);
+     dptr=&(dwhid[0][c]);
+     // BWS Addition 2
+     // prune unuseful nodes and replace with random ones
+     if(epochno>0){
+       VSSPruneIfNecessary(pattern,c,pruneratio,d0*(1-exp(-c2/epochno)));
+       float ntry=5;
+       float wtry=d0;
+       while(whid[0][c]==0 && ntry>0){
+	 VSSUpdateParam(pattern,ptr,dptr,-1,wtry,c1,c2,h,nmax,epochno);
+         ntry--;
+         wtry/=10.0;
+       }
+     }
+     if(whid[0][c]==0) continue;
+     for(int d=0;d<nin+1;d++){
+       ptr=&(win[c][d]);
+       dptr=&(dwin[c][d]);
+       VSSUpdateParam(pattern,ptr,dptr,c,d0,c1,c2,h,nmax,epochno);
+     }
+  }
+  ptr=&(whid[0][hn]);
+  dptr=&(dwhid[0][hn]);
+  VSSUpdateParam(pattern,ptr,dptr,-1,d0,c1,c2,h,nmax,epochno); 
+
+  // compute final MSE
+  sum=0;
+  fvno=0;
+  for(int c=0;c<num_patterns;c++){
+    sum=sum+Forward(pattern->outpt[c],
+		    pattern->inpt[c]);
+      
+    fvno++;
+  }
+  sum/=fvno;
+  return(sum);
+}
+
+int MLP::VSSPruneIfNecessary(MLPData* pattern,int hnum, float p, float d0){
+  // need to fix this to handle multiple outputs if desired
+  if(nout!=1){
+    fprintf(stderr,"VSSPruneIfNecessary: Nout must be 1 for now!\n");
+    exit(1);
+  }
+  float wold = whid[0][hnum];
+  float OE=GetVSSError(pattern);
+  whid[0][hnum]=0;
+  UpdateHiddenTable(pattern,hnum);
+  float PE=GetVSSError(pattern);
+
+  // don't prune useful hidden nodes
+  float dE=(PE-OE)/OE;
+  if(dE > p){
+    whid[0][hnum]=wold;
+    UpdateHiddenTable(pattern,hnum);
+  }
+  // prune unuseful hidden nodes and replace with random ones
+  else{
+    fprintf(stderr,"Reinitializing useless hidden node %d, error cahneg will be %g percent\n",hnum,dE*100);
+    VSSReinitNode(hnum,d0);
+    dwhid[0][hnum]=d0;
+    UpdateHiddenTable(pattern,hnum);
+  }
+  return(1);
+}
+
+int MLP::VSSReinitNode(int hnum, float d0){
+  Uniform rand_gen(1,0);
+  rand_gen.SetSeed(13467578);
+  for(int d=0;d<nin+1;d++){
+    win[hnum][d]=rand_gen.GetNumber();
+    dwin[hnum][d]=d0;
+  }
+  return(1);
+}
+
+/*** reinitialize an MLP for VSS training****/
+int MLP::VSSInit(float d0, int num_patterns){
+  int c,d;
+
+
+  for(c=0;c<nout;c++){
+    for(d=0;d<hn+1;d++){
+      dwhid[c][d]=d0;
+    }
+  }
+
+  for(c=0;c<hn;c++){
+    for(d=0;d<nin+1;d++){
+      dwin[c][d]=d0;
+    }
+  }
+
+  htab=(float**)make_array(sizeof(float),2,hn,num_patterns);
+
+  return(1);
+}
+
+int MLP::UpdateHiddenTable(MLPData* pattern, int hnum){
+  for(int c=0;c<pattern->num_samps;c++){
+    float sum=0;
+    for(int d=0;d<nin;d++){
+      sum+=pattern->inpt[c][d]*win[hnum][d];
+    }
+    /*** add threshold **/
+    sum+=win[hnum][nin];
+    /*** perform sigmoid ***/
+    htab[hnum][c]=1/(1+exp(-sum));
+  }
+  return(1);
+}
+
+float MLP::GetVSSError(MLPData* pattern){
+  float sum=0;
+  for(int c=0;c<pattern->num_samps;c++){
+    float y=0;
+    if(nout!=1){
+      fprintf(stderr,"Error:VSS Only works for single outputs at present\n");
+      exit(1);
+    }
+    for(int d=0;d<hn;d++){
+     y+=htab[d][c]*whid[0][d];
+    }
+    y+=whid[0][hn];
+    if (outputSigmoidFlag) y=1/(1+exp(-y));
+    float err = y-pattern->outpt[c][0];
+    sum+=(err*err);
+  }
+  sum/=pattern->num_samps;
+  return(sum);
+}
+int MLP::VSSUpdateParam(MLPData* pattern,float* w, float* dw,int hnum,
+			float d0,float c,float c2,float h,int nmax,int epochno){
+  float wold=*w;
+  float dwold=*dw;
+  int VUPDEBUG=1;
+
+  // FlowChart1
+
+  if(dwold==0){
+     //FlowChart3
+    *dw=d0*(1-exp(-c2/epochno));
+    // BWS Addition 1:  Don't update weights that are obviously frozen
+    if(*dw<0.01){
+      *dw=dwold;
+      return(1);
+    }
+  }
+  else{
+    //FlowChart2
+    *dw=c*dwold;
+  }
+
+
+  // FlowChart4
+  float OE=GetVSSError(pattern);
+  *w=wold+*dw;
+  if(hnum!=-1) UpdateHiddenTable(pattern,hnum);
+  float NE=GetVSSError(pattern);
+  if(NE>=OE){
+
+    // FlowChart5
+    *dw=-(*dw);
+    *w=wold+*dw;
+    if(hnum!=-1) UpdateHiddenTable(pattern,hnum);
+    NE=GetVSSError(pattern);
+    // FlowChart6
+    if(NE>=OE){
+      *dw=0;
+      *w=wold;
+      if(hnum!=-1) UpdateHiddenTable(pattern,hnum);
+      return(1);
+    }
+  }
+
+  //FlowChart7
+  int n=1;
+  while(n<=nmax){
+    *dw=h*(*dw);
+    OE=NE;
+    *w+=*dw;
+    if(hnum!=-1) UpdateHiddenTable(pattern,hnum);
+    NE=GetVSSError(pattern);
+    if(NE>=OE){
+      *w=*w-*dw;
+      *dw=*dw/h;
+      if(hnum!=-1) UpdateHiddenTable(pattern,hnum); 
+      NE=OE;
+      break;
+    }
+    n++;
+  }
+  if(VUPDEBUG) fprintf(stderr,"VUPDEBUG: MSE=%g\n",NE);
+  return(1);
+}
 /** test MLP **/
 float MLP::Test(MLPData* pattern, 
 	   MLPData* results){
@@ -204,11 +519,11 @@ float MLP::Forward(float* dout, float* inpts){
     /***#############HACK_ALERT#########HACK_ALERT############****/
     /**** dout[c]=-1 means don't care, do not train on this value ***/
     /*****####################################################****/
-    if(dout[c]>=-0.5){
-      err[c]=(dout[c]-outp[c]);
-      nvalid++;
-    }
-    else err[c]=0;
+    //if(dout[c]>=-0.5){
+    err[c]=(dout[c]-outp[c]);
+    nvalid++;
+    //}
+    //else err[c]=0;  HACK COMMENTED OUT
     sum+=err[c]*err[c];
   }
   sum=sum/nvalid;
@@ -238,7 +553,34 @@ int MLP::Backward(float* inpts){
      herr[c]*=hnout[c]*(1-hnout[c]);
    
 
-   /*** update output thresholds ***/
+   /*** compute standard deviations of errors ***/
+   /***
+   float stdoutbias=0,stdhidbias=0,stdhid=0,stdinp=0;
+   for(c=0;c<nout;c++){
+     stdoutbias+=err[c]*err[c];
+   }
+   stdoutbias=sqrt(stdoutbias/nout);
+
+   for(c=0;c<nout;c++){
+     for(d=0;d<hn;d++){
+       stdhid+=err[c]*hnout[d]*err[c]*hnout[c];
+     }
+   }
+   stdhid=sqrt(stdhid/(nout*hn));
+
+   for(c=0;c<hn;c++){
+     stdhidbias+=herr[c]*herr[c];
+   }
+   stdhidbias=sqrt(stdhidbias/hn);
+
+   for(c=0;c<hn;c++){
+     for(d=0;d<nin;d++){
+       stdinp+=herr[c]*inpts[d]*herr[c]*inpts[d]; 
+      }
+   }
+   stdinp=sqrt(stdinp/(nin*hn));
+   ***/
+   /*** update output thresholds ***/  
    for(c=0;c<nout;c++){
      dwhid[c][hn]*=moment;
      dwhid[c][hn]+=ssize*err[c];
@@ -265,7 +607,7 @@ int MLP::Backward(float* inpts){
    for(c=0;c<hn;c++){
      for(d=0;d<nin;d++){
        dwin[c][d]*=moment;
-       dwin[c][d]+=ssize*herr[c]*inpts[d];
+       dwin[c][d]+=ssize*herr[c]*inpts[d]; 
        win[c][d]+=dwin[c][d];
      }
    }

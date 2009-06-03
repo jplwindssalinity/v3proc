@@ -130,6 +130,7 @@ public:
     unsigned short           lastEventIdealEncoder;
     LandMap                  landMap;
     int                      simCoast;
+    int                      sim_all_land;
     TimeCorrelatedGaussian   ptgrNoise;
     int                      numLookStepsPerSlice;
     float                    azimuthIntegrationRange;

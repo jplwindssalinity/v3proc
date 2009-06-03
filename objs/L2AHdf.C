@@ -307,6 +307,15 @@ L2AHdf::ConvertRow(){
 	  new_meas->beamIdx = (int) (ModeFlags[j] & 0x0004);
           new_meas->beamIdx >>= 2;
 
+	  // hack fore/aft info into scanAngle
+	  // this should allow any simple fore/aft detector to work
+	  if (ModeFlags[j] & 0x0008)
+            new_meas->scanAngle = 3.0;    // aft (approximately 171 deg)
+	  else
+            new_meas->scanAngle = 0.0;    // fore
+
+
+          
           // measType
 	  if (new_meas->beamIdx == 0)  // beam A => H, B => V
 	    new_meas->measType = Meas::HH_MEAS_TYPE;
@@ -329,7 +338,15 @@ L2AHdf::ConvertRow(){
 
 	  // C
           new_meas->C=C[j];
-          
+
+          // Estimate EnSlice and XK from A so that one can calculate
+          // a noise equivalent sigma0 value
+          // it should be noted that we cannot know the two quantities
+          // independently, but we can set then so the correct noise
+          // equivalent is computed using .. meas->EnSlice/meas->XK
+          new_meas->XK=1.0;
+          new_meas->EnSlice=B[j]/(2*(A[j]-1));
+
           // append new measurement to appropriate list
           if (meas_list_row[cell_index[j]-1].Append(new_meas) == 0)
 	    return(0);
@@ -341,11 +358,11 @@ L2AHdf::ConvertRow(){
     int ati = currentRowNo - 1;
     int rev=0;
     for(int cti=1;cti<=crossTrackBins;cti++){
-      char ctichar=(unsigned char) cti-1;
+      int ctioff=cti-1;
       if(meas_list_row[cti-1].NodeCount()==0) continue;
       if (fwrite((void *)&rev, sizeof(unsigned int), 1, _outputFp) != 1 ||
         fwrite((void *)&ati, sizeof(int), 1, _outputFp) != 1 ||
-        fwrite((void *)&ctichar, sizeof(unsigned char), 1, _outputFp) != 1 ||
+        fwrite((void *)&ctioff, sizeof(int), 1, _outputFp) != 1 ||
         meas_list_row[cti-1].Write(_outputFp) != 1)
 	{
 	  return(0);

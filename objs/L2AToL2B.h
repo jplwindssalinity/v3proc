@@ -13,6 +13,8 @@ static const char rcs_id_l2atol2b_h[] =
 #include "L2B.h"
 #include "GMF.h"
 
+class MLPDataArray;
+
 #define DESIRED_SOLUTIONS  4
 
 //======================================================================
@@ -57,7 +59,13 @@ public:
     //------------//
     // conversion //
     //------------//
-
+    int ReadNudgeArray(char* filename);
+    float  NeuralNetRetrieve(L2A* l2a, L2B* l2b, MLPDataArray* spdnet, MLPDataArray* dirnet, GMF* gmf, Kp* kp, int need_all_looks);
+    float  HybridNeuralNetRetrieve(L2A* l2a, L2B* l2b, MLPDataArray* spdnet, MLPDataArray* dirnet, GMF* gmf, Kp* kp, int need_all_looks);
+    int MakeAmbigsFromDirectionArrays(WVC* wvc, float diroff);
+    int BuildDirectionRanges(WVC* wvc, float thresh);
+    float GetNeuralDirectionOffset(L2A* l2a);
+    float GetSpacecraftVelocityAngle(float atd, float ctd);
     int  ConvertAndWrite(L2A* l2a, GMF* gmf, Kp* kp, L2B* l2b);
     int  InitAndFilter(L2B* l2b);
     int  InitFilterAndFlush(L2B* l2b);
@@ -131,10 +139,22 @@ public:
     float          hurricaneRadius;  // km
     EarthPosition  hurricaneCenter;
 
-
+    int                   ann_train_ati;
+    float                   ann_train_diroff;
     int                   useSigma0Weights;
     float                 sigma0WeightCorrLength;
+    float                 atdToNadirLat[360];
+    float                 orbitInclination;
+    float                 groundTrackLength;
+    int arrayNudgeFlag;
+ protected:
+    float computeGroundTrackParameters();
+    int _phiCount;
 
+    float** arrayNudgeSpd;
+    float** arrayNudgeDir;
+    int arrayNudgeNati;
+    int arrayNudgeNcti;
 };
 
 #endif

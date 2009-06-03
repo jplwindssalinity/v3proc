@@ -1199,8 +1199,9 @@ Ovwm::LocatePixels(
           
 	  //printf("%15.15g %15.15g\n",lon*rtd,latgd*rtd);
 
-	    if(fabs(alt)>0.05 || fabs(r-oti3.slantRange)>0.05 
-	       || fabs(d2-oti3.dopplerFreq)>0.05*ses.dopplerRes){
+	    if(fabs(alt)>0.1 || fabs(r-oti3.slantRange)>0.1 
+	       || fabs(d2-oti3.dopplerFreq)>0.1*ses.dopplerRes){
+	      fprintf(stderr,"Ovwm::LocatePixel Pixel Location Accuracy test failed. alterr=%g km rangeerr=%g km dopplerPercentError=%g\n",alt,fabs(r-oti3.slantRange),100*fabs(d2-oti3.dopplerFreq)/ses.dopplerRes);
 	      exit(1);
 	    }
 #endif	  

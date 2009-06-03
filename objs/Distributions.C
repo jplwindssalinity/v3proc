@@ -253,6 +253,10 @@ Gamma::Gamma()
 Gamma::Gamma(float variance, float mean)
 {
     _variance=variance;
+  if(_variance<0){
+    fprintf(stderr,"Gamma::Gamma Negative Variance setting to 0\n");
+    _variance=0;
+  }
     _mean=mean;
     return;
 }
@@ -268,6 +272,7 @@ Gamma::GetNumber()
 {
 
   double v1, v2, r, mag, fac, lambda, x;
+  if(_variance==0) return(_mean);
 
   // Convert mean and variance to alternate r,lambda representation.
   lambda = _mean / _variance;

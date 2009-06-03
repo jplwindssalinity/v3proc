@@ -74,6 +74,8 @@ public:
     int  IsCompatible(const Metrics& m);
     int  Evaluate(WindSwath* swath, float resolution,
 		  int speed_bins, float speed_resolution, LonLatWind* truth);
+    int  Evaluate(WindSwath* swath, float resolution,
+		  int speed_bins, float speed_resolution, float* tspd, float* tdir);
 
     //-----------//
     // operators //

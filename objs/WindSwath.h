@@ -101,6 +101,7 @@ public:
     int    HideSpeed(float min_speed, float max_speed);
     int    UnInitSpeed(float min_speed, float max_speed);
     int    GetNudgeVectors(WindField* nudge_field);
+    int    GetNudgeVectors(float** spd, float** dir, int nati, int ncti);
     int    GetNudgeVectors(WindVectorField* nudge_field);
     int    GetHurricaneNudgeVectors(WindField* nudge_field,
                EarthPosition* center, float radius);

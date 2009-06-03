@@ -167,8 +167,10 @@ protected:
     FILE*  _errorFp;       // for error logging
     LogE   _logFlag;       // what to do
     LogE   _memLogFlag;    // remember the log flag for restoration
+    bool _verbose;
 
  private:
+
 };
 
 #endif

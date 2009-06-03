@@ -118,7 +118,7 @@ StringPair::SetValue(
 //============//
 
 ConfigList::ConfigList()
-:   _errorFp(stderr), _logFlag(EXIT), _memLogFlag(EXIT)
+  :   _errorFp(stderr), _logFlag(EXIT), _memLogFlag(EXIT), _verbose(false)
 {
     return;
 }
@@ -153,6 +153,12 @@ ConfigList::Read(
   for(list<string>::iterator key = options.keys.begin(); key != options.keys.end(); key++){
     StompOrAppend((*key).c_str(),(options.value[*key]).c_str());
   }
+  LogE oldlogFlag=_logFlag;
+  _logFlag=NOTHING;
+  int tmpint=0;
+  int found=GetInt("CONFIG_VERBOSE_MODE",&tmpint);
+  if(tmpint && found) _verbose=true;
+  _logFlag=oldlogFlag;
   return(1);
 }
 
@@ -238,7 +244,12 @@ ConfigList::ReadNative(
     // don't need the file anymore
     if (filename)
         fclose(ifp);
-
+    LogE oldlogFlag=_logFlag;
+    _logFlag=NOTHING;
+    int tmpint=0;
+    int found=GetInt("CONFIG_VERBOSE_MODE",&tmpint);
+    if(tmpint && found) _verbose=true;
+    _logFlag=oldlogFlag;
     return (1);
 }
 
@@ -347,10 +358,16 @@ ConfigList::Get(
     const char*  keyword)
 {
     StringPair* pair = Find(keyword);
-    if (pair)
+    if (pair){
+      if(_verbose)
+      fprintf(stderr,"CONFIG_VERBOSE:Accessed %s = %s from config file\n",keyword,pair->GetValue());
         return(pair->GetValue());
-    else
+    }
+    else{
+      if(_verbose)
+	fprintf(stderr,"CONFIG_VERBOSE:Failed attempt to find keyword %s in config file (This does NOT mean there is a bug!)\n",keyword);
         return(0);
+    }
 }
 
 //--------------------//

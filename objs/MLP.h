@@ -15,6 +15,7 @@ public:
   int hn; /*** number of hidden units (must be a multiple of (nhlayers) ***/
   int nhlayers;
   int outputSigmoidFlag;
+  float** htab; /** table used by VSS **/
   float** win;/*** weights between input units and hidden units ***/
   float** dwin;/*** previous weight changes ***/
        /***        (indices (hidden node number, input node number))***/
@@ -34,6 +35,9 @@ public:
 
   /***** methods ****/
   MLP();
+  MLP(const MLP& m);
+  MLP operator=(const MLP& m);
+
   ~MLP();
 
   /**** randomly initialize MLP weights between min and max ***/
@@ -45,10 +49,31 @@ public:
   /**** allocate MLP structure***/
   int Allocate();
 
+ /**** deallocate MLP structure***/
+  int Deallocate();
+
+  // modify weights to work on unnormalized data
+  int postproc(float* bias, float* std);
+
+  // modify weights to work on normalized data
+  int preproc(float* bias, float* std);
 
   /**** function to perform one epoch of backprop with momentum on MLP ***/
   float Train(MLPData* pattern,  float moment_value, float ssize_value);
+  
+  /** Variable Step Search Algorithm routines **/
+  float TrainVSS(MLPData* pattern, int epochno);
 
+ protected:
+  int VSSPruneIfNecessary(MLPData* pattern, int hnum, float p, float d0);
+  int VSSReinitNode(int hnum, float d0);
+  int VSSInit(float d0, int num_patterns);
+  int UpdateHiddenTable(MLPData* pattern, int hnum);
+  float GetVSSError(MLPData* pattern);
+  int VSSUpdateParam(MLPData* pattern,float* w, float* dw,int hnum,float d0,float c,float c2,float h,int nmax,int epochno);
+
+
+ public:
   /***** Function to perform on test epoch (no backprop) and get results ***/
   float Test(MLPData* pattern, MLPData* results);
 

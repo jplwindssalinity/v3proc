@@ -8,6 +8,7 @@ static const char rcs_id_ovwmsim_c[] =
 
 #include <fstream>
 #include <iomanip>
+
 #include <iostream>
 #include <string>
 #include "stdlib.h"
@@ -21,7 +22,7 @@ static const char rcs_id_ovwmsim_c[] =
 #include "Sigma0Map.h"
 
 #define SNR_CUTOFF 1.e-3
-#define dX_THRESHOLD 0.0025 // threshold for eliminate meas record with land
+#define dX_THRESHOLD 0.10 // threshold for eliminate meas record with land
 #define E_FACTOR 1.644    // value for sinc square to drop to 1/e
 
 //==================//
@@ -2140,9 +2141,9 @@ OvwmSim::SetMeasurements(
                   if (!rainField.flag_3d) {
 		    float a,b;
                     int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
-                    //if (i==nrsteps/2 && j==nasteps/2) {
-                    //  printf("flag %d, s0 before %g, a %g, b %g, s0 after %g, lat %g, lon %g, inc %g\n",goodrain,s0,a,b,s0/a+b,lat*rtd,lon*rtd,meas->incidenceAngle*rtd);
-                    //}
+                    if (isnan(s0)|| isnan(a) || isnan(b) || isnan(s0/a+b)) {
+                      fprintf(stderr," NANBUG flag %d, s0 before %g, a %g, b %g, s0 after %g, lat %g, lon %g, inc %g\n",goodrain,s0,a,b,s0/a+b,lat*rtd,lon*rtd,meas->incidenceAngle*rtd);
+                    }
 		    if(goodrain) s0= s0/a + b;
                   }
 		}
@@ -2245,6 +2246,10 @@ OvwmSim::SetMeasurements(
               }
 	      meas->XK+=dX;
 	      Es+=dX*s0;
+	      if(isnan(Es)){
+		fprintf(stderr,"AAAAAAAAAARRRRRRRGGGHHHHHHH CATCH BUG Es %g dX %g s0 %g\n",Es,dX,s0);
+	      }
+	  
               // reassign ptr_array to X for later computation of bounds
               _ptr_array[i][j]=dX;
               if(dX> maxdX) maxdX=dX;
@@ -2262,7 +2267,9 @@ OvwmSim::SetMeasurements(
           //cout << "rain (scat, attn): " << Es_rain << " " << attn << endl;
           //cout << "target E with rain: " << Es << endl;
 
-          if (dX_land/meas->XK >= dX_THRESHOLD && sim_l1b_direct) {
+          
+          
+          if (dX_land/meas->XK >= dX_THRESHOLD && sim_l1b_direct && !sim_all_land) {
             meas=meas_spot->RemoveCurrent();
             delete meas;
             meas=meas_spot->GetCurrent();
@@ -2313,7 +2320,7 @@ OvwmSim::SetMeasurements(
 	    /(64*pi*pi*pi*ovwm->systemLoss*N0*float(nL))
             *ovwm->ses.receivePathLoss; // the last term added as noise has this factor
           double SNR=Es*kSNR;
-
+          
 
           if(integrateAmbig){
             amb1/=meas->XK;
@@ -2324,6 +2331,9 @@ OvwmSim::SetMeasurements(
           Es*=ksig;
           //cout << "Es after ksig: " << Es << endl;
           En=Es/SNR;
+          if(isnan(Es)){
+            fprintf(stderr,"AAAAAAAAAARRRRRRRGGGHHHHHHH CATCH BUG En %g Es %g SNR %g kSNR %g ksig %g N0 %g lambda %g\n",En,Es,SNR,kSNR,ksig,N0,lambda);
+	  }
           //printf("SNR, Es, En: %g %g %g\n", SNR, Es, En);
 
           if (SNR < SNR_CUTOFF && !sim_l1b_direct) { // deal with L1A pixel with low gain

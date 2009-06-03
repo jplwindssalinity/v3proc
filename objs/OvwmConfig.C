@@ -542,6 +542,13 @@ ConfigOvwmSim(
     if (use_land_map)
     {
 	config_list->GetInt(SIM_COAST_KEYWORD,&(ovwm_sim->simCoast));
+        ovwm_sim->sim_all_land=0;
+        config_list->WarnForMissingKeywords();
+        int tmpint;
+        if(config_list->GetInt("SIM_ALL_LAND",&tmpint)){
+	  ovwm_sim->sim_all_land=tmpint;
+	}
+        config_list->ExitForMissingKeywords();
 	char keyword[1024];
 	char number[8];
 

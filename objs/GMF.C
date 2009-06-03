@@ -1121,7 +1121,7 @@ GMF::CheckRetrieveCriteria(
     // check for land contamination //
     //------------------------------//
 
-#define SPECIAL_COAST
+ //#define SPECIAL_COAST
 #ifndef SPECIAL_COAST
     for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
     {

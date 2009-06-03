@@ -1186,6 +1186,49 @@ WindSwath::GetNudgeVectors(
 
 
 int
+WindSwath::GetNudgeVectors(float** spd, float** dir, int nati, int ncti)
+{
+  if(ncti!=_crossTrackBins){
+    fprintf(stderr,"GetNudgeVectors: mismatch between nudge array and swath size\n");
+    exit(1);
+  }
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+            /*** Not sure why we have this check
+	    /*** Commenting out for now
+            /*** May effect coastal retrieval or cause bug
+            /*** in HurrSp1 retrieval
+            if (! wvc->ambiguities.NodeCount())
+	      continue;
+	    ***/
+            wvc->nudgeWV = new WindVectorPlus;
+	    if(ati>=nati){
+	      delete wvc->nudgeWV;
+	      wvc->nudgeWV=NULL;
+	    }
+	    float nspd=spd[ati][cti];
+	    if(nspd<0){
+	      delete wvc->nudgeWV;
+	      wvc->nudgeWV=NULL;
+	    }
+	    else{
+	      wvc->nudgeWV->spd=nspd;
+	      wvc->nudgeWV->dir=dir[ati][cti];
+	    }
+        }
+    }
+    nudgeVectorsRead = 1;
+    return(1);
+}
+
+
+
+int
 WindSwath::GetNudgeVectors(
     WindVectorField*  nudge_field)
 {
@@ -2708,6 +2751,10 @@ int
 WindSwath::SelectNearest(
     WindField*    truth)
 {
+  if(truth==NULL){
+    fprintf(stderr,"No truth field... Selecting closest to nudge vectors\n");
+    useNudgeVectorsAsTruth=1;
+  }
     int count = 0;
     for (int cti = 0; cti < _crossTrackBins; cti++)
     {
@@ -2749,7 +2796,7 @@ WindSwath::SelectNudge()
             WVC* wvc = swath[cti][ati];
             if (! wvc)
                 continue;
-            if (! wvc->nudgeWV)
+            if (! wvc->nudgeWV || wvc->ambiguities.NodeCount()==0)
             {
                 wvc->selected=NULL;
                 continue;
