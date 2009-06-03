@@ -18,7 +18,6 @@
 //    [ -a start:end ]  The range of along track index.
 //    [ -n num_frames ] The maximum frame number.
 //    [ -i ]            Ignore bad l2a.
-//    [ -R ]     Remove measurements more than 10 stds from average
 //
 // OPERANDS
 //    The following operand is supported:
@@ -105,7 +104,7 @@ template class std::map<string,string,Options::ltstr>;
 //-----------//
 
 #define MAX_ALONG_TRACK_BINS  1624
-#define OPTSTRING "iWRa:n:w:"
+#define OPTSTRING "ia:n:w:"
 
 //-------//
 // HACKS //
@@ -133,7 +132,7 @@ template class std::map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = {"[ -a start:end ]", "[-R]","[ -n num_frames ]", "[ -i ]","[ -W ]", "[ -w c_band_weight_file ]" , "<sim_config_file>", 0};
+const char* usage_array[] = {"[ -a start:end ]", "[ -n num_frames ]", "[ -i ]", "[ -w c_band_weight_file ]" , "<sim_config_file>", 0};
 
 
 //--------------//
@@ -145,20 +144,22 @@ main(
     int    argc,
     char*  argv[])
 {
+
+    FILE* dirdiagfp=NULL;
+    // comment out if you don't want debug output
+    dirdiagfp=fopen("DIRDIAG.TXT","w");
     //------------------------//
     // parse the command line //
     //------------------------//
     int frame_number =0;
     int ignore_bad_l2a=0;
     int use_freq_weights=0;
-    int calc_cband_weights=0; // new
     long int max_record_no = 0;
     char weight_file[200];
     float** weights=NULL;
     FILE* wfp;
     int ncti_wt=0, nati_wt=0, first_valid_ati=0, nvalid_ati=0;
-    bool opt_remove_outlying_s0=false;
-    
+
     const char* command = no_path(argv[0]);
     if (argc < 2)
         usage(command, usage_array, 1);
@@ -179,11 +180,6 @@ main(
             exit(1);
           }
           break;
-
-        case 'R':
-            opt_remove_outlying_s0=true;
-            break;
-            
         case 'n':
           if (sscanf(optarg, "%ld", &max_record_no) != 1)
           {
@@ -226,10 +222,6 @@ main(
           use_freq_weights = 1;
 	  fclose(wfp);
 	  break;
-
-        case 'W':
-          calc_cband_weights = 1;
-          break;
         case 'i':
           ignore_bad_l2a=1;
           break;
@@ -415,59 +407,7 @@ main(
 #endif
 	if(use_freq_weights)
 	  gmf.SetCBandWeight(weights[l2a.frame.ati][l2a.frame.cti]);
-
-        if (calc_cband_weights) {
-//  first find all C-band measurements and average the sigma0
-
-            float ave_cband_V = 0.0;  // "V-pol" is 54-deg H-pol in sim
-            float ave_cband_H = 0.0;  // "H-pol" is 46-deg H-pol in sim
-            int n_cband_V = 0;
-            int n_cband_H = 0;
-    
-            for (Meas* meas = l2a.frame.measList.GetHead(); meas; meas = l2a.frame.measList.GetNext()){
-                if (meas->measType==Meas::C_BAND_VV_MEAS_TYPE){
-                    n_cband_V++;
-                    ave_cband_V += meas->value;
-                }
-            
-                if (meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
-                    n_cband_H++;
-                    ave_cband_H += meas->value;
-                }
-            
-            }
-            if (n_cband_V){
-                ave_cband_V /= n_cband_V;
-            }
-            if (n_cband_H){
-                ave_cband_H /= n_cband_H;
-            }
-    
-
-// then determine weight based on value of mean sigma0 relative to
-// threshold value (weight at threshold = 0.5??).  threshold determined
-// by [tbd] the a0 at the speed at which the Ku-band model becomes double-
-// valued.
-            float thr_V = 0.013;
-            float thr_H = 0.04;
-            float t = 0.0;
-            float wt = 0.0;
-    
-// weight ranges from 0.1 to 0.9 with the 0.5 point at the threshold
-
-            t = 0.5*((ave_cband_V/thr_V) + (ave_cband_H/thr_H));
-            if (t < 0.1) t = 0.1;
-    
-            wt = t/(1.0 + t);
-
-// use GMF::SetCBandWeight() to set the relative C and Ku weights used in wind retrieval
-            gmf.SetCBandWeight(wt);
-    
-        }
-
         int retval = 1;
-        if(opt_remove_outlying_s0) gmf.RemoveBadCopol(&(l2a.frame.measList),&kp);
-        
         if (l2a.frame.ati >= start_ati && l2a.frame.ati <= end_ati) {
           retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
           if(frame_number%100==0) fprintf(stderr,"%d l2a frames processed\n",
@@ -476,6 +416,7 @@ main(
           break;
         }
 
+        
 #ifdef LATLON_LIMIT_HACK
         // start hack
         if (retval != 1)
@@ -506,9 +447,64 @@ main(
         }
         // end hack
 #endif
+        int ai=l2a.frame.ati;
+        int ci=l2a.frame.cti;
+	WVC* wvc=l2b.frame.swath.GetWVC(ci,ai);
 
-    }
+       if(dirdiagfp && wvc){
+          // FORMAT IS
+          // ATI, CTI, NUMAMBIGS, 80perwidth, spd1 dir1 left1 right1,...
+          // objs(72) spds(72)
+          
+	  fprintf(dirdiagfp,"%d %d ",ai,ci);
+	  WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+          
+          int namb=wvc->ambiguities.NodeCount();
+          float _dir[4],_spd[4],_obj[4],_right[4],_left[4];
+          float width=0;
+          for(int c=0;c<4;c++){
+	    if(wvp==NULL){
+	      _spd[c]=-1;
+	      _dir[c]=0;
+	      _obj[c]=0;
+	      _right[c]=0;
+	      _left[c]=0;
+	    }
+	    else{
+	      _spd[c]=wvp->spd;
+              _dir[c]=wvp->dir*180/pi;
+	      _obj[c]=wvp->obj;
 
+	      AngleInterval* alist=wvc->directionRanges.GetByIndex(c);
+              if(!alist){
+		_left[c]=0;
+		_right[c]=0;
+	      }
+              else{
+		_left[c]=alist->left;
+		_right[c]=alist->right;
+	      }
+              width+=ANGDIF(_left[c],_right[c]);
+              _left[c]*=180/pi;
+              _right[c]*=180/pi;
+              wvp=wvc->ambiguities.GetNext();
+
+	    }
+          }
+          fprintf(dirdiagfp,"%d %g ",namb,width*180/pi);
+	  for(int c=0;c<4;c++){
+	    fprintf(dirdiagfp,"%g %g %g %g %g ",_spd[c],_dir[c],_obj[c],_left[c],_right[c]);
+	  }
+	  for(int p=0;p<72;p++){
+	    fprintf(dirdiagfp,"%g ",wvc->directionRanges.bestObj[p]);
+	  }
+          for(int p=0;p<72;p++){
+	    fprintf(dirdiagfp,"%g ",wvc->directionRanges.bestSpd[p]);
+	  }
+		  fprintf(dirdiagfp,"\n");
+	} // end diagnostic output section
+    } // end loop over wind vector cells
+    if(dirdiagfp) fclose(dirdiagfp);
     l2a_to_l2b.InitFilterAndFlush(&l2b);
 
     l2a.Close();

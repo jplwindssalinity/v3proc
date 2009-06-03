@@ -202,13 +202,16 @@ main(
           exit(1);
 	}
 
+        int abins=l2b1.frame.swath.GetAlongTrackBins();
+        int cbins=l2b1.frame.swath.GetCrossTrackBins();
+
 	//----------------------//
         // compute difference & //
 	// write to stdout      //
 	//----------------------//
-	for(int ati=0;ati<1603;ati++){
+	for(int ati=0;ati<abins;ati++){
 	  WindVector true_wv;
-	  for(int cti=0;cti<80;cti++){
+	  for(int cti=0;cti<cbins;cti++){
 	    WVC* wvc1=l2b1.frame.swath.swath[cti][ati];
             WVC* wvc2=l2b2.frame.swath.swath[cti][ati];
             float lon,lat;
@@ -223,20 +226,18 @@ main(
               lat=wvc2->lonLat.latitude;
 	    }
 	    else{
-	      printf("NaN NaN NaN NaN NaN NaN ");
               continue;
 	    }
 	    if(wvc2) wvp2=wvc2->selected;
             int land=landmap.IsLand(lon,lat);
-	    if(!wvp1 || !wvp2) printf("%g %g NaN NaN NaN %d ",lat*rtd,lon*rtd,land);
+	    if(!wvp1 || !wvp2) continue;
             else {
 	      float spddif=wvp1->spd - wvp2->spd;
-	      printf("%g %g %g %g %g %d ", lat*rtd, lon*rtd, spddif, wvp1->spd,
+	      printf("%d %d %g %g %g %g %g %g %d \n", ati,cti,lat*rtd, lon*rtd, spddif, wvp1->spd,wvp2->spd,
 wvp1->obj, land);
 	    }
             
 	  }
-	  printf("\n");
 	}
 	return (0);
 }

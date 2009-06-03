@@ -81,6 +81,8 @@ template class List<StringPair>;
 template class List<WindVectorPlus>;
 template class List<AngleInterval>;
 template class List<EarthPosition>;
+template class std::list<string>;
+template class std::map<string,string,Options::ltstr>;
 
 #define SPEED_RESOLUTION  0.5
 #define SPEED_BINS        100
@@ -119,6 +121,20 @@ const char* usage_array[] = { "[ -o output_base ]",
     "[ -D max_direction_diff ]", "[ config_file... ]", "[ metric_file... ]",
     NULL };
 
+
+int read_truth_arrays(char* filename, float* truthspd, float* truthdir,
+		     int nati, int ncti){
+  FILE* ifp=fopen(filename,"r");
+  if(ifp==NULL){
+    return(0);
+  }
+  fseek(ifp,21*nati+8*nati*ncti,SEEK_SET);
+  if(fread(&(truthspd[0]),sizeof(float),ncti*nati,ifp)!=ncti*nati ||
+     fread(&(truthspd[0]),sizeof(float),ncti*nati,ifp)!=ncti*nati){
+    return(0);
+  }
+  return(1);
+}
 //--------------//
 // MAIN PROGRAM //
 //--------------//
@@ -279,14 +295,18 @@ main(
                 }
                 swath = &(l2b.frame.swath);
             }
-
+            int ncti=swath.GetCrossTrackBins();
+	    int nati=swath.GetCrossTrackBins();
             //----------------------------//
             // read in "truth" wind field //
             //----------------------------//
 
             WindField truth_windfield;
             L2B truth_l2b;
+            float* truthspd,truthdir;
+	    
             LonLatWind* truth = NULL;
+            bool use_truth_arrays=false;
             if (truth_file != NULL && truth_type != NULL)
             {
                 if (strcasecmp(truth_type, L2B_TYPE) == 0) {
@@ -301,7 +321,23 @@ main(
                         exit(1);
                     }
                     truth = &(truth_l2b.frame.swath);
-                } else {
+                }
+		else if (strcasecmp(truth_type, "L2B_COLOC") == 0) {
+                  // PREVIOUSLY COLOCATED TRUTH FILE
+                  truthspd=(float*)malloc(sizeof(float)*ncti*nati);
+                  truthdir=(float*)malloc(sizeof(float)*ncti*nati);
+		  if(!truthspd || !truthdir){
+		    fprintf(stderr,"Cannot allocate truth arrays!\n");
+		    exit(1);
+		  }
+		  if (! read_truth_arrays(truth_file,truthspd,truthdir,nati,ncti)) {
+                        fprintf(stderr, "%s: error reading truth L2B colocation file %s\n",
+                            command, truth_file);
+                        exit(1);
+                    }
+		  use_truth_arrays=true;
+		}
+		else {
 
                     //------------------//
                     // Windfield truth? //
@@ -340,13 +376,27 @@ main(
 
             if (swath != NULL)
             {
+	      if(use_truth_arrays){
                 if (! metrics.Evaluate(swath, l2b.header.crossTrackResolution,
-                    SPEED_BINS, SPEED_RESOLUTION, truth))
-                {
+				       SPEED_BINS, SPEED_RESOLUTION, 
+				       truthspd,truthdir));
+		  {
                     fprintf(stderr, "%s: error evaluating wind field\n",
-                        command);
+			    command);
                     exit(1);
-                }
+		  }
+		  free(truthspd);
+		  free(truthdir);
+	      }
+	      else{
+                if (! metrics.Evaluate(swath, l2b.header.crossTrackResolution,
+				       SPEED_BINS, SPEED_RESOLUTION, truth))
+		  {
+                    fprintf(stderr, "%s: error evaluating wind field\n",
+			    command);
+                    exit(1);
+		  }
+	      }
                 total_metrics += metrics;
             }
 

@@ -45,20 +45,53 @@
 
 static const char rcs_id[] =
     "@(#) $Id$";
-
 //----------//
 // INCLUDES //
 //----------//
 
 #include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include "Misc.h"
-#include "LandMap.h"
-#include "Array.h"
-#include "Constants.h"
+#include "Ephemeris.h"
+#include "ConfigList.h"
+#include "L1A.h"
+#include "ConfigSim.h"
+#include "L1BHdf.h"
+#include "L1AToL1B.h"
+#include "Tracking.h"
+#include "Tracking.C"
+#include "QscatConfig.h"
+#include "List.h"
+#include "List.C"
+#include "BufferedList.h"
+#include "BufferedList.C"
+
+
+using std::list;
+using std::map;
 
 //-----------//
 // TEMPLATES //
 //-----------//
+
+class AngleInterval;
+
+template class List<AngleInterval>;
+template class BufferedList<OrbitState>;
+template class List<OrbitState>;
+template class List<StringPair>;
+template class List<Meas>;
+template class List<EarthPosition>;
+template class List<MeasSpot>;
+template class List<WindVectorPlus>;
+template class List<off_t>;
+template class List<OffsetList>;
+template class TrackerBase<unsigned char>;
+template class TrackerBase<unsigned short>;
+template class std::list<string>;
+template class std::map<string,string,Options::ltstr>;
+
 
 //-----------//
 // CONSTANTS //
@@ -93,7 +126,7 @@ int    writemap(const char* filename, char** map, int lon_samples,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<original_land_map>", "<output_land_map>", 0 };
+const char* usage_array[] = { "<original_cfg_file>", "<output_land_map>", 0 };
 const float radius = 6378.0;
 const float pi_2 = M_PI / 2.0;
 
@@ -115,18 +148,21 @@ main(
         usage(command, usage_array, 1);
 
     int clidx = 1;
-    const char* original_land_map_file = argv[clidx++];
+    const char* original_cfg_file = argv[clidx++];
     const char* output_land_map_file = argv[clidx++];
-
+    ConfigList cfg;
+    if(!cfg.Read(original_cfg_file)){
+      fprintf(stderr,"Error reading cfg file %s\n",original_cfg_file);
+      exit(1);
+    }
     //------------------//
     // read in land map //
     //------------------//
 
     LandMap original_land_map;
-    if (! original_land_map.Read((char *)original_land_map_file))
+    if (!ConfigLandMap(&original_land_map, &cfg))
     {
-        fprintf(stderr, "%s: error reading land map file %s\n", command,
-            original_land_map_file);
+        fprintf(stderr, "%s: error configuring land map\n", command);
         exit(1);
     }
 

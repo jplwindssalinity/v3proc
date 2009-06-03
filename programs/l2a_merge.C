@@ -208,7 +208,7 @@ main(
 					along_track_bins,
 					l2a_in2.header.crossTrackBins);
     int nm=0;
-    off_t tmp=0;
+    off_t tmp;
     while(nm==0){
       tmp=ftello(ifp);
       if (! l2a_in.ReadDataRec())
@@ -273,7 +273,6 @@ main(
 	    offset[ati][cti]=ftello(ifp);
 	    fseeko(ifp,nm*meas_length,SEEK_CUR);
 	  }
-          //cout << "f1 ati cti nm: " << ati << " " << cti << " " << nm << endl;
 	}
 
 	if(ftello(ifp2)<end_byte2){
@@ -291,7 +290,6 @@ main(
 	    offset2[ati][cti]=ftello(ifp2);
 	    fseeko(ifp2,nm*meas_length,SEEK_CUR);
 	  }
-          //cout << "f2 ati cti nm: " << ati << " " << cti << " " << nm << endl;
 	}
         if((ftello(ifp)>=end_byte && ftello(ifp2)>=end_byte2) ||
 	   (feof(ifp) && feof(ifp2))) break;
@@ -328,7 +326,6 @@ main(
 	// read and write out measurements
 	if(nummeas[a][c]!=0){
 	    unsigned int N=(unsigned int)nummeas[a][c]*meas_length;
-            //cout << "f1 a c nm: " << a << " " << c << " " << nummeas[a][c] << endl;
 	    fseeko(ifp,offset[a][c],SEEK_SET);
 	    if(fread(buffer,sizeof(char),N,ifp)!=N){
 	      fprintf(stderr,"Cannot read buffer from %s\n",in_file);
@@ -342,7 +339,6 @@ main(
 
 	if(nummeas2[a][c]!=0){
 	    unsigned int N=(unsigned int)nummeas2[a][c]*meas_length;
-            //cout << "f2 a c nm: " << a << " " << c << " " << nummeas2[a][c] << endl;
 	    fseeko(ifp2,offset2[a][c],SEEK_SET);
 	    if(fread(buffer,sizeof(char),N,ifp2)!=N){
 	      fprintf(stderr,"Cannot read buffer from %s\n",in_file);

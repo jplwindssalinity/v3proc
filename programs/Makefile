@@ -16,7 +16,8 @@ LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm
 PURE =
 
 CCC =			$(PURE) g++
-DEBUGFLAGS =	-ggdb2
+DEBUGFLAGS =	-ggdb2 --save-temps 
+#DEBUGFLAGS = -O2
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -DNOPM
 
 INSTALLDIR =	../../bin

@@ -86,17 +86,18 @@ template class List<Meas>;
 template class List<EarthPosition>;
 template class List<MeasSpot>;
 template class List<WindVectorPlus>;
-template class List<long>;
+template class List<off_t>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
-
+template class std::list<string>;
+template class std::map<string,string,Options::ltstr>;
 
 //-----------//
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING				"c:l:o:"
+#define OPTSTRING				"c:l:o:h"
 
 
 //-----------------------//
@@ -112,7 +113,7 @@ template class TrackerBase<unsigned short>;
 //------------------//
 
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l2a_hdf_file ]",
-	"[ -o output_file ]", 0 };
+			      "[ -o output_file ]", "[ -h (hires switch)]", 0 };
 
 // not always evil...
 const char*		command = NULL;
@@ -137,7 +138,7 @@ main(
 	ConfigList config_list;
 	l2a_hdf_file = NULL;
 	output_file = NULL;
-
+        SourceIdE l2a_type = SOURCE_L2Ax;
 	//------------------------//
 	// parse the command line //
 	//------------------------//
@@ -164,6 +165,9 @@ main(
 		case 'l':
 			l2a_hdf_file = optarg;
 			break;
+                case 'h':
+		  l2a_type = SOURCE_L2Ahr;
+			  break;
 		case 'o':
             output_file = optarg;
 			break;
@@ -192,7 +196,7 @@ main(
 	// read in HDF 2A file   //
 	//-----------------------//
     HdfFile::StatusE status;
-    L2AHdf  l2aHdf(l2a_hdf_file, SOURCE_L2A, status);
+    L2AHdf  l2aHdf(l2a_hdf_file, l2a_type, status);
     if (status != HdfFile::OK)
     {
         fprintf(stderr, "%s: cannot open HDF %s for input\n",

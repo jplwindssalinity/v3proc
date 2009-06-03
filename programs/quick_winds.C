@@ -176,7 +176,7 @@ template class std::map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<wind_speed>", "<geom_input_file>","<metrics_output_file>","<num_samples>","[opt_c_band]","[opt_coast]",0};
+const char* usage_array[] = { "<sim_config_file>", "<wind_speed>", "<geom_input_file>","<metrics_output_file>","<num_samples>","[opt_coast]",0};
 
 
 //--------------//
@@ -206,10 +206,8 @@ main(
     const char* in_file = argv[clidx++];
     const char* out_file = argv[clidx++];
     int n=atoi(argv[clidx++]);
-    int use_cband=0;
     bool coast=false;
-    if(argc>=7) use_cband=atoi(argv[clidx++]);
-    if(argc==8) coast=(bool)atoi(argv[clidx++]);
+    if(argc==7) coast=(bool)atoi(argv[clidx++]);
 
     printf("Simulating %g m/s using %d samples\n",true_speed,n);
     fflush(stdout);
@@ -447,38 +445,26 @@ main(
 	    meas->startSliceIdx=k;
             meas->numSlices=-1;
 
-	    if(use_cband==1){
-	      if(pol[j]=='v' || pol[j]=='V'){
+	    if(pol[j]=='v' || pol[j]=='V'){
+	      meas->measType=Meas::VV_MEAS_TYPE;
+	    }
+	    else if(pol[j]=='h' || pol[j]=='H'){
+	      meas->measType=Meas::HH_MEAS_TYPE;
+	    }
+ 
+            /*** HACK ALERT this confusion is necessary in order
+		 to use QuikSCAT format model functions **/
+   	    else if(pol[j]=='c' || pol[j]=='C'){
+	      if(inc[j]>52*dtr)
 		meas->measType=Meas::C_BAND_VV_MEAS_TYPE;
-	      }
-	      else{
+	      else
 		meas->measType=Meas::C_BAND_HH_MEAS_TYPE;
-	      }
 	    }
-	    else if(use_cband==2 && j> (nlooks/2 -1) ){
-	      if(pol[j]=='v' || pol[j]=='V'){
-		meas->measType=Meas::C_BAND_VV_MEAS_TYPE;
-	      }
-	      else{
-		meas->measType=Meas::C_BAND_HH_MEAS_TYPE;
-	      }
+            else{
+	      fprintf(stderr,"Bad Measurement type: %c\n",pol[j]);
+	      exit(0);
 	    }
-	    else if(use_cband==3 && j>=(nlooks-2*2)){ // assumed last 2 beams are C-band
-	      if(pol[j]=='v' || pol[j]=='V'){
-		meas->measType=Meas::C_BAND_VV_MEAS_TYPE;
-	      }
-	      else{
-		meas->measType=Meas::C_BAND_HH_MEAS_TYPE;
-	      }
-	    }
-	    else{
-	      if(pol[j]=='v' || pol[j]=='V'){
-		meas->measType=Meas::VV_MEAS_TYPE;
-	      }
-	      else{
-		meas->measType=Meas::HH_MEAS_TYPE;
-	      }
-	    }
+
             // set unused quantities
             meas->XK=0;
 	    meas->EnSlice=0;
