@@ -2336,7 +2336,10 @@ OvwmSim::SetMeasurements(
 	  }
           //printf("SNR, Es, En: %g %g %g\n", SNR, Es, En);
 
-          if (SNR < SNR_CUTOFF && !sim_l1b_direct) { // deal with L1A pixel with low gain
+
+          // Set Noise value this way when SNR is very low
+          // to avoid numerical error
+          if (SNR < SNR_CUTOFF) { 
             En = N0*float(nL)/ovwm->ses.receivePathLoss;
           }
 
@@ -2477,7 +2480,12 @@ OvwmSim::SetMeasurements(
           double kpc2=(1/(float)nL)*(1+2/SNR+1/(SNR*SNR));
 	  var_esn_slice=kpc2*Es*Es;
 
-          if (SNR < SNR_CUTOFF && !sim_l1b_direct) { // deal with L1A pixel with low gain
+          // For very low SNR turn off Kpc. 
+          // This should only occur for cases in which sigma0 is 30 dB
+          // below the noise floor and thus wind speed is identically 0
+          // It is meant for invalid wind speed regions not real
+          // low winds.
+          if (SNR < SNR_CUTOFF) { // deal with L1A pixel with low gain
             var_esn_slice=0.;
           }
 
