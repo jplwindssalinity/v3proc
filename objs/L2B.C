@@ -625,7 +625,13 @@ L2B::ReadPureHdf(
 
             wvc->rainProb = mp_rain_probability[cti]
                 * HDF_MP_RAIN_PROBABILITY_SCALE;
-            wvc->rainFlagBits = (char)((0x7000 & wvc_quality_flag[cti]) >> 12);
+                
+            //--------------------//
+            // read quality flags //
+            //--------------------//                
+                
+            wvc->rainFlagBits    = (char)((0x7000 & wvc_quality_flag[cti]) >> 12);
+            wvc->landiceFlagBits = (char)((0x180  & wvc_quality_flag[cti]) >> 7 );
 
             //------------------//
             // add WVC to swath //
@@ -897,7 +903,10 @@ L2B::WriteHdf(
             num_in_aft_value[cti] = wvc->numInAft;
             num_out_fore_value[cti] = wvc->numOutFore;
             num_out_aft_value[cti] = wvc->numOutAft;
-            wvc_quality_flag_value[cti] = wvc->rainFlagBits << 12;
+            
+            wvc_quality_flag_value[cti] = wvc->rainFlagBits << 12 + 
+                wvc->landiceFlagBits << 7;
+            
             if (wvc->nudgeWV != NULL)
             {
                  model_speed_value[cti] = wvc->nudgeWV->spd
@@ -1396,7 +1405,9 @@ L2B::ReadHDF(
         {
             WVC* wvc = new WVC();
             wvc->rainProb=rainArray[cti];
-            wvc->rainFlagBits=char((0x7000 & qualArray[cti])>>12);
+            wvc->rainFlagBits    = (char)((0x7000 & qualArray[cti]) >> 12);
+            wvc->landiceFlagBits = (char)((0x180  & qualArray[cti]) >> 7 );
+            
             wvc->lonLat.longitude = lonArray[cti] * dtr;
             wvc->lonLat.latitude = latArray[cti] * dtr;
             wvc->nudgeWV = new WindVectorPlus();
