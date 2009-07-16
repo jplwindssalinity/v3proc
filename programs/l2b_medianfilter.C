@@ -69,6 +69,10 @@ static const char rcs_id[] =
 #include "L2AToL2B.h"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "Array.h"
+
+using std::list;
+using std::map; 
 
 //-----------//
 // TEMPLATES //
@@ -78,7 +82,6 @@ static const char rcs_id[] =
 // eliminates need to include the entire header file
 class AngleInterval;
 
-template class List<AngleInterval>;
 template class List<StringPair>;
 template class List<Meas>;
 template class List<EarthPosition>;
@@ -86,10 +89,13 @@ template class List<WindVectorPlus>;
 template class List<MeasSpot>;
 template class BufferedList<OrbitState>;
 template class List<OrbitState>;
-template class List<long>;
+template class List<off_t>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
+template class List<AngleInterval>;
+template class std::list<string>;
+template class std::map<string,string,Options::ltstr>;
 
 //-----------//
 // CONSTANTS //
