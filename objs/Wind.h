@@ -123,6 +123,9 @@ public:
 #define RAIN_FLAG_RAIN      0x02    // bit 1 1/0 = rain/no rain
 #define RAIN_FLAG_LOCATION  0x04    // bit 2 1/0 = outer/inner
 
+#define LAND_ICE_FLAG_COAST 0x01    // bit 0 1/0 = land / no land
+#define LAND_ICE_FLAG_ICE   0x02    // bit 1 1/0 = ice  / no ice
+
 class WVC
 {
 public:
@@ -182,10 +185,14 @@ public:
     AngleIntervalListPlus  directionRanges;
     float                  rainProb;
     char                   rainFlagBits;
-    // bit 0 1/0 = not usable/usable
-    // bit 1 1/0 = rain/no rain
-    // bit 2 1/0 = outer/inner
+    // bit 0 1/0 = not usable                / usable
+    // bit 1 1/0 = rain                      / no rain
+    // bit 2 1/0 = Only outer beam available / Dual-Pol available
 
+    char                   landiceFlagBits;
+    // bit 0 1/0 = land / no land
+    // bit 1 1/0 = ice  / no ice
+    
     // these are in the ground system L2B, so we put 'em in too
     // they currently are only used when HDF-ing
     unsigned char          numInFore;
