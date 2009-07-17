@@ -56,6 +56,8 @@ static const char rcs_id[] =
 #include "List.h"
 #include "List.C"
 #include "ConfigList.h"
+#include "Tracking.h"
+#include "Tracking.C"
 #include "Spacecraft.h"
 #include "SpacecraftSim.h"
 #include "ConfigSim.h"
@@ -65,14 +67,23 @@ static const char rcs_id[] =
 //-----------//
 // TEMPLATES //
 //-----------//
+class AngleInterval;
 
+template class List<AngleInterval>;
 template class List<StringPair>;
 template class List<Meas>;
-template class List<LonLat>;
-template class List<WindVectorPlus>;
+template class List<EarthPosition>;
 template class List<MeasSpot>;
 template class BufferedList<OrbitState>;
 template class List<OrbitState>;
+template class List<WindVectorPlus>;
+template class List<off_t>;
+template class List<OffsetList>;
+template class TrackerBase<unsigned char>;
+template class TrackerBase<unsigned short>;
+template class std::list<string>;
+template class std::map<string,string,Options::ltstr>;
+
 
 //-----------//
 // CONSTANTS //
@@ -167,6 +178,20 @@ main(
 	}
 */
 
+
+        // set starting time to southernmost point
+        double epoch=spacecraft_sim.GetEpoch();
+        double spacecraft_start_time=spacecraft_sim.FindPrevArgOfLatTime(epoch,-pi/2,EQX_TIME_TOLERANCE);
+
+	if (! spacecraft_sim.Initialize(spacecraft_start_time))
+	  {
+	    fprintf(stderr, "%s: error initializing spacecraft simulator\n",
+		    command);
+	    exit(1);
+	  }
+
+
+	double period=spacecraft_sim.GetPeriod();
 	//----------------------//
 	// cycle through events //
 	//----------------------//
@@ -183,17 +208,18 @@ main(
 			spacecraft_sim.UpdateOrbit(spacecraft_event.time,
 				&spacecraft);
 			double alt, lat, lon;
-			spacecraft.orbitState.rsat.GetAltLatLon(EarthPosition::GEOCENTRIC,
-				&alt,&lat,&lon);
-			printf("%g %g\n", spacecraft.orbitState.time, alt);
+			spacecraft.orbitState.rsat.GetAltLonGDLat(&alt,&lon,&lat);
+			printf("%g %g %g %g\n", spacecraft.orbitState.time-spacecraft_start_time, lat*rtd, lon*rtd, alt);
 //			spacecraft.orbitState.Write(eph_fp);
 			break;
+		case SpacecraftEvent::EQUATOR_CROSSING:
+		        break;
 		default:
 			fprintf(stderr, "%s: unknown spacecraft event\n", command);
 			exit(1);
 			break;
 		}
-		if (spacecraft.orbitState.time > 6300.0)
+		if (spacecraft.orbitState.time > period+spacecraft_start_time)
 			break;
 	}
 
