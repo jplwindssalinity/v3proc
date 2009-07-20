@@ -192,6 +192,29 @@ ConfigSpacecraftSim(
     spacecraft_sim->DefineOrbit(epoch, semi_major_axis, eccentricity,
         inclination, long_of_asc_node, arg_of_perigee, mean_anomaly_at_epoch);
 
+    //-------------------------------//
+    // optionally put the spacecraft //
+    // at a specific place at the    //
+    // epoch time                    //
+    //-------------------------------//
+
+    config_list->DoNothingForMissingKeywords();
+    double epochlat,epochlon;
+    int epochasc;
+    if( config_list->GetDouble(ORBIT_EPOCH_LAT_KEYWORD,
+			       &epochlat)){
+       config_list->ExitForMissingKeywords();
+       if(!config_list->GetDouble(ORBIT_EPOCH_LON_KEYWORD,
+				  &epochlon)){
+	 return(0);
+       }
+       if(!config_list->GetInt(ORBIT_EPOCH_ASC_KEYWORD,
+				  &epochasc)){
+	 return(0);
+       }
+       spacecraft_sim->LocationToOrbit(epochlon,epochlat,epochasc);
+    }
+    config_list->ExitForMissingKeywords();
     //-------------------------//
     // set up ephemeris period //
     //-------------------------//
