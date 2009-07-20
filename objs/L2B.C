@@ -631,7 +631,7 @@ L2B::ReadPureHdf(
             //--------------------//                
                 
             wvc->rainFlagBits    = (char)((0x7000 & wvc_quality_flag[cti]) >> 12);
-            wvc->landiceFlagBits = (char)((0x180  & wvc_quality_flag[cti]) >> 7 );
+            wvc->landiceFlagBits = (char)((0x0180 & wvc_quality_flag[cti]) >> 7 );
 
             //------------------//
             // add WVC to swath //
