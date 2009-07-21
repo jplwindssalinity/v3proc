@@ -1432,6 +1432,7 @@ WindSwath::S3Nudge()
     return(count);
 }
 
+
 //-----------------------//
 // WindSwath::ThresNudge //
 //-----------------------//
@@ -1440,7 +1441,7 @@ int
 WindSwath::ThresNudge(
     int    max_rank,
     float  thres[2])
-{
+{   
     int count = 0;
     for (int cti = 0; cti < _crossTrackBins; cti++)
     {
@@ -1456,7 +1457,7 @@ WindSwath::ThresNudge(
 
             int w = 0;
             if (cti < 9 || cti > 71) { w = 1; }
-             else { w = 0; }
+              else { w = 0; }
 
             WindVectorPlus* head = wvc->ambiguities.GetHead();
 
@@ -1471,7 +1472,7 @@ WindSwath::ThresNudge(
               continue;
 
             wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir, rank_idx);
-            count++;
+            count++;            
         }
     }
     return(count);
@@ -1554,6 +1555,186 @@ WindSwath::SmartNudge(
     }
     return(count);
 }
+
+//-------------------------------//
+// WindSwath::MedianFilter_4Pass //
+//-------------------------------//
+// Returns the number of passes.
+// If Special=0 Standard Median Filter (default)
+// if Special=1 Use Range Information  (S3)
+// If Special=2 Use Spatial Probability Maximization (S4)
+
+int
+WindSwath::MedianFilter_4Pass(
+    int  window_size,
+    int  max_passes,
+    int  bound,
+    int  weight_flag,
+    int  special,
+    int  freeze)
+{
+    //----------------------------//
+    // create a new selection map //
+    //----------------------------//
+
+    WindVectorPlus*** new_selected =
+        (WindVectorPlus***)make_array(sizeof(WindVectorPlus*), 2,
+        _crossTrackBins, _alongTrackBins);
+
+    //--------------------------------------------------------------------------//
+    // create arrays to flag filtering / influence during median filter passes //
+    //-------------------------------------------------------------------------//
+    char** change    = (char**)make_array(sizeof(char), 2, _crossTrackBins,
+        _alongTrackBins);
+        
+    char** filter    = (char**)make_array(sizeof(char), 2, _crossTrackBins,
+        _alongTrackBins);
+        
+    char** influence = (char**)make_array(sizeof(char), 2, _crossTrackBins,
+        _alongTrackBins);        
+    
+    
+    int half_window = window_size / 2;
+
+    int total_passes = 0;
+    
+    printf("bound: %d\n",bound);
+    
+    for( int med_filt_iter_cntr = 0; med_filt_iter_cntr < 4; ++med_filt_iter_cntr)
+    {
+      for (int cti = 0; cti < _crossTrackBins; cti++)
+      {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+          WVC* wvc = swath[cti][ati];
+          
+          if ( ! wvc )  // Trap cells without a wind retrival.
+          { 
+            filter[cti][ati]    = 0;
+            influence[cti][ati] = 0;
+            change[cti][ati]    = 0;
+            continue;
+          }
+
+          // coast || ice kept at no filter, no influence until iter 3
+          if( wvc->landiceFlagBits & (LAND_ICE_FLAG_ICE+LAND_ICE_FLAG_COAST) )
+          {
+            switch(med_filt_iter_cntr)
+            {
+              case 0:
+                filter[cti][ati]    = 0;
+                influence[cti][ati] = 0;
+                change[cti][ati]    = 0;
+                break;              
+              case 1:
+                filter[cti][ati]    = 0;
+                influence[cti][ati] = 0;
+                change[cti][ati]    = 0;
+                break;              
+              case 2:
+                filter[cti][ati]    = 0;
+                influence[cti][ati] = 0;
+                change[cti][ati]    = 0;
+                break;
+              case 3:
+                filter[cti][ati]    = 1;
+                influence[cti][ati] = 1;
+                change[cti][ati]    = 1;
+                break;
+              default:
+                 printf("In WindSwath::MedianFilter_4Pass, we shouldn't be here!!!\n");
+                break;
+            }
+          }
+          // rain && ! ice && ! coast
+          else if( (!(wvc->rainFlagBits & RAIN_FLAG_UNUSABLE)) &&  
+                (wvc->rainFlagBits & RAIN_FLAG_RAIN) )
+          {
+            switch(med_filt_iter_cntr)
+            {
+              case 0:
+                filter[cti][ati]    = 0;
+                influence[cti][ati] = 0;   
+                change[cti][ati]    = 0;
+                break;                
+              case 1:
+                filter[cti][ati]    = 1;
+                influence[cti][ati] = 1;
+                change[cti][ati]    = 1;
+                break;                
+              case 2:
+                filter[cti][ati]    = 1;
+                influence[cti][ati] = 1;
+                change[cti][ati]    = 1;
+                break;                
+              case 3:
+                filter[cti][ati]    = 0;
+                influence[cti][ati] = 1;
+                change[cti][ati]    = 0;
+                break;
+              default:
+                printf("In WindSwath::MedianFilter_4Pass, we shouldn't be here!!!\n");
+                break;
+            }
+          }
+          else // rain_free && ! ice && ! coast
+          {
+            switch(med_filt_iter_cntr)
+            {
+              case 0:
+                filter[cti][ati]    = 1;
+                influence[cti][ati] = 1;
+                change[cti][ati]    = 1;
+                break;                
+              case 1:
+                filter[cti][ati]    = 0;
+                influence[cti][ati] = 1;
+                change[cti][ati]    = 0;
+                break;                
+              case 2:
+                filter[cti][ati]    = 1;
+                influence[cti][ati] = 1;              
+                change[cti][ati]    = 1;
+                break;                
+              case 3:
+                filter[cti][ati]    = 0;
+                influence[cti][ati] = 1;
+                change[cti][ati]    = 0;
+                break;
+              default:
+                printf("In WindSwath::MedianFilter_4Pass, we shouldn't be here!!!\n");
+                break;
+            }
+          }
+        }
+      }
+      //--------//
+      // filter //
+      //--------//
+    
+      int pass = 0;
+      while (pass < max_passes)
+      {
+          int flips = MedianFilter4Pass_Pass( half_window, new_selected, change, 
+                    filter, influence, bound, weight_flag );
+          pass++;
+          if (flips == 0)
+              break;
+      }      
+      
+      printf("On median filter pass: %d, number of times filter applied: %d\n",
+        med_filt_iter_cntr,pass);
+      
+      total_passes = total_passes + pass;
+      
+    }
+
+    free_array(new_selected, 2, _crossTrackBins, _alongTrackBins);
+    free_array(change, 2, _crossTrackBins, _alongTrackBins);
+    return(total_passes);
+}
+
+
 
 //-------------------------//
 // WindSwath::MedianFilter //
@@ -2036,6 +2217,230 @@ WindSwath::MedianFilterPass(
     fflush(stdout);
     return(flips);
 }
+
+
+//-----------------------------------//
+// WindSwath::MedianFilterPass_4Pass //
+//-----------------------------------//
+// Returns the number of vector changes.
+
+
+int
+WindSwath::MedianFilter4Pass_Pass(
+    int                half_window,
+    WindVectorPlus***  new_selected,
+    char**             change,
+    char**             filter,
+    char**             influence,
+    int                bound,
+    int                weight_flag )
+{
+    int flips = 0;
+    float energy = 0.0;
+
+    //-------------//
+    // filter loop //
+    //-------------//
+        
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        int cti_min = cti - half_window;
+        int cti_max = cti + half_window + 1;
+        if (cti_min < bound)
+            cti_min = bound;
+        if (cti_max > _crossTrackBins-bound)
+            cti_max = _crossTrackBins-bound;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            int ati_min = ati - half_window;
+            int ati_max = ati + half_window + 1;
+            if (ati_min < 0)
+                ati_min = 0;
+            if (ati_max > _alongTrackBins)
+                ati_max = _alongTrackBins;
+
+            //------------------------------//
+            // initialize the new selection //
+            //------------------------------//
+
+            new_selected[cti][ati] = NULL;
+            WVC* wvc = swath[cti][ati];
+
+            if ( ! wvc )
+                continue;  // goto next cell
+                
+            if( ! filter[cti][ati] )
+                continue;  // goto next cell
+            
+            //------------------------------------------------------//
+            // check for changes & influences in window around cell //
+            //------------------------------------------------------//
+            
+            int sum_change = 0;
+            int sum_influence = 0;
+            
+            for (int i = cti_min; i < cti_max; i++)
+            {
+                for (int j = ati_min; j < ati_max; j++)
+                {
+                    sum_change    += change[i][j];
+                    sum_influence += influence[i][j];
+                }
+            }
+            
+            if( sum_change == 0 || sum_influence == 0 )
+                continue;
+            
+            float min_vector_dif_sum = (float)HUGE_VAL;
+            float min_vector_dif_avg = (float)HUGE_VAL;
+            float second_vector_dif_sum = (float)HUGE_VAL;
+            int   selected_count = 0;
+
+            for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+                wvp = wvc->ambiguities.GetNext())
+            {
+                float vector_dif_sum = 0.0;
+                float x1 = wvp->spd * cos(wvp->dir);
+                float y1 = wvp->spd * sin(wvp->dir);
+
+                selected_count = 0;
+                int available_count = 0;
+                for (int i = cti_min; i < cti_max; i++)
+                {
+                    for (int j = ati_min; j < ati_max; j++)
+                    {
+                        /*  The F90 official code DOES use the center... AGF 7/20/2009
+                        if (i == cti && j == ati)
+                            continue;        // don't check central vector
+                        */
+                        
+                        WVC* other_wvc = swath[i][j];
+                        
+                        if( ! other_wvc )
+                            continue;
+                        
+                        if( ! influence[i][j] )
+                            continue;
+
+                        available_count++;    // other wvc exists and will be used 
+                                              // to compute filter.
+
+                        WindVectorPlus* other_wvp = other_wvc->selected;
+                        if (! other_wvp)
+                            continue;
+
+                        // special purpose speed threshold
+                        if (other_wvp->spd < g_speed_stopper)
+                            continue;
+
+                        selected_count++;   // wvc has a valid selection
+
+                        float x2 = other_wvp->spd * cos(other_wvp->dir);
+                        float y2 = other_wvp->spd * sin(other_wvp->dir);
+
+                        float dx = x2 - x1;
+                        float dy = y2 - y1;
+                        vector_dif_sum += sqrt(dx*dx + dy*dy);
+                    }
+                }
+
+                //------------------------------//
+                // apply weighting if necessary //
+                //------------------------------//
+
+                if (weight_flag)
+                {
+                    if (wvp->obj == 0.0)
+                        vector_dif_sum = (float)HUGE_VAL;
+                    else
+                        vector_dif_sum /= wvp->obj;
+                }
+
+                if (vector_dif_sum < min_vector_dif_sum &&
+                    selected_count >= g_number_needed)
+                {
+                    second_vector_dif_sum = min_vector_dif_sum;
+                    min_vector_dif_sum = vector_dif_sum;
+                    min_vector_dif_avg = vector_dif_sum /
+                        (float)selected_count;
+                    new_selected[cti][ati] = wvp;
+                }
+                else if (vector_dif_sum < second_vector_dif_sum)
+                {
+                    second_vector_dif_sum = vector_dif_sum;
+                }
+            }   // done with ambiguities
+
+            // a few propagation checks
+            if (wvc->selected == NULL)
+            {
+                if (wvc->rainProb > g_rain_flag_threshold)
+                    new_selected[cti][ati] = NULL;
+                if (g_rain_bit_flag_on &&
+                    ((RAIN_FLAG_UNUSABLE | RAIN_FLAG_RAIN) &
+                    wvc->rainFlagBits))
+                {
+                    new_selected[cti][ati]=NULL;
+                }
+
+                // how must does the best beat the second best?
+                if (second_vector_dif_sum > 0.0 &&
+                    g_error_ratio_of_best < 1.0)
+                {
+                    float ratio = min_vector_dif_sum /
+                        second_vector_dif_sum;
+                    if (ratio > g_error_ratio_of_best)
+                    {
+                        new_selected[cti][ati] = NULL;
+                    }
+                }
+                // how absolutely good is the best?
+                if (new_selected[cti][ati] != NULL &&
+                    g_error_of_best < 1.0)
+                {
+                    float avg_vector_dif = min_vector_dif_avg /
+                        (float)selected_count;
+                    float dif_to_spd = avg_vector_dif /
+                        new_selected[cti][ati]->spd;
+                    if (dif_to_spd > g_error_of_best)
+                        new_selected[cti][ati] = NULL;
+                }
+            }
+        }    // done with ati
+    }    // done with cti
+
+    //------------------//
+    // transfer updates //
+    //------------------//
+    
+    
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            change[cti][ati] = 0;
+            if ( new_selected[cti][ati] != NULL )
+            {
+                if (new_selected[cti][ati] != swath[cti][ati]->selected)
+                {
+                    if (new_selected[cti][ati]->spd < g_speed_stopper)
+                    {
+                        continue;
+                    }
+
+                    change[cti][ati] = 1;
+                    swath[cti][ati]->selected = new_selected[cti][ati];
+                    flips++;
+                }
+            }
+        }
+    }
+    printf("Flips %d  Energy %g\n", flips, energy);
+    fflush(stdout);
+    return(flips);
+}
+
+
 
 //----------------------------//
 // WindSwath::BestKFilterPass //
