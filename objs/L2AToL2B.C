@@ -1957,7 +1957,7 @@ L2AToL2B::InitAndFilter(
     //-----------------------------------------------------//
     // Copy Interpolated NudgeVectors to Wind Vector Cells //
     //-----------------------------------------------------//
-
+    
     if (useNudging && ! l2b->frame.swath.nudgeVectorsRead && !smartNudgeFlag &&!arrayNudgeFlag)
     {
         l2b->frame.swath.GetNudgeVectors(&nudgeField);
@@ -1982,6 +1982,7 @@ L2AToL2B::InitAndFilter(
     #define USEBESTK         0
     #define BESTKPARAMETER   1000
     #define BESTKWINDOWSIZE  15
+    #define USE4PASS         1
 
     if (ALREADY_INITD)
     {
@@ -1993,16 +1994,22 @@ L2AToL2B::InitAndFilter(
     }
     else if (useNudging)
     {
+        
         if (S3_NUDGE)
             l2b->frame.swath.S3Nudge();
         else if (useNudgeThreshold)
+        {
+            printf("useNudgeThreshold == 1\n");
             l2b->frame.swath.ThresNudge(maxRankForNudging, nudgeThresholds);
-	else if (useNudgeStream){
-	    printf("L2AToL2B::StreamT %g\n",streamThreshold);
-	    l2b->frame.swath.StreamNudge(streamThreshold);
-	}
+	    }
+	    else if (useNudgeStream){
+	        printf("L2AToL2B::StreamT %g\n",streamThreshold);
+	        l2b->frame.swath.StreamNudge(streamThreshold);
+	    }
         else
+        {   
             l2b->frame.swath.Nudge(maxRankForNudging);
+        }
     }
     else if(useRandomInit)
     {
@@ -2060,19 +2067,30 @@ L2AToL2B::InitAndFilter(
     }
     bound = 0;
     if (useNMF) freeze=9;
-    l2b->frame.swath.MedianFilter(medianFilterWindowSize,
-        medianFilterMaxPasses, bound, useAmbiguityWeights, special_first_pass,freeze);
-
-    if (special == 1 && ONE_STAGE_WITHOUT_RANGES)
+    else
     {
-        if (medianFilterMaxPasses > 0)
+        if( USE4PASS )
         {
-            l2b->frame.swath.DiscardUnselectedRanges();
+          special_first_pass = 0;  // No DIRTH for the 4-Pass stage of Amb selection.
+          l2b->frame.swath.MedianFilter_4Pass(medianFilterWindowSize,
+              medianFilterMaxPasses, bound, useAmbiguityWeights, special_first_pass, freeze);
         }
-        l2b->frame.swath.MedianFilter(S3_WINDOW_SIZE, medianFilterMaxPasses,
-            bound, useAmbiguityWeights,special);
+        else 
+        {
+          l2b->frame.swath.MedianFilter(medianFilterWindowSize,
+              medianFilterMaxPasses, bound, useAmbiguityWeights, special_first_pass,freeze);
+        }
+        
+        if (special == 1 && ONE_STAGE_WITHOUT_RANGES)
+        {
+            if (medianFilterMaxPasses > 0)
+            {
+                l2b->frame.swath.DiscardUnselectedRanges();
+            }
+            l2b->frame.swath.MedianFilter(S3_WINDOW_SIZE, medianFilterMaxPasses,
+                bound, useAmbiguityWeights,special);
+        }
     }
-
     return(1);
 }
 
