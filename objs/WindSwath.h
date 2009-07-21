@@ -114,10 +114,15 @@ public:
     int    SmartNudge(WindField* nudge_field);
     int    MedianFilter(int window_size, int max_passes, int bound,
                int weight_flag = 0, int special = 0, int freeze = 0);
+    int    MedianFilter_4Pass(int window_size, int max_passes, int bound,
+               int weight_flag = 0, int special = 0, int freeze = 0);               
     int    BestKFilter(int window_size, int k);
     int    MedianFilterPass(int half_window, WindVectorPlus*** selected,
                char** change, int bound, int weight_flag = 0, int special = 0,
                int freeze = 0);
+    int    MedianFilter4Pass_Pass(int half_window, WindVectorPlus*** selected,
+               char** change, char** filter, char** influence, int bound, 
+               int weight_flag = 0 );               
     int    BestKFilterPass(int half_window, int k,
                WindVectorPlus*** new_selected, float** prob, float* best_prob);
     int    BestKFilterSubPass(int half_window, WindVectorPlus*** new_selected,
