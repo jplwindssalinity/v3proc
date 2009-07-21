@@ -276,7 +276,7 @@ main(
 
     if (hdf_source_flag)
     {
-        if (l2b.ReadHDF(hdf_file) == 0)
+        if (l2b.ReadPureHdf(hdf_file,1) == 0)  // Use ReadPureHDF, old one broken.
         {
             fprintf(stderr, "%s: error reading HDF L2B file %s\n", command,
                 hdf_file);
@@ -321,21 +321,6 @@ main(
 
     if (hdf_target_flag)
     {
-        //--------------------//
-        // Read Nudge Vectors //
-        //--------------------//
-
-        if (! hdf_source_flag)
-        {
-            if (! l2b.ReadNudgeVectorsFromHdfL2B(hdf_file))
-            {
-                fprintf(stderr,
-                    "%s: error reading nudge vectors from HDF L2B file %s\n",
-                    command, hdf_file);
-                exit(1);
-            }
-        }
-
         //---------------//
         // Create Arrays //
         //---------------//
@@ -383,7 +368,7 @@ main(
     // HDF I/O //
     //---------//
 
-    if (hdf_target_flag)
+    if ( hdf_target_flag ) 
     {
         //-------------------------------------------//
         // First Update Arrays with selected vectors //
