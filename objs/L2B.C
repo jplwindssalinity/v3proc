@@ -542,12 +542,12 @@ L2B::ReadPureHdf(
                 return(0);
             }
 
-            float nudge_edir =
-                gs_deg_to_pe_rad(model_dir[cti] * HDF_MODEL_DIR_SCALE);
+            float nudge_edir = gs_deg_to_pe_rad(double(model_dir[cti] * HDF_MODEL_DIR_SCALE));
             float nudge_speed = model_speed[cti] * HDF_MODEL_SPEED_SCALE;
 
             wvc->nudgeWV->SetSpdDir(nudge_speed * NWP_SPEED_CORRECTION,
                 nudge_edir);
+            
 
             //--------------------------------//
             // set the number of measurements //
@@ -644,6 +644,9 @@ L2B::ReadPureHdf(
             }
         }
     }
+
+// AGF added this since we have read the nudge vectors 7/21/2009
+    frame.swath.nudgeVectorsRead = 1;
 
     if (SDendaccess(wvc_row_sds_id) == FAIL ||
         SDendaccess(wvc_lat_sds_id) == FAIL ||
