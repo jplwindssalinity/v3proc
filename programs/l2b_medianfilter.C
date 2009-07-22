@@ -321,6 +321,23 @@ main(
 
     if (hdf_target_flag)
     {
+         //--------------------//
+         // Read Nudge Vectors //
+         //--------------------//
+ 
+         if (! hdf_source_flag)
+         {
+             if (! l2b.ReadNudgeVectorsFromHdfL2B(hdf_file)) // This is probably broken
+             												 // 7-21-2009 AGF
+             {
+                 fprintf(stderr,
+                     "%s: error reading nudge vectors from HDF L2B file %s\n",
+                     command, hdf_file);
+                 exit(1);
+             }
+         }
+    
+    
         //---------------//
         // Create Arrays //
         //---------------//
