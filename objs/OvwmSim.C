@@ -1198,6 +1198,11 @@ OvwmSim::SetL1ASpacecraft(
 //---------------------------//
 // OvwmSim::SetMeasurements //
 //---------------------------//
+// MOST IMPORTANT METHOD IN THIS FILE !!!!                 //
+// This is the main routine that ovwm_sim spends time in   //
+// In HIRES mode, which is the commonly used configuration, //
+// Each sigma0 is integrated over the wind field, antenna //
+// pattern and point target response                     //
 
 int
 OvwmSim::SetMeasurements(
@@ -1218,49 +1223,61 @@ OvwmSim::SetMeasurements(
     int sim_l1b_direct)
 {
 
-    //----------------------------------//
-    // generate the coordinate switches //
-    //----------------------------------//
-
-    // Antenna frame coordinate switch
+    //--------------------------------------------------------//
+    // generate the Antenna frame to/from Geocentric switches //
+    //--------------------------------------------------------//
+    // This object is used to move from geocentric coordinates to antenna frame
     CoordinateSwitch gc_to_antenna;
     gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
 				   &(spacecraft->attitude), 
 				   &(ovwm->sas.antenna),
 				   ovwm->sas.antenna.txCenterAzimuthAngle);
-    //spacecraft->orbitState.rsat.Show();
+                // commented out debugging tool
+                //spacecraft->orbitState.rsat.Show();
     CoordinateSwitch antenna_to_gc;
     antenna_to_gc = gc_to_antenna;
-
+    // This object is used to move from antenna frame to geocentric coordinates
     gc_to_antenna=gc_to_antenna.ReverseDirection();
 
-
-    // set beam
+    //--------------------------
+    // set beam (inner or outer)
+    //--------------------------
     Beam* beam=ovwm->GetCurrentBeam();
     double borelook, boreazim;
-
-    // compute maximum gain
+     
+    //------------------------------------------------------------------------------
+    // compute maximum antenna gain for use in determining which slices to throw away
+    // slices more than some thresho;ld below peak of pattern are tossed
+    //------------------------------------------------------------------------------
     beam->GetElectricalBoresight(&borelook,&boreazim);
-    //cout << "look: " << borelook << endl;
-    //cout << "azim: " << boreazim << endl;
+
+         // commented out debugging tools
+         //cout << "look: " << borelook << endl;
+         //cout << "azim: " << boreazim << endl;
     float maxgain;
     beam->GetPowerGain(borelook,boreazim,&maxgain);
+
+         // commented out debugging tools    
+         //cout << "maxgain:" << maxgain << endl;
     
-    //cout << "maxgain:" << maxgain << endl;
-    
-    // compute boresight position
+    //-------------------------------------------
+    // compute antenna boresight position
+    // position is used to check if loaction is within simulation bounds
+    //-------------------------------------------
     Vector3 boresight;
     boresight.SphericalSet(1.0,borelook,boreazim);
-
     OvwmTargetInfo oti;
     if(! ovwm->TargetInfo(&antenna_to_gc,spacecraft,boresight,&oti)){
       fprintf(stderr,"Error:SetMeasurements cannot find boresight on surface\n");
       exit(1);
     }
-
     EarthPosition spot_centroid=oti.rTarget;
 
-    // Compute range and azimuth coordinate switch
+
+    //--------------------------------------------------------------//
+    // Compute Geocentric to range and azimuth coordinate switch    //
+    // Used because point target response is in range/azimuth frame //
+    //--------------------------------------------------------------//
     Vector3 zvec=oti.rTarget.Normal(); // Z-axis is normal vector at boresight
     Vector3 yvec=zvec & oti.gcLook;            // az vector
     Vector3 xvec=yvec & zvec;                  // rng vector
@@ -1269,16 +1286,17 @@ OvwmSim::SetMeasurements(
 
 
 
-    //---------------------------------------------------
-    // Compute cross track/along track coordinate switch
-    //-------------------------------------------------
+    //-------------------------------------------------------------//
+    // Compute cross track/along track coordinate switch           //
+    // Used because SAR ambiguity patterns are in cross/along frame//
+    //-------------------------------------------------------------//
     double r_a= r1_earth*1000.0;
     double r_e2=e2;
     SchToXyz sch(r_a,r_e2);//earth radius in meter and eccentricity square
-
     //get position and velocity
     OrbitState* sc;
     sc= &(spacecraft->orbitState);
+
     //get position and velocity
     Vector3 position, velocity;
     position=sc->rsat;//km
@@ -1309,25 +1327,30 @@ OvwmSim::SetMeasurements(
     //set peg point
     sch.SetPegPoint(r_llh(0), r_llh(1), r_heading);
 
-   
-    //cout<<"nadir lat lon  "<< r_llh(0)*rtd<<" "<<r_llh(1)*rtd<<endl;
-    //cout<<"r_llh "<< r_llh1(0)*rtd<<" "<<r_llh1(1)*rtd<<endl;
-    //cout<<"r_llh "<< r_llh2(0)*rtd<<" "<<r_llh2(1)*rtd<<endl;
-    //
-    //cout<<"heading "<< r_heading*180/3.14<<endl;
-    //now we can convert surface location into sch
-    //call the following two functions will do the job
-    // sch.xyz_to_sch(r_xyz,r_sch)
-    // or sch.sch_to_xyz(r_sch,r_xyz)
+       // commented out debugging tools
+       //cout<<"nadir lat lon  "<< r_llh(0)*rtd<<" "<<r_llh(1)*rtd<<endl;
+       //cout<<"r_llh "<< r_llh1(0)*rtd<<" "<<r_llh1(1)*rtd<<endl;
+       //cout<<"r_llh "<< r_llh2(0)*rtd<<" "<<r_llh2(1)*rtd<<endl;
+       //
+       //cout<<"heading "<< r_heading*180/3.14<<endl;
+       //now we can convert surface location into sch
+       //call the following two functions will do the job
+       // sch.xyz_to_sch(r_xyz,r_sch)
+       // or sch.sch_to_xyz(r_sch,r_xyz)
 
+
+    //--------------------------------------------------------//
+    // Compute boresight in sch (cross/along) coordinates     //
+    // Used for ambiguity table lookup                        //
+    //--------------------------------------------------------//
     //need boresight xyz in meter scale
     EarthPosition bore_in_meter=spot_centroid;
     bore_in_meter *=1000.0;//km to m
     Vector3 bore_sch_in_meter,bore_llh;
     xyz_to_llh(r_a,r_e2,bore_in_meter,bore_llh);
-    //cout<<"bore llh "<< bore_llh(0)*rtd<<" "<<bore_llh(1)*rtd<<" "<<bore_llh(3)<<endl;
+        //cout<<"bore llh "<< bore_llh(0)*rtd<<" "<<bore_llh(1)*rtd<<" "<<bore_llh(3)<<endl;
     sch.xyz_to_sch(bore_in_meter,bore_sch_in_meter);
-    //cout<<"s c h of bore "<< bore_sch_in_meter(0)<<" "<<bore_sch_in_meter(1)<<" "<<bore_sch_in_meter(2)<<endl;
+        //cout<<"s c h of bore "<< bore_sch_in_meter(0)<<" "<<bore_sch_in_meter(1)<<" "<<bore_sch_in_meter(2)<<endl;
     double bore_along, bore_cross;
     bore_along= bore_sch_in_meter(0)/1000.0;
     bore_cross= bore_sch_in_meter(1)/1000.0;
@@ -1336,13 +1359,16 @@ OvwmSim::SetMeasurements(
    
 
 
-    //INCOMPLETE need to add to make ambig bias work right
-
+    //--------------------------------------------------------//
+    // Start with first measurement which has already been    //
+    // located by LocatePixels                                //
+    //--------------------------------------------------------//
     int slice_i = 0;
     Meas* meas = meas_spot->GetHead();
     
 
     //-------------------------------------------------------------
+    // Setup for SAR ambiguity calculation
     //for each measurement, scan angle and beam number are fixed
     //code done by ygim: phone 4-4299
     //scan angle and beam index
@@ -1360,11 +1386,18 @@ OvwmSim::SetMeasurements(
       exit(1);
     }
     unsigned int beam_id=meas->beamIdx;
-    //display on screen 
-    cout<<"beam id and BS and amb scan angles "<< beam_id<<" "<<bs_scanangle<<" "<<scanangle<<endl;
-    cout<<"bore along cross in km "<< bore_along<<" "<<bore_cross<<endl;
+            // Commented out debugging tools
+            // cout<<"beam id and BS and amb scan angles "<< beam_id<<" "<<bs_scanangle<<" "<<scanangle<<endl;
+            // cout<<"bore along cross in km "<< bore_along<<" "<<bore_cross<<endl;
 
-    //Map generation for spot check
+   
+    //----------------------------------------------------------------------------------------------//
+    // SPECIAL CASE for initializing maps of SAR ambiguities, X,gain and Kpc                        //
+    // when a particular debugging keyword is set in the config file                                //
+    // gain and Kpc only works when numPulses==11                                                   //
+    // and numRangePixels < 40  due to hard-coded array sizes                                       //
+    // SHOULD MODIFY THIS CODE and CODE BELOW that populates maps to work for nonSAR case           //
+    //----------------------------------------------------------------------------------------------//
     bool generate_map=false;
     if(spot_check_generate_map && beam_id == (unsigned int) spot_check_beam_number && int(bs_scanangle+0.5) == spot_check_scan_angle){
       //need to make an array to save data
@@ -1390,16 +1423,10 @@ OvwmSim::SetMeasurements(
       cout<<"range doppler pixel "<< ovwm->ses.numRangePixels<<" "<<ovwm->ses.numPulses<<endl;
     }
 
-    //-------------------------//
-    // for each measurement...
-    //
-    //recycled variable    
-    //-------------------------//
-   
+    //-------------------------=-------------------------------------------------//
+    // Variables used by ambiguity calculation measurement by measurement loop  //
+    //--------------------------------------------------------------------------//
     unsigned int range_index, azimuth_index;
-
-
-
     Vector3 centroid_llh, centroid_xyz_in_meter, centroid_sch_in_meter;
     double centroid_along, centroid_cross;
     Vector3 loc_llh, loc_xyz_in_meter, loc_sch_in_meter;
@@ -1407,6 +1434,11 @@ OvwmSim::SetMeasurements(
     double amb1_along, amb1_cross;//first ambigous point
     double amb2_along, amb2_cross;//second ambigous point
     double dummy_along, dummy_cross;// dummy placeholders used in amb integration
+
+
+    //-----------------------------//
+    // Measurement Loop            //
+    //-----------------------------//
     while (meas)
     {
  
@@ -1423,17 +1455,25 @@ OvwmSim::SetMeasurements(
         lon_lat.longitude = lon;
         lon_lat.latitude = lat;
 	
+    
 
-
-	
-        // Compute Land Flag
+	//-------------------------------------//
+        // Compute Land Flag                   //
+        // Determines if measurement centroid  //
+        // is over land. The more general case //
+        // of land somewhere in the measurement//
+        // is handled below                    //
+        //-------------------------------------//
         if (lon != 0. && lat != 0.) {
           meas->landFlag = landMap.IsLand(lon, lat);
         }
 
-        //--------------------------//
-        // ignore land if necessary //
-        //--------------------------//
+        //------------------------------------------//
+        //  In direct to L1B mode                   //
+        //  Measurements with centroids over land   //
+        // are tossed and pointers are modified     //
+        // IF SIM_LAND_FLAG is 1 in the config file //
+        //------------------------------------------//
 
         if (meas->landFlag == 1 && simLandFlag == 0 && sim_l1b_direct)
         {
@@ -1448,9 +1488,19 @@ OvwmSim::SetMeasurements(
             continue;
         }
 
-        float sigma0;
-        float Es, En, var_esn_slice;
 
+        //  Variables used below
+        float sigma0; // backscatter
+        float Es;     // signal returned energy
+        float En;     // noise returned energy
+        float var_esn_slice; // Kpc variance of measurement
+
+
+
+        //---------------------------------//
+        // Low resolution simulation case  //
+        // Seldom used: commentrs sparse   //
+        //---------------------------------//
         if(!simHiRes){
 	  if (uniformSigmaField)
 	    {
@@ -1653,15 +1703,29 @@ OvwmSim::SetMeasurements(
 		}
 	    }
 
-	} // end of low res case!
+	} 
 
-        // high res simulation
+        //-----------------------------------------------------//
+        // end of low res case!--------------------------------//
+        //-----------------------------------------------------//
+
+        //-----------------------------------------------------//
+        // High Resolution Simulation   STARTS HERE!           //
+        //-----------------------------------------------------//   
         else{
-
-	 
+          
+          //-----------------------------------------------------//
+	  // Indices for special SAR map generation case         //
+          // num_pulses must equal 11 when this case is          //
+          // used. Need to generalize it to make it useful again //
+          //-----------------------------------------------------//
 	  azimuth_index = slice_i%11;
 	  range_index = int(slice_i/11);
 
+          //-----------------------------------------------------//
+          // Sanity check to toss meaurements whose centroids were//
+          // set to zero because they were not located on the earth//
+          //-------------------------------------------------------//
 	  if(meas->centroid.Magnitude() < 1000.0 && sim_l1b_direct)
 	    { 
               //cout << "meas # " << slice_i << "centroid dist < 1000" << endl;
@@ -1673,30 +1737,45 @@ OvwmSim::SetMeasurements(
 	      continue;
 	    }
 
-	  Gaussian normrv(1.0,0.0); // setup normal distrib for kpc
-          // remove unusable measurement to save time
-          // strictly speaking this should be done in L1A_TO_L1B
-          // to allow attitude errors to effect selection, but
-          // for computational efficiency we do it here.
+          //----------------------------------------------------------//
+          // Set up a normal distribution for use in Kpc              //
+          //----------------------------------------------------------//
+	  Gaussian normrv(1.0,0.0); 
+ 
+          //----------------------------------------------------------//
+          // Compute look vector and gain at centroid of measurement  //
+          //----------------------------------------------------------//
           Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
           Vector3 rlook_ant=gc_to_antenna.Forward(rlook);
-	  //gc_to_antenna.Show();
+              // commented out debugging tool
+	      //gc_to_antenna.Show();
           double r,theta,phi;
 	  rlook_ant.SphericalGet(&r,&theta,&phi);
-	  //cout << theta*rtd << endl;
-	  //cout << phi*rtd << endl;
+	      //cout << theta*rtd << endl;
+	      //cout << phi*rtd << endl;
           double gain;
           if(!beam->GetPowerGain(theta,phi,&gain)){
 	    gain=0;
 	  }
           gain/=maxgain;
-          //cout << gain << endl;
+              //cout << gain << endl;
 
+
+          //-----------------------------------------------//
+          // For debugging special case produce gain map   //
+          // Only works for SAR num_pulses==11             //
+          // Need to generalize this                       //
+          //-----------------------------------------------//
 	  if(generate_map)
 	    gain_map_[range_index][azimuth_index]=gain;
 	    
 
-
+          //-------------------------------------------------//
+          // Throw away measurements that are too far down   //
+          // on gain pattern if we are going directly to L1B //
+          // Otherwise these measurements are kept and the   //
+          // OvwmL1AToL1B processing tosses them.            //
+          //-------------------------------------------------//
 	  if(!generate_map && gain<minOneWayGain && sim_l1b_direct){
             //cout << "meas # " << slice_i << "too small gain" << endl;
 
@@ -1706,13 +1785,18 @@ OvwmSim::SetMeasurements(
 	    slice_i++;
             continue;
 	  }
-
+	
 	 
 	 
-	 
-	  //cout<<"slice "<< slice_i<<endl;
+	       // commented out debugging tool
+	       //cout<<"slice "<< slice_i<<endl;
 
 
+
+          //-----------------------------------------------------//
+          // Compute centroid in cross/along coordinates  for    //
+          // SAR ambiguity table lookup.                         //
+          //-----------------------------------------------------//
 	  centroid_xyz_in_meter= meas->centroid;
 	  centroid_xyz_in_meter *=1000.0;//change km to meter
 	  xyz_to_llh(r_a, r_e2, centroid_xyz_in_meter, centroid_llh);
@@ -1722,12 +1806,16 @@ OvwmSim::SetMeasurements(
 	  
 	  
 
-	  
-	  //ambiguity table access:
-	  //beam number, azimuth angle
-	  // alongtrack wrt boresight
-	  //crosstrack wrt boresight
-	  // amb_along_location, amb_cross_location
+	  //----------------------------------------------------//
+	  // Access SAR ambiguity table BY                      //
+	  // beam number, azimuth angle                         //
+	  // alongtrack wrt boresight                           //
+	  // crosstrack wrt boresight                           //
+          // SignalToAmbiguity Ratio and locations of two largest//
+	  // ambiguities                                        //
+          // When table is not configured SignalToAmbiguityRatio//       
+          // is set to 10^10 = 100 dB                           //
+          //----------------------------------------------------//
 	  double amb1=ambigTable->GetAmbRat1(beam_id, scanangle,
 					     centroid_along-bore_along,
 					     centroid_cross-bore_cross,
@@ -1749,9 +1837,12 @@ OvwmSim::SetMeasurements(
 	  sch.sch_to_xyz(amb2pos_sch*1000.0,amb2pos);
           amb2pos=amb2pos/1000.0;
 
-          // until then
+          //--------------------------------------------------------------//
+          //  Debugging Tools for when the SAR Ambiguity Table            //
+          //      output is valid.                                        //
+          //--------------------------------------------------------------//
 	  if(amb1 != 0.0 && amb2 !=0.0){
-	    /*
+	    /* Debuggig tools commented out
 	    cout<<"scan angle and beam index "<< scanangle<<" "<<beam_id<<endl;
 	    cout<<"centroid lat lon height "<< centroid_llh(0)*rtd<<" "<<centroid_llh(1)*rtd<<" "<<centroid_llh(2)<<endl;
 	    cout<<"centroid xyz "<< centroid_xyz_in_meter(0)<<" "<<centroid_xyz_in_meter(1)<<" "<<centroid_xyz_in_meter(2)<<endl;
@@ -1763,12 +1854,29 @@ OvwmSim::SetMeasurements(
 	    */
 	  }
 
-	 
+	  //--------------------------------------------------------------//
+          //  INVALID SAR Ambiguity case:                                 //
+	  //  Typically this occurs when the measurement centroid is      //
+          //  outside the processing window.
+          //--------------------------------------------------------------// 
 	  if(amb1==0 || amb2==0){
+
+            //---------------------------------------------//
+            // For the special generate_map case           //
+            // invalid signal to ambiguity ratio are set   //
+            // to unity in order to plot those measurements//
+            // which would normally be thrown out          //
+            //---------------------------------------------//
 	    if(generate_map && amb1==0 && amb2==0){
 	      amb1=1;
 	      amb2=1;//this is needed to move beyond 1/amb1 computation
 	    }
+
+            //------------------------------------------------------------------//
+            // When using simulating directly to L1B in SAR mode num_pulse>1    //
+            // measurements with centroids outside processing window are tossed //
+            // out.                                                             //
+            //------------------------------------------------------------------//
 	    else if(!generate_map &&( amb2 ==0 && amb1 ==0) && sim_l1b_direct){
 
               //cout << "meas # " << slice_i << "amb too big" << endl;
@@ -1779,6 +1887,10 @@ OvwmSim::SetMeasurements(
 	      slice_i++;
 	      continue;
 	    }
+           //------------------------------------------------------------------//
+            // Should Never Occur. Cas in which only one of the computed        //
+            // Signal to ambiguity ratios is invalid                            //
+            //------------------------------------------------------------------//
 	    else if(!generate_map && sim_l1b_direct){
 
               //cout << "meas # " << slice_i;
@@ -1789,6 +1901,13 @@ OvwmSim::SetMeasurements(
 	      slice_i++;
 	      continue;
 	    }
+            //----------------------------------------------------//
+            // Invalid Signal To Ambiguity measurements still     //
+            // get recorded whwn L1A data is output. They should be// 
+            // thrown out during L1A to L1B processing             //
+            // In this case the signal to ambiguity ratio is set   //
+            // to unity                                            //
+            //-----------------------------------------------------//
             else if(!generate_map && !sim_l1b_direct){ // create meas in L1A
 	      //fprintf(stderr,"Warning: Bad Ambiguity Condition, set ambig 1\n");
               amb1=1;
@@ -1796,14 +1915,29 @@ OvwmSim::SetMeasurements(
             }
 	  }
 	  
-
+          //---------------------------------//
+          // Compute overall Ambiguity To    //
+          // Signal Ratio as the sum or the  //
+          // recipricol of the two signal    //
+          // to ambiguity ratios             //
+          //---------------------------------//
           amb1=1/amb1;
           amb2=1/amb2;
 	  double amb=amb1+amb2;
 	  
+          // Populate ambiguity map in special spot_check mode
+          // this only works when num_pulses==11
 	  if(generate_map)
 	    amb_map_[range_index][azimuth_index]=amb;
 
+          //-------------------------------------//
+          // When simulating L1B directly and no //
+          // special debugging is involved       //
+          // exclude measurements with Signal to //
+          // ambiguity Ratios less than the      //
+          // SIM_MIN_SIG_TO_AMB dB in the config //
+          // file                                //
+          //-------------------------------------//
 	  if(!generate_map && amb> 1/minSignalToAmbigRatio && sim_l1b_direct){
 
             //cout << "meas # " << slice_i << "amb signal" << endl;
@@ -1815,23 +1949,58 @@ OvwmSim::SetMeasurements(
             continue;
 	  }
 	   
-	  // compute point target response array for pixel
+	
+          //---------------------------------------------------------------//
+	  // Compute point target response array for measurement           //
+          // The resultant array is then used to modulate the backscatter  //
+          // integration.                                                  //
+          //---------------------------------------------------------------//
 
-          Vector3 offset = meas->centroid - spot_centroid; // offset in xyz frame
+          //-------------------------------------------------------------------------------
+          // compute location of centroid of measurement in the range/azim coordinate system
+          // in which the antenna footprint center is the origin
+          //--------------------------------------------------------------------------------
+          Vector3 offset = meas->centroid - spot_centroid; // offset in geocentric frame
           offset =gc_to_rangeazim.Forward(offset);
           float range_km = offset.GetX();
           float azimuth_km = offset.GetY();
 
+          //-------------------------------------------------------------------------------
+          // these three values are used to look up values in the point target response table
+          // if it is being used. For this purpose the orbit period is assumed to be the
+          // QuikSCAT orbit period of 6060 s, but this will not matter when the point
+          // target response is computed and not obtained from a table. The table is 
+          // never used when num_pulses==1 (the QuikSCAT and DFS configurations)
+          //--------------------------------
           float scan_angle = meas->scanAngle;
           float orbit_time = ovwm->cds.OrbitFraction()*6060.;
-          // Now set the default value, later update from Beam object
-          int beam_num = beam_id+1;
+          int beam_num = beam_id+1; // Now set the default value, later update from Beam object
 
+          
+          //--------------------------------------------------//
+          // These values (rangewid, azimwid) are half the    //
+          //             3-dB spatial                         //
+          // resolution of the point target response (antenna //
+          // pattern effects not included)                    //
+          // 1) read from a table                             //
+          // or                                               //
+          // 2) for SAR a sinc^2 in Doppler or  a sum of      //
+          //    Gaussian terms for range simulating the averaging//
+          //    or multiple range bins                         //
+          // 3) for nonSAR (num_pulses==1) same as 2 except    //
+          //    point target response in azimuth is unity      //
+          //    everywhere.                                    //
+          // Below rangewid is half the width of a single      //
+          // range bin NOT the whole measurement.              //
+          //---------------------------------------------------//
           float rangewid, azimwid; // half widths
 
           rangewid = 0.;
           azimwid = 0.;
 
+          //----------------
+          // read widths from PTR table
+          //---------------
           if (ptrTable->use_PTR_table) {
 
             rangewid=ptrTable->GetSemiMinorWidth(range_km, azimuth_km, scan_angle,
@@ -1842,11 +2011,25 @@ OvwmSim::SetMeasurements(
 
           } else {
 
+            // ovwm->rngRes and ovwm->azRes were set in Ovwm::LocatePixels
+            // rngRes = speed_light/2/chirp_bandwidth/sin(incidence)
+            // azRes = the interval between pixels in azimuth
             rangewid = ovwm->rngRes/2.;
             azimwid = ovwm->azRes/2.;
 
-            // correction factor for 1/e as in PTR
+            // Range Correction factor for 1/e in Point Target Response
+            // The scale difference between the half power point and the
+            // sigma parameter of the Gaussian function
             rangewid *= 1.6;
+
+
+            // Range Correction factor for 1/e in Point Target Response
+            // The scale difference between the half power point and the
+            // "width" parameter of the sinc^2 function
+            // The factors differ for the inner and outer beam
+            // The azimuth width only matter for the XOWVM SAR case 
+            // for which these values were hard-coded 
+            // I am unsure why they vary by beam in any case. -- BWS 07/21/2009        
             if (beam_id%2==0) { // outer beam
               azimwid *= 1.2;
             } else if (beam_id%2==1) { // inner beam
@@ -1860,17 +2043,31 @@ OvwmSim::SetMeasurements(
 
           }
 
+          //----------------------------------------------------------
+          // For nonSAR case the azimuth width is set to maximal value
+          //----------------------------------------------------------
           if(ovwm->ses.numPulses==1) azimwid=ptrTable->azGroundWidthMax/2;
  
 
 
+          //----------------------------------------------------------
+          // Widths are set to zero if measurement centroid is outside the    
+          // range and azimuth window specified in the config file by
+          // PTRTAB_RANGE_MAX_GROUND_WIDTH and PTRTAB_AZIMUTH_MAX_GROUND_WIDTH
+          //-----------------------------------------------------------
           if (fabs(range_km) >= ptrTable->rngGroundWidthMax/2.) rangewid = 0.;
           if (fabs(azimuth_km) >= ptrTable->azGroundWidthMax/2.) azimwid = 0.;
 
+          //----------------------------------------------------
+          // If the widths are zero and we are not in a special
+          // map generation mode         
+          //--------------------------------------------------
 	  if(!generate_map &&(rangewid==0 || azimwid==0)) {
 
+            //--- Remove measurement if we are simulating directly to l1b
             if (sim_l1b_direct){
 
+              // Commented out debugging tools
               //cout << "rng or az width" << endl;
               //cout << "meas # " << slice_i << " " << range_km << " " << azimuth_km <<endl;
 
@@ -1880,10 +2077,14 @@ OvwmSim::SetMeasurements(
               slice_i++;
               continue;
 
-            } else if (!sim_l1b_direct) {
+            } 
+            
+            //---- Otherwise set nominal widths and let L1B processing toss out these
+            //     measurements          
+	    else if (!sim_l1b_direct) {
 
-/* to get over for creating meas record */
-/* assign nominal values for widths     */
+             /* to get over creating meas record */
+             /* assign nominal values for widths     */
 
               rangewid = 0.06;
               azimwid = 1.00;
@@ -1891,18 +2092,32 @@ OvwmSim::SetMeasurements(
               meas->range_width=2.*rangewid;
             }
 
-	  }
-
-          // set up integration lengths
+	  } // end of zero width case
+	
+          //---------------------------------------
+          // Setting up number of integration steps
+          // and bounds in range and azimuth
+          //---------------------------------------
 	  int nL=ovwm->ses.numRangeLooksAveraged;
           int nrsteps=(int)ceil(integrationRangeWidthFactor*rangewid*2*nL/integrationStepSize)+1;
           int nasteps=(int)ceil(integrationAzimuthWidthFactor*azimwid*2/integrationStepSize)+1;
-          if(ovwm->ses.numPulses==1) nasteps=_max_int_azim_bins;
 
+
+          //------------------------------------------------
+          // If not in SAR mode OR maximum number of azimuth
+          // integration steps is exceeded because of flag invalid 
+          // value in PTR table then set
+          // nasteps to maximum value
+          //------------------------------------------------
+          if(ovwm->ses.numPulses==1) nasteps=_max_int_azim_bins;
           if (!ptrTable->use_PTR_table && nasteps>_max_int_azim_bins) {
             nasteps = _max_int_azim_bins;
           }
 
+          //--------------------------------------------------
+          // If maximum number of steps in either direction is
+          // exceeded print error message and exit
+          //--------------------------------------------------
           if(nrsteps>_max_int_range_bins || nasteps > _max_int_azim_bins){
 	    fprintf(stderr,"Error SetMeasurements too many integrations bins\n");
 	    exit(1);
@@ -1911,26 +2126,33 @@ OvwmSim::SetMeasurements(
 	    fprintf(stderr,"Error SetMeasurements rangeLooksAveraged must be even\n");
 	    exit(1);
 	  }
-
-          // set up pixel center within integration window
+       
+          //------------------------------------------------
+          // set up center within integration window
+          // for each range look to be averaged
+          //------------------------------------------------
 	  float center_azim_idx= (nasteps-1)/2.0;
 
-          // 1 range center for each look
-          // HACK assumes at most 10 looks average
-          //
-          // To handle the case with large bandwidth, and so large range look average,
-          // increase the array size to 100
-          float center_range_idx[100];
+          // 1 range center is computed for each independent range look
+          // prior to averaging
+          float center_range_idx[100]; // More than 100 looks averaged together will cause this to fail
+
           float center_range_idx_ave=(nrsteps-1)/2.0;
           for(int n=0;n<nL;n++){
 	    int n2=n-nL/2;
-            //HACK Actual spacing of range looks on ground should be used
-            //     instead of rangewid
+            // This is an approximation.
+            // Really the actual spacing of range looks on ground should be used
+            // instead of rangewid because the spacing is not exactly constant across the whole
+            // footprint.
+            // In the azimuth direction the real spacing is used because the centroid for each
+            // measurement is computed and only one azimuth look is used per measurement.
 	    center_range_idx[n]=(nrsteps-1)/2.0+(2*n2+1)*rangewid/integrationStepSize;
 	    
 	  }
 
-          // initialize ptresponse array
+	 //---------------------------------------------------
+         // Initialize point target response array to 0s
+         //---------------------------------------------------
          for(int i=0;i<nrsteps;i++){
 	    for(int j=0;j<nasteps;j++){
 	      _ptr_array[i][j]=0;
@@ -1938,8 +2160,16 @@ OvwmSim::SetMeasurements(
 	 }
 
 
+         // areaeff = Effective area of point target response
+         // It is computed and could be used for debugging but right now it is not used
+         // for anything.
+         // areaeff_SL is not used or even computed.
          double areaeff=0, areaeff_SL=0;
-         
+
+
+         //------------------------------------
+         // Compute Point Target response Array
+         //------------------------------------         
           for(int i=0;i<nrsteps;i++){
             float ii=i;
 
@@ -1947,14 +2177,21 @@ OvwmSim::SetMeasurements(
 	      float jj=j;
 
 	      float val2;
+
+              //---- If in SAR mode include azimuth compression response
               if(ovwm->ses.numPulses!=1){
-		val2=(jj-center_azim_idx)*integrationStepSize;
+		val2=(jj-center_azim_idx)*integrationStepSize; 
 		val2/=azimwid;
                 //val2*=val2;
                 val2*=E_FACTOR;
 	      }
+              //---- If not in SAR mode do not include azimuth compression response
 	      else{
-		val2=1.0;
+		val2=1.0; // ERROR?? this should probably be zero; using 1  puts in a constant scale factor of 0.708
+		          // I would expect this to reduce SNR by 1.5 dB but there may be some reason for this
+                          // that I am missing.  The fact that using 1 here instead of 0 scales the whole point target
+                          // response array by 1/sqrt(2) is highly suspicious. I suspect that Samuel Chan or I
+                          // used this a kludge to get the correct SNR values. I need to check this --- BWS 07/22/2009
 	      }
 
 	      for(int n=0;n<nL;n++){
@@ -1962,51 +2199,69 @@ OvwmSim::SetMeasurements(
                 val1/=rangewid;
                 val1*=val1;
 
-                //_ptr_array[i][j]+=exp(-(val1+val2));
-                // assume azimuth PTR is sinc function
+                //--------------------------------------------------------------------------------
+                // assumes azimuth PTR is sinc^2 function and range PTR is a Gaussian for each look
+                //--------------------------------------------------------------------------------
                 if (val2 != 0.) {
                   _ptr_array[i][j]+=exp(-val1)*sin(val2)*sin(val2)/val2/val2;
                 } else {
                   _ptr_array[i][j]+=exp(-val1);
                 }
+
+                // commented out debugging tool
                 //cout << i << " " << j << " vals: " << val1 << " " << val2 << " " << _ptr_array[i][j] << endl;
                 areaeff+=_ptr_array[i][j]*integrationStepSize*integrationStepSize;
 	      }
 	    }
 	  }
  
+ 
+          //--------------------------------------------//
+          // Initialize quantities to be integrated     //
+          //--------------------------------------------//
+          meas->XK=0; // calibration factor that converts power to backscatter for measurement
+          float dX_land = 0.; // portion of measurement energy over land if backscatter were uniform
+          float dX_ocean = 0.;// portion of measurement energy over ocean if backscatter were uniform
+          Es=0;  // Total signal energy in measurement
+	  En=0;  // Total noise energy in measurement
 
-          // Peak should = 1 not sum !
-          // normalize ptresponse array
-	  // for(int i=0;i<nrsteps;i++){
-	  //  for(int j=0;j<nasteps;j++){
-	  //    _ptr_array[i][j]/=ptrsum;
-	  //  }
-	  //}
 
-
-          // mainloop for computing X and signal energy and noise energy
-          meas->XK=0;
-          float dX_land = 0.;
-          float dX_ocean = 0.;
-          Es=0;
-	  En=0;
-
+          //-----------------------------------------------//
+          // Set contributions to energy from ambiguities  //
+          // to zero if we are optional integrating those  //
+          // quantities as well. Otherwise they are assigned //
+          // from values at measurement centroid-- see above //
+          //-------------------------------------------------//
           if(integrateAmbig){
             amb1=0;
             amb2=0;
           }
+
+          //----------------------------------//
+          // Compute measurement centroid     //
+          // in range and azimuth coordinates //
+          // (centered at footprint center)   //
+          //----------------------------------//
           Vector3 center_ra=gc_to_rangeazim.Forward(meas->centroid-spot_centroid);        double maxdX=0;
 	  double r0=center_ra.Get(0);
 	  double a0=center_ra.Get(1);
 
+          // commented out debugging tool
           //cout << "r&a: " << r0 << " " << a0 << endl;
 
+          //--- Initialize quantities computed when 3-D rain effects are simulated
           float attn = 0.;
           float **rainRngAz;
           float Es_rain = 0.;
           float X_rain = 0.;
-
+	
+          //------------------------------------
+          // Code for simulating 3-D effects of rain
+          // Currently we do not use this code as
+          // it is buggy. Configuration file parameters
+          // are set to avoid this right now.
+          // Comments are sparse in this block
+          //------------------------------------
           if (simRain && rainField.flag_3d) {
 
             // find rain attenuation
@@ -2022,7 +2277,7 @@ OvwmSim::SetMeasurements(
             rainField.ComputeLoc(spacecraft, meas, spot_centroid, gc_to_rangeazim, rainRngAz);
 
           }
-
+	
           if (simRain && rainField.flag_3d) { // find out rain contribution with 3d model
 
             for (int nn=1; nn<=N_LAYERS; nn++) {
@@ -2086,41 +2341,91 @@ OvwmSim::SetMeasurements(
 
               Es_rain += layer_Es_rain*exp(-2.*layer_attn);
               //cout << "layer, Es rain: " << nn << " " << Es_rain << endl;
-
+	    
             } // layer loop
 
           } // simRain && rainField.flag_3d
+          //----------------------------- End of 3-D rain simulation block and end of comment sparse area
+	
 
+          //-------------------------------------------------------------
+          // Main Loop for computing X and signal energy and noise energy
+          // Loops over range and azimuth integration bins
+          // Currently only the center location of each bin is used to
+          // obtain the quantities to integrate (ie, point target response, antenna gain, wind/sigma0) and
+          // they are treated as if they were constant within the bin, so that the integration step size
+          // has to be small to ascertain accurate results.
+          //
+          // Perhaps a faster algorithm with similiar accuracy could be obtained by
+          // a piecewise linear or quadratic analytical integration which a larger bin size.
+          // Linear might work for sigma0 or antenna gain, but point target response would require
+          // something. Perhaps the point target response could be integrated at a finer bin size
+          // than every thing else or the fact that its functional form is often known could be
+          // utilized.
+          //
+          // Any such change and changes in integration bin size itself should be
+          // checked against a small bin size slow approach for accuracy. Ideally everything
+          // should be checked against a 25 m bin size, or at least shown to not change much
+          // from 1.0 km down to 0.5 km and 0.25 km. Debugging tools can be uncommented to aid
+          // this effort.(Probably a define statement should be used to aid switching debug
+          // tools in and out.) BWS  07/22/2009
+          //--------------------------------------------------------------
 	  for(int i=0;i<nrsteps;i++){
-	    double r=r0+(i-center_range_idx_ave)*integrationStepSize;
+	    double r=r0+(i-center_range_idx_ave)*integrationStepSize; // range compoment of location of integration bin
 	    for(int j=0;j<nasteps;j++){
-	      double a=a0+(j-center_azim_idx)*integrationStepSize;
+	      double a=a0+(j-center_azim_idx)*integrationStepSize;  // azimuth component of integration bin
+
+              // Location of bin  in range and azimuth coordinates
 	      Vector3 locra(r,a,0.0);
+
+              // Location of bin in geocentric xyz coordinates
 	      EarthPosition locgc=gc_to_rangeazim.Backward(locra);
               locgc+=spot_centroid;
-              //------------------------------
-	      // compute windvector and sigma0
-              //------------------------------
+
+              //-----------------------------------------------------------
+	      // compute geodetic latitude, longitude of bin on the ground
+              //-----------------------------------------------------------
 	      double alt, lat, lon;
               float s0;
 	      WindVector wv;
 	      if (! locgc.GetAltLonGDLat(&alt, &lon, &lat))
 		return(0);  
+
+              // package lon and lat for use by Windfield routines
 	      LonLat lon_lat;
 	      lon_lat.longitude = lon;
 	      lon_lat.latitude = lat;
-              //cout << "latlon: " << lat*rtd << " " << lon*rtd << endl;
+
+ 
+                 // debugging tool commented out
+                 //cout << "latlon: " << lat*rtd << " " << lon*rtd << endl;
+
+              //---------------------------------------------------------------------
+              // determine if bin is over land if SIM_COAST config file option is used
+              // otherwise assume the bin is over open ocean. Cases in which land is
+              // masked out will not make it this far if a conservative land map is used 
+              //----------------------------------------------------------------------
               int island=0;
               if(simCoast){
 		island=landMap.IsLand(lon, lat);
 	      }
+
+              // Implement constant sigma0 case if desired
               if(uniformSigmaField){
 		s0=uniformSigmaValue;
 	      }
+
+              // flag measurement as land inclusive if land is found in bin
+              // and set sigma0 to land value assigned in Config file for the current beam
 	      else if(island){
 		meas->landFlag=3;
 		s0=landSigma0[meas->beamIdx];
 	      }
+
+              //-------------------------------------------------------
+              // if bin is not over land read wind vector from windfield
+              // and compute sigma0
+              //-------------------------------------------------------
               else{
 		if (! windfield->InterpolatedWindVector(lon_lat, &wv))
 		  {
@@ -2128,26 +2433,43 @@ OvwmSim::SetMeasurements(
 		    wv.dir = 0.0;
 		  }
 
+                // We need the relative azimuth, chi, to get sigma0 from the GMF table
 		// chi is defined so that 0.0 means the wind is blowing towards
 		// the s/c (the opposite direction as the look vector)
 		float chi = wv.dir - meas->eastAzimuth + pi;
 
+                // get sigma0 from the geophysical model function
+                // using measurement type, incidence angle, chi and wind speed
 		gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
 					  wv.spd, chi, &s0); 
-                //cout << "wind: " << wv.spd << " " << chi << endl;
 
-		// add rain contamination if simRain
+                
+                     // commented out debugging tool
+                     //cout << "wind: " << wv.spd << " " << chi << endl;
+
+                //--------------------------------------------------------------
+		// add rain contamination if SIM_RAIN option in config file is 1
+                //--------------------------------------------------------------
                 if(simRain){
+                  // 2-d rain simulation version, until 3-D code is fixed only use this version
                   if (!rainField.flag_3d) {
 		    float a,b;
+
+                    // compute rain attenuation and rain backscatter
+                    // goodrain is set to 0 is rain data is unavailable or flagged invalid
                     int goodrain=rainField.InterpolateABLinear(lon_lat,meas->incidenceAngle,a,b);
-                    if (isnan(s0)|| isnan(a) || isnan(b) || isnan(s0/a+b)) {
+
+                    // Print a warning message if uncontaminated s0, rain attenuation, rain backscatter, or rain contaminated s0 are Not a Number
+                    // This should only occur when wind speed is 0 and attenuation is infinite (or very large) so that surface is not visible at all
+		    if (isnan(s0)|| isnan(a) || isnan(b) || isnan(s0/a+b)) {
                       fprintf(stderr," NANBUG flag %d, s0 before %g, a %g, b %g, s0 after %g, lat %g, lon %g, inc %g\n",goodrain,s0,a,b,s0/a+b,lat*rtd,lon*rtd,meas->incidenceAngle*rtd);
                     }
+
+                    // contaminate s0 with rain if rain data is valid
 		    if(goodrain) s0= s0/a + b;
                   }
-		}
-	      }
+		} // end of if rain simulation on condition
+	      } // end of bin over open ocean condition
 
               //---------------------------------------------------------------//
               // Fuzz the sigma0 by Kpm to simulate the effects of model function
@@ -2159,7 +2481,24 @@ OvwmSim::SetMeasurements(
 
               //cout << "s0 from GMF: " << s0 << endl;
 
-              // Uncorrelated component.
+              //----------------------------------------------
+              // Put in uncorrelated component of model function error (Kpm)
+              // As implemented this value is taken from a Gamma distribution
+              // with variance = kpm*kpm*s0*s0 such that kpm is a function of
+              // speed and measurement type
+              //
+              // Since this is incorporated within the integration loop the kpm
+              // values in the table need to be consistent with the resolution of the
+              // integration bins. The current kpm.dat table was developed from 25 km
+              // NSCAT data. This seems inappropriate. Additionally the sources of
+              // kpm error are somewhat mysterious since they involve unknown non-wind
+              // effects on sigma0. The one part we are sure about, errors due to wind
+              // gradients should already be accounted for by the high resolution integration
+              // over the wind fields
+              //
+              // For these reasons I recommend omitting this step by setting SIM_UNCORR_KPM=0
+              // in the config file. -- BWS 07/09/2009
+	      //---------------------------------------------------------------------
               if (simUncorrKpmFlag == 1)
               {
                 double kpm2;
@@ -2172,16 +2511,37 @@ OvwmSim::SetMeasurements(
                 s0 = gammaRv.GetNumber();
               }
 
-              //cout << "s0 after uncorr kpm: " << s0 << endl;
+                  // commented out debugging tool
+                  //cout << "s0 after uncorr kpm: " << s0 << endl;
 
-              // Correlated component.
+              //----------------------------------------
+              // Correlated component of Kpm
+              // This alternative envisioned that Kpm was not really
+              // uncorrelated but rather had strong spatial correlations.
+              // However, in practise utilizing this only has the effect
+              // of requiring more simulations to get accurate global
+              // statistics. Recommend setting SIM_CORR_KPM=0
+              //-------------------------------------------------
               if (simCorrKpmFlag == 1)
+               
               {
                 s0 *= kpmField->GetRV(correlatedKpm, lon_lat);
               }
 
-              //cout << "s0 after corr kpm: " << s0 << endl;
+                  // commented out debugging tool
+                  //cout << "s0 after corr kpm: " << s0 << endl;
 
+
+ 
+              //-----------------------------------------
+              // Estimate backscatter contribution due
+              // to raindrops hitting the surface if 3-D rain
+              // simulation is used. This portion of the rain
+              // backscatter is already incorporated if 2-D simulation
+              // is used. Since it occurs at the surface only for the 3-D
+              // case only, this part is integrated during the 2-D integration,
+              // rather than in the  3-D integration loop above for 3-D rain
+              //-------------------------------------------
               if (simRain && rainField.flag_3d) {
                 // get splash sigma
                 float rainSpl;
@@ -2191,7 +2551,8 @@ OvwmSim::SetMeasurements(
               }
 
               //-----------------------------        
-	      // compute gain and range
+	      // Location of bin in antenna frame
+              // and determine antenna gain for bin
               //-----------------------------
 	      Vector3 rl = locgc - spacecraft->orbitState.rsat;
 	      Vector3 rl_ant=gc_to_antenna.Forward(rl);
@@ -2201,18 +2562,32 @@ OvwmSim::SetMeasurements(
 	      if(!beam->GetPowerGain(theta,phi,&gain)){
 		gain=0;
 	      }
-              double GatGar=gain*gain; // assumes 
-	                               // separate transmit and receive feeds
 
-              //cout << "gain: " << gain << " " << theta*rtd << " " << phi*rtd  << endl;
 
-              //----------------------------
-              // Integrate X and Es
-              //----------------------------
+	      // This statement assumes separate transmit and receive feeds
+              // Scan loss has to be incorporated by changing peak gain in config file
+              // The code should be modified to utilize a moving pattern and thus
+              // more directly compute scan loss. This is particularly important
+              // for coastal simulations with realistic antenna patterns where the
+              // side lobe structure is important.
+              double GatGar=gain*gain; 
+
+                 // commented out debugging tool
+                 //cout << "gain: " << gain << " " << theta*rtd << " " << phi*rtd  << endl;
+
+              //----------------------------------------------------
+              // Compute contribution of bin to calibration factor X
+              //----------------------------------------------------
 	      float dX=GatGar*_ptr_array[i][j]*integrationStepSize*
 		integrationStepSize/(range*range*range*range);
 
 
+              //-----------------------------------------------
+              // Integrate contributions from SAR ambiguties if desired
+              // See ConfigOvwmSim routine  in OvwmConfig.C for details
+              // on how to turn this on and off
+              // This block sparsely commented.
+              //-----------------------------------------------
               if(integrateAmbig){
 
                 loc_xyz_in_meter= locgc;
@@ -2237,38 +2612,76 @@ OvwmSim::SetMeasurements(
                 if(damb2==0) damb2=0.1;
                 amb1+=dX/damb1;
                 amb2+=dX/damb2;
-              }
-              //cout << "gain, ptr: " << i << " " << j << " " << GatGar << " " << _ptr_array[i][j] << endl;
+              } // end of ambiguity integration; sparsely commented block
+             
+
+                 // commented out debugging tool
+                 //cout << "gain, ptr: " << i << " " << j << " " << GatGar << " " << _ptr_array[i][j] << endl;
+              
+              //-------------------------------------------------------------
+              // Add bin contribution to portion of X over land or over ocean
+              //-------------------------------------------------------------
               if (island) {
                 dX_land += dX;
               } else {
                 dX_ocean += dX;
               }
+
+              //--------------------------------------------------------------
+              // Add bin contributions of X and Es to totals for measurement
+              //-------------------------------------------------------------
 	      meas->XK+=dX;
 	      Es+=dX*s0;
+
+              //--- Print warning message if Es is now not a number 
+              // --- Can occur wind speed =0 and very high rain conditions
 	      if(isnan(Es)){
 		fprintf(stderr,"AAAAAAAAAARRRRRRRGGGHHHHHHH CATCH BUG Es %g dX %g s0 %g\n",Es,dX,s0);
 	      }
 	  
-              // reassign ptr_array to X for later computation of bounds
+              //------------------------------------------------------------------
+              // reassign ptr_array to dX. This is used to compute a more accurate
+              // half power azimuth and range resolution quantity below
+              //------------------------------------------------------------------
               _ptr_array[i][j]=dX;
+
+              // determine maximal dX value
               if(dX> maxdX) maxdX=dX;
-	    }
-	  }
+	    } // end of loop of azimuth steps
+	  } // end of loop over range steps
+          //--------------------------------------------------
+          // End of main surface integration loop
+          //---------------------------------------------------
 
-          //cout << "target X and E before rain effect: " << meas->XK << " " << Es << endl;
+              // commented out debugging tools
+              //cout << "target X and E before rain effect: " << meas->XK << " " << Es << endl;
 
-          // modify signal strength because of rain
+          //---------------------------------------------------------------------------------------------
+          // When 3-D rain computation is enabled apply
+          // 3-D integrated estimates of backscatter from rain column
+          // and attenuation.
+          // --- This may be why the 3-D rain version is buggy
+          // --- The height integration should be an extra loop within the main 2-D integration loops
+          // --- Integrating the rain effects separately and then applying them to the 2-D integrated rain
+          // --- free measurement at the end is WRONG!!!!
+          //----------------------------------------------------------------------------------------------
           if (simRain && rainField.flag_3d) {
             Es *= exp(-2.*attn);
             Es += Es_rain;
           }
 
-          //cout << "rain (scat, attn): " << Es_rain << " " << attn << endl;
-          //cout << "target E with rain: " << Es << endl;
+              // commented out debugging toold
+              //cout << "rain (scat, attn): " << Es_rain << " " << attn << endl;
+              //cout << "target E with rain: " << Es << endl;
 
           
-          
+          //--------------------------------------------------------------------
+          // If we are going directly to L1B eliminate measurements with an X portion
+          // over land that is greater than a hard-coded threshold value -- see above
+          // dX_THRESHOLD should be a config file parameter!
+          // If we are processing to L1A, then OvwmL1AToL1B::Convert will remove these
+          // measurements.
+          //---------------------------------------------------------------------
           if (dX_land/meas->XK >= dX_THRESHOLD && sim_l1b_direct && !sim_all_land) {
             meas=meas_spot->RemoveCurrent();
             delete meas;
@@ -2277,7 +2690,10 @@ OvwmSim::SetMeasurements(
             continue;
           }
 
-          // determine range and azimuth width
+          //----------------------------------------------------------------
+          // Use the ptr_array that now contains the X contributions from
+          // each bin to determine the half power range and azimuth width.
+          //---------------------------------------------------------------
           int jmin= int(center_azim_idx);
           int jmax= int(center_azim_idx);
           int imin= int(center_range_idx_ave);
@@ -2294,65 +2710,118 @@ OvwmSim::SetMeasurements(
 	  }
           meas->azimuth_width=integrationStepSize*(jmax-jmin);
           meas->range_width=integrationStepSize*(imax-imin);
-          //printf("Es: %g\n", Es);
-          //cout << "Es: " << Es << endl;
 
+
+             // commented out debugging tools
+             //printf("Es: %g\n", Es);
+             //cout << "Es: " << Es << endl;
+
+
+          // Special XOWVM (SAR MODE num_pulses = 11 )
+          // debugging option (see above for other parts of this)
 	  if(generate_map){
 	    X_map_[range_index][azimuth_index]=meas->XK;
-	    //these screen outputs were used to make sure
-	    // that we are accessing correct range azimuth 
-	    // values
+            // commented out debugging tools
 	    //cout<<"range azimuth index "<< range_index<< " "<<azimuth_index<<endl;
 	    //cout<<"range azimuth in km "<< range_km<<" "<<azimuth_km<<endl;
 	  }
 
-          //------------------------------------------
-          // Put in constants to get values in Joules
-	  //------------------------------------------
-          double N0=bK*ovwm->systemTemperature;
-	  double lambda = speed_light_kps/ ovwm->ses.txFrequency;
+          //-------------------------------------------------------------
+          // Put in constants from radar equation to get values in Joules
+          // and to estimate noise power. Used to estimate noise power for
+          // very low SNR cases
+	  //------------------------------------------------------------
+
+          //----------------------------------------------------------------
+          // Compute noise density and wavelength (bK is boltzmann's constant)
+          //------------------------------------------------------------------
+          double N0=bK*ovwm->systemTemperature; // noise density
+	  double lambda = speed_light_kps/ ovwm->ses.txFrequency; // wavelength
+
+          //--------------------------------------------------------------
+          // Compute SNR and constant factor in X for measurement
+          //--------------------------------------------------------------
+
+          //----- constant portion of X factor
           double ksig=ovwm->ses.transmitPower*ovwm->ses.rxGainEcho*lambda*
 	    lambda*ovwm->ses.txPulseWidth*ovwm->ses.numPulses
 	    /(64*pi*pi*pi*ovwm->systemLoss);
-          //cout << "ksig: " << ksig << endl;
+                 // commented out debugging tool
+                 //cout << "ksig: " << ksig << endl;
+
+          //---- constant to convert signal energy to SNR
           double kSNR=ovwm->ses.transmitPower*lambda*
 	    lambda*ovwm->ses.txPulseWidth*ovwm->ses.numPulses
 	    /(64*pi*pi*pi*ovwm->systemLoss*N0*float(nL))
             *ovwm->ses.receivePathLoss; // the last term added as noise has this factor
+
+          //---- SNR
           double SNR=Es*kSNR;
           
-
+          //--------------------------------------------------
+          // Normalize power contribution from SAR ambiguities
+          // if they have been integrated
+          //--------------------------------------------------
           if(integrateAmbig){
             amb1/=meas->XK;
             amb2/=meas->XK;
           }
+
+          //----------------------------------------------------------------
+          // Scale Es AND X factor by appropriate constant now Es=XK*sigma0
+          //  when Es in Joules and sigma0 is unitless
+          //--------------------------------------------------
           meas->XK*=ksig;
-          //cout << "XK: " << meas->XK << endl;
+              // commented out debugging tool
+              //cout << "XK: " << meas->XK << endl;
           Es*=ksig;
-          //cout << "Es after ksig: " << Es << endl;
+	      // commented out debugging tool
+              //cout << "Es after ksig: " << Es << endl;
+
+          //-------------------------------------------------------
+          // Compute Noise Energy in Joules from Es and SNR
+          // (print warning if Es is Not a Number)
+          //-------------------------------------------------------
           En=Es/SNR;
           if(isnan(Es)){
             fprintf(stderr,"AAAAAAAAAARRRRRRRGGGHHHHHHH CATCH BUG En %g Es %g SNR %g kSNR %g ksig %g N0 %g lambda %g\n",En,Es,SNR,kSNR,ksig,N0,lambda);
 	  }
-          //printf("SNR, Es, En: %g %g %g\n", SNR, Es, En);
 
+             // commented out debugging tool
+             //printf("SNR, Es, En: %g %g %g\n", SNR, Es, En);
 
+          //-------------------------------------------------
           // Set Noise value this way when SNR is very low
           // to avoid numerical error
+          //-------------------------------------------------
           if (SNR < SNR_CUTOFF) { 
             En = N0*float(nL)/ovwm->ses.receivePathLoss;
           }
+	
 
+          //---------------------------------------------
+          //  Assign noise energy quantity to Meas object
+          //---------------------------------------------
           meas->EnSlice=En;
         
-          if(meas->startSliceIdx==20){
-	    cout << "MeasType=" << meas_type_map[(int) meas->measType]<<" s0 =" << Es/meas->XK << " Es="<<Es << " En=" << En <<" XK="<< meas->XK << endl;
-	  }
-          //------------------------
-          // compute bias due to ambiguity
-          //------------------------
+         
+               // debug tools  commented out
+	       //cout << "MeasType=" << meas_type_map[(int) meas->measType]<<" s0 =" << Es/meas->XK << " Es="<<Es << " En=" << En <<" XK="<< meas->XK << endl;
+	  
+          //-----------------------------------
+          // compute bias due to SAR ambiguities
+          // This block of code uses the previously
+          // computed SAR ambiguity locations and
+          // isolation ratio to determine the ambiguous
+          // contribution to the signal energy.
+          // It should probably be turned off for
+          // num_pulses = 1. Instead of doing that
+          // the isolation quantities have been set
+          // so that the signal energy is unchanged
+          // Comments are sparse in this block
+          //----------------------------------
           float amb1s0, amb2s0;
-          
+	
 
 	  double alt, lat, lon;
 	  WindVector wv;
@@ -2468,15 +2937,20 @@ OvwmSim::SetMeasurements(
 	      }
 	    }
 	  }
-
+	
 	  Es+=meas->XK*amb1*amb1s0+meas->XK*amb2*amb2s0;
+             // commented out debugging tool
+             //cout << "Es after amb: " << Es << endl;
 
-          //cout << "Es after amb: " << Es << endl;
-          //exit(1);
+          //----------------------------------------
+          // End of add ambiguity bias to Es block
+          // and end of sparse comments
+          //------------------------------------------
 
-          //-----------------------
-          // compute variance ONLY kpc for now!
-          //-----------------------
+          //------------------------------------------------
+          // compute Kpc (Thermal and Fading Noise) Variance
+          // (variance in Es after noise subtraction)
+          //------------------------------------------------
           double kpc2=(1/(float)nL)*(1+2/SNR+1/(SNR*SNR));
 	  var_esn_slice=kpc2*Es*Es;
 
@@ -2485,85 +2959,99 @@ OvwmSim::SetMeasurements(
           // below the noise floor and thus wind speed is identically 0
           // It is meant for invalid wind speed regions not real
           // low winds.
+          // It keeps Kpc from blowing up and generating numerical error
           if (SNR < SNR_CUTOFF) { // deal with L1A pixel with low gain
             var_esn_slice=0.;
           }
 
+          //--------------------------------
+          // Turn off Kpc if SIM_KPC = 0
+          // in the config file
+          //---------------------------------
           if(!simKpcFlag){
 	    var_esn_slice=0;
 	  }
 
+          // special case debugging output specific to XOVWM design
 	  if(generate_map)
 	    kpc_map_[range_index][azimuth_index]=kpc2;
 
 
-          // Consistent with meas->numSlices=-1 case in GMF::GetVariance
-          // kpm is removed 
-          // update and let kpm calculated in GMF::GetVariance
-
+          //----------------------------------
+          // Set noise variance parameters in
+          // Meas object if we are simulating
+          // directly to L1B
+          //----------------------------------
 	  if(sim_l1b_direct){
-            //float kpmtoremove=0.16;
             float s0ne=En/meas->XK; // noise equivalent s0
             float alpha=1/(float)nL;
-            //meas->A=(alpha+1.0)/(1+kpmtoremove*kpmtoremove);
             meas->A=alpha+1.0;
             meas->B=2.0*s0ne/(float)nL;
             meas->C=s0ne*s0ne/(float)nL;
           }
-          
-          // add noise and bias due to ambiguity
-
+	
+          //--------------------------------------------------          
+          // Set Value in Measurement to Noise + Signal Energy
+          // This is the place to put Es+En when writing a
+          // measurement to a L1A file
+          //---------------------------------------------------
           meas->value=Es+En;
 
-          //cout << "Es after noise, meas value: " << meas->value << endl;
 
-          //----------------------------
-          // fuzz using kpc
-          //----------------------------
+        
+             // commented out debugging tools
+             //cout << "Es after noise, meas value: " << meas->value << endl;
 
+          //----------------------------------------
+          // Add random Kpc noise to the value field
+          //----------------------------------------
           double v=normrv.GetNumber()*sqrt(var_esn_slice); 
-
           meas->value+=v;
+	
+            // commented out debugging tools
+            //cout << "meas value after kpc: " << meas->value << endl;
+            //if (slice_i > 100) exit(1);
 
-          //cout << "meas value after kpc: " << meas->value << endl;
-          //if (slice_i > 100) exit(1);
-
+          //-------------------------------------------------------------------
           // Noise subtract/calibrate to get s0 if L1B direct output is desired
+          //-------------------------------------------------------------------
 	  if(sim_l1b_direct){
 	    meas->value-=En;
 	    meas->value/=meas->XK;
 
 	  }
 	  
-          // implement special routine to replace value with Ambiguity ratio
+          //----------------------------------------------------------------
+          // implement special debugging routine to replace value with Ambiguity ratio
+          // see ConfigOvwmSim for keyword to implement this if desired.
+          //----------------------------------------------------------------
           if(replaceValueWithAmbRat) meas->value=amb1+amb2;
-
-          //cout << meas->value << endl;
+          
+            // commented out debugging tool
+            //cout << meas->value << endl;
 	  
-	}
+	
 
 
-        // duplicate low res measurements so gridding will work down to 1 km
-        /****
-        if (sim_l1b_direct) {
-          int numdup=(int)(meas->azimuth_width);
-      	  if(numdup%2==0) numdup--; // make an odd number of measurements
-          for(int i=-numdup/2;i<=numdup/2;i++){
-	    if(i==0) continue;
-	    Meas* m=new Meas;	  
-	    *m=*meas;
-	    m->centroid=m->centroid+yvec*float(i); 
-	      // yvec is the azimuth direction vector
-	    meas_spot->InsertAfter(m);
-	  }
-        }
-        ****/
+ 
+	  }  
+	//------------------------------------------//
+        // end of SIM_HIGH_RES=1  case              //
+        //------------------------------------------//
+
         slice_i++;
-        meas = meas_spot->GetNext();
+        meas = meas_spot->GetNext(); // gets next measurement in footprint 
+                                     // or NULL pointer no more left
     }
+    //--------------------------------//
+    // end of loop over measurements  //
+    // in antenna footprint           //
+    //--------------------------------//
 
-
-    //write amb,x,kpc, and x map on the screen
+    //-------------------------------------------
+    // write amb,x,kpc, and x map to output files
+    // for special XOVWM debugging case
+    //-------------------------------------------
     if(generate_map){
      
       char angle_str[7],beam_str[1];
@@ -2630,10 +3118,10 @@ OvwmSim::SetMeasurements(
       X_file.close();
 
 
-    }
+    } // end of XOVWM specific debugging output
     
 
-   
+    // returns 1 on completion of routine
     return(1);
 }
 
