@@ -148,7 +148,7 @@ public:
     int  ReadHDFDIRTH(const char* filename);
     int  ReadHDF(TlmHdfFile* tlmHdfFile, int unnormalize_mle = 1);
     int  ReadNudgeVectorsFromHdfL2B(const char* filename);
-    int  ReadNudgeVectorsFromHdfL2B(TlmHdfFile* tlmHdfFile);
+//    int  ReadNudgeVectorsFromHdfL2B(TlmHdfFile* tlmHdfFile);
 
     int  GetArraysForUpdatingDirthHdf(float** spd, float** dir,
              int** num_ambig);

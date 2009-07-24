@@ -1475,122 +1475,58 @@ L2B::ReadHDF(
 // L2B::ReadNudgeVectorsFromHdfL2B //
 //---------------------------------//
 
-int
-L2B::ReadNudgeVectorsFromHdfL2B(
+int L2B::ReadNudgeVectorsFromHdfL2B(
     const char*  filename)
 {
-    //--------------------------------//
-    // convert filename to TlmHdfFile //
-    //--------------------------------//
+    L2B n_l2b;
 
-    HdfFile::StatusE returnStatus = HdfFile::OK;
-    NoTimeTlmFile l2b_hdf_file(filename, SOURCE_L2B, returnStatus);
-    if (returnStatus != HdfFile::OK)
-        return(0);
+    if (n_l2b.ReadPureHdf(filename,1) == 0)  // Use ReadPureHDF, old one broken.
+    {
+        fprintf(stderr, "ReadNudgeVectorsFromHdfL2B: error reading HDF L2B file %s\n",
+                filename);
+        return 0;
+    }
 
-    //------//
-    // read //
-    //------//
-
-    if (! ReadNudgeVectorsFromHdfL2B(&l2b_hdf_file))
-        return(0);
-
-    return(1);
-}
-
-//---------------------------------//
-// L2B::ReadNudgeVectorsFromHdfL2B //
-//---------------------------------//
-
-int
-L2B::ReadNudgeVectorsFromHdfL2B(
-    TlmHdfFile*  tlmHdfFile)
-{
     WindSwath* swath = &(frame.swath);
 
-    int crossTrackBins = HDF_ACROSS_BIN_NO;
+    int crossTrackBins = n_l2b.frame.swath.GetCrossTrackBins();
 #ifdef HIRES12
     crossTrackBins = 152;
 #endif
 
+    // check that the number of cross track bins in the thing just read match the
+    // number in the current instance (where we'll be putting the data)
     if (crossTrackBins != swath->GetCrossTrackBins())
     {
-        fprintf(stderr,
-            "ReadNudgeVectorsFromHdfL2B: crosstrackbins mismatch\n");
+        fprintf(stderr, "ReadNudgeVectorsFromHdfL2B: crosstrackbins mismatch\n");
         return(0);
     }
 
-    // along bin number comes from WVC_ROW
-    const char* rowSdsName = ParTabAccess::GetSdsNames(SOURCE_L2B, WVC_ROW);
-    if (rowSdsName == 0)
-        return(0);
+    int alongTrackBins = n_l2b.frame.swath.GetAlongTrackBins();
 
-    int32 dataType = 0;
-    int32 dataStartIndex = 0;
-    int32 dataLength = 0;
-    int32 numDimensions = 0;
-    int32 rowSdsId = tlmHdfFile->SelectDataset(rowSdsName, dataType,
-              dataStartIndex, dataLength, numDimensions);
-    if (rowSdsId == HDF_FAIL)
-        return(0);
-
-    int alongTrackBins = dataLength;
-
-    // For now do not handle case in which WVC rows are missing
+    // check the number of along track bins match
     if (alongTrackBins != swath->GetAlongTrackBins())
     {
-        fprintf(stderr, "Unable to process missing WVC rows in HDF file\n");
+        fprintf(stderr, "ReadNudgeVectorsFromHdfL2B: alongtrackbins mismatch\n");
         return(0);
     }
 
-    // Open Nudge Vector Data Sets
-    if ((_modelSpeedSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
-        MODEL_SPEED)) == 0)
-    {
-        return(0);
-    }
-    if ((_modelDirSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
-        MODEL_DIR)) == 0)
-    {
-        return(0);
-    }
-
-    float* modelSpeedArray=(float*) new float[crossTrackBins];
-    float* modelDirArray=(float*) new float[crossTrackBins];
-
-    int32 sdsIds[1];
     for (int32 ati = 0; ati < alongTrackBins; ati++)
     {
-        sdsIds[0] = _modelSpeedSdsId;
-        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, ati, 1, 1,
-            modelSpeedArray) == 0)
-        {
-            return(0);
-        }
-
-        sdsIds[0] = _modelDirSdsId;
-        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, ati, 1, 1,
-            modelDirArray) == 0)
-        {
-             return(0);
-        }
         for (int cti = 0; cti < crossTrackBins; cti++)
         {
-            WVC* wvc = swath->GetWVC(cti, ati);
-            if (! wvc)
+            WVC* n_wvc = n_l2b.frame.swath.GetWVC(cti, ati);
+            WVC* o_wvc = swath->GetWVC(cti, ati);
+            if (!n_wvc || !o_wvc)
                 continue;
-            wvc->nudgeWV = new WindVectorPlus();
-            float nudge_edir = gs_deg_to_pe_rad(modelDirArray[cti]);
-            wvc->nudgeWV->SetSpdDir(modelSpeedArray[cti] * NWP_SPEED_CORRECTION,
-                nudge_edir);
+            float nudge_edir = n_wvc->nudgeWV->dir;
+            float nudge_espd = n_wvc->nudgeWV->spd;
+            if (o_wvc->nudgeWV != NULL)
+                delete o_wvc->nudgeWV;
+            o_wvc->nudgeWV = new WindVectorPlus();
+            o_wvc->nudgeWV->SetSpdDir(nudge_espd, nudge_edir);
         }
     }
-    delete [] modelDirArray;
-    delete [] modelSpeedArray;
-
-    // close datasets
-    (void)SDendaccess(_modelSpeedSdsId); _modelSpeedSdsId = HDF_FAIL;
-    (void)SDendaccess(_modelDirSdsId); _modelDirSdsId = HDF_FAIL;
 
     swath->nudgeVectorsRead = 1;
 
