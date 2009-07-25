@@ -147,7 +147,7 @@ main(
 
     FILE* dirdiagfp=NULL;
     // comment out if you don't want debug output
-    dirdiagfp=fopen("DIRDIAG.TXT","w");
+//    dirdiagfp=fopen("DIRDIAG.TXT","w");
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -322,8 +322,8 @@ main(
         exit(1);
     }
 
-    int along_track_bins =
-        (int)(two_pi * r1_earth / l2a.header.alongTrackResolution + 0.5);
+    int along_track_bins = l2a.header.alongTrackBins;
+//        (int)(two_pi * r1_earth / l2a.header.alongTrackResolution + 0.5);
  
     if (! l2b.frame.swath.Allocate(l2a.header.crossTrackBins,
         along_track_bins))
