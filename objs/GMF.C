@@ -150,19 +150,118 @@ GMF::SetSpdTol(
 }
 
 //------------------//
+// GMF:ReadArrayFile //
+// worker function- you should not call this directly, but use one of the higher level reading routines
+//------------------//
+
+int GMF::_ReadArrayFile(
+    const char*  filename, bool mirrorChiValues, bool discardFirstVal)
+{
+    _chiStep = two_pi / _chiCount;
+
+    if (! _Allocate())
+        return(0);
+
+    return _ReadArrayFileLoop(filename, mirrorChiValues, discardFirstVal);
+
+}
+    
+// worker function- you should not call this directly, but use one of the higher level reading routines
+//
+// Read a file containing array data
+// met = measurement types; inc = incidence angle; spd = wind speed; chi = azimuth angle
+// All angles in radians
+// if mirrorChiValues is set to true, the routine assumes the file actually contains chi
+//      values for 0 < chi < pi radians and 
+//      the number of chi values actually in the file = (chiCount / 2) + 1. It then mirrors
+//      the sigma0 values so that sigma0(chi = pi + k) = simga0(chi = pi - k) for any value
+//      0 < k < pi.
+// if MirrorChiValues is not set, this assumes the input file just has chi values
+//      for all values 0 <= chi <= 2*pi
+// if discardFirstVal is true, discard the first integer in the file
+// met_idx_start sets the index in the measurement array where data should start getting put
+// n_met sets the number of measurements contained in this file (they will be placed sequentially
+//      in the file
+int GMF::_ReadArrayFileLoop(
+    const char*  filename, bool mirrorChiValues, bool discardFirstVal,
+    int met_idx_start, int n_met)
+{
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1)
+        return(0);
+
+    if (discardFirstVal) {
+        int dummy;
+        read(fd, &dummy, sizeof(int)); 
+    }
+    
+    int file_chi_count;
+    if (mirrorChiValues) 
+        file_chi_count = (_chiCount / 2) + 1;
+    else
+        file_chi_count = _chiCount;
+        
+    if (met_idx_start == -1 || n_met == -1) {
+        met_idx_start = 0; n_met = _metCount;
+    }
+        
+    float value;
+    for (int met_idx = met_idx_start; met_idx < (met_idx_start+n_met); met_idx++)
+    {
+        metValid[met_idx]=true;
+        for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
+        {
+            for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
+            {
+                for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+                {
+                    if (read(fd, &value, sizeof(float)) != sizeof(float))
+                    {
+                        close(fd);
+                        return(0);
+                    }
+                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
+                        (float)value;
+                                                
+                    if (mirrorChiValues) {
+                        int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
+                        *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx_2) =
+                            (float)value;
+                    }
+                }
+            }
+        }
+    }
+
+    //----------------------//
+    // zero the 0 m/s model //
+    //----------------------//
+
+    int spd_idx = 0;
+    for (int met_idx = met_idx_start; met_idx < (met_idx_start+n_met); met_idx++)
+    {
+        for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
+        {
+            for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+            {
+                *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
+            }
+        }
+    }
+
+    close(fd);
+    return(1);
+}
+
+
+
+//------------------//
 // GMF:ReadOldStyle //
 //------------------//
 
 int GMF::ReadOldStyle(
     const char*  filename)
 {
-    int fd = open(filename, O_RDONLY);
-    if (fd == -1)
-        return(0);
-
-    int dummy;
-    read(fd, &dummy, sizeof(int));
-
     _metCount = 2;
 
     _incCount = 26;
@@ -175,60 +274,59 @@ int GMF::ReadOldStyle(
     _spdMax = 50.0;
     _spdStep = 1.0;
 
-    int file_chi_count = 37;
     _chiCount = 72;
-    _chiStep = two_pi / _chiCount;    // 5 degrees
+    
+    bool mirrorChiValues = true;
+    bool discardFirstVal = true;
+    
+    return _ReadArrayFile(filename, mirrorChiValues, discardFirstVal);
+}
 
+
+//------------------//
+// GMF:ReadQScatStyle //
+//------------------//
+
+int GMF::ReadQScatStyle(
+    const char*  filename)
+{
+    _metCount = 2;
+
+    _incCount = 21;
+    _incMin = 40.0 * dtr;
+    _incMax = 60.0 * dtr;
+    _incStep = 1.0 * dtr;
+
+    _spdCount = 51;
+    _spdMin = 0.0;
+    _spdMax = 50.0;
+    _spdStep = 1.0;
+
+    _chiCount = 361;
+    _chiStep = 1.0;
+    
     if (! _Allocate())
         return(0);
 
-    metValid[0]=true;
-    metValid[1]=true;
+    bool mirrorChiValues = false;
+    bool discardFirstVal = false;
+    int met_idx_start = 0;
+    int n_met = 1;
 
-    float value;
-    for (int met_idx = 0; met_idx < _metCount; met_idx++)
-    {
-        for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
-        {
-            for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
-            {
-                for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-                {
-                    if (read(fd, &value, sizeof(float)) != sizeof(float))
-                    {
-                        close(fd);
-                        return(0);
-                    }
-                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
-                        (float)value;
-
-                    int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
-                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx_2) =
-                        (float)value;
-                }
-            }
-        }
-    }
-
-    //----------------------//
-    // zero the 0 m/s model //
-    //----------------------//
-
-    int spd_idx = 0;
-    for (int met_idx = 0; met_idx < _metCount; met_idx++)
-    {
-        for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
-        {
-            for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-            {
-                *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
-            }
-        }
-    }
-
-    close(fd);
-    return(1);
+    // The quickscat has different polarities in the same table (polarity depends
+    // on the incidence angle), so just copy exactly the same thing into both meas
+    // types
+    // NOTE: this means that retrieving an arbitrary incidence angle and polarity
+    // will not necissarily result in a valid answer. low incidence angles (<~50 deg)
+    // implies HH pol while high incidence angles implies VV pol, regardless of
+    // the measurement type specified.
+    _ReadArrayFileLoop(filename, mirrorChiValues, discardFirstVal,
+        met_idx_start, n_met);
+    met_idx_start++;
+    return _ReadArrayFileLoop(filename, mirrorChiValues, discardFirstVal,
+        met_idx_start, n_met);
 }
+
 
 
 //------------------//
@@ -238,11 +336,6 @@ int GMF::ReadOldStyle(
 int GMF::ReadHighWind(
     const char*  filename)
 {
-    int fd = open(filename, O_RDONLY);
-    if (fd == -1)
-        return(0);
-
-
     _metCount = 2;
 
     _incCount = 26;
@@ -255,58 +348,12 @@ int GMF::ReadHighWind(
     _spdMax = 99.0;
     _spdStep = 1.0;
 
-    int file_chi_count = 37;
     _chiCount = 72;
-    _chiStep = two_pi / _chiCount;    // 5 degrees
 
-    if (! _Allocate())
-        return(0);
-
-    metValid[0]=true;
-    metValid[1]=true;
-    float value;
-    for (int met_idx = 0; met_idx < _metCount; met_idx++)
-    {
-        for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
-        {
-            for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
-            {
-                for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-                {
-                    if (read(fd, &value, sizeof(float)) != sizeof(float))
-                    {
-                        close(fd);
-                        return(0);
-                    }
-                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
-                        (float)value;
-
-                    int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
-                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx_2) =
-                        (float)value;
-                }
-            }
-        }
-    }
-
-    //----------------------//
-    // zero the 0 m/s model //
-    //----------------------//
-
-    int spd_idx = 0;
-    for (int met_idx = 0; met_idx < _metCount; met_idx++)
-    {
-        for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
-        {
-            for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-            {
-                *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
-            }
-        }
-    }
-
-    close(fd);
-    return(1);
+    bool mirrorChiValues = true;
+    bool discardFirstVal = false;
+    
+    return _ReadArrayFile(filename, mirrorChiValues, discardFirstVal);
 }
 
 //------------------//
@@ -316,11 +363,6 @@ int GMF::ReadHighWind(
 int GMF::ReadCBand(
     const char*  filename)
 {
-    int fd = open(filename, O_RDONLY);
-    if (fd == -1)
-        return(0);
-
-
     _metCount = 7;
 
     _incCount = 26;
@@ -333,59 +375,19 @@ int GMF::ReadCBand(
     _spdMax = 99.0;
     _spdStep = 1.0;
 
-    int file_chi_count = 37;
     _chiCount = 72;
     _chiStep = two_pi / _chiCount;    // 5 degrees
 
     if (! _Allocate())
         return(0);
 
-    metValid[5]=true;
-    metValid[6]=true;
+    bool mirrorChiValues = true;
+    bool discardFirstVal = false;
+    int met_idx_start = 5;
+    int n_met = 2;
 
-    float value;
-    for (int met_idx = 5; met_idx <= 6; met_idx++)
-    {
-        for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
-        {
-            for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
-            {
-                for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-                {
-                    if (read(fd, &value, sizeof(float)) != sizeof(float))
-                    {
-                        close(fd);
-                        return(0);
-                    }
-                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
-                        (float)value;
-
-                    int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
-                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx_2) =
-                        (float)value;
-                }
-            }
-        }
-    }
-
-    //----------------------//
-    // zero the 0 m/s model //
-    //----------------------//
-
-    int spd_idx = 0;
-    for (int met_idx = 5; met_idx <= 6; met_idx++)
-    {
-        for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
-        {
-            for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-            {
-                *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
-            }
-        }
-    }
-
-    close(fd);
-    return(1);
+    return _ReadArrayFileLoop(filename, mirrorChiValues, discardFirstVal,
+        met_idx_start, n_met);
 }
 
 
@@ -396,11 +398,6 @@ int GMF::ReadCBand(
 int GMF::ReadKuAndC(
 		    const char*  ku_filename, const char* c_filename)
 {
-    int fd = open(ku_filename, O_RDONLY);
-    if (fd == -1)
-        return(0);
-
-
     _metCount = 7;
 
     _incCount = 26;
@@ -413,110 +410,25 @@ int GMF::ReadKuAndC(
     _spdMax = 99.0;
     _spdStep = 1.0;
 
-    int file_chi_count = 37;
     _chiCount = 72;
     _chiStep = two_pi / _chiCount;    // 5 degrees
 
     if (! _Allocate())
         return(0);
 
+    bool mirrorChiValues = true;
+    bool discardFirstVal = false;
+    int n_met = 2;
 
-    metValid[0]=true;
-    metValid[1]=true;
-    metValid[5]=true;
-    metValid[6]=true;
+    int met_idx_start = 5;
+    int c_res = _ReadArrayFileLoop(c_filename, mirrorChiValues, discardFirstVal,
+        met_idx_start, n_met);
 
-    float value;
-    for (int met_idx = 0; met_idx < 2; met_idx++)
-    {
-        for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
-        {
-            for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
-            {
-                for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-                {
-                    if (read(fd, &value, sizeof(float)) != sizeof(float))
-                    {
-                        close(fd);
-                        return(0);
-                    }
-                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
-                        (float)value;
-
-                    int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
-                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx_2) =
-                        (float)value;
-                }
-            }
-        }
-    }
-
-    //----------------------//
-    // zero the 0 m/s model //
-    //----------------------//
-
-    int spd_idx = 0;
-    for (int met_idx = 0; met_idx < 2; met_idx++)
-    {
-        for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
-        {
-            for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-            {
-                *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
-            }
-        }
-    }
-
-    close(fd);
-
-    fd = open(c_filename, O_RDONLY);
-    if (fd == -1)
-        return(0);
-
-
-    
-    for (int met_idx = 5; met_idx <= 6; met_idx++)
-    {
-        for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
-        {
-            for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
-            {
-                for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-                {
-                    if (read(fd, &value, sizeof(float)) != sizeof(float))
-                    {
-                        close(fd);
-                        return(0);
-                    }
-                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
-                        (float)value;
-
-                    int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
-                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx_2) =
-                        (float)value;
-                }
-            }
-        }
-    }
-
-    //----------------------//
-    // zero the 0 m/s model //
-    //----------------------//
-
-    spd_idx = 0;
-    for (int met_idx = 5; met_idx <= 6; met_idx++)
-    {
-        for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
-        {
-            for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-            {
-                *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
-            }
-        }
-    }
-
-    close(fd);
-    return(1);
+    met_idx_start = 0;
+    int ku_res = _ReadArrayFileLoop(ku_filename, mirrorChiValues, discardFirstVal,
+        met_idx_start, n_met);
+        
+    return c_res && ku_res;
 }
 
 //----------------------//

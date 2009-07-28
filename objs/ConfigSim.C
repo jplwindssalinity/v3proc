@@ -1748,13 +1748,19 @@ ConfigGMF(
     char* gmf_filename = config_list->Get(GMF_FILE_KEYWORD);
     if (gmf_filename == NULL)
         return(0);
+    
     char* gmf_format = config_list->Get(GMF_FILE_FORMAT_KEYWORD);
     if (gmf_format == NULL)
         return(0);
-
+    
     if (strcasecmp(gmf_format, "OLD_STYLE") == 0)
     {
         if (! gmf->ReadOldStyle(gmf_filename))
+            return(0);
+    }
+    else if (strcasecmp(gmf_format, "QUIKSCAT") == 0)
+    {
+        if (! gmf->ReadQScatStyle(gmf_filename))
             return(0);
     }
     else if (strcasecmp(gmf_format, "C_BAND") == 0)

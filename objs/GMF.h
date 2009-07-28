@@ -62,11 +62,21 @@ public:
     // input/output //
     //--------------//
 
+    // high level functions- use these    
     int  ReadOldStyle(const char* filename);
+    int  ReadQScatStyle(const char*  filename);
     int  ReadHighWind(const char* filename);
     int  ReadKuAndC(const char* ku_filename,const char* c_filename);
     int  ReadCBand(const char* filename);
     int  ReadPolarimetric(const char* filename);
+
+    // internal worker functions- don't use these directly
+    int GMF::_ReadArrayFile(const char*  filename,
+        bool mirrorChiValues = false, bool discardFirstVal = false);
+    int GMF::_ReadArrayFileLoop(const char*  filename, 
+        bool mirrorChiValues = false, bool discardFirstVal = false,
+        int met_idx_start = -1, int n_met = -1);
+
 
     //---------//
     // analyze //
