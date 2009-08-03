@@ -1730,7 +1730,10 @@ WindSwath::MedianFilter_4Pass(
     }
 
     free_array(new_selected, 2, _crossTrackBins, _alongTrackBins);
-    free_array(change, 2, _crossTrackBins, _alongTrackBins);
+    free_array(change,       2, _crossTrackBins, _alongTrackBins);
+    free_array(filter,       2, _crossTrackBins, _alongTrackBins);
+    free_array(influence,    2, _crossTrackBins, _alongTrackBins);
+    
     return(total_passes);
 }
 
