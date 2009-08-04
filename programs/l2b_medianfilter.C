@@ -314,7 +314,7 @@ main(
             exit(1);
         }
     }
-
+    
     //---------//
     // HDF I/O //
     //---------//
@@ -327,8 +327,8 @@ main(
  
          if (! hdf_source_flag)
          {
-             if (! l2b.ReadNudgeVectorsFromHdfL2B(hdf_file)) // This is probably broken
-             												 // 7-21-2009 AGF
+             if (! l2b.ReadNudgeVectorsFromHdfL2B(hdf_file)) 
+             												
              {
                  fprintf(stderr,
                      "%s: error reading nudge vectors from HDF L2B file %s\n",
@@ -441,7 +441,7 @@ main(
             exit(1);
         }
     }
-
+    
     l2b.Close();
     free_array((void*)spd, 2, atibins, ctibins*HDF_NUM_AMBIGUITIES);
     free_array((void*)dir, 2, atibins, ctibins*HDF_NUM_AMBIGUITIES);
