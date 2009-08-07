@@ -147,7 +147,7 @@ main(
 
     FILE* dirdiagfp=NULL;
     // comment out if you don't want debug output
-//    dirdiagfp=fopen("DIRDIAG.TXT","w");
+    // dirdiagfp=fopen("DIRDIAG.TXT","w");
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -456,6 +456,7 @@ main(
           // ATI, CTI, NUMAMBIGS, 80perwidth, spd1 dir1 left1 right1,...
           // objs(72) spds(72)
           
+          
 	  fprintf(dirdiagfp,"%d %d ",ai,ci);
 	  WindVectorPlus* wvp=wvc->ambiguities.GetHead();
           
@@ -495,10 +496,10 @@ main(
 	  for(int c=0;c<4;c++){
 	    fprintf(dirdiagfp,"%g %g %g %g %g ",_spd[c],_dir[c],_obj[c],_left[c],_right[c]);
 	  }
-	  for(int p=0;p<72;p++){
+	  for(int p=0;p<45;p++){
 	    fprintf(dirdiagfp,"%g ",wvc->directionRanges.bestObj[p]);
 	  }
-          for(int p=0;p<72;p++){
+          for(int p=0;p<45;p++){
 	    fprintf(dirdiagfp,"%g ",wvc->directionRanges.bestSpd[p]);
 	  }
 		  fprintf(dirdiagfp,"\n");
@@ -506,7 +507,7 @@ main(
     } // end loop over wind vector cells
     if(dirdiagfp) fclose(dirdiagfp);
     l2a_to_l2b.InitFilterAndFlush(&l2b);
-
+       
     l2a.Close();
     l2b.Close();
 
