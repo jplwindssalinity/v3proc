@@ -121,7 +121,7 @@ PROGRAMS = \
 	l2b_extract_worst \
 	get_foff \
     check_inst_tracking \
-	make_simple_land_map
+	make_simple_land_map \
 #	l00_to_l1a
 #   check_l1b 
 #   nof_and_qual
@@ -133,6 +133,9 @@ PROGRAMS = \
 #	sim_l1a_echo_proc
 #	echo_split
 #	baseband_errors
+
+FORE_PROGRAMS = \
+	l2b_to_retdat 
 
 SVT_PROGRAMS = \
 	l1a_hdf_energy_map
