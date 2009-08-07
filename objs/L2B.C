@@ -21,6 +21,8 @@ static const char rcs_id_l2b_c[] =
 #include "HdfHelp.h"
 #include "Sds.h"
 
+#include "GSparameters.h"
+
 #define HDF_ACROSS_BIN_NO    76
 #define HDF_NUM_AMBIGUITIES  4
 
@@ -166,6 +168,654 @@ L2B::Read(
     }
     return(1);
 }
+
+//------------------//
+// L2B::ReadRETDAT //
+//------------------//
+int L2B::ReadRETDAT(
+    const char*  filename,
+    int read_nudge_vectors_flag)
+{
+  FILE* fid;
+
+  int atibins;
+  int ctibins;
+
+  float* lat_arr;
+  float* lon_arr;
+  float* sel_speed;
+  float* sel_dir;
+  float* true_speed;
+  float* true_dir;
+  float* model_speed;
+  float* model_dir;
+	
+  int* num_ambigs;
+  int* wvc_selection;
+  unsigned int* retdat_flags;
+	
+  float* amb_obj;
+  float* amb_speed;
+  float* amb_dir; 
+  float* liquid;
+  
+  float* amb_speed_ridge_amp;
+  float* amb_speed_ridge_phase;	
+  
+  float* amb_speed_ridge_azi_left;
+  float* amb_speed_ridge_azi_right;
+
+  fid = fopen( filename, "r" );
+  if( fid == NULL ) {
+      fprintf(stderr, "L2B::ReadRETDAT Unable to open file %s\n",filename);
+	  return (0);
+  }
+	  
+  if( fread( &atibins, sizeof(int), 1, fid ) != 1 )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading atibins from %s\n",filename);  
+  if( fread( &ctibins, sizeof(int), 1, fid ) != 1 )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading ctibins from %s\n",filename);   
+      
+  printf("L2B::ReadRETDAT atibins: %d ctibins: %d\n",atibins,ctibins);
+  
+  unsigned int num_wvc = ctibins*atibins;
+  
+  int n_spec_fit_terms;
+  
+  lat_arr       = new float[atibins*ctibins];
+  lon_arr       = new float[atibins*ctibins];
+  sel_speed     = new float[atibins*ctibins];
+  sel_dir       = new float[atibins*ctibins];
+  model_speed   = new float[atibins*ctibins];
+  model_dir     = new float[atibins*ctibins];
+  true_speed    = new float[atibins*ctibins];
+  true_dir      = new float[atibins*ctibins];
+  liquid        = new float[atibins*ctibins];
+  wvc_selection = new   int[atibins*ctibins];
+  num_ambigs    = new   int[atibins*ctibins];
+	
+  retdat_flags  = new unsigned int[atibins*ctibins];
+	
+  amb_obj       = new float[atibins*ctibins*4];
+  amb_dir       = new float[atibins*ctibins*4];
+  amb_speed     = new float[atibins*ctibins*4];  
+
+  amb_speed_ridge_azi_left  = new float[atibins*ctibins*4];
+  amb_speed_ridge_azi_right = new float[atibins*ctibins*4];
+
+  if( fread( lat_arr, sizeof(float), num_wvc, fid ) != num_wvc )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading lat_arr from %s\n",filename);
+      
+  if( fread( lon_arr, sizeof(float), num_wvc, fid ) != num_wvc )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading lon_arr from %s\n",filename);
+
+  if( fread( sel_speed, sizeof(float), num_wvc, fid ) != num_wvc )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading sel_speed from %s\n",filename);
+
+  if( fread( sel_dir, sizeof(float), num_wvc, fid ) != num_wvc )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading sel_dir from %s\n",filename);
+
+  if( fread( true_speed, sizeof(float), num_wvc, fid ) != num_wvc )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading true_speed from %s\n",filename);
+
+  if( fread( true_dir, sizeof(float), num_wvc, fid ) != num_wvc )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading true_dir from %s\n",filename);    
+
+  if( fread( model_speed, sizeof(float), num_wvc, fid ) != num_wvc )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading model_speed from %s\n",filename);
+
+  if( fread( model_dir, sizeof(float), num_wvc, fid ) != num_wvc )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading model_dir from %s\n",filename);      
+
+  if( fread( liquid, sizeof(float), num_wvc, fid ) != num_wvc )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading liquid from %s\n",filename);      
+
+  if( fread( retdat_flags, sizeof(unsigned int), num_wvc, fid ) != num_wvc )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading retdat_flags from %s\n",filename);     
+ 
+  if( fread( wvc_selection, sizeof(int), num_wvc, fid ) != num_wvc )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading wvc_selection from %s\n",filename);     
+
+  if( fread( num_ambigs, sizeof(int), num_wvc, fid ) != num_wvc )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading num_ambigs from %s\n",filename);     
+
+  if( fread( amb_obj, sizeof(float), num_wvc*4, fid ) != num_wvc*4 )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading amb_obj from %s\n",filename);     
+
+  if( fread( amb_speed, sizeof(float), num_wvc*4, fid ) != num_wvc*4 )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading amb_speed from %s\n",filename);     
+      
+  if( fread( amb_dir, sizeof(float), num_wvc*4, fid ) != num_wvc*4 )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading amb_dir from %s\n",filename);     
+  
+  if( fread( amb_speed_ridge_azi_left, sizeof(float), num_wvc*4, fid ) != num_wvc*4 )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading amb_speed_ridge_azi_left from %s\n",filename);     
+      
+  if( fread( amb_speed_ridge_azi_right, sizeof(float), num_wvc*4, fid ) != num_wvc*4 )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading amb_speed_ridge_azi_right from %s\n",filename);     
+  
+  // Read n_spec_fit_terms...
+  if( fread( &n_spec_fit_terms, sizeof(float), 1, fid ) != 1 )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading n_spec_fit_terms from %s\n",filename);     
+
+  amb_speed_ridge_amp   = new float[atibins*ctibins*n_spec_fit_terms];
+  amb_speed_ridge_phase = new float[atibins*ctibins*n_spec_fit_terms];  
+
+  // Read amb_speed_ridge_amp
+  if( fread( amb_speed_ridge_amp, sizeof(float), num_wvc*n_spec_fit_terms, fid ) 
+        != num_wvc*n_spec_fit_terms )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading amb_speed_ridge_amp from %s\n", filename);
+      
+  // Read amb_speed_ridge_phase
+  if( fread( amb_speed_ridge_phase, sizeof(float), num_wvc*n_spec_fit_terms, fid ) 
+        != num_wvc*n_spec_fit_terms )
+      fprintf(stderr, "L2B::ReadRETDAT Error reading amb_speed_ridge_phase from %s\n", filename);
+  
+  fclose(fid);
+
+  // prepare
+  frame.swath.DeleteEntireSwath();
+
+  // allocate
+  if( !frame.swath.Allocate(ctibins, atibins) ) return(0);
+  
+  for( int cti = 0; cti < ctibins; ++cti )
+  {
+    for( int ati = 0; ati < atibins; ++ati )
+    {
+      unsigned int flat_index = ati+cti*atibins;
+      
+      if( num_ambigs[flat_index] == 0 ) 
+        continue; // no ambiguities => no winds retrived
+      
+      // Create the WVC
+      WVC* wvc = new WVC();
+      
+      if ( wvc == NULL )
+      {
+        fprintf(stderr, "L2B::ReadRETDAT: error allocating\n");
+        return(0);
+      }
+      
+      // Set lon,lat for WVC
+      wvc->lonLat.longitude = lon_arr[flat_index] * dtr;
+      wvc->lonLat.latitude  = lat_arr[flat_index] * dtr;
+      
+      // Set Nudge Vectors for WVC
+      if( read_nudge_vectors_flag )      
+      {
+        wvc->nudgeWV = new WindVectorPlus();
+        if ( wvc->nudgeWV == NULL )
+        {
+          fprintf(stderr, "L2B::ReadRETDAT: error allocating\n");
+          return(0);
+        }        
+        wvc->nudgeWV->SetSpdDir( model_speed[flat_index], 
+                               gs_deg_to_pe_rad( model_dir[flat_index] ) );
+      }
+      
+      // Loop over the number of ambiguities and attach them to the 
+      // WVC.
+      for( int i_amb = 0; i_amb < num_ambigs[flat_index]; ++i_amb )
+      {
+        WindVectorPlus* wvp = new WindVectorPlus();
+        if (wvp == NULL)
+        {
+          fprintf(stderr, "L2B::ReadRETDAT: error allocating\n");
+          return(0);
+        }
+        
+        wvp->SetSpdDir( amb_speed[4*flat_index+i_amb], 
+                        gs_deg_to_pe_rad( amb_dir[4*flat_index+i_amb] ) );
+        
+        wvp->obj = amb_obj[4*flat_index+i_amb];
+        
+        if (! wvc->ambiguities.Append(wvp))
+        {
+          fprintf(stderr, "L2B::ReadRETDAT: error appending\n");
+          return(0);
+        }        
+      }  // end i_amb loop
+      
+      // Set the selected wind vector in the WVC
+      wvc->selected = wvc->ambiguities.GetByIndex( wvc_selection[flat_index]-1 );
+      wvc->selected_allocated = 0;
+
+      WindVector* wv = new WindVector();        
+      if (wv == NULL)
+      {
+        fprintf(stderr, "L2B::ReadRETDAT: error allocating\n");
+        return(0);
+      }
+      wv->SetSpdDir( sel_speed[flat_index], gs_deg_to_pe_rad( sel_dir[flat_index] ) );        
+      wvc->specialVector = wv;
+      
+      // Set the rainFlagBits and landiceFlagBigs.
+      wvc->rainProb        = 0; // ? what to do here??
+      wvc->rainFlagBits    = (char)((0x7000 & retdat_flags[flat_index]) >> 12);
+      wvc->landiceFlagBits = (char)((0x0180 & retdat_flags[flat_index]) >> 7 );
+      
+      // Add speed ridge left and right azimuth bounds for each ambiguity.
+      for( int i_amb = 0; i_amb < 4; ++i_amb )
+      {
+        AngleInterval* alist = new AngleInterval;
+        alist->SetLeftRight( amb_speed_ridge_azi_left[4*flat_index+i_amb],
+                            amb_speed_ridge_azi_right[4*flat_index+i_amb] );
+
+        wvc->directionRanges.Append( alist );
+      }
+      
+      int   n_azi = 360.0 / WIND_DIR_INTV_INIT; // From GSparameters.h include...
+        
+      if( wvc->directionRanges.bestSpd != NULL || wvc->directionRanges.bestObj != NULL )
+      {
+        printf("L2B::ReadRETDAT: wvc->directionRanges.bestSpd != NULL\n");
+        exit(1);
+      }
+      wvc->directionRanges.dirIdx.SpecifyWrappedCenters(0, two_pi, n_azi);
+      wvc->directionRanges.bestSpd = (float*)malloc(sizeof(float)*n_azi);
+      wvc->directionRanges.bestObj = (float*)malloc(sizeof(float)*n_azi);
+
+      // amb_speed_ridge_amp[n_spec_fit_terms*flat_index + 0] should be less
+      // than zero if wind speed ridge info was not available.
+      // Also, if n_spec_fit_terms == 0 then skip this stuff.
+
+      if( amb_speed_ridge_amp[n_spec_fit_terms*flat_index] >= 0 && 
+          n_spec_fit_terms > 0 )
+      {
+        float wind_speed[n_azi];
+  
+        for( int i_azi = 0; i_azi < n_azi; ++i_azi )
+	    {
+          float azimuth = i_azi * WIND_DIR_INTV_INIT;
+          wind_speed[i_azi] = 0;
+          
+          for( int i_term = 0; i_term < n_spec_fit_terms; ++i_term )
+	      {
+            float phase = amb_speed_ridge_phase[n_spec_fit_terms*flat_index +i_term ];
+            float amp   = amb_speed_ridge_amp  [n_spec_fit_terms*flat_index +i_term ];
+            wind_speed[i_azi] += amp * cos( azimuth + phase );
+          }  // end i_term loop
+          
+          wvc->directionRanges.bestSpd[i_azi] = wind_speed[i_azi];
+          wvc->directionRanges.bestObj[i_azi] = -1;
+          
+        }    // end i_azi loop
+      }      // end conditional on reading speed ridge fits
+      
+      // Add this WVC to the swath.
+      if ( !frame.swath.Add(cti, ati, wvc) )
+      {
+	    fprintf(stderr, "L2B::ReadRETDAT: error adding WVC\n");
+        return(0);
+      }
+      
+    }  // end ati loop
+  }    // end cti loop
+  
+  // If we were asked to read them, set this flag...
+  // I don't check that the bytes I read are sensible....
+  if( read_nudge_vectors_flag ) frame.swath.nudgeVectorsRead = 1;
+  
+  // Free up the stuff I allocated...
+  delete[] lat_arr;
+  delete[] lon_arr;
+  delete[] sel_speed;
+  delete[] sel_dir;
+  delete[] model_speed;
+  delete[] model_dir;
+  delete[] true_speed;
+  delete[] true_dir;
+  delete[] liquid;
+  delete[] wvc_selection;
+  delete[] num_ambigs;
+  delete[] retdat_flags;
+  delete[] amb_obj;
+  delete[] amb_speed;
+  delete[] amb_dir;
+  delete[] amb_speed_ridge_amp;
+  delete[] amb_speed_ridge_phase;
+  delete[] amb_speed_ridge_azi_left;
+  delete[] amb_speed_ridge_azi_right;
+  
+  return 1;
+}
+
+
+//------------------//
+// L2B::WriteRETDAT //
+//------------------//
+int L2B::WriteRETDAT(
+    const char*  filename,
+    int write_speed_ridges_flag )
+{
+	FILE* fid;
+	int atibins = frame.swath.GetAlongTrackBins();
+	int ctibins = frame.swath.GetCrossTrackBins();
+
+	float pi=3.141592653589793;
+	
+    int n_spec_fit_terms = 9; // # of terms in Fourier series to keep.
+                              // see function specfit in objs/Misc.C
+
+	if( write_speed_ridges_flag == 0 ) n_spec_fit_terms = 0;
+		
+    
+	float* lat_arr;
+	float* lon_arr;
+	float* sel_speed;
+	float* sel_dir;
+	float* true_speed;
+	float* true_dir;
+	float* model_speed;
+	float* model_dir;
+	
+	int* num_ambigs;
+	int* wvc_selection;
+	unsigned int* retdat_flags;
+	
+	float* amb_obj;
+	float* amb_dir;
+	float* amb_speed;
+	float* liquid;
+	
+	float* amb_speed_ridge_azi_left;
+	float* amb_speed_ridge_azi_right;
+	float* amb_speed_ridge_amp;
+	float* amb_speed_ridge_phase;	
+	
+	
+	printf("\n");
+	printf("L2B::WriteRETDAT: atibins: %d ctibins: %d\n",atibins,ctibins);
+	
+	lat_arr       = new float[atibins*ctibins];
+	lon_arr       = new float[atibins*ctibins];
+	sel_speed     = new float[atibins*ctibins];
+	sel_dir       = new float[atibins*ctibins];
+	model_speed   = new float[atibins*ctibins];
+	model_dir     = new float[atibins*ctibins];
+	true_speed    = new float[atibins*ctibins];
+	true_dir      = new float[atibins*ctibins];
+	liquid        = new float[atibins*ctibins];
+	wvc_selection = new   int[atibins*ctibins];
+	num_ambigs    = new   int[atibins*ctibins];
+	
+	retdat_flags  = new unsigned int[atibins*ctibins];
+	
+	amb_obj       = new float[atibins*ctibins*4];
+	amb_dir       = new float[atibins*ctibins*4];
+	amb_speed     = new float[atibins*ctibins*4];
+
+	amb_speed_ridge_azi_left  = new float[atibins*ctibins*4];
+	amb_speed_ridge_azi_right = new float[atibins*ctibins*4];
+	amb_speed_ridge_amp       = new float[atibins*ctibins*n_spec_fit_terms];
+	amb_speed_ridge_phase     = new float[atibins*ctibins*n_spec_fit_terms];
+	
+	
+	// Loop over swath and populate the output file buffers.
+	
+    for ( int cti = 0; cti < ctibins; ++cti )
+	{	  
+  	  for( int ati = 0; ati < atibins; ++ati )
+	  {
+	    unsigned int flat_index = ati+cti*atibins;
+	    
+	    WVC* wvc = frame.swath.swath[cti][ati];
+	    
+	    if( wvc == NULL ) continue;  
+	    
+	    // Set (lon,lat) buffers
+        lat_arr[flat_index]      = wvc->lonLat.latitude  * 180 / pi;
+        lon_arr[flat_index]      = wvc->lonLat.longitude * 180 / pi;
+        
+        if( wvc->selected != NULL )
+        {
+          sel_speed[flat_index]    = wvc->selected->spd;
+          sel_dir[flat_index]      = pe_rad_to_gs_deg( wvc->selected->dir );
+        }
+        else
+          fprintf(stderr,"L2B::WriteRETDAT: wvc->selected == NULL\n");
+        
+        if( wvc->nudgeWV != NULL )
+        {
+          model_speed[flat_index]  = wvc->nudgeWV->spd;
+          model_dir[flat_index]    = pe_rad_to_gs_deg( wvc->nudgeWV->dir );
+        }
+        else
+        {
+          //fprintf(stderr,"L2B::WriteRETDAT: wvc->nudgeWV == NULL\n");
+          model_speed[flat_index]  = -999;
+          model_dir[flat_index]    = 0;
+        } 
+        // Placeholder bytes for now...
+        liquid[flat_index]       = 0;
+        retdat_flags[flat_index] = (unsigned int)(0);
+        true_speed[flat_index]   = 0;
+        true_dir[flat_index]     = 0;
+        
+        // Pass through the rainFlagBits and landiceFlagBits to the RETDAT file.
+        // least-significant 16 bits then have a similar bit pattern to 
+        // wvc_quality_flag in the HDF files...
+        retdat_flags[flat_index] = (unsigned int)( wvc->rainFlagBits    << 12 )
+                                 + (unsigned int)( wvc->landiceFlagBits << 7  );
+        
+        // Initialize to zeroes.
+        int i_amb   = 0;
+        for ( i_amb = 0; i_amb < 4; ++i_amb )
+        {
+          amb_obj[4*flat_index+i_amb]   = 0;
+          amb_speed[4*flat_index+i_amb] = 0;
+          amb_dir[4*flat_index+i_amb]   = 0;
+        }
+        
+        // Loop over the ambiguities of each WVC
+        i_amb = 0;
+        for ( WindVectorPlus* wvp = wvc->ambiguities.GetHead();
+                      wvp;    wvp = wvc->ambiguities.GetNext()  )
+        {
+           // Set the ambigity obj function, speed, and direction.
+           amb_obj  [4*flat_index+i_amb] = wvp->obj;
+           amb_speed[4*flat_index+i_amb] = wvp->spd;
+           amb_dir  [4*flat_index+i_amb] = pe_rad_to_gs_deg( wvp->dir );
+           
+           ++i_amb;
+           
+           // Populate the wvc_selection array.
+           if( wvc->selected == wvp ) wvc_selection[flat_index] = i_amb;
+        }
+        
+        // Populate the num_ambigs array
+        num_ambigs[flat_index] = i_amb;
+        
+        // Initialize the amb_speed_ridge arrays to zeros
+        for( int i_term = 0; i_term < n_spec_fit_terms; ++i_term)
+        {  
+          // Set speed to be negative so we know it is not physical.
+          amb_speed_ridge_amp[n_spec_fit_terms*flat_index+i_term]   = -999;
+          amb_speed_ridge_phase[n_spec_fit_terms*flat_index+i_term] = 0;
+        }
+
+        // Only do this stuff if the directionRanges.bestSpd is not null pointer.
+        if( wvc->directionRanges.bestSpd != NULL )
+        {
+          // Get the left and right interval for each ambiguity...
+          for( int i_amb = 0; i_amb < 4; ++i_amb)
+          {
+            AngleInterval* alist=wvc->directionRanges.GetByIndex(i_amb);
+            if( !alist )
+            {
+              amb_speed_ridge_azi_left [4*flat_index+i_amb] = 0;
+              amb_speed_ridge_azi_right[4*flat_index+i_amb] = 0;
+            }
+            else
+            {
+              amb_speed_ridge_azi_left [4*flat_index+i_amb] = alist->left  * 180 / pi;
+              amb_speed_ridge_azi_right[4*flat_index+i_amb] = alist->right * 180 / pi;
+            }
+          }
+          // WIND_DIR_INTV_INIT is from GSparameters.h include...
+          // Caution: WIND_DIR_INTV_INIT may not control the population of 
+          // wvc->directionRanges.bestSpd array. 8-4-2009
+          int n_azi = 360.0 / WIND_DIR_INTV_INIT;
+          double azimuth[n_azi];
+          double wind_speed_ridge[n_azi];
+          double amplitude[n_spec_fit_terms];
+          double phase[n_spec_fit_terms];
+          
+          for( int i_azi = 0; i_azi < n_azi; ++i_azi )
+          {
+            azimuth[i_azi] = WIND_DIR_INTV_INIT * i_azi;
+            wind_speed_ridge[i_azi] = wvc->directionRanges.bestSpd[i_azi];
+          }
+          if( ! specfit( azimuth, wind_speed_ridge, NULL, n_azi,
+                         0, n_spec_fit_terms, amplitude, phase ) )
+          {
+            fprintf(stderr, "L2B::WriteRETDAT: Error in specfit\n");
+          }
+          else
+          {  
+          // Copy amplitude, phase arrays to output buffers if no
+          // error in specfit.
+            for( int i_term = 0; i_term < n_spec_fit_terms; ++i_term)
+            {
+          
+              amb_speed_ridge_amp[n_spec_fit_terms*flat_index+i_term]   = 
+                                       float(amplitude[i_term]);
+                                       
+              amb_speed_ridge_phase[n_spec_fit_terms*flat_index+i_term] = 
+                                       float(phase[i_term]);
+            }
+          }
+        }  // if( wvc->directionRanges.bestSpd != NULL ) conditional
+        
+      } // ati loop
+	}   // cti loop
+	
+	fid = fopen(filename,"w");
+	if( fid == NULL ) {
+	  fprintf(stderr, "L2B::WriteRETDAT Unable to open file %s\n",filename);
+	  return -1;
+    }	
+    
+    unsigned int num_wvc = ctibins*atibins;
+    
+//--Write stuff to the RETDAT file-----
+     //--1st 4 bytes are atibins	
+	if( fwrite(&atibins, sizeof(unsigned int), 1, fid ) != 1 )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing atibins to %s\n",filename);
+
+     //--Next 4 bytes are ctibins
+	if( fwrite(&ctibins, sizeof(unsigned int), 1, fid ) != 1 )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing ctibins to %s\n",filename);	  
+
+     //--Next 4*ctibins*atibins bytes are latitudes for the cells.	  
+	if( fwrite(lat_arr, sizeof(float), ctibins*atibins, fid ) != num_wvc )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing lat_arr to %s\n",filename);
+
+     //--Next 4*ctibins*atibins bytes are longitudes for the cells.	  
+	if( fwrite(lon_arr, sizeof(float), ctibins*atibins, fid ) != num_wvc )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing lon_arr to %s\n",filename);	
+
+     // sel_speed
+	if( fwrite(sel_speed, sizeof(float), ctibins*atibins, fid ) != num_wvc )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing sel_speed to %s\n",filename);	
+
+     // sel_dir
+	if( fwrite(sel_dir, sizeof(float), ctibins*atibins, fid ) != num_wvc )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing sel_dir to %s\n",filename);	
+
+     // Placeholder bytes for true_speed
+	if( fwrite(true_speed, sizeof(float), ctibins*atibins, fid ) != num_wvc )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing true_speed to %s\n",filename);	
+
+     // Placeholder bytes for true_dir
+	if( fwrite(true_dir, sizeof(float), ctibins*atibins, fid ) != num_wvc )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing true_dir to %s\n",filename);
+
+	 // model_speed  
+	if( fwrite(model_speed, sizeof(float), ctibins*atibins, fid ) != num_wvc )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing model_speed to %s\n",filename);	
+
+	 // model_dir 
+	if( fwrite(model_dir, sizeof(float), ctibins*atibins, fid ) != num_wvc )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing model_dir to %s\n",filename);
+	
+	// Placeholder bytes for liquid
+	if( fwrite(liquid, sizeof(float), ctibins*atibins, fid ) != num_wvc )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing liquid to %s\n",filename);
+
+	// retdat_flags
+	if( fwrite(retdat_flags, sizeof(float), ctibins*atibins, fid ) != num_wvc )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing retdat_flags to %s\n",filename);
+
+	// wvc_selection
+	if( fwrite(wvc_selection, sizeof(int), ctibins*atibins, fid ) != num_wvc )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing wvc_selection to %s\n",filename);
+
+	// num_ambigs
+	if( fwrite(num_ambigs, sizeof(int), ctibins*atibins, fid ) != num_wvc )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing num_ambigs to %s\n",filename);
+	  
+	// amb_obj
+	if( fwrite(amb_obj, sizeof(int), ctibins*atibins*4, fid ) != num_wvc*4 )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing amb_obj to %s\n",filename);
+	  
+	// amb_speed
+	if( fwrite(amb_speed, sizeof(int), ctibins*atibins*4, fid ) != num_wvc*4 )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing amb_speed to %s\n",filename);
+	  
+	// amb_dir
+	if( fwrite(amb_dir, sizeof(int), ctibins*atibins*4, fid ) != num_wvc*4 )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing amb_dir to %s\n",filename);
+
+	// amb_speed_ridge_azi_left
+	if( fwrite(amb_speed_ridge_azi_left, sizeof(int), ctibins*atibins*4, fid ) != num_wvc*4 )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing amb_speed_ridge_azi_left to %s\n",filename);
+	  
+	// amb_speed_ridge_azi_right
+	if( fwrite(amb_speed_ridge_azi_right, sizeof(int), ctibins*atibins*4, fid ) != num_wvc*4 )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing amb_speed_ridge_azi_right to %s\n",filename);
+
+    // n_spec_fit_terms
+	if( fwrite(&n_spec_fit_terms, sizeof(int), 1, fid ) != 1 )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing n_spec_fit_terms to %s\n",filename);
+    
+	// amb_speed_ridge_amp
+	if( fwrite(amb_speed_ridge_amp, sizeof(float), ctibins*atibins*n_spec_fit_terms, fid ) 
+	    != num_wvc*n_spec_fit_terms )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing amb_speed_ridge_amp to %s\n",filename);
+
+    // amb_speed_ridge_phase
+	if( fwrite(amb_speed_ridge_phase, sizeof(float), ctibins*atibins*n_spec_fit_terms, fid ) 
+	    != num_wvc*n_spec_fit_terms )
+	  fprintf(stderr, "L2B::WriteRETDAT Error writing amb_speed_ridge_phase to %s\n",filename);
+	
+	fclose(fid);
+	
+	// Free up the stuff I allocated...
+	delete[] lat_arr;
+	delete[] lon_arr;
+	delete[] sel_speed;
+	delete[] sel_dir;
+	delete[] model_speed;
+	delete[] model_dir;
+	delete[] true_speed;
+	delete[] true_dir;
+	delete[] liquid;
+	delete[] wvc_selection;
+	delete[] num_ambigs;
+	delete[] retdat_flags;
+	delete[] amb_obj;
+	delete[] amb_speed;
+	delete[] amb_dir;
+    delete[] amb_speed_ridge_azi_left;
+    delete[] amb_speed_ridge_azi_right;
+    delete[] amb_speed_ridge_amp;
+    delete[] amb_speed_ridge_phase;
+	
+    return 1;
+}
+
 
 //------------------//
 // L2B::ReadPureHdf //
@@ -630,9 +1280,9 @@ L2B::ReadPureHdf(
             // read quality flags //
             //--------------------//                
                 
-            wvc->rainFlagBits    = (char)((0x7000 & wvc_quality_flag[cti]) >> 12);
-            wvc->landiceFlagBits = (char)((0x0180 & wvc_quality_flag[cti]) >> 7 );
-
+            wvc->rainFlagBits     = (char)((0x7000 & wvc_quality_flag[cti]) >> 12);
+            wvc->landiceFlagBits  = (char)((0x0180 & wvc_quality_flag[cti]) >> 7 );
+            
             //------------------//
             // add WVC to swath //
             //------------------//
@@ -1476,7 +2126,8 @@ L2B::ReadHDF(
 //---------------------------------//
 
 int L2B::ReadNudgeVectorsFromHdfL2B(
-    const char*  filename)
+    const char*  filename,
+    int read_wvc_flags_flag )
 {
     L2B n_l2b;
 
@@ -1525,6 +2176,12 @@ int L2B::ReadNudgeVectorsFromHdfL2B(
                 delete o_wvc->nudgeWV;
             o_wvc->nudgeWV = new WindVectorPlus();
             o_wvc->nudgeWV->SetSpdDir(nudge_espd, nudge_edir);
+            
+            if( read_wvc_flags_flag )
+            {
+              o_wvc->rainFlagBits   = n_wvc->rainFlagBits;
+              o_wvc->landiceFlagBits = n_wvc->landiceFlagBits;
+            }
         }
     }
 

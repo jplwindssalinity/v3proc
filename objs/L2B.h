@@ -130,7 +130,10 @@ public:
     //--------------//
     // input/output //
     //--------------//
-
+    
+    int  WriteRETDAT( const char* filename, int write_speed_ridges_flag = 1 );
+    int  ReadRETDAT(const char* filename, int read_nudge_vectors_flag = 1);
+    
     int  ReadHeader() { return(header.Read(_inputFp)); };
     int  WriteHeader() { return(header.Write(_outputFp)); };
 
@@ -147,7 +150,7 @@ public:
     int  ReadHDF(const char* filename, int unnormalize_mle = 1);
     int  ReadHDFDIRTH(const char* filename);
     int  ReadHDF(TlmHdfFile* tlmHdfFile, int unnormalize_mle = 1);
-    int  ReadNudgeVectorsFromHdfL2B(const char* filename);
+    int  ReadNudgeVectorsFromHdfL2B(const char* filename, int read_wvc_flags_flag = 0 );
 //    int  ReadNudgeVectorsFromHdfL2B(TlmHdfFile* tlmHdfFile);
 
     int  GetArraysForUpdatingDirthHdf(float** spd, float** dir,
