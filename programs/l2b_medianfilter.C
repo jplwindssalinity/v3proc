@@ -124,9 +124,6 @@ template class std::map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<output_l2b_file>",
-    "[hdf_source_flag 1=hdf 0=default]", "[hdf_target_flag 1=hdf 0=default]",
-    "[l2b_hdf_file (for updating)]", 0};
 
 //--------------------//
 // Report handler     //
@@ -158,23 +155,74 @@ main(
     // parse the command line //
     //------------------------//
 
-    const char* command = no_path(argv[0]);
-    if (argc != 3 && argc !=6)
-        usage(command, usage_array, 1);
+    const char* command      = no_path(argv[0]);
 
-    int clidx = 1;
-    const char* config_file = argv[clidx++];
-    const char* l2b_output_file = argv[clidx++];
+    char* config_file        = NULL;
+    char* l2b_output_file    = NULL;
+    char* l2b_hdf_nudge_file = NULL;
+    char* ext_filename       = NULL;
 
-    int hdf_source_flag = 0;
-    int hdf_target_flag = 0;
-    char* hdf_file = NULL;
-    if (argc == 6)
-    {
-        hdf_source_flag = atoi(argv[clidx++]);
-        hdf_target_flag = atoi(argv[clidx++]);
-        hdf_file = argv[clidx++];
-    }
+    int nudge_HDF_flag       = 0; // 1 if read nudges from HDF file, 0 if not.
+    
+    int ext_file_flag        = 0; // 0 undefined, 1 HDF, 2 retdat
+    int ext_source_flag      = 0; // 1 if load data from ext_file, 0 if not
+    int ext_target_flag      = 0; // 1 if save data to ext_file, 0 if not
+    
+    int print_usage_flag     = 0;
+
+    int read_nudge_vectors_RETDAT = 1;
+    
+    int optind = 1;
+    while ( (optind < argc) && (argv[optind][0]=='-') )
+      {    
+	std::string sw = argv[optind];
+	if( sw == "-c" )
+	  {
+	    ++optind;
+	    config_file = argv[optind];
+	  }
+	else if( sw == "-o" )
+	  {
+	    ++optind;
+	    l2b_output_file = argv[optind];
+	  }
+	else if( sw == "-nudgeHDF" )
+	  {
+	    ++optind;
+	    l2b_hdf_nudge_file = argv[optind];
+	    nudge_HDF_flag = 1;
+	    read_nudge_vectors_RETDAT = 0; // Turn off reading nudge vectors from RETDAT
+	  }
+	else if( sw == "-extfile" )
+	  {    
+	    ++optind;
+	    std::string file_type = argv[optind];
+
+	    if(      file_type == "HDF"    ) ext_file_flag = 1;
+	    else if( file_type == "RETDAT" ) ext_file_flag = 2;
+	    else
+	      {
+		fprintf(stderr,"Unknown file type specified!\n");
+		print_usage_flag = 1;
+	      }
+
+	    ext_filename    = argv[++optind];
+	    ext_source_flag = atoi(argv[++optind]);
+	    ext_target_flag = atoi(argv[++optind]);
+	  }
+	else
+	  print_usage_flag = 1;
+	++optind;
+      }
+
+    if( config_file == NULL || l2b_output_file == NULL || print_usage_flag )
+      {
+	fprintf(stderr,"\nUsage: %s -c config_file -o output_l2b_file\n",command);
+        fprintf(stderr,"       [-nudgeHDF hdf_l2b_file] [-extfile (HDF||RETDAT)\n");
+	fprintf(stderr,"       ext_filename ext_source_flag ext_target_flag]\n\n");
+	return (1);
+      }
+    
 
     //------------------------//
     // tell how far you have  //
@@ -201,9 +249,9 @@ main(
     //-------------------------------------//
 
     L2B l2b;
-    if (hdf_source_flag)
+    if (ext_source_flag)
     {
-        l2b.SetInputFilename(hdf_file);
+        l2b.SetInputFilename(ext_filename);
     }
     else if (! ConfigL2B(&l2b, &config_list))
     {
@@ -229,7 +277,7 @@ main(
     // open files //
     //------------//
 
-    if (! hdf_source_flag)
+    if (! ext_source_flag)
     {
         if (! l2b.OpenForReading())
         {
@@ -249,7 +297,7 @@ main(
     // read the header to set up swath //
     //---------------------------------//
 
-    if (! hdf_source_flag)
+    if (! ext_source_flag)
     {
         if (! l2b.ReadHeader())
         {
@@ -265,34 +313,47 @@ main(
     int ctibins = 0;
     int atibins = 0;
 
-    float** spd = NULL;
-    float** dir = NULL;
+    float**      spd = NULL;
+    float**      dir = NULL;
     int** num_ambigs = NULL;
-    int** sel_idx = NULL;
+    int**    sel_idx = NULL;
 
     //-----------------------------//
     // read a level 2B data record //
     //-----------------------------//
 
-    if (hdf_source_flag)
+    if (ext_source_flag)
     {
-        if (l2b.ReadPureHdf(hdf_file,1) == 0)  // Use ReadPureHDF, old one broken.
-        {
-            fprintf(stderr, "%s: error reading HDF L2B file %s\n", command,
-                hdf_file);
-            exit(1);
-        }
-        l2b.header.crossTrackResolution = 25.0;
-        l2b.header.alongTrackResolution = 25.0;
-        l2b.header.zeroIndex = 38;
+      if( ext_file_flag == 1 ) // HDF specified
+	{
+	  if (l2b.ReadPureHdf(ext_filename,1) == 0)  // Use ReadPureHDF, old one broken.
+	    {
+	      fprintf(stderr, "%s: error reading HDF L2B file %s\n", command,
+		      ext_filename);
+	      exit(1);
+	    }
+	  l2b.header.crossTrackResolution = 25.0;
+	  l2b.header.alongTrackResolution = 25.0;
+	  l2b.header.zeroIndex = 38;
 
 #ifdef HIRES12
-        l2b.header.crossTrackResolution = 12.5;
-        l2b.header.alongTrackResolution = 12.5;
-        l2b.header.zeroIndex = 76;
+	  l2b.header.crossTrackResolution = 12.5;
+	  l2b.header.alongTrackResolution = 12.5;
+	  l2b.header.zeroIndex = 76;
 #endif
+	}
+      else if( ext_file_flag == 2) // RETDAT specified
+	{
+	  if( !l2b.ReadRETDAT( ext_filename, read_nudge_vectors_RETDAT ) )
+	    {
+	      fprintf(stderr, "%s: error reading RETDAT L2B file %s\n", command,
+		      ext_filename);
+	      exit(1);
+	    }
+	}
     }
-    else if (! l2b.ReadDataRec())
+    
+    else if ( !l2b.ReadDataRec())
     {
         switch (l2b.GetStatus())
         {
@@ -315,78 +376,71 @@ main(
         }
     }
     
-    //---------//
-    // HDF I/O //
-    //---------//
+    //-------------------------------------------------------//
+    // Read Nudge Vectors & rain/ice/land flags from L2B HDF //
+    //-------------------------------------------------------//    
 
-    if (hdf_target_flag)
-    {
-         //--------------------//
-         // Read Nudge Vectors //
-         //--------------------//
- 
-         if (! hdf_source_flag)
-         {
-             if (! l2b.ReadNudgeVectorsFromHdfL2B(hdf_file)) 
-             												
-             {
-                 fprintf(stderr,
-                     "%s: error reading nudge vectors from HDF L2B file %s\n",
-                     command, hdf_file);
-                 exit(1);
-             }
-         }
-    
-    
-        //---------------//
-        // Create Arrays //
-        //---------------//
-
-        ctibins = l2b.frame.swath.GetCrossTrackBins();
-        atibins = l2b.frame.swath.GetAlongTrackBins();
-        spd = (float**)make_array(sizeof(float), 2, atibins,
-            ctibins * HDF_NUM_AMBIGUITIES);
-        dir = (float**)make_array(sizeof(float), 2, atibins,
-            ctibins * HDF_NUM_AMBIGUITIES);
-
-        num_ambigs = (int**) make_array(sizeof(int), 2, atibins, ctibins);
-        sel_idx = (int**) make_array(sizeof(int), 2, atibins, ctibins);
-        if (! l2b.GetArraysForUpdatingDirthHdf(spd, dir, num_ambigs))
-        {
-            fprintf(stderr,
-                "%s: Failure to create array for updating hdf file\n",
-                command);
-            exit(1);
-        }
-    }
+    if( nudge_HDF_flag )
+      {
+	if (! l2b.ReadNudgeVectorsFromHdfL2B( l2b_hdf_nudge_file, 1 ) ) 
+	  {
+	    fprintf(stderr,
+		    "%s: error reading nudge vectors from HDF L2B file %s\n",
+		    command, l2b_hdf_nudge_file);
+	    exit(1);
+	  }
+      }
 
     //------------------------//
     // Just Ambiguity Removal //
     //------------------------//
 
     int retval = l2a_to_l2b.InitFilterAndFlush(&l2b);
+
     switch (retval)
-    {
-    case 1:
+      {
+      case 1:
         break;
-    case 2:
+      case 2:
         break;
-    case 4:
-    case 5:
+      case 4:
+      case 5:
         break;
-    case 0:
+      case 0:
         fprintf(stderr, "%s: error converting Level 2A to Level 2B\n",
-            command);
+		command);
         exit(1);
         break;
-    }
+      }
 
     //---------//
     // HDF I/O //
     //---------//
 
-    if ( hdf_target_flag ) 
+    if ( ext_target_flag && ext_file_flag == 1 ) 
     {
+
+        //---------------//
+        // Create Arrays //
+        //---------------//
+	
+	ctibins = l2b.frame.swath.GetCrossTrackBins();
+	atibins = l2b.frame.swath.GetAlongTrackBins();
+	spd = (float**)make_array(sizeof(float), 2, atibins,
+				  ctibins * HDF_NUM_AMBIGUITIES);
+        dir = (float**)make_array(sizeof(float), 2, atibins,
+				  ctibins * HDF_NUM_AMBIGUITIES);
+	
+        num_ambigs = (int**) make_array(sizeof(int), 2, atibins, ctibins);
+        sel_idx    = (int**) make_array(sizeof(int), 2, atibins, ctibins);
+        if (! l2b.GetArraysForUpdatingDirthHdf( spd, dir, num_ambigs) )
+	  {
+            fprintf(stderr,
+		    "%s: Failure to create array for updating hdf file\n",
+		    command);
+            exit(1);
+	  }
+
         //-------------------------------------------//
         // First Update Arrays with selected vectors //
         //-------------------------------------------//
@@ -396,6 +450,9 @@ main(
             for (int j = 0; j < ctibins; j++)
             {
                 WVC* wvc = l2b.frame.swath.swath[j][i];
+
+		sel_idx[i][j] = 0;
+		
                 if (! wvc)
                 {
                     num_ambigs[i][j] = 0;
@@ -422,8 +479,7 @@ main(
                     WindVectorPlus* wvp = wvc->ambiguities.GetHead();
                     for (int k = 0; k < num_ambigs[i][j]; k++)
                     {
-                        if (wvc->selected == wvp)
-                            sel_idx[i][j] = k + 1;
+                        if (wvc->selected == wvp) sel_idx[i][j] = k + 1;
                         wvp = wvc->ambiguities.GetNext();
                     }
                 }
@@ -433,20 +489,29 @@ main(
         //-----------------//
         // Update HDF file //
         //-----------------//
-
-        if (! l2b.frame.swath.UpdateHdf(hdf_file, spd, dir, num_ambigs,
-            sel_idx))
-        {
-            fprintf(stderr, "%s: Unable to update hdf file\n", command);
+	
+        if (! l2b.frame.swath.UpdateHdf( ext_filename, spd, dir, num_ambigs,
+					 sel_idx))
+	  {
+	    fprintf(stderr, "%s: Unable to update hdf file\n", command);
             exit(1);
-        }
+	  }
     }
+    else if( ext_target_flag && ext_file_flag == 2 )
+      {
+	if( !l2b.WriteRETDAT( ext_filename ) )
+	  {
+            fprintf(stderr, "%s: Unable to update RETDAT file\n", command);
+            exit(1);
+	  }
+      }
     
     l2b.Close();
+
     free_array((void*)spd, 2, atibins, ctibins*HDF_NUM_AMBIGUITIES);
     free_array((void*)dir, 2, atibins, ctibins*HDF_NUM_AMBIGUITIES);
     free_array((void*)num_ambigs, 2, atibins, ctibins);
     free_array((void*)sel_idx, 2, atibins, ctibins);
-
+    
     return (0);
 }
