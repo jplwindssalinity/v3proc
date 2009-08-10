@@ -3173,19 +3173,27 @@ WindSwath::SelectNearest(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
-            {
-                true_wv.dir=wvc->nudgeWV->dir;
-                true_wv.spd=wvc->nudgeWV->spd;
-            }
-            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-                continue;
-
+	    if (wvc->nudgeWV ==0)
+	      {
+		wvc->selected=NULL;
+		continue;
+	      }
+	    if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+	      {
+		true_wv.dir=wvc->nudgeWV->dir;
+		true_wv.spd=wvc->nudgeWV->spd;
+	      }
+	    else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+	      {
+		continue;
+	      }
+	    
+	    
             wvc->selected = wvc->GetNearestToDirection(true_wv.dir);
             count++;
         }
     }
-
+    
     return(count);
 }
 
