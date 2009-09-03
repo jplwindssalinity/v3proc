@@ -907,10 +907,10 @@ OvwmL1AToL1B::Convert(
                 }
 
 		// determine range and azimuth width
-		int jmin= center_azim_idx;
-		int jmax= center_azim_idx;
-		int imin=center_range_idx_ave;
-		int imax=center_range_idx_ave;
+		int jmin= nasteps;
+		int jmax= 0;
+		int imin=nrsteps;
+		int imax=0;
 		for(int i=0;i<nrsteps;i++){
 		  for(int j=0;j<nasteps;j++){
 		    if(_ptr_array[i][j]>0.5*maxdX){
