@@ -2694,10 +2694,10 @@ OvwmSim::SetMeasurements(
           // Use the ptr_array that now contains the X contributions from
           // each bin to determine the half power range and azimuth width.
           //---------------------------------------------------------------
-          int jmin= int(center_azim_idx);
-          int jmax= int(center_azim_idx);
-          int imin= int(center_range_idx_ave);
-	  int imax= int(center_range_idx_ave);
+          int jmin= int(nasteps);
+          int jmax= int(0);
+          int imin= int(nrsteps);
+	  int imax= int(0);
 	  for(int i=0;i<nrsteps;i++){
 	    for(int j=0;j<nasteps;j++){
 	      if(_ptr_array[i][j]>0.5*maxdX){
