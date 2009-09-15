@@ -118,6 +118,7 @@ main(
 
 
         int frame_number=1;
+	int frame_count = 0;
 
 	//---------------------//
 	// copy desired frames //
@@ -127,18 +128,24 @@ main(
 	{
 	  if(frame_number >= start_frame){
 	    l1b.WriteDataRecAscii();
+	    frame_count++;
 	  }
           if(start_frame>=0) frame_number++;
         }
 
-        fprintf(stderr,"Read frames %d to %d\n",1,frame_number-1);
-        if(start_frame<1) start_frame=1;
-        if(end_frame>=frame_number) end_frame=frame_number-1;
-        if(end_frame>=start_frame)
-          fprintf(stderr,"Wrote frames %d to %d\n",start_frame,end_frame);
-        else
-          fprintf(stderr,"Nothing written\n");
-
+	if (start_frame < 0){  // Read and wrote all the frames //
+	  fprintf(stderr,"Read frames 1 to %d\n",frame_count);
+	  fprintf(stderr,"Wrote frames 1 to %d\n",frame_count);
+	}
+	else{
+	  fprintf(stderr,"Read frames %d to %d\n",1,frame_number-1);
+	  if(start_frame<1) start_frame=1;
+	  if(end_frame>=frame_number) end_frame=frame_number-1;
+	  if(end_frame>=start_frame)
+	    fprintf(stderr,"Wrote frames %d to %d\n",start_frame,end_frame);
+	  else
+	    fprintf(stderr,"Nothing written\n");
+	}
         //----------------------//
         // close files and exit //
         //----------------------//
