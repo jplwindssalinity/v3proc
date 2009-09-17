@@ -41,8 +41,11 @@ AntennaFrameToGC(
 
     // geocentric to s/c velocity
     Vector3 sc_xv, sc_yv, sc_zv;
+
+    // editted on Sept 16 by Bryan Stiles to allow time to be accessed
+    // for the new inertial vector pointing method
     g_velocity_frame(sc_orbit_state->rsat, sc_orbit_state->vsat, &sc_xv,
-        &sc_yv, &sc_zv);
+		     &sc_yv, &sc_zv, sc_orbit_state->time - g_inertial_sctime);
     CoordinateSwitch gc_to_scv(sc_xv, sc_yv, sc_zv);
     total = gc_to_scv;
 

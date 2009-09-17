@@ -598,8 +598,8 @@ OvwmSim::ScatSim(
     // compute boresight vector,range and doppler   //
     OvwmTargetInfo oti;
     if(! ovwm->TargetInfo(&antenna_frame_to_gc,spacecraft,vector,&oti)){
-      fprintf(stderr,"Error:LocatePixels cannot find boresight on surface\n");
-      exit(1);
+      fprintf(stderr,"Warning:LocatePixels cannot find boresight on surface\n");
+      return(1);
     }
     // compute radius and center for best fit local sphere
     // should probably make this a Earth Position method
@@ -904,7 +904,7 @@ int OvwmSim::CheckTiming(Ovwm* ovwm){
   
   if(nBurst!=nBurstInit){
     fprintf(stderr,"Error: number of burst between tx and rec changed!!\n");
-    exit(1);
+    if(!disableTimingCheck) exit(1);
   }
 
   // only perform rx/tx and rx overlap checks on last beam event

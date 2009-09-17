@@ -20,8 +20,13 @@ static const char rcs_id_genericgeom_c[] =
 // is defined to be geocentric or geodetic. geodetic is the default.
 
 int (*g_velocity_frame)(EarthPosition rsat, Vector3 vsat,
-         Vector3 *xscvel_geo, Vector3 *yscvel_geo, Vector3 *zscvel_geo) =
+			Vector3 *xscvel_geo, Vector3 *yscvel_geo, Vector3 *zscvel_geo, 
+			double t) =
     velocity_frame_geodetic;
+
+double g_inertial_lat=0;
+double g_inertial_lon=0;
+double g_inertial_sctime=0;
 
 //---------------------------//
 // velocity_frame_geocentric //
@@ -51,7 +56,8 @@ velocity_frame_geocentric(
     Vector3        vsat,
     Vector3*       xscvel_geo,
     Vector3*       yscvel_geo,
-    Vector3*       zscvel_geo)
+    Vector3*       zscvel_geo,
+    double t)
 {
     // Geocentric definition of the z-axis
     *zscvel_geo = -rsat;
@@ -91,7 +97,8 @@ velocity_frame_geodetic(
     Vector3        vsat,
     Vector3*       xscvel_geo,
     Vector3*       yscvel_geo,
-    Vector3*       zscvel_geo)
+    Vector3*       zscvel_geo,
+    double t)
 {
     // Geodetic definition of the z-axis
     double alt, nadir_gd_lat, nadir_lon;
@@ -109,6 +116,64 @@ velocity_frame_geodetic(
     *yscvel_geo = *zscvel_geo & vsat;
     // x-axis close to, but not the same as the velocity vector
     *xscvel_geo = *yscvel_geo & *zscvel_geo;
+
+    return(1);
+}
+
+
+
+// Sept 16 2009, Bryan W. Stiles
+// velocity_frame_inertial
+//
+// This function determines the spacecraft velocity frame (also called
+// the local coordinate system) given the s/c position and velocity.
+// The attitude uses a INERTIAL reference meaning that the z-axis points in constant
+// direction in inertial space
+//
+// Inputs:
+//  rsat = geocentric position of the spacecraft (km)
+//  vsat = geocentric inertial velocity of the spacecraft (km/s)
+//  xscvel_inert = pointer to a Vector3 object to hold the x-axis unit vector of
+//               the velocity coordinate frame represented in the geocentric
+//               frame.
+//  yscvel_inert = same thing for the y-axis.
+//  zscvel_inert = same thing for the z-axis.
+//  t = time since epoch (epoch=g_inertial_sctime)
+// Action:
+//  The Vector3 objects pointed to by x,y,zscvel_geo are filled with the
+//  corresponding unit vectors.
+//
+
+int
+velocity_frame_inertial(
+    EarthPosition  rsat,
+    Vector3        vsat,
+    Vector3*       xscvel_inert,
+    Vector3*       yscvel_inert,
+    Vector3*       zscvel_inert,
+    double t)
+{
+
+    // determine longitude of inertial pointing vector at time t
+    double earth_spinrate=-w_earth; // negative sign comes form the fact that
+    // we are keeping track of an inertial vector in rotaing coordinates
+    // rather than the other way around.                            
+    double current_lon=g_inertial_lon+t*earth_spinrate;
+    // Inertial definition of the z-axis
+    EarthPosition rinert;
+    rinert.SetAltLonGCLat(0.0, current_lon, g_inertial_lat);
+    *zscvel_inert = -rinert;
+
+    // y-axis is perpendicular to the orbit plane
+    // This is a convention. The simulation treats the spacecraft as if
+    // it were not rotating but the antenna is. This would give the same
+    // measurements as a spinning spacecraft with an inertial spin axis.
+    // This distinction of which of the two is spinning does not impact
+    // the measurements, so we ignore it.
+
+    *yscvel_inert = *zscvel_inert & vsat;
+    // x-axis completes the set
+    *xscvel_inert = *yscvel_inert & *zscvel_inert;
 
     return(1);
 }
@@ -137,9 +202,12 @@ velocity_frame_geodetic(
 //   A unit vector in the beam coordinate system pointed at the
 //   ground target.
 //
+////////// THIS FUNCTION IS OBSOLETE
+//  Bryan Stiles Commented it out on Sept 16 2009
+/***** 
 
 Vector3
-beam_look(
+    beam_look(
     EarthPosition  rsat,
     Vector3        vsat,
     EarthPosition  rground,
@@ -151,7 +219,7 @@ beam_look(
     Vector3 xscvel_geo;
     Vector3 yscvel_geo;
     Vector3 zscvel_geo;
-    g_velocity_frame(rsat, vsat, &xscvel_geo, &yscvel_geo, &zscvel_geo);
+    g_velocity_frame(rsat, vsat, &xscvel_geo, &yscvel_geo, &zscvel_geo,0);
 
     // Coordinate transformation from geocentric to s/c velocity
     // Note that no translation is used because we are dealing only with
@@ -189,6 +257,7 @@ beam_look(
 
     return(rlook_beam);
 }
+****/
 
 //-----------------//
 // earth_intercept //

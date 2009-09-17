@@ -119,6 +119,9 @@ ConfigSpacecraftSim(
     // configure the attitude models //
     //-------------------------------//
 
+    if (! ConfigAttitude(config_list)){
+      return(0);
+    }
     if (! ConfigAttitudeControlModel(&(spacecraft_sim->attCntlDist),
             config_list))
     {
@@ -213,6 +216,15 @@ ConfigSpacecraftSim(
 	 return(0);
        }
        spacecraft_sim->LocationToOrbit(epochlon,epochlat,epochasc);
+       if(g_velocity_frame==velocity_frame_inertial){
+	 g_inertial_lat=epochlat*dtr;
+         g_inertial_lon=epochlon*dtr;
+         g_inertial_sctime=spacecraft_sim->GetEpoch();
+       }
+    }
+    else if(g_velocity_frame==velocity_frame_inertial){
+      fprintf(stderr,"Error: Inertial pointing requires ORBIT_EPOCH_XXX keywords\n");
+      exit(1);
     }
     config_list->ExitForMissingKeywords();
     //-------------------------//
@@ -2272,8 +2284,10 @@ ConfigControl(
 // ConfigAttitude //
 //----------------//
 // this odd function doesn't configure an object, but sets a
-// global variable to the appropriate function for geodetic or
-// geocentric pointing
+// global variable to the appropriate function for geodetic,
+// geocentric, or constant RADEC pointing
+//
+
 
 int
 ConfigAttitude(
@@ -2292,6 +2306,23 @@ ConfigAttitude(
     {
         g_velocity_frame = velocity_frame_geodetic;
         return (1);
+    }
+
+    else if (strcasecmp("inertial", attitude) == 0)
+    {
+      g_velocity_frame = velocity_frame_inertial;
+      // Bryan Stiles Sept 16 2009, this new case (see GenericGeom.C for 
+      // velocity_frame_inertial function is implemented to handle the case where
+      // the spacecraft is spinning about a constant vector in inertial coordinates
+      //
+      // In the event that this case occurs some setup is performed in
+      // ConfigSpacecraftSim to determine the set the desired inertial vector from
+      // a target lat,lon and time in the config file
+      // This same lat and lon is used as was used for orbit setup. This means that
+      // the ORBIT_EPOCH_LAT and ORBIT_EPOCH_LON keywords must be set. If you
+      // attempt to use the older mean_anomaly_at_epoch, epoch_time setup
+      // an error message is put out to stderr and execution stops.
+      return (1);
     }
     return (0);
 }
