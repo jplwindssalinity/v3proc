@@ -160,6 +160,7 @@ public:
                float high_speed, int direction_count);
 
     int    SelectNearest(WindField* truth);
+    int    SelectTruth(WindField* truth);
     int    SelectNudge();
     int    MatchSelected(WindSwath* source);
     int    GetProbabilityArray( WindField* truth, float*** prob,
