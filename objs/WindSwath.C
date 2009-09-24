@@ -3198,6 +3198,61 @@ WindSwath::SelectNearest(
 }
 
 //------------------------//
+// WindSwath::SelectTruth //
+//------------------------//
+// added by A. Chau to get the truth file output on the same grid as the retrieved speeds 
+// modeled after SelectNudge and SelectNearest. 9/23/09
+int
+WindSwath::SelectTruth(WindField* truth)
+{
+  if(truth==NULL)
+  {
+    fprintf(stderr,"No truth field...Selecting nudge vectors instead of truth\n");
+    useNudgeVectorsAsTruth=1;
+  }
+  else
+    {
+      fprintf(stderr,"Selecting truth field \n");
+      useNudgeVectorsAsTruth=0; 
+    }
+  int count = 0;
+  for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+      for (int ati = 0; ati < _alongTrackBins; ati++)
+	{
+	  WVC* wvc = swath[cti][ati];
+	  if (! wvc)
+	    continue;
+
+	  WindVector true_wv;
+	  if (wvc->nudgeWV == 0)
+	    {
+	      wvc->selected = NULL;
+	      //fprintf(stderr,"set selected = NULL\n");
+	      continue;
+	    }
+	  if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+	    {
+	      true_wv.dir = wvc->nudgeWV->dir;
+	      true_wv.spd = wvc->nudgeWV->spd;
+	      //fprintf(stderr,"set true_wv.dir as nudge ");
+	    }
+	  else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+	    {
+	      wvc->selected = NULL;
+	      fprintf(stderr,"didn't interpolate truth");
+	      continue;
+	    }
+	  wvc->selected->dir = true_wv.dir;
+	  wvc->selected->spd = true_wv.spd;
+	  count++;
+	}
+    }
+  return(count);
+}
+		    
+
+//------------------------//
 // WindSwath::SelectNudge //
 //------------------------//
 
