@@ -5,30 +5,49 @@
 
 //----------------------------------------------------------------------
 // NAME
-//    make_cband_weight_map
+//    l2b_to_arrays.C
 //
 // SYNOPSIS
-//    make_cband_weight_map <cband_l2b_file> <kuband_l2b_file>  <weight_file>
+//    l2b_to_arrays <l2b_file> <out_file> [rank] [config_file]
 //
 // DESCRIPTION
-//    Computes the proper weighting between C-band and Ku-band for each WVC
-//    cell using the single frequency wind retrieval results.
+//    Writes l2b WVCs in array format (with cross-track and along-track index).
+//    Use rank to select what to output. If rank=7, truth will be output, 
+//        requires a config file to determine truth wind field.
+//    
+//    Output format (Matlab script to read output):
+//    fid=fopen(filename,'r','l');
+//    ati1=fread(fid,[1,1],'int32');  % first along-track index
+//    nati=fread(fid,[1,1],'int32');  % number of along-track indices
+//    ncti=fread(fid,[1,1],'int32');  % number of cross-track indices
+//    spd=fread(fid,[ncti,nati],'float');  % speed array
+//    dir=fread(fid,[ncti,nati],'float')*180/pi;  % direction array
+//    lat=fread(fid,[ncti,nati],'float')*180/pi;  % latitude array
+//    lon=fread(fid,[ncti,nati],'float')*180/pi;  % longitude array
+//    fclose(fid);
+//    
+//    Empty cells have spd=-1 and dir,lat,lon = 0
+//
 //
 // OPTIONS
 //    None.
 //
 // OPERANDS
 //    The following operands are supported:
-//      <cband_l2b_file>     The input Level C BAND 2B wind field
-//      <kuband_l2b_file>     The input Level Ku BAND 2B wind field
-//      <weight_file>  The output weight file is a NATI x NCTI float
-//                     array ( with two integer header values NCTI
-//                     and   NATI
-//                     A weight value of 1 uses C only and 0 uses Ku only
+//      <l2b_file>     The l2b file to read from
+//      <out_file>     The name of the file to write to
+//      [rank]         0 (default): selected
+//                     -1: nearest
+//                     5: nudge
+//                     6: hdfdirth
+//                     7: truth (requires config file)
+//                     1-4: rank-1
+//      [config_file]  The config_file to read from. Currently only used for truth
 //
 // EXAMPLES
 //    An example of a command line is:
-//    % make_cband_weight_map
+//    l2b_to_arrays l2b_ku_S3_CENTROID.dat S3array.dat
+//    l2b_to_arrays l2b_ku_S3_CENTROID.dat trutharray.dat 7 dfs_ku_dfs_12rpm.rdf 
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -43,6 +62,9 @@
 //
 // AUTHORS
 //    Bryan W Stiles
+//    Alexandra H Chau, modified 9/24/09
+//      added rank=7 to get truth, fixed rank=-1 (nearest) bug, and  
+//      updated the comments
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -57,6 +79,9 @@ static const char rcs_id[] =
 //----------//
 
 #include <stdio.h>
+#include <unistd.h>
+#include "ConfigList.h"
+#include "ConfigSimDefs.h"
 #include "Misc.h"
 #include "Wind.h"
 #include "L2B.h"
@@ -64,13 +89,19 @@ static const char rcs_id[] =
 #include "List.C"
 #include "Array.h"
 
+using std::list;
+using std::map;
+
 //-----------//
 // TEMPLATES //
 //-----------//
 
+template class List<StringPair>;
 template class List<EarthPosition>;
 template class List<WindVectorPlus>;
 template class List<AngleInterval>;
+template class std::list<string>;
+template class std::map<string,string,Options::ltstr>;
 
 //-----------//
 // CONSTANTS //
@@ -96,7 +127,7 @@ template class List<AngleInterval>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l2b_file>", "<out_file>", "[rank (-1=near, 0=sel, 5= nudge, 6= hdfdirth)]", 0};
+const char* usage_array[] = { "<l2b_file>", "<out_file>", "[rank (-1=near, 0=sel, 5= nudge, 6= hdfdirth, 7=truth)]", "[config_file (required for truth)]", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -112,14 +143,28 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    if (argc != 3 && argc !=4 )
+    if (argc < 3 || argc > 5 )
         usage(command, usage_array, 1);
 
     int clidx = 1;
     const char* in_file = argv[clidx++];
     const char* out_file = argv[clidx++];
     int rank=0;
-    if(argc==4) rank=atoi(argv[clidx++]);
+    if(argc>=4) rank=atoi(argv[clidx++]);
+    const char* config_file = NULL;
+    ConfigList config_list;
+    if(argc>=5) // config_file parameter exists
+    {
+      config_file = argv[clidx++];
+      if (! config_list.Read(config_file))
+      {
+	fprintf(stderr, "%s: error reading config file %s\n", command, config_file);
+	exit(1);
+      }
+    }  
+   
+    fprintf(stderr,"rank is %d\n",rank);
+
     //------------------//
     // read in l2b file //
     //------------------//
@@ -134,8 +179,88 @@ main(
 	exit(1);
       }
     
+    //-------------------------------------------------------------//
+    // if rank = 7 (output truth), read truth parameters and field //
+    //-------------------------------------------------------------//
+    if (rank==7)
+    {
+      if (config_file)
+      {
+	// fprintf(stderr, "%s: config_file is %s\n", command, config_file); // for debugging
+	char* truth_type = NULL;
+	char* truth_file = NULL;
+	// read truth type
+	truth_type = config_list.Get(TRUTH_WIND_TYPE_KEYWORD);
+	if (truth_type == NULL)
+	{
+	  fprintf(stderr, "%s: must specify truth windfield type \n", command);
+	  exit(1);
+	}
+	// read truth file name
+	truth_file = config_list.Get(TRUTH_WIND_FILE_KEYWORD);
+	if (truth_file == NULL)
+	{
+	  fprintf(stderr, "%s: must specify truth windfield file in %s \n", command, config_file);
+	  exit(1);
+	}
+	// read truth file
+	WindField truth;
+	// Check boundaries
+	if (strcasecmp(truth_type,"SV") == 0)
+	{
+	  if (!config_list.GetFloat(WIND_FIELD_LAT_MIN_KEYWORD, &truth.lat_min) ||
+	      !config_list.GetFloat(WIND_FIELD_LAT_MAX_KEYWORD, &truth.lat_max) ||
+	      !config_list.GetFloat(WIND_FIELD_LON_MIN_KEYWORD, &truth.lon_min) ||
+	      !config_list.GetFloat(WIND_FIELD_LON_MAX_KEYWORD, &truth.lon_max))
+	  {
+	    fprintf(stderr, "ConfigWindField: SV can't determine range of lat and lon\n");
+	    return(0);
+	  }
+	}
+	// Read truth
+	if (! truth.ReadType(truth_file, truth_type))
+	{
+	  fprintf(stderr, "%s: error reading true wind field from file %s\n", command, truth_file);
+	  exit(1);
+	}
+	// Scale wind speeds
+	config_list.DoNothingForMissingKeywords();
+	float scale;
+	if (config_list.GetFloat(TRUTH_WIND_SPEED_MULTIPLIER_KEYWORD, &scale))
+	{
+	  truth.ScaleSpeed(scale);
+	  fprintf(stderr, "Warning: scaling all wind speeds by %g\n", scale);
+	}
+	config_list.ExitForMissingKeywords();
+	// use as fixed wind speed? 
+	config_list.DoNothingForMissingKeywords();
+	float fixed_speed;
+	if (config_list.GetFloat(TRUTH_WIND_FIXED_SPEED_KEYWORD, &fixed_speed))
+	{
+	  truth.FixSpeed(fixed_speed);
+	}
+	float fixed_direction;
+	if (config_list.GetFloat(TRUTH_WIND_FIXED_DIRECTION_KEYWORD, &fixed_direction))
+	{
+	  fixed_direction *= dtr;
+	  truth.FixDirection(fixed_direction);
+	}
+	config_list.ExitForMissingKeywords();
 
+	// MAKE TRUTH SELECTED
+	l2b.frame.swath.SelectTruth(&truth);
+      }
+      else // config_file does not exist
+      {
+	fprintf(stderr, "%s: error -- no config file was specified, no truth available\n", command);
+	exit(1);
+      }
+    }
     
+    //------------------------//
+    // Prepare array to write //
+    //------------------------//
+
     int ncti=l2b.frame.swath.GetCrossTrackBins();
     int nati=l2b.frame.swath.GetAlongTrackBins();
 
@@ -155,15 +280,48 @@ main(
             bool good = true;
             if(wvc){
 	      WindVectorPlus* wvp;
+	      
+	      switch (rank)
+	      {
+	      case -1: // nearest
+		if(wvc->nudgeWV)
+		  wvp=wvc->GetNearestToDirection(wvc->nudgeWV->dir);
+		else wvp=NULL;
+		break;
+	      case 0: // selected
+		wvp=wvc->selected;
+		break;
+	      case 5: // nudge
+		wvp=wvc->nudgeWV;
+		break;
+	      case 6: // hdfdirth
+		wvp=(WindVectorPlus*)wvc->specialVector;
+		break;
+	      case 7: // truth
+		wvp=wvc->selected; // selected was changed to truth above
+		break;
+	      case 1: // get ambiguities (1-4)
+	      case 2:
+	      case 3:
+	      case 4:
+		wvp=wvc->ambiguities.GetByIndex(rank-1);
+		break;
+	      default: // invalid rank
+		wvp=NULL;
+		break;
+	      }
+
+	      /* This was the original code, has bug if rank ==-1
 	      if(rank==-1 && wvc){
                 if(wvc->nudgeWV)
 		  wvp=wvc->GetNearestToDirection(wvc->nudgeWV->dir);
 		else wvp=NULL;
-	      }
+		}
 	      if(rank<=0) wvp=wvc->selected;
               else if(rank<5) wvp=wvc->ambiguities.GetByIndex(rank-1);
 	      else if(rank==5) wvp=wvc->nudgeWV;
-	      else wvp=(WindVectorPlus*)wvc->specialVector;
+	      else wvp=(WindVectorPlus*)wvc->specialVector; */
+
 	      if(wvp){
 		spd[a][c]=wvp->spd;
 		dir[a][c]=wvp->dir;
@@ -187,6 +345,11 @@ main(
 	    }
       } // end c loop
     } // end a loop
+
+
+    //-----------------//
+    // Write the array //
+    //-----------------//
 
     FILE* wfp=fopen(out_file,"w");
     if(!wfp){
