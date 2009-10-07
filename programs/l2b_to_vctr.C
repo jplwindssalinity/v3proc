@@ -157,11 +157,13 @@ main(
       config_file = argv[clidx++];
     // Can have the case where you don't want a flag_file, but you do want a config_file (to get truth), 
     // so set flag_file back to NULL if certain keywords were input
-    if (!strcasecmp(flag_file,"0") || !strcasecmp(flag_file,"[]") || !strcasecmp(flag_file,"NULL"))
-    {
-      flag_file = NULL;
-      fprintf(stderr,"Setting flag_file to null\n");
-    }
+    if (flag_file)
+      if (!strcasecmp(flag_file,"0") || !strcasecmp(flag_file,"[]") || !strcasecmp(flag_file,"NULL"))
+	{
+	  flag_file = NULL;
+	  fprintf(stderr,"Setting flag_file to null\n");
+	};
+       
 
     //------------------//
     // read in l2b file //
