@@ -792,44 +792,60 @@ OvwmL1AToL1B::Convert(
                    }
                 }
 
+
+
                 double areaeff=0, areaeff_SL=0;
 
-                for(int i=0;i<nrsteps;i++){
-                  float ii=i;
-
-                  for(int j=0;j<nasteps;j++){
-                    float jj=j;
-
-		    float val2;
-		    if(ovwm->ses.numPulses!=1){
-		      val2=(jj-center_azim_idx)*integrationStepSize;
-		      val2/=azimwid;
-                      //val2*=val2;
-                      val2*=E_FACTOR;
+                // Do not estimate spatial response, presume boxcar in range and no azimuth compression
+                if(useBoxCar){
+		  float i0=nrsteps/2 - (nL*rangewid/integrationStepSize);
+		  float i1=nrsteps/2 + (nL*rangewid/integrationStepSize);
+		  for(int i=0;i<nrsteps;i++){
+                    if(i>=i0 & i<=i1){
+		      for(int j=0;j<nasteps;j++){
+			_ptr_array[i][j]=0.87*sin(1)*sin(1);		      
+		      }
 		    }
-		    else{
-		      val2=1.0;
-		    }
-                    for(int n=0;n<nL;n++){
-                      float val1=(ii-center_range_idx[n])*integrationStepSize;
-                      val1/=rangewid;
-                      val1*=val1;
+		  }
+		}
+                // estimate spatial response
+                else{
+		  for(int i=0;i<nrsteps;i++){
+		    float ii=i;
 
-                      //_ptr_array[i][j]+=exp(-(val1+val2));
-                      // assume azimuth PTR is sinc function
-                      if (val2 != 0.) {
-                        _ptr_array[i][j]+=exp(-val1)*sin(val2)*sin(val2)/val2/val2;
-                      } else {
-                        _ptr_array[i][j]+=exp(-val1);
-                      }
-                      //cout << i << " " << j << " vals: " << val1 << " " << val2 << " " << _ptr_array[i][j] << endl;
-                      areaeff+=_ptr_array[i][j]*integrationStepSize*integrationStepSize;
-                    }
+		    for(int j=0;j<nasteps;j++){
+		      float jj=j;
 
-                  } // az steps
+		      float val2;
+		      if(ovwm->ses.numPulses!=1){
+			val2=(jj-center_azim_idx)*integrationStepSize;
+			val2/=azimwid;
+			//val2*=val2;
+			val2*=E_FACTOR;
+		      }
+		      else{
+			val2=1.0;
+		      }
+		      for(int n=0;n<nL;n++){
+			float val1=(ii-center_range_idx[n])*integrationStepSize;
+			val1/=rangewid;
+			val1*=val1;
 
-                } // rng steps
+			//_ptr_array[i][j]+=exp(-(val1+val2));
+			// assume azimuth PTR is sinc function
+			if (val2 != 0.) {
+			  _ptr_array[i][j]+=exp(-val1)*sin(val2)*sin(val2)/val2/val2;
+			} else {
+			  _ptr_array[i][j]+=exp(-val1);
+			}
+			//cout << i << " " << j << " vals: " << val1 << " " << val2 << " " << _ptr_array[i][j] << endl;
+			areaeff+=_ptr_array[i][j]*integrationStepSize*integrationStepSize;
+		      }
+		      
+		    } // az steps
 
+		  } // rng steps
+		} // end estimate spatial response
                 //cout << "eff area: " << areaeff << endl;
  
                 Vector3 center_ra=gc_to_rangeazim.Forward(meas->centroid-spot_centroid);

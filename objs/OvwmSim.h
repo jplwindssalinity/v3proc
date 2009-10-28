@@ -175,6 +175,7 @@ public:
     int    simKpriFlag;        // 0 = no Kpri, 1 = Kpri
     int    simHiRes;           // 0 = quickSim, 1 = high resolution sim
     int    simRain;            // 0 no rainfield used, 1=rainfield file used
+    int    useBoxCar;
     int    disableTimingCheck; // 0 check timing 1 do not
 
     int    replaceValueWithAmbRat; // 0= nominal operation  1= output s0 valus

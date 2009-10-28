@@ -773,6 +773,12 @@ ConfigOvwmSim(
       return(0);
     }
 
+    if (! config_list->GetInt(USE_BOXCAR_SPATIAL_RESPONSE_KEYWORD,
+			      &(ovwm_sim->useBoxCar)))
+    {
+      return(0);
+    }
+
     if(!ovwm_sim->simHiRes){
       fprintf(stderr,"Fatal error SIM_HIRES =0 is obsolete\n");
       return(0);
@@ -1077,6 +1083,10 @@ int ConfigOvwmL1AToL1B(OvwmL1AToL1B* l1a_to_l1b, ConfigList* config_list)
     if (! config_list->GetInt(SIM_LAND_FLAG_KEYWORD, &sim_land))
         return(0);
     l1a_to_l1b->simLandFlag = sim_land;
-
+    if (! config_list->GetInt(USE_BOXCAR_SPATIAL_RESPONSE_KEYWORD,
+			      &(l1a_to_l1b->useBoxCar)))
+    {
+      return(0);
+    }
     return 1;
 }

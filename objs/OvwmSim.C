@@ -2167,55 +2167,82 @@ OvwmSim::SetMeasurements(
          double areaeff=0, areaeff_SL=0;
 
 
-         //------------------------------------
-         // Compute Point Target response Array
-         //------------------------------------         
-          for(int i=0;i<nrsteps;i++){
-            float ii=i;
+	 // Do not estimate spatial response, presume boxcar in range and no azimuth compression
+	 if(useBoxCar){
+	   float i0=nrsteps/2 - (nL*rangewid/integrationStepSize);
+	   float i1=nrsteps/2 + (nL*rangewid/integrationStepSize);
+	   for(int i=0;i<nrsteps;i++){
+	     if(i>=i0 & i<=i1){
+	       for(int j=0;j<nasteps;j++){
+		 _ptr_array[i][j]=0.87*sin(1)*sin(1);		      
+	       }
+	     }
+	   }
+	 }
+	 // estimate spatial response
+	 else{
+	   //------------------------------------
+	   // Compute Point Target response Array
+	   //------------------------------------         
+	   for(int i=0;i<nrsteps;i++){
+	     float ii=i;
 
+	     for(int j=0;j<nasteps;j++){
+	       float jj=j;
+
+	       float val2;
+
+	       //---- If in SAR mode include azimuth compression response
+	       if(ovwm->ses.numPulses!=1){
+		 val2=(jj-center_azim_idx)*integrationStepSize; 
+		 val2/=azimwid;
+		 //val2*=val2;
+		 val2*=E_FACTOR;
+	       }
+	       //---- If not in SAR mode do not include azimuth compression response
+	       else{
+		 val2=1.0; // ERROR?? this should probably be zero; using 1  puts in a constant scale factor of 0.708
+		 // I would expect this to reduce SNR by 1.5 dB but there may be some reason for this
+		 // that I am missing.  The fact that using 1 here instead of 0 scales the whole point target
+		 // response array by 1/sqrt(2) is highly suspicious. I suspect that Samuel Chan or I
+		 // used this a kludge to get the correct SNR values. I need to check this --- BWS 07/22/2009
+	       }
+
+	       for(int n=0;n<nL;n++){
+		 float val1=(ii-center_range_idx[n])*integrationStepSize;
+		 val1/=rangewid;
+		 val1*=val1;
+
+		 //--------------------------------------------------------------------------------
+		 // assumes azimuth PTR is sinc^2 function and range PTR is a Gaussian for each look
+		 //--------------------------------------------------------------------------------
+		 if (val2 != 0.) {
+		   _ptr_array[i][j]+=exp(-val1)*sin(val2)*sin(val2)/val2/val2;
+		 } else {
+		   _ptr_array[i][j]+=exp(-val1);
+		 }
+
+		 // commented out debugging tool
+		 //cout << i << " " << j << " vals: " << val1 << " " << val2 << " " << _ptr_array[i][j] << endl;
+		 areaeff+=_ptr_array[i][j]*integrationStepSize*integrationStepSize;
+	       }
+	     }
+	   }
+	 } // end (else) compute point target response array
+       
+	 //#define PTRIM_TO_STDOUT_AND_EXIT
+#ifdef PTRIM_TO_STDOUT_AND_EXIT
+	 for(int i=0;i<nrsteps;i++){
 	    for(int j=0;j<nasteps;j++){
-	      float jj=j;
-
-	      float val2;
-
-              //---- If in SAR mode include azimuth compression response
-              if(ovwm->ses.numPulses!=1){
-		val2=(jj-center_azim_idx)*integrationStepSize; 
-		val2/=azimwid;
-                //val2*=val2;
-                val2*=E_FACTOR;
-	      }
-              //---- If not in SAR mode do not include azimuth compression response
-	      else{
-		val2=1.0; // ERROR?? this should probably be zero; using 1  puts in a constant scale factor of 0.708
-		          // I would expect this to reduce SNR by 1.5 dB but there may be some reason for this
-                          // that I am missing.  The fact that using 1 here instead of 0 scales the whole point target
-                          // response array by 1/sqrt(2) is highly suspicious. I suspect that Samuel Chan or I
-                          // used this a kludge to get the correct SNR values. I need to check this --- BWS 07/22/2009
-	      }
-
-	      for(int n=0;n<nL;n++){
-                float val1=(ii-center_range_idx[n])*integrationStepSize;
-                val1/=rangewid;
-                val1*=val1;
-
-                //--------------------------------------------------------------------------------
-                // assumes azimuth PTR is sinc^2 function and range PTR is a Gaussian for each look
-                //--------------------------------------------------------------------------------
-                if (val2 != 0.) {
-                  _ptr_array[i][j]+=exp(-val1)*sin(val2)*sin(val2)/val2/val2;
-                } else {
-                  _ptr_array[i][j]+=exp(-val1);
-                }
-
-                // commented out debugging tool
-                //cout << i << " " << j << " vals: " << val1 << " " << val2 << " " << _ptr_array[i][j] << endl;
-                areaeff+=_ptr_array[i][j]*integrationStepSize*integrationStepSize;
-	      }
+	      printf("%g ",_ptr_array[i][j]);
 	    }
-	  }
- 
- 
+	    printf("\n");
+	 }
+	
+         fflush(stdout);
+         exit(1);
+#endif 
+	
           //--------------------------------------------//
           // Initialize quantities to be integrated     //
           //--------------------------------------------//
@@ -2224,7 +2251,7 @@ OvwmSim::SetMeasurements(
           float dX_ocean = 0.;// portion of measurement energy over ocean if backscatter were uniform
           Es=0;  // Total signal energy in measurement
 	  En=0;  // Total noise energy in measurement
-
+	
 
           //-----------------------------------------------//
           // Set contributions to energy from ambiguities  //
@@ -2277,6 +2304,7 @@ OvwmSim::SetMeasurements(
             rainField.ComputeLoc(spacecraft, meas, spot_centroid, gc_to_rangeazim, rainRngAz);
 
           }
+	
 	
           if (simRain && rainField.flag_3d) { // find out rain contribution with 3d model
 
@@ -2711,7 +2739,7 @@ OvwmSim::SetMeasurements(
           meas->azimuth_width=integrationStepSize*(jmax-jmin);
           meas->range_width=integrationStepSize*(imax-imin);
 
-
+	
              // commented out debugging tools
              //printf("Es: %g\n", Es);
              //cout << "Es: " << Es << endl;
@@ -2725,7 +2753,7 @@ OvwmSim::SetMeasurements(
 	    //cout<<"range azimuth index "<< range_index<< " "<<azimuth_index<<endl;
 	    //cout<<"range azimuth in km "<< range_km<<" "<<azimuth_km<<endl;
 	  }
-
+	
           //-------------------------------------------------------------
           // Put in constants from radar equation to get values in Joules
           // and to estimate noise power. Used to estimate noise power for
@@ -3034,7 +3062,7 @@ OvwmSim::SetMeasurements(
 
 
  
-	  }  
+	}  
 	//------------------------------------------//
         // end of SIM_HIGH_RES=1  case              //
         //------------------------------------------//
