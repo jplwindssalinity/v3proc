@@ -1404,13 +1404,23 @@ ConfigL2AToL2B(
               return(0);
             }
         }
-
+	float dummy;
+        int fixed_speed_set=0;
+	config_list->DoNothingForMissingKeywords();
+	if (config_list->GetFloat(TRUTH_WIND_FIXED_SPEED_KEYWORD, &dummy))
+	  {
+	    fixed_speed_set=1;
+	  }
+	config_list->ExitForMissingKeywords();
         char* nudge_windfield = config_list->Get(NUDGE_WINDFIELD_FILE_KEYWORD);
         if (nudge_windfield == NULL)
             return(0);
-
+       
         if (l2a_to_l2b->smartNudgeFlag)
         {
+	  if(fixed_speed_set){
+	    fprintf(stderr,"Cannot use SMART NUDGE WITH FIXED TRUTH SPEED\n");
+	  }
             if (!config_list->GetFloat(NUDGE_WINDFIELD_LAT_MIN_KEYWORD,
                                        &l2a_to_l2b->nudgeVctrField.latMin) ||
                 !config_list->GetFloat(NUDGE_WINDFIELD_LAT_MAX_KEYWORD,
@@ -1431,6 +1441,9 @@ ConfigL2AToL2B(
                 return(0);
         }
         else if(l2a_to_l2b->arrayNudgeFlag){
+	  if(fixed_speed_set){
+	    fprintf(stderr,"Cannot use ARRAY NUDGE WITH FIXED TRUTH SPEED\n");
+	  }
 	  l2a_to_l2b->ReadNudgeArray(nudge_windfield);
         }
         else
@@ -1438,11 +1451,16 @@ ConfigL2AToL2B(
             if (! l2a_to_l2b->nudgeField.ReadType(nudge_windfield, nudge_type))
                 return(0);
 
-            //-------------------//
-            // Scale Wind Speeds //
-            //-------------------//
+            //--------------------------//
+            // Scale or Fix Wind Speeds //
+            //--------------------------//
 
             config_list->DoNothingForMissingKeywords();
+            float fixed_speed;
+	    if (config_list->GetFloat(TRUTH_WIND_FIXED_SPEED_KEYWORD, &fixed_speed))
+	      {
+		l2a_to_l2b->nudgeField.FixSpeed(fixed_speed);
+	      }
             float scale;
             if (config_list->GetFloat(TRUTH_WIND_SPEED_MULTIPLIER_KEYWORD,
                 &scale))
