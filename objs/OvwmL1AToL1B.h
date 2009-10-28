@@ -98,7 +98,7 @@ public:
 
     int     simLandFlag;           // 0 = ignore land, 1 = simulate land
     int     simCoast;              // 0 = not simulate coast, 1 = simulate coast
-
+    int     useBoxCar;
 protected:
 
     float** _ptr_array;
