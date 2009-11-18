@@ -1001,7 +1001,14 @@ Ovwm::LocatePixels(
     Antenna* antenna = &(sas.antenna);
     Beam* beam = GetCurrentBeam();
     OrbitState* orbit_state = &(spacecraft->orbitState);
-    Attitude* attitude = &(spacecraft->attitude);
+
+    // Edit November 17 2009 BWS
+    // pixels should be located using nominal attitude not spacecraft attitude
+    // attitude otherwise calibration error due to attitude is computed wrong
+    // Pixel locations are a function of range and doppler
+    // they do NOT vary with pointing
+    Attitude attitude;
+    attitude.SetRPY(0,0,0);
 
     //------------------//
     // set up meas spot //
@@ -1009,14 +1016,18 @@ Ovwm::LocatePixels(
 
     meas_spot->time = cds.time;
     meas_spot->scOrbitState = *orbit_state;
-    meas_spot->scAttitude = *attitude;
+     
+    // November 17 2009 EDITS BWS
+    // attitude reported in meas spot should still be boresight attitude
+    // even though pixel locations should be computed using nominal attitude
+    meas_spot->scAttitude = spacecraft->attitude;
 
     //--------------------------------//
     // generate the coordinate switch //
     //--------------------------------//
 
     CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-        attitude, antenna, antenna->txCenterAzimuthAngle);
+        &attitude, antenna, antenna->txCenterAzimuthAngle);
 
     //------------------//
     // find beam center //
@@ -1035,8 +1046,8 @@ Ovwm::LocatePixels(
     //----------------------------------------------//
     OvwmTargetInfo oti;
     if(! TargetInfo(&antenna_frame_to_gc,spacecraft,vector,&oti)){
-      fprintf(stderr,"Error:LocatePixels cannot find boresight on surface\n");
-      exit(1);
+      fprintf(stderr,"Warning:LocatePixels cannot find boresight on surface\n");
+      return(0);
     }
     double boresight_range=oti.slantRange;
     double boresight_doppler=oti.dopplerFreq;
@@ -1199,7 +1210,7 @@ Ovwm::LocatePixels(
           
 	  //printf("%15.15g %15.15g\n",lon*rtd,latgd*rtd);
 
-	    if(fabs(alt)>0.1 || fabs(r-oti3.slantRange)>0.1 
+	    if(fabs(alt)>0.1 || fabs(r-oti3.slantRange)>0.2 
 	       || fabs(d2-oti3.dopplerFreq)>0.1*ses.dopplerRes){
 	      fprintf(stderr,"Ovwm::LocatePixel Pixel Location Accuracy test failed. alterr=%g km rangeerr=%g km dopplerPercentError=%g\n",alt,fabs(r-oti3.slantRange),100*fabs(d2-oti3.dopplerFreq)/ses.dopplerRes);
 	      exit(1);
