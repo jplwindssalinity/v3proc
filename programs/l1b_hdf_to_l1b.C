@@ -62,7 +62,7 @@ static const char rcs_id[] =
 #include "ConfigList.h"
 #include "L1A.h"
 #include "ConfigSim.h"
-#include "L1BHdf.h"
+//#include "L1BHdf.h"
 #include "L1AToL1B.h"
 #include "Tracking.h"
 #include "Tracking.C"
@@ -101,7 +101,7 @@ template class std::map<string,string,Options::ltstr>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING				"c:l:o:"
+#define OPTSTRING				"c:l:o:e:"
 
 
 //-----------------------//
@@ -124,6 +124,7 @@ const char*		command = NULL;
 char*			l1b_hdf_file = NULL;
 char*			output_file = NULL;
 FILE*           output_fp = stdout;
+char*			ephemeris_file = NULL;
 
 //--------------//
 // MAIN PROGRAM //
@@ -172,6 +173,9 @@ main(
 		case 'o':
             output_file = optarg;
 			break;
+		case 'e':
+            ephemeris_file = optarg;
+			break;
 		case '?':
 			usage(command, usage_array, 1);
 			break;
@@ -196,6 +200,50 @@ main(
 	//-----------------------//
 	// read in HDF 1B file   //
 	//-----------------------//
+	L1B l1b(l1b_hdf_file);
+	
+	// Prepare to write
+    if (output_file != 0)
+    {
+        if (l1b.OpenForWriting(output_file) == 0)
+        {
+            fprintf(stderr, "%s: cannot open %s for output\n",
+                               argv[0], output_file);
+            exit(1);
+        }
+        
+        if (ephemeris_file != NULL)
+        {
+        	if ((l1b.ephemeris_fp = fopen(ephemeris_file, "w")) == NULL) {
+	            fprintf(stderr, "%s: cannot open %s for output\n",
+                               argv[0], ephemeris_file);
+    	        exit(1);
+        	}
+        }
+
+		//-----------------------//
+		// write out as SVT L1B  //
+		//-----------------------//
+	    while (l1b.frame.ReadPureHdfFrame())
+	    {
+	        if (l1b.WriteDataRec())
+	        	fprintf(stderr, "Successfully wrote frame %d of %d\n", 
+	        		l1b.frame.frame_i, l1b.frame.num_l1b_frames);
+	        else {
+	            fprintf(stderr, "%s: writing to %s failed.\n",
+	                               argv[0], output_file);
+	            exit(1);
+	        }
+	    }
+    }
+
+	return 0;
+	
+	
+	
+	
+	#ifdef OLD
+	
     HdfFile::StatusE rc;
     L1BHdf  l1bHdf(l1b_hdf_file, rc);
     if (rc != HdfFile::OK)
@@ -248,5 +296,6 @@ main(
     }
 
 	return (0);
+	#endif
 
 } // main
