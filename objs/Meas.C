@@ -309,7 +309,97 @@ Meas::FreeContents()
     return;
 }
 
+//----------------------------//
+// MeasSpotList::UnpackL1BHdf //
+//----------------------------//
 
+int
+Meas::UnpackL1BHdf(
+    int32    sd_id,
+    int *start,		// array of 3 indexes, indicating where to start in the hdf file
+    int *edges)		// array of the size of each dimension to read
+{
+    FreeContents();
+    
+    int cur_edges[] = {1,1,1};
+    int sliceIndex = start[2];
+    bool failed = false;
+    
+    // macro defined in meas.h
+    GET_HDF_VAR(int32, slice_qual_flag, start, cur_edges, 1)
+	if (failed) {
+	        fprintf(stderr,
+    	        "Meas::UnpackL1BHdf: error with SDreaddata (slice_qual_flag)\n");
+	        return(0);
+    }
+    
+    // each group of 4 bits represents the quality of this slice, and we want to check
+    // the 1st of those 4 bits for this slice. skip this slice if it isn't any good.
+    if ((int)slice_qual_flag & (1 << (sliceIndex * 4)))
+        return 0;
+        
+    startSliceIdx = START_SLICE_INDEX + sliceIndex;
+    startSliceIdx = (startSliceIdx >= 0 ?
+                 startSliceIdx + 1 : startSliceIdx);
+    
+    GET_HDF_VAR(int16, slice_sigma0, start, cur_edges, 0.01)
+    value = (float) pow( 10.0, slice_sigma0 / 10.0 );
+    
+    GET_HDF_VAR(int16, x_factor, start, cur_edges, 0.01)
+    XK = (float) pow( 10.0, x_factor / 10.0 );
+    
+    GET_HDF_VAR(int16, slice_snr, start, cur_edges, 0.01)
+    float sliceSNR = (float) pow( 10.0, slice_snr / 10.0 );
+    EnSlice = value * XK / sliceSNR;
+
+    //---------------------------------------------------
+    // centroid is from slice_lon and slice_lat.
+    // slice_lon,lat are deltas off of cell_lon,lat.
+    //---------------------------------------------------
+    // scale converts deg-> radians
+    GET_HDF_VAR(float, cell_lat, start, cur_edges, dtr)
+    GET_HDF_VAR(float, cell_lon, start, cur_edges, dtr)
+    GET_HDF_VAR(int16, slice_lat, start, cur_edges, 1e-4 * dtr)
+    GET_HDF_VAR(int16, slice_lon, start, cur_edges, 1e-4 * dtr)
+    slice_lon /= cos(cell_lat);
+    slice_lon += cell_lon;
+    slice_lat += cell_lat;
+    centroid.SetAltLonGDLat(0.0, slice_lon, slice_lat);
+
+	// other stuff..
+    GET_HDF_VAR(uint16, slice_azimuth, start, cur_edges, 0.01 * dtr)
+    float northAzimuth = slice_azimuth;
+    eastAzimuth = (450.0*dtr - northAzimuth);
+    if (eastAzimuth >= two_pi) eastAzimuth -= two_pi;
+    
+    GET_HDF_VAR(uint16, slice_incidence, start, cur_edges, 0.01 * dtr)
+    incidenceAngle = slice_incidence;
+    if (incidenceAngle < 50*dtr) {
+    	beamIdx = 0;
+		measType = HH_MEAS_TYPE;
+    } else {
+    	beamIdx = 1;
+		measType = VV_MEAS_TYPE;
+    }
+    numSlices = 1;
+    
+    GET_HDF_VAR(uint16, antenna_azimuth, start, cur_edges, 0.01 * dtr)
+    scanAngle = antenna_azimuth;
+    
+    GET_HDF_VAR(uint16, cell_kpc_a, start, cur_edges, 1e-4)
+    A = cell_kpc_a;
+  
+//    printf("start = %d, %d, %d; sig0 = %f; lon = %f; lat = %f\n", 
+//    	start[0], start[1], start[2], value, slice_lon*180/M_PI, slice_lat*180/M_PI);
+    	
+	if (failed) {
+        fprintf(stderr, "Meas::UnpackL1BHdf: error with SDreaddata\n");
+        return(0);
+    } else
+		return 1;
+}
+
+// OBSOLETE- here only so that legecy code compiles //
 int
 Meas::UnpackL1BHdf(
 L1BHdf*     l1bHdf,
@@ -865,6 +955,7 @@ MeasSpot::Write(
     {
         return(0);
     }
+    
     return(1);
 }
 
@@ -936,6 +1027,135 @@ MeasSpot::NominalQuikScatBaseBandFreq(Vector3 pos){
   return(0.0);
 }
 
+int
+MeasSpot::UnpackL1BHdf(
+    int32    sd_id,
+    int32	h_id,
+    int *start,		// array of 3 indexes, indicating where to start in the hdf file
+    int *edges)		// array of the size of each dimension to read
+{
+    FreeContents();
+    
+    bool failed = false;
+    int orbit_state_edges[] = {1};
+    
+    //----------------------------
+    // get orbit time
+    //----------------------------
+	#define BUF_LEN		64
+	char frame_time[BUF_LEN];
+    // stupid VSread doesn't null terminate the string,
+    // so initiate initiate the buffer to all nulls
+    for(int i = 0; i < BUF_LEN; i++)
+    	frame_time[i] = NULL;
+    int32 frame_time_ref_id = VSfind(h_id, "frame_time");
+    int32 frame_time_id = VSattach(h_id, frame_time_ref_id, "r");
+    VSseek(frame_time_id, start[0]);
+    
+	if (VSread(frame_time_id, (uint8 *)frame_time, 1, NO_INTERLACE) == FAIL) {
+    	fprintf(stderr, "MeasSpot::UnpackL1BHdf: Error: could not get frame time\n");
+    	return(0);
+    }
+    
+    ETime etime;
+    // as far as I can tell, the value of time that should go into the orbit stat
+    // is the number of seconds since Jan 1, 1993
+    etime.FromCodeB("1993-001T00:00:00.000");
+    double time_base = (double)etime.GetSec() + (double)etime.GetMs()/1000;
+
+    if(!etime.FromCodeB(frame_time)) {
+    	fprintf(stderr, "MeasSpot::UnpackL1BHdf: Error: could not parse time string: %s\n",
+    		frame_time);
+    	return 0;
+    }
+    time = (double)etime.GetSec() + (double)etime.GetMs()/1000 - time_base;
+    
+    // obsolete block of code
+//	printf("time_base = %f, time = %f\n", time_base, time);
+
+    // get time VD, use TAI time as base
+//    Itime itime;
+//    if (l1bHdf->GetTime(hdfIndex, &itime) != HdfFile::OK)
+//    {
+//        fprintf(stderr, "Fail to get time on HDF index %d\n", hdfIndex);
+//        return 0;
+//    }
+//    time = (double) itime.sec - ITIME_DEFAULT_SEC + (double)(itime.ms)/1000.0;
+//
+//    if (l1bHdf->GetTime(hdfIndex+1, &itime) == HdfFile::OK)
+//    {
+//      double time2 = (double) itime.sec - ITIME_DEFAULT_SEC +
+//        (double)(itime.ms)/1000.0;
+//      time += (time2 - time)*((float)pulseIndex)/((float)Npulse);
+//    }
+//    else if (l1bHdf->GetTime(hdfIndex-1, &itime) == HdfFile::OK)
+//    {
+//      double time1 = (double) itime.sec - ITIME_DEFAULT_SEC +
+//        (double)(itime.ms)/1000.0;
+//      time += (time - time1)*((float)pulseIndex)/((float)Npulse);
+//    }
+//    else
+//    {
+//        fprintf(stderr, "Fail to get time on HDF index %d\n", hdfIndex);
+//        return 0;
+//    }
+    scOrbitState.time = time;
+
+    //----------------------------
+    // get orbit state
+    //----------------------------
+
+    // position //
+    // this macro is defined in meas.h
+   	// scale factor to convert m -> km
+    GET_HDF_VAR(float, x_pos, start, orbit_state_edges, 1e-3)
+    GET_HDF_VAR(float, y_pos, start, orbit_state_edges, 1e-3)
+    GET_HDF_VAR(float, z_pos, start, orbit_state_edges, 1e-3)
+
+    scOrbitState.rsat = Vector3(x_pos, y_pos, z_pos);
+
+	// velocity //
+    GET_HDF_VAR(float, x_vel, start, orbit_state_edges, 1e-3)
+    GET_HDF_VAR(float, y_vel, start, orbit_state_edges, 1e-3)
+    GET_HDF_VAR(float, z_vel, start, orbit_state_edges, 1e-3)
+	// convert m/s -> km/s
+    scOrbitState.vsat = Vector3(x_vel, y_vel, z_vel);
+
+	// orientation
+    GET_HDF_VAR(int16, roll, start, orbit_state_edges, 1e-3*dtr)
+    GET_HDF_VAR(int16, pitch, start, orbit_state_edges, 1e-3*dtr)
+    GET_HDF_VAR(int16, yaw, start, orbit_state_edges, 1e-3*dtr)
+
+	// convert deg -> radians
+    scAttitude.SetRPY(roll, pitch, yaw);
+    
+    if (failed) {
+    	fprintf(stderr, "MeasSpot::UnpackL1BHdf: Error: could not get orbit state\n");
+    	return(0);
+    }
+    	
+
+    int num_slices = edges[2];
+    for (int i = 0; i < num_slices; i++)
+    {
+        // save only the good slices
+        Meas* new_meas = new Meas();
+        int cur_start[] = {start[0], start[1], i};
+
+        // Meas::UnpackL1BHdf return 0 when there is no valid data
+        // so it is ok to ignore the return code 0
+        if (new_meas->UnpackL1BHdf(sd_id, cur_start, edges)) {
+            if ( ! Append(new_meas)) return(0);
+        } else
+        	delete new_meas;
+    }
+
+    return(1);
+
+}
+
+
+// OBSOLETE //
 int
 MeasSpot::UnpackL1BHdf(
 L1BHdf*      l1bHdf,    // SVT L1BHdf object
@@ -1064,11 +1284,19 @@ MeasSpotList::~MeasSpotList()
 
 int
 MeasSpotList::Write(
-    FILE*    fp)
+    FILE*    fp,
+    FILE*	ephemeris_fp)
 {
     int count = NodeCount();
     if (fwrite((void *)&count, sizeof(int), 1, fp) != 1)
         return(0);
+        
+    if (ephemeris_fp != NULL)	// write the ephemeris for the first point in this frame
+    {
+    	MeasSpot* meas_spot = GetHead();
+        if (meas_spot->scOrbitState.Write(ephemeris_fp) != 1)
+        	return(0);
+    }
 
     for (MeasSpot* meas_spot = GetHead(); meas_spot; meas_spot = GetNext())
     {
@@ -1509,33 +1737,35 @@ MeasSpotList::UnpackL1BHdfCoastal(
 
 int
 MeasSpotList::UnpackL1BHdf(
-    L1BHdf*  l1bHdf,
-    int32    hdfIndex)    // index in the HDF
+    int32    sd_id,
+    int32	h_id,
+    int *start,		// array of 3 indexes, indicating where to start in the hdf file
+    int *edges)		// array of the size of each dimension to read
 {
-    assert(l1bHdf != 0);
     FreeContents();
 
-    Parameter* param = l1bHdf->GetParameter(NUM_PULSES, UNIT_DN);
-    assert(param != 0);
-    int num_pulses = (int)(*((char*)(param->data)));
-
+    int num_pulses = edges[1];
+    int flag_edges[] = {1, num_pulses};
+    
     for (int i = 0; i < num_pulses; i++)
     {
         //-------------------------------------------------------
         // the bit 0-1 in sigma0_mode_flag must be 0 - meas pulse
         // otherwise, skip this pulse
         //-------------------------------------------------------
-        param = l1bHdf->GetParameter(SIGMA0_MODE_FLAG, UNIT_DN);
-        assert(param != 0);
-        unsigned short* ushortP = (unsigned short*) (param->data);
-        unsigned short sliceModeFlags = *(ushortP + i);
-        if ((sliceModeFlags & 0x0003) != 0)
-            break;
+        int cur_start[] = {start[0], i, 0};
+        int cur_edges[] = {1,1};
+        bool failed = false;
+        GET_HDF_VAR(uint16, sigma0_mode_flag, cur_start, cur_edges, 1)
 
-        MeasSpot* new_meas_spot = new MeasSpot();
-        if (! new_meas_spot->UnpackL1BHdf(l1bHdf, hdfIndex, i) ||
-                                        ! Append(new_meas_spot))
-            return(0);
+        unsigned short sliceModeFlags = (unsigned char) sigma0_mode_flag;
+        if (!failed && (sliceModeFlags & 0x0003) == 0)
+        {
+	        MeasSpot* new_meas_spot = new MeasSpot();
+	        if (! new_meas_spot->UnpackL1BHdf(sd_id, h_id, cur_start, edges) ||
+	                                        ! Append(new_meas_spot))
+	            return(0);
+        }
     }
     return(1);
 } // MeasSpotList::UnpackL1BHdf

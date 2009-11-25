@@ -176,8 +176,30 @@ ETime::FromCodeB(
 
     time_string[17] = '\0';
     struct tm tm_time;
+
     if (strptime(time_string, CODE_B_STRPTIME_FORMAT, &tm_time) == NULL)
-        return(0);
+    	return(0);
+    	
+   	// F***ing piece of sh*t library functions- strptime sets year day, but is too stupid
+   	// to realize that corresponds precisely to a month and month day, so do that
+   	// conversion here b/c those fields are needed later.
+   	// number of days in each month
+   	int d_in_m[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+	// tm_yday is complete elapsed days, but we need the day that we are currently in
+	// so add 1 to make that adjustment
+   	int mday = tm_time.tm_yday + 1;
+   	if (tm_time.tm_year % 4 == 0)	// leap year
+   		d_in_m[1]++;
+	int m_i;
+	for (m_i = 0; m_i < 12 && mday > d_in_m[m_i]; m_i++)
+		mday -= d_in_m[m_i];
+		
+	tm_time.tm_mday = mday;
+	tm_time.tm_mon = m_i + 1;
+
+//	printf("ts %s; %s\n", time_string, CODE_B_STRPTIME_FORMAT);
+//	printf("year: %d, month: %d, day: %d, hour: %d, min: %d, sec: %d\n",
+//		tm_time.tm_year, tm_time.tm_mon, tm_time.tm_mday, tm_time.tm_hour, tm_time.tm_min, tm_time.tm_sec);
 
     //---------//
     // convert //

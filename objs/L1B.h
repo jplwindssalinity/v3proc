@@ -11,6 +11,7 @@ static const char rcs_id_l1b_h[] =
 
 #include "Meas.h"
 #include "BaseFile.h"
+#include "Sds.h"
 
 
 //======================================================================
@@ -37,10 +38,25 @@ public:
     L1BFrame();
     ~L1BFrame();
 
+	//-------------//
+	// hdf reading //
+	//-------------//
+	int		ReadPureHdfFrame();
+	int		ReadPureHdfFrame(int _frame_i);
+	int		InitReadPureHdf(char *hdf_fn);
+
     //-----------//
     // variables //
     //-----------//
 
+	char *hdf_fn;
+	int32 sd_id;
+	int32 h_id;
+	int frame_i;
+	int num_l1b_frames;
+    int num_pulses_per_frame;
+    int num_slices_per_pulse;
+	
     MeasSpotList  spotList;    // a list of spots from a single frame
 };
 
@@ -69,6 +85,7 @@ public:
 	//--------------//
 
 	L1B();
+	L1B(char* filename);
 	~L1B();
 
 	//---------------------//
@@ -80,9 +97,13 @@ public:
 	//--------------//
 	// input/output //
 	//--------------//
-
+	
 	int		ReadDataRec() { return(frame.spotList.Read(_inputFp)); };
-	int		WriteDataRec() { return(frame.spotList.Write(_outputFp)); };
+	int		WriteDataRec() { 
+		if ((frame.frame_i-1) % 100 == 0) // we don't need to write out more than about 1 ephemeris/ minute
+			return(frame.spotList.Write(_outputFp, ephemeris_fp));
+		else
+			return(frame.spotList.Write(_outputFp, NULL)); };
 	int		WriteDataRecAscii();
 
 	//-----------//
@@ -90,6 +111,7 @@ public:
 	//-----------//
 
 	L1BFrame		frame;
+	FILE *ephemeris_fp;
 
 protected:
 

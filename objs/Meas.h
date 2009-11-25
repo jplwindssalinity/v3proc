@@ -17,6 +17,18 @@ static const char rcs_id_meas_h[] =
 #include "Attitude.h"
 #include "CoastalMaps.h"
 #include "List.h"
+#include "math.h"
+#include "Sds.h"
+#include "ETime.h"
+
+#define GET_HDF_VAR(TYPE, VAR, START, EDGES, SCALE) \
+    TYPE VAR##_tmp; \
+    int32 VAR##_sds_id = SDnametoid(sd_id, #VAR); \
+    failed = failed || (SDreaddata(VAR##_sds_id, START, NULL, \
+    		EDGES, (VOIDP)&VAR##_tmp) == FAIL); \
+	double VAR = (double)VAR##_tmp * (SCALE);
+
+
 
 
 //======================================================================
@@ -84,6 +96,9 @@ public:
     int  Write(FILE* fp);
     int  Read(FILE* fp);
     int  WriteAscii(FILE* fp);
+    // current version //
+    int UnpackL1BHdf(int32 sd_id, int *start, int *edges);
+    // obsolete verison
     int  UnpackL1BHdf(L1BHdf* l1bHdf, int32 pulseIndex, int32 sliceIndex);
     int  ReadL2AHdfCell(L2AHdf* l2aHdf, int dataIndex, int arrayIndex);
 
@@ -267,6 +282,11 @@ public:
     int  Read(FILE* fp);
 
     float NominalQuikScatBaseBandFreq(Vector3 pos);
+    int  UnpackL1BHdf(int32    sds_id,
+    		int32	h_id,
+		    int *start,		// array of 3 indexes, indicating where to start in the hdf file
+		    int *edges);		// array of the size of each dimension to read
+	// obsolete version of the function, only here so that code compiles
     int  UnpackL1BHdf(L1BHdf*     l1bHdf,
                       int32       hdfIndex,    // index in the HDF
                       int32       pulseIndex); //index of the pulses(100)
@@ -305,12 +325,19 @@ public:
 	// input/output //
 	//--------------//
 
-    int  Write(FILE* fp);
+    int  Write(FILE* fp, FILE* ephemeris_fp = NULL);
     int  WriteAscii(FILE* fp);
     int  Read(FILE* fp);
 
-    int  UnpackL1BHdf(L1BHdf*     l1bHdf,
-                      int32       hdfIndex);  // index in the HDF
+    int  UnpackL1BHdf(int32    sds_id,
+    		int32	h_id,
+		    int *start,		// array of 3 indexes, indicating where to start in the hdf file
+		    int *edges);		// array of the size of each dimension to read
+	// obsolete version of the function, only here so that code compiles
+    int  UnpackL1BHdf(L1BHdf*     l1bHdf, int32 hdfIndex)
+    	{ fprintf(stderr, "ERROR: MeasSpotList::UnpackL1BHdf: this function is obsolete "
+    		"and should never be reached. exiting\n"); abort(); }
+
     int  UnpackL1BHdfCoastal(L1BHdf*     l1bHdf,
 			    int32       hdfIndex,
 			     CoastalMaps* lmap,
