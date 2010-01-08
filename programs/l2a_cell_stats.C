@@ -84,15 +84,17 @@ int main( int argc, char* argv[] )
   
   if( l2a_input_file_entered == 0 || output_file_entered == 0 || satellite_tag_entered == 0 )
   {
-    fprintf(stderr,"Usage: %s -i l2a_file -o output_file -s ( QSCAT || ASCAT )\n",
+    fprintf(stderr,"Usage: %s -i l2a_file -o output_file -s ( QSCAT || ASCAT || DFS )\n",
             command);
     exit(1);
   }
   
   
-  if( satellite_tag != "ASCAT" || satellite_tag != "QSCAT" )
+  if( satellite_tag != "ASCAT" && 
+      satellite_tag != "QSCAT" &&
+      satellite_tag != "DFS"      )
   {
-    fprintf(stderr,"%s: ERROR Unknown satellite tag entered, %s !\n",
+    fprintf(stderr,"%s: ERROR Unknown satellite tag entered: %s !\n",
             command,satellite_tag.c_str());
     exit(1);
   }
@@ -120,6 +122,7 @@ int main( int argc, char* argv[] )
   int NUM_BEAMS;
   if( satellite_tag == "ASCAT" ) NUM_BEAMS = 6;
   if( satellite_tag == "QSCAT" ) NUM_BEAMS = 2;
+  if( satellite_tag == "DFS" )   NUM_BEAMS = 4;
 
 //--Loop over the data records in the l2a file
   int i_rec = 0;
