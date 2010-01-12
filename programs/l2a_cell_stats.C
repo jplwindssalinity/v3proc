@@ -174,8 +174,9 @@ int main( int argc, char* argv[] )
         land_flag[i_beam]      /= double( num_obs_beam[i_beam] );
         inc_ang[i_beam]        /= double( num_obs_beam[i_beam] );
         along_beam_idx[i_beam] /= double( num_obs_beam[i_beam] );
-        
-        double var_sig0 = avg_sig0sq[i_beam] - pow(avg_sig0[i_beam],2);
+
+        double var_sig0 = ( avg_sig0sq[i_beam] - pow(avg_sig0[i_beam],2) ) *
+                          double( num_obs_beam[i_beam] ) / double( num_obs_beam[i_beam] - 1 );
         
         fprintf(output_fp,"%d %d %8.5f %10.7f %20.17f %f %f\n",
                 i_beam, num_obs_beam[i_beam],
