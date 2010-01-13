@@ -6,7 +6,7 @@ using namespace std;
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "ascat_l1b_reader.h"
+#include "AscatL1bReader.h"
 
 ///////////////////////////////////
 // useful definitions
@@ -223,6 +223,8 @@ int msec;
  ymd2julian(2000,1,1,julian_start);
  julian2ymd(julian_start+julian_day,year,month,day);
  
+ 
+ 
  hour   = second / 3600;
  minute = second / 60 - hour * 60;
  second = second - hour * 3600 - minute * 60;
@@ -371,19 +373,19 @@ static int skip_nrec( FILE *fp, int n, char id )
 // misc methods
 ///////////////////////////////////
 
-ascat_file::ascat_file()
+AscatFile::AscatFile()
 {
  mdr = NULL;
  fp = NULL;
 }
 
-ascat_file::~ascat_file()
+AscatFile::~AscatFile()
 {
  if( mdr ) free(mdr);
  if( fp ) fclose(fp);
 }
 
-void ascat_file::close()
+void AscatFile::close()
 {
  if( fp ) { fclose(fp); fp = NULL; }
  if( mdr ) { free(mdr); mdr = NULL; }
@@ -394,7 +396,7 @@ void ascat_file::close()
 // extract information
 ///////////////////////////////////
 
-int ascat_file::open( string fname, int *nr0, int *nn0 )
+int AscatFile::open( const char* fname, int *nr0, int *nn0 )
 {
  unsigned char x[MPHR_SIZE];
  string instr,prod,satid,dumstr;
@@ -412,7 +414,7 @@ int ascat_file::open( string fname, int *nr0, int *nn0 )
  if( fp ) { fclose(fp); fp = NULL; }
 
  // open
- fp = fopen(fname.c_str(),"r");
+ fp = fopen(fname,"r");
  if( fp == NULL ) return 1;
 
  // mphr
@@ -443,7 +445,57 @@ int ascat_file::open( string fname, int *nr0, int *nn0 )
 
  if( get_str(x,1541,2,&dumstr) ) return 1;
  s_v_second = atoi( dumstr.c_str() );
-
+ 
+ 
+ int tmp_int;
+ 
+ if( get_str(x,1580,12,&dumstr) ) return 1; 
+ semi_major_axis   = double(atof(dumstr.c_str())) * 1e-3; // meters
+ 
+ if( get_str(x,1624,12,&dumstr) ) return 1; 
+ eccentricity      = double(atof(dumstr.c_str())) * 1e-6; // unitless
+ 
+ if( get_str(x,1668,12,&dumstr) ) return 1; 
+ inclination       = double(atof(dumstr.c_str())) * 1e-3; // deg
+ 
+ if( get_str(x,1712,12,&dumstr) ) return 1; 
+ perigee_argument  = double(atof(dumstr.c_str())) * 1e-3; // deg
+ 
+ if( get_str(x,1756,12,&dumstr) ) return 1; 
+ ra_asc_node       = double(atof(dumstr.c_str())) * 1e-3; // deg
+ 
+ if( get_str(x,1800,12,&dumstr) ) return 1; 
+ mean_anomoly      = double(atof(dumstr.c_str())) * 1e-3; // deg
+ 
+ 
+ if( get_str(x,1844,12,&dumstr) ) return 1; 
+ sc_pos_x_asc_node = double(atof(dumstr.c_str())) * 1e-3; // meters
+ 
+ if( get_str(x,1888,12,&dumstr) ) return 1; 
+ sc_pos_y_asc_node = double(atof(dumstr.c_str())) * 1e-3; // meters
+ 
+ if( get_str(x,1932,12,&dumstr) ) return 1; 
+ sc_pos_z_asc_node = double(atof(dumstr.c_str())) * 1e-3; // meters
+ 
+ if( get_str(x,1976,12,&dumstr) ) return 1; 
+ sc_vel_x_asc_node = double(atof(dumstr.c_str())) * 1e-3; // meters / sec
+ 
+ if( get_str(x,2020,12,&dumstr) ) return 1; 
+ sc_vel_y_asc_node = double(atof(dumstr.c_str())) * 1e-3; // meters / sec
+ 
+ if( get_str(x,2064,12,&dumstr) ) return 1; 
+ sc_vel_z_asc_node = double(atof(dumstr.c_str())) * 1e-3; // meters / sec
+ 
+ int asc_node_time_int, julian_start;
+ 
+ ymd2julian( s_v_year, s_v_month, s_v_day, asc_node_time_int );
+ ymd2julian(2000,1,1,julian_start);
+ 
+ 
+ asc_node_time = double(asc_node_time_int)  +
+                 double(s_v_hour)/24        + 
+                 double(s_v_minute)/(24*60) +
+                 double(s_v_second)/(24*60*60) - double(julian_start);
  
  if( get_num(x,2714,&num_mphr) ) return 1;
  if( get_num(x,2753,&num_sphr) ) return 1;
@@ -509,7 +561,7 @@ int ascat_file::open( string fname, int *nr0, int *nn0 )
  return 0;
 }
 
-int ascat_file::read_mdr( int *isdummy )
+int AscatFile::read_mdr( int *isdummy )
 {
  char instr;
  int n;
@@ -544,9 +596,13 @@ int ascat_file::read_mdr( int *isdummy )
 // get szo & szr node data
 ///////////////////////////////////
 
-static void get_szo_node( unsigned char *x, int i, int swath, ascat_node *b )
+static void get_szo_node( unsigned char *x, int i, int swath, AscatNode *b )
 {
  // check node index is ok
+
+ printf("I never claimed this would work!!!\n");
+ FAIL;
+
 
  if( i < 0 ) FAIL;
  if( i >= NODES_SZO ) FAIL;
@@ -588,10 +644,13 @@ static void get_szo_node( unsigned char *x, int i, int swath, ascat_node *b )
  get_ushort( x, 3766 + i*6, 1.0e-3, &b->fland0, &b->fland1, &b->fland2 );
 }
 
-static void get_szr_node( unsigned char *x, int i, int swath, ascat_node *b )
+static void get_szr_node( unsigned char *x, int i, int swath, AscatNode *b )
 {
  // check node index is ok
-
+ 
+ printf("I never claimed this would work!!!\n");
+ FAIL;
+ 
  if( i < 0 ) FAIL;
  if( i >= NODES_SZR ) FAIL;
 
@@ -630,7 +689,7 @@ static void get_szr_node( unsigned char *x, int i, int swath, ascat_node *b )
  get_ushort( x, 7326 + i*6, 1.0e-3, &b->fland0, &b->fland1, &b->fland2 );
 }
 
-void ascat_file::get_node( int i, int swath, ascat_node *b )
+void AscatFile::get_node( int i, int swath, AscatNode *b )
 {
 
  int julian1, julian2, time_diff;
@@ -691,10 +750,11 @@ void ascat_file::get_node( int i, int swath, ascat_node *b )
 // get szf node data
 ///////////////////////////////////
 
-void ascat_file::get_node( int i, int beam, ascat_szf_node *b )
+void AscatFile::get_node( int i, int beam, AscatSZFNode *b )
 {
  int julian1, julian2, time_diff;
- int ant, pos; 
+ int ant;
+ int pos; 
 
  if( nn   != NODES_SZF ) FAIL;
  if( i    < 0          ) FAIL;
@@ -702,26 +762,29 @@ void ascat_file::get_node( int i, int beam, ascat_szf_node *b )
  
  if( beam < 0 || beam > 5 )
  {
-   printf("ERROR: beam index is invalid in ascat_file::get_node %d\n",beam);
+   printf("ERROR: beam index is invalid in AscatFile::get_node %d\n",beam);
    FAIL;
  }
- pos = beam * 1024 + i * 4;
+ 
+ // index offset for arrays (mulitply by 4 for byte offset of 4 bytes types) 
+ // where 1st dimension of array is 256 and second is 6.
+ pos = beam * 256 + i;
 
  get_time(   mdr, &b->tm, b->year, b->month, b->day, b->hour, b->minute, b->second );
  
- get_int(    mdr, 68 + beam*4, 1.0e-4,  &b->track );
- get_int(    mdr, 128 + pos,   1.0e-6,  &b->s0 );
- get_int(    mdr, 6272 + pos,  1.0e-6,  &b->t0 );
- get_int(    mdr, 12416 + pos, 1.0e-6,  &b->a0 );
- get_int(    mdr, 18560 + pos, 1.0e-6,  &b->lat );
- get_int(    mdr, 24704 + pos, 1.0e-6,  &b->lon );
- get_ushort( mdr, 30848 + pos, 1.0e-3,  &b->atht );
- get_uint(   mdr, 33920 + pos, 1.0e-10, &b->atls );
- get_byte(   mdr, 40064,                &b->fsyn );
- get_byte(   mdr, 40065,                &b->fref );
- get_byte(   mdr, 40066,                &b->forb );
- get_byte(   mdr, 40067,                &b->fgen1 );
- get_byte(   mdr, 40068 + i,            &b->fgen2 );
+ get_int(    mdr, 68    + beam*4, 1.0e-2,  &b->track );
+ get_int(    mdr, 128   + pos*4,  1.0e-6,  &b->s0 );
+ get_int(    mdr, 6272  + pos*4,  1.0e-6,  &b->t0 );
+ get_int(    mdr, 12416 + pos*4,  1.0e-6,  &b->a0 );
+ get_int(    mdr, 18560 + pos*4,  1.0e-6,  &b->lat );
+ get_int(    mdr, 24704 + pos*4,  1.0e-6,  &b->lon );
+ get_ushort( mdr, 30848 + pos*2,  1.0e-3,  &b->atht );
+ get_uint(   mdr, 33920 + pos*2,  1.0e-10, &b->atls );
+ get_byte(   mdr, 40064 + beam,            &b->fsyn );
+ get_byte(   mdr, 40070 + beam,            &b->fref );
+ get_byte(   mdr, 40076 + beam,            &b->forb );
+ get_byte(   mdr, 40082 + beam,            &b->fgen1 );
+ get_byte(   mdr, 40088 + pos,             &b->fgen2 );
 
  //calculate time diference between sensing time and state vector time
  ymd2julian( s_v_year, s_v_month, s_v_day, julian1 );
@@ -748,9 +811,16 @@ void ascat_file::get_node( int i, int beam, ascat_szf_node *b )
  b->beam     = beam;
  b->asc      = calc_asc( b->track );
  
+ 
+ 
  // transform lon and azimuth angles
  if( b->lon > 180 ) b->lon -= 360;
- if( b->a0  < 0   ) b->a0  += 360;
+ 
+ // Transform azimuth angle to angle between north and projection
+ // of pointing vector on ground, measured clockwise. 
+ // (p. 132 of ascat L1 product generation function spec document).
+ b->a0 += 180;
+ if( b->a0 > 360 ) b->a0 -= 360;
  
  // represent atmospheric height and loss in meters
  b->atht *= 1000;

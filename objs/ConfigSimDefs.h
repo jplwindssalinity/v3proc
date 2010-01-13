@@ -401,7 +401,7 @@ static const char rcs_id_configsimdefs_h[] =
 #define GRID_END_TIME_KEYWORD     "GRID_END_TIME"
 #define REGRID_METHOD_KEYWORD     "REGRID_METHOD"
 #define REGRID_OVERLAP_FACTOR_KEYWORD     "REGRID_OVERLAP_FACTOR"
-
+#define GEN_GRID_TIMES_FROM_L1B_KEYWORD "GEN_GRID_TIMES_FROM_L1B"
 
 //---------------//
 // Control Stuff //

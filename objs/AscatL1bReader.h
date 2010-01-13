@@ -45,7 +45,7 @@ typedef struct
  double fext0,fext1,fext2;
  double fland0,fland1,fland2;
 }
-ascat_node;
+AscatNode;
 
 
 // data structure to hold
@@ -78,7 +78,7 @@ typedef struct
  int fsyn,fref,forb;
  int fgen1,fgen2;
 }
-ascat_szf_node;
+AscatSZFNode;
 
 
 // class to read ascat level 1b
@@ -90,7 +90,7 @@ ascat_szf_node;
 // id = subclass of mdr
 // sat = satellite
 
-class ascat_file
+class AscatFile
 {
  private:
  FILE *fp;
@@ -105,21 +105,35 @@ class ascat_file
 
 
  public:
+ 
+ double semi_major_axis;
+ double eccentricity;
+ double inclination;
+ double perigee_argument;
+ double ra_asc_node;
+ double mean_anomoly;
+ double sc_pos_x_asc_node;
+ double sc_pos_y_asc_node;
+ double sc_pos_z_asc_node;
+ double sc_vel_x_asc_node;
+ double sc_vel_y_asc_node;
+ double sc_vel_z_asc_node;
+ double asc_node_time;
+ 
+ AscatFile();
 
- ascat_file();
+ ~AscatFile();
 
- ~ascat_file();
-
- int open( string fname, int *nr, int *nn );
+ int open( const char* fname, int *nr, int *nn );
  // open a file for reading
 
  int read_mdr( int *isdummy );
  // read an mdr from the file
 
- void get_node( int i, int swath, ascat_node *b );
+ void get_node( int i, int swath, AscatNode *b );
  // return szo & szr node data
 
- void get_node( int i, int beam, ascat_szf_node *b );
+ void get_node( int i, int beam, AscatSZFNode *b );
  // return szf node data
 
  void close( );

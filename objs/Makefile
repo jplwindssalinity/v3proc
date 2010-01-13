@@ -146,7 +146,7 @@ OBJS = \
 	ENOFTable.o \
 	Options.o \
 	Utils.o \
-	ascat_l1b_reader.o
+	AscatL1bReader.o
 
 INCS = \
 	*.h \
@@ -340,7 +340,7 @@ factorial_int.o: factorial_int.c
 stirling4.o: stirling4.c function.h
 erf_cheb.o: erf_cheb.c function.h
 int_rn_exp.o: int_rn_exp.c function.h
-ascat_l1b_reader.o: ascat_l1b_reader.h
+AscatL1bReader.o: AscatL1bReader.h
 
 
 
