@@ -107,17 +107,21 @@ main(
 	//------------------------//
 	// open the output file   //
 	//------------------------//
+    
+    
+      // if user enters "NONE" or "stdout" for output file, write to stdout.
+    if( strcmp( output_file, "NONE" ) == 0 || strcmp( output_file, "stdout" ) == 0 )
+	    l1b.SetOutputFp(stdout);
+    else
+   		if ( ! l1b.OpenForWriting(output_file))
+		{
+			fprintf(stderr, "%s: error creating output file %s\n", command,
+				input_file);
+			exit(1);
+		}
 
- 	if (! l1b.OpenForWriting(output_file))
-	{
-		fprintf(stderr, "%s: error creating output file %s\n", command,
-			input_file);
-		exit(1);
-	}       
 
-
-
-        int frame_number=1;
+    int frame_number=1;
 	int frame_count = 0;
 
 	//---------------------//
