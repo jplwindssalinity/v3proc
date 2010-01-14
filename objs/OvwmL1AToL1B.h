@@ -98,6 +98,8 @@ public:
 
     int     simLandFlag;           // 0 = ignore land, 1 = simulate land
     int     simCoast;              // 0 = not simulate coast, 1 = simulate coast
+    int    noiseEstMethod;     // 0 for quikscat noise estimation; 1 for a more general method
+
     int     useBoxCar;
 protected:
 

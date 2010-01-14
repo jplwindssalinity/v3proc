@@ -85,6 +85,11 @@ static const char rcs_id_configsimdefs_h[] =
 #define KPRC_VALUE_KEYWORD  "KPRC_VALUE"
 #define KPRC_SEED_KEYWORD   "KPRC_SEED"
 
+//------------------//
+// Noise Estimation //
+//------------------//
+#define NOISE_ESTIMATION_METHOD_KEYWORD		"NOISE_ESTIMATION_METHOD"
+
 //-------//
 // seeds //
 //-------//

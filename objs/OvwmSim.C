@@ -3205,7 +3205,25 @@ OvwmSim::SetL1AScience(
     // Compute the spot noise measurement.
 
     float spot_noise;
-    sigma0_to_Esn_noise(ovwm, meas_spot, simKpcFlag, &spot_noise);
+    if (noiseEstMethod == 0)	// Quikscat noise computation method
+	    sigma0_to_Esn_noise(ovwm, meas_spot, simKpcFlag, &spot_noise);
+    else {	// more general noise computation method
+    	double Tg = ovwm->GetRxGateWidth();
+    	double Bn = ovwm->ses.noiseBandwidth;
+    	double var_noise = 1/(Tg*Bn);
+    	Gaussian rv(var_noise,0.0);
+    	double En_sum = 0;
+    	int En_count = 0;
+    	for (Meas* meas = meas_spot->GetHead(); meas != NULL; meas = meas_spot->GetNext()) {
+    		En_sum += meas->EnSlice;
+    		En_count++;
+    	}
+    	
+    	// NOTE: when using this method, 'spot_noise' is actually the /slice/ noise
+    	// the name of the variable does not match what it actually is b/c the it needs
+    	// to store conceptually different values depending on the method used
+    	spot_noise = (En_sum/En_count) * (1 + rv.GetNumber());
+    }
 
     l1a_frame->spotNoise[_spotNumber] = spot_noise;
 

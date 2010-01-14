@@ -177,6 +177,7 @@ public:
     int    simRain;            // 0 no rainfield used, 1=rainfield file used
     int    useBoxCar;
     int    disableTimingCheck; // 0 check timing 1 do not
+    int    noiseEstMethod;     // 0 for quikscat noise estimation; 1 for a more general method
 
     int    replaceValueWithAmbRat; // 0= nominal operation  1= output s0 valus
                                   // replaced with ambiguity ratio.

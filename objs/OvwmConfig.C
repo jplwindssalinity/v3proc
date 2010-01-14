@@ -791,6 +791,13 @@ ConfigOvwmSim(
 	{
 	  return(0);
 	}
+	
+    int noise_est_method;
+    if (! config_list->GetInt(NOISE_ESTIMATION_METHOD_KEYWORD, &noise_est_method))
+        return(0);
+    ovwm_sim->noiseEstMethod = noise_est_method;
+
+
 
       ovwm_sim->integrationStepSize=integration_param;
 // moved to OvwmConfigDefs.h
@@ -1088,5 +1095,11 @@ int ConfigOvwmL1AToL1B(OvwmL1AToL1B* l1a_to_l1b, ConfigList* config_list)
     {
       return(0);
     }
+    
+    int noise_est_method;
+    if (! config_list->GetInt(NOISE_ESTIMATION_METHOD_KEYWORD, &noise_est_method))
+        return(0);
+    l1a_to_l1b->noiseEstMethod = noise_est_method;
+
     return 1;
 }

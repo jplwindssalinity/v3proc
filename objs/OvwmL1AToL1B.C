@@ -1138,10 +1138,17 @@ OvwmL1AToL1B::ComputeSigma0(
     // Estimate pixel signal and noise energies.
     //-------------------------------------------//
     
-    if (! Er_to_Es(beta, Esn_pixel, Esn_echo, Esn_noise, En_echo_load,
-                   En_noise_load, numPixels, Es_pixel, En_pixel))
-    {
-      return(0);
+    if (noiseEstMethod == 0) {	// Quikscat noise computation method
+	    if (! Er_to_Es(beta, Esn_pixel, Esn_echo, Esn_noise, En_echo_load,
+	                   En_noise_load, numPixels, Es_pixel, En_pixel)) 
+	      return(0);
+    }
+    else {	// more general noise computation method
+    	// NOTE: when using this method, 'spot_noise' is actually the /slice/ noise
+    	// the name of the variable does not match what it actually is b/c the it needs
+    	// to store conceptually different values depending on the method used
+    	*Es_pixel = Esn_pixel - Esn_noise;
+    	*En_pixel = Esn_noise;
     }
 
     //------------------------------------------------------------------//
