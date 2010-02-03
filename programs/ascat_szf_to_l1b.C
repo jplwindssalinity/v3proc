@@ -327,11 +327,11 @@ int main( int argc, char* argv[] )
         // Scientific Exploitation of EPS Data & Products 9 June 2004
         if( i_beam == 1 || i_beam == 4 ) // middle beams
         {
-          if( an_ascat_szf_node.t0 < 25.0 || an_ascat_szf_node.t0 > 54.6 ) continue;
+          if( an_ascat_szf_node.t0 < 25.0 || an_ascat_szf_node.t0 > 53.0 ) continue;
         }
         else  // forward or aft looking beams.
         {
-          if( an_ascat_szf_node.t0 < 33.7 || an_ascat_szf_node.t0 > 65.3 ) continue;
+          if( an_ascat_szf_node.t0 < 33.7 || an_ascat_szf_node.t0 > 64.0 ) continue;
         }
         // Check that this node does not have odd values in and on some flags.
         if( an_ascat_szf_node.s0  < -2000 || 
