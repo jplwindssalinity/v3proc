@@ -1,27 +1,52 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include"Constants.h"
-#include"MLP.h"
-#include"MLPData.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include "Constants.h"
+#include "MLP.h"
+#include "MLPData.h"
 
 // Routine for converting Cassini or AmbigSim style beam patterns to
 // OVWM style patterns
 int main(int argc, char* argv[]){
-  if(argc!=5 && argc!=6 && argc!=7 && argc!=8){
-    fprintf(stderr,"Usage:%s epochs hidunits trainfile netfile\n [usevss] [filter 0=no filter, 1= no ku, 2= no C, 3= no inner, 4 = no outer,\n 5 = no Ku inner, 6 = no Ku outer, 7 = no C inner, 8 = no C outer, 9= no VAR, 10 no Ku VAR]\n",argv[0]);
+  char train_set_desc_dflt[] = "Unspecified";
+  char *trainfile = NULL, *netfile = NULL, *oldmlpfile = NULL, *train_set_desc = train_set_desc_dflt;
+  int epochs = -1, hidnos = -1, filter = 0, usevss = 0;
+  int c;
+  
+  char *opt_str = "t:o:e:h:f:v:m:d:";
+        
+  while((c = getopt(argc, argv, opt_str)) != -1) {
+    switch (c) {
+        case 't':
+            trainfile = optarg; break;
+        case 'o':
+            netfile = optarg; break;
+        case 'e':
+            epochs = atoi(optarg); break;
+        case 'h':
+            hidnos = atoi(optarg); break;
+        case 'f':
+            filter = atoi(optarg); break;
+        case 'v':
+            usevss = atoi(optarg); break;
+        case 'm':
+            oldmlpfile = optarg; break;
+        case 'd':
+            train_set_desc = optarg; break;
+    }
+  }
+  
+  char usage_string[] = "Usage: %s -t training_set_file -o output_net_file -e num_epochs -h num_hidden_units\n"
+        "\t[-f filter] [-v usevss] [-m old_mlp_file] [-d \"training set description\"]\n"
+        "Filter Values: 0=no filter, 1= no ku, 2= no C, 3= no inner, 4 = no outer, 5 = no Ku inner,\n"
+        "\t6 = no Ku outer, 7 = no C inner, 8 = no C outer, 9= no VAR, 10 no Ku VAR\n"
+        "The training set description can be up to 1000 characters long and include spaces, but must be surrounded by quotes\n";
+  if (trainfile == NULL || netfile == NULL || epochs <= 0 || hidnos <= 0) {
+    fprintf(stderr, usage_string, argv[0]);
     exit(1);
   }
-  int clidx=1;
-  int epochs = atoi(argv[clidx++]);
-  int hidnos = atoi(argv[clidx++]);
-  char* trainfile = argv[clidx++];
-  char* netfile = argv[clidx++];
-  int filter=0;
-  int usevss=0;
-  char * oldmlpfile=NULL;
-  if(argc>=6) usevss=atoi(argv[clidx++]);
-  if(argc>=7) filter=atoi(argv[clidx++]);
-  if(argc>=8) oldmlpfile=argv[clidx++];
+  
   MLPData data;
   data.Read(trainfile);
   for(int c=0;c<data.num_samps;c++){
@@ -115,6 +140,20 @@ int main(int argc, char* argv[]){
   else{
     mlp.Read(oldmlpfile);
   }
+  // WARNING: values bellow just for testing- not actually correct
+  char in_types[][IN_TYPE_STR_MAX_LENGTH] = 
+   {"S0_MEAN_K_HH_INNER_FORE", "S0_STD_K_HH_INNER_FORE", 
+    "S0_MEAN_K_HH_INNER_AFT",  "S0_STD_K_HH_INNER_AFT",
+    "S0_MEAN_K_VV_OUTER_FORE", "S0_STD_K_VV_OUTER_FORE",
+    "S0_MEAN_K_VV_OUTER_AFT",  "S0_STD_K_VV_OUTER_AFT",
+    "S0_MEAN_C_HH_INNER_FORE", "S0_STD_C_HH_INNER_FORE", 
+    "S0_MEAN_C_HH_INNER_AFT",  "S0_STD_C_HH_INNER_AFT",
+    "S0_MEAN_C_VV_OUTER_FORE", "S0_STD_C_VV_OUTER_FORE",
+    "S0_MEAN_C_VV_OUTER_AFT",  "S0_STD_C_VV_OUTER_AFT",
+    "CROSS_TRACK_DISTANCE" };
+  mlp.setInputTypesByString(in_types);
+  mlp.setTrainSetString(train_set_desc);
+  
   data.Shuffle();
   for(int c=0;c<epochs;c++){
     float mse;
