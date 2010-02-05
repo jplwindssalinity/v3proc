@@ -3,6 +3,18 @@
 
 #include "MLPData.h"
 
+/**** struct to store/ define the types of inputs ****/
+#define IN_TYPE_STR_MAX_LENGTH          64
+struct MLPInputType {
+	char str[IN_TYPE_STR_MAX_LENGTH];
+	int id;
+};
+
+// longest the description of the training sets is allowed to be,
+// in number of characters
+#define TRAIN_SETS_DESC_MAX_LENGTH		1000
+
+
 /***** Multi-Layer Perceptron Structure ***/
 class MLP{
   
@@ -32,6 +44,12 @@ public:
                     unit output ***/
   float moment;/*** momentum coefficient ***/
   float ssize; /*** training step size ****/
+  
+  MLPInputType *in_types; /*** array correlating input number to what
+                               should be used for that input ***/
+  char train_set_str[TRAIN_SETS_DESC_MAX_LENGTH+1];  /*** string representing what the data was trained on;
+                               for reference and writing to disk only- won't be
+                               used by this class ***/
 
   /***** methods ****/
   MLP();
@@ -51,6 +69,16 @@ public:
 
  /**** deallocate MLP structure***/
   int Deallocate();
+  
+  /** Set the nth input to be the specified string **/
+  int setInputTypeByString(char *type_str, int input_idx);
+  /** Set the input types from a list of strings. There must be exactly
+      1 string for each input, in the same order as the inputs,
+      and the number of inputs (nin) must have already been set.
+      (note the function name has 'typeS' rather than 'type') **/
+  int setInputTypesByString(char type_strs[][IN_TYPE_STR_MAX_LENGTH]);
+  /** set a string describing what data the neural network was trained on **/
+  int setTrainSetString(char *train_set_str_);
 
   // modify weights to work on unnormalized data
   int postproc(float* bias, float* std);
@@ -63,7 +91,7 @@ public:
   
   /** Variable Step Search Algorithm routines **/
   float TrainVSS(MLPData* pattern, int epochno);
-
+  
  protected:
   int VSSPruneIfNecessary(MLPData* pattern, int hnum, float p, float d0);
   int VSSReinitNode(int hnum, float d0);

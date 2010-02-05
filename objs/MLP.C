@@ -6,6 +6,51 @@
 #include "Array.h"
 #include "Distributions.h"
 
+
+/**** defines for types of input data ****/
+// this define should equal the length of the array directly bellow it;
+// be sure to update it if you change the array.
+#define NUM_INPUT_TYPES         34
+MLPInputType mlp_input_type_defines[] = 
+  { {"S0_MEAN_K_HH_INNER_FORE", 1},
+    {"S0_MEAN_K_HH_INNER_AFT",  2},
+    {"S0_MEAN_K_HH_OUTER_FORE", 3},
+    {"S0_MEAN_K_HH_OUTER_AFT",  4},
+    {"S0_MEAN_K_VV_INNER_FORE", 5},
+    {"S0_MEAN_K_VV_INNER_AFT",  6},
+    {"S0_MEAN_K_VV_OUTER_FORE", 7},
+    {"S0_MEAN_K_VV_OUTER_AFT",  8},
+    {"S0_MEAN_C_HH_INNER_FORE", 9},
+    {"S0_MEAN_C_HH_INNER_AFT",  10},
+    {"S0_MEAN_C_HH_OUTER_FORE", 11},
+    {"S0_MEAN_C_HH_OUTER_AFT",  12},
+    {"S0_MEAN_C_VV_INNER_FORE", 13},
+    {"S0_MEAN_C_VV_INNER_AFT",  14},
+    {"S0_MEAN_C_VV_OUTER_FORE", 15},
+    {"S0_MEAN_C_VV_OUTER_AFT",  16},
+
+    {"S0_STD_K_HH_INNER_FORE",  17},
+    {"S0_STD_K_HH_INNER_AFT",   18},
+    {"S0_STD_K_HH_OUTER_FORE",  19},
+    {"S0_STD_K_HH_OUTER_AFT",   20},
+    {"S0_STD_K_VV_INNER_FORE",  21},
+    {"S0_STD_K_VV_INNER_AFT",   22},
+    {"S0_STD_K_VV_OUTER_FORE",  23},
+    {"S0_STD_K_VV_OUTER_AFT",   24},
+    {"S0_STD_C_HH_INNER_FORE",  25},
+    {"S0_STD_C_HH_INNER_AFT",   26},
+    {"S0_STD_C_HH_OUTER_FORE",  27},
+    {"S0_STD_C_HH_OUTER_AFT",   28},
+    {"S0_STD_C_VV_INNER_FORE",  29},
+    {"S0_STD_C_VV_INNER_AFT",   30},
+    {"S0_STD_C_VV_OUTER_FORE",  31},
+    {"S0_STD_C_VV_OUTER_AFT",   32},
+    {"CROSS_TRACK_DISTANCE",    33},
+    {"DIRTH_SPEED",             34} };
+
+
+
+
 MLP::MLP()
   : nin(0), nout(0), hn(0), outputSigmoidFlag(0),htab(NULL)
 {
@@ -91,6 +136,7 @@ MLP::Deallocate(){
     free_array((void*)err,1,nout);
     free_array((void*)hnout,1,hn);
     free_array((void*)herr,1,hn);
+    free(in_types);
     nin=0;
     nout=0;
     hn=0;
@@ -140,12 +186,56 @@ int MLP::Allocate(){
   err=(float*)make_array(sizeof(float),1,nout);
   herr=(float*)make_array(sizeof(float),1,hn);
   hnout=(float*)make_array(sizeof(float),1,hn);
+  in_types=(MLPInputType*)malloc(nin*sizeof(MLPInputType));
+  train_set_str[0] = '\0';
   moment=0;
   ssize=0;
-  if( win && dwin && whid && dwhid && outp && err && herr && hnout)
+  if( win && dwin && whid && dwhid && outp && err && herr && hnout && in_types)
     return(1);
   else return(0);
 }
+
+
+/** Set the nth input to be the specified string **/
+int MLP::setInputTypeByString(char *type_str, int input_idx){
+    if (input_idx >= nin) {
+        fprintf(stderr, "MLP::setInputTypeByString: Error: input_idx %d is greater than the number of inputs.\n",
+            input_idx);
+        exit(1);
+    }
+    
+    for(int type_idx = 0; type_idx < NUM_INPUT_TYPES; type_idx++) {
+        if(!strcasecmp(type_str, mlp_input_type_defines[type_idx].str)) {
+            in_types[input_idx] = mlp_input_type_defines[type_idx];
+            return(1);
+        }
+    }
+    
+    fprintf(stderr, "MLP::setInputTypeByString: Error: %s is not a recognized input type. See MLP.h for allowed types\n", 
+        type_str);
+    exit(1);
+}
+
+/** Set the input types from a list of strings. There must be exactly
+    1 string for each input, in the same order as the inputs,
+    and the number of inputs (nin) must have already been set.
+    (note the function name has 'typeS' rather than 'type') **/
+int MLP::setInputTypesByString(char type_strs[][IN_TYPE_STR_MAX_LENGTH]){
+    for(int type_str_idx = 0; type_str_idx < nin; type_str_idx++) {
+        setInputTypeByString(type_strs[type_str_idx], type_str_idx);
+    }
+    return(1);
+}
+
+int MLP::setTrainSetString(char *train_set_str_) {
+    strncpy(train_set_str, train_set_str_, TRAIN_SETS_DESC_MAX_LENGTH);
+    // null terminate incase train_set_str_ is longer than TRAIN_SETS_DESC_MAX_LENGTH
+    train_set_str[TRAIN_SETS_DESC_MAX_LENGTH] = '\0';
+    
+    return(1);
+}
+
+
 
 
 /** train MLP ***/
@@ -620,6 +710,11 @@ int MLP::WriteHeader(FILE* ofp){
   fprintf(ofp,"TYPE: MLP\n");
   fprintf(ofp,"#LAYERS: 2\n#INPUTS: %d\n#HIDDENS: %d\n#OUTPUTS: %d\n",
 	  nin,hn,nout);
+  fprintf(ofp,"#INPUT_TYPES:");
+  for(int in_i=0; in_i < nin; in_i++)
+    fprintf(ofp, " %s", in_types[in_i].str);
+  fprintf(ofp,"\n");
+  fprintf(ofp,"#TRAINING_SET_STR: %s\n", train_set_str);
   return(1);
 }
 
@@ -780,25 +875,19 @@ int MLP::ReadHeader(FILE* ifp){
   /*** get file type ***/
   value_string=skip_comments(ifp,line_from_file);
   value_string=strtok(NULL," :\n\t");
-  if(strcmp(value_string,"MLP")!=0){
-    if(strcmp(value_string,"mlp")!=0){
+  if(strcasecmp(value_string,"MLP")!=0){
 	fprintf(stderr,"MLP::Read: File Type is not MLP!");
 	return(0);
-     }
   }
 
   /*** get number of layers if available and then number of inputs***/
   value_string=skip_comments(ifp,line_from_file);
   int layers_listing=1;
-  if(strcmp(value_string,"#LAYERS")!=0){
-    if(strcmp(value_string,"#layers")!=0){
-      if(strcmp(value_string,"#Layers")!=0){
+  if(strcasecmp(value_string,"#LAYERS")!=0){
 	layers_listing=0;
 	/*** get number of inpts ***/
 	value_string=strtok(NULL," :\n\t");
 	nin=atoi(value_string);
-      }
-    }
   }
   if(layers_listing==1){
     value_string=strtok(NULL," :\n\t");
@@ -824,6 +913,19 @@ int MLP::ReadHeader(FILE* ifp){
   value_string=skip_comments(ifp,line_from_file);
   value_string=strtok(NULL," :\n\t");
   nout=atoi(value_string);
+  
+  /**** get the type of inputs ****/
+  value_string=skip_comments(ifp,line_from_file);
+  for(int in_i=0; in_i < nin; in_i++) {
+    value_string=strtok(NULL," :\n\t");
+    setInputTypeByString(value_string, in_i);
+  }
+    
+  /**** get training set string ***/  
+  value_string=skip_comments(ifp,line_from_file);
+  value_string=strtok(NULL,"\n");
+  setTrainSetString(value_string);
+  
   return(1);
 }
 /**** reads and MLP file with included weight updates *****/
