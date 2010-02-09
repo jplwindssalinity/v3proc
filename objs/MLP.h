@@ -4,9 +4,9 @@
 #include "MLPData.h"
 
 /**** struct to store/ define the types of inputs ****/
-#define IN_TYPE_STR_MAX_LENGTH          64
-struct MLPInputType {
-	char str[IN_TYPE_STR_MAX_LENGTH];
+#define IO_TYPE_STR_MAX_LENGTH          64
+struct MLP_IOType {
+	char str[IO_TYPE_STR_MAX_LENGTH];
 	int id;
 };
 
@@ -45,8 +45,10 @@ public:
   float moment;/*** momentum coefficient ***/
   float ssize; /*** training step size ****/
   
-  MLPInputType *in_types; /*** array correlating input number to what
+  MLP_IOType *in_types; /*** array correlating input number to what
                                should be used for that input ***/
+  MLP_IOType *out_types; /*** array correlating output number to what
+                               is represented by that output ***/
   char train_set_str[TRAIN_SETS_DESC_MAX_LENGTH+1];  /*** string representing what the data was trained on;
                                for reference and writing to disk only- won't be
                                used by this class ***/
@@ -70,13 +72,19 @@ public:
  /**** deallocate MLP structure***/
   int Deallocate();
   
-  /** Set the nth input to be the specified string **/
+  /** function to locate the given type_str in the IO type defs, and set either in_types
+    or out_types accordingly. must take in a pointer to the type defs and 
+    the types buffer (either a pointer to in_types or out_types) **/
+  int setIOTypeByString(MLP_IOType *io_type_buf, MLP_IOType *io_type_defs, 
+    int num_io_type_defs, char *type_str, int input_idx);
+
+  /** Set the inputs to be the specified string **/
   int setInputTypeByString(char *type_str, int input_idx);
-  /** Set the input types from a list of strings. There must be exactly
-      1 string for each input, in the same order as the inputs,
-      and the number of inputs (nin) must have already been set.
-      (note the function name has 'typeS' rather than 'type') **/
-  int setInputTypesByString(char type_strs[][IN_TYPE_STR_MAX_LENGTH]);
+  int setInputTypesByString(char type_strs[][IO_TYPE_STR_MAX_LENGTH]);
+  /** Set the outputs to be the specified string **/
+  int setOutputTypeByString(char *type_str, int input_idx);
+  int setOutputTypesByString(char type_strs[][IO_TYPE_STR_MAX_LENGTH]);
+
   /** set a string describing what data the neural network was trained on **/
   int setTrainSetString(char *train_set_str_);
 
@@ -106,7 +114,8 @@ public:
   float Test(MLPData* pattern, MLPData* results);
 
   /**** a single forward pass through the MLP ***/
-  float Forward(float* dout, float* inpts);
+  int Forward(float* inpts);
+  float ForwardMSE(float* inpts, float* doutx);
 
   /*** a single backward pass ****/
   int Backward(float* inpts);

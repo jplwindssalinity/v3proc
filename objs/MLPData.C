@@ -967,7 +967,7 @@ MLPDataArray::_trainMLP(int num_valid_samps){
     printf("Debugging report .................\n");
     for(int c=1;c<num_valid_samps;c+=10){
       printf("Example %d: INPUTS:",c);
-      m->Forward(latestDataSet.outpt[c],latestDataSet.inpt[c]);
+      m->ForwardMSE(latestDataSet.inpt[c], latestDataSet.outpt[c]);
       for(int i=0;i<nMLPin;i++) printf("%g ",latestDataSet.inpt[c][i]);
       printf("\n          TRAINING OUTPUTS:");
       for(int i=0;i<nMLPout;i++) printf("%g ",latestDataSet.outpt[c][i]);
@@ -1000,7 +1000,7 @@ MLPDataArray::trainDirPdf(MLP* m, MLPData* d, float* nearrms){
   m->moment=moment;
   m->ssize=ssize;  
   for(int c=0;c<d->num_samps;c++){
-    m->Forward(d->outpt[c],d->inpt[c]);
+    m->ForwardMSE(d->inpt[c], d->outpt[c]);
     // compute -derivative of err with respct to each output and mse
     rms+=computeDirPdfErr(m,d->outpt[c],&nrms);
     *nearrms+=nrms*nrms;
@@ -1017,7 +1017,7 @@ MLPDataArray::testDirPdf(MLP* m, MLPData* d, float* nearrms){
   *nearrms=0;
   float nrms=0;
   for(int c=0;c<d->num_samps;c++){
-    m->Forward(d->outpt[c],d->inpt[c]);
+    m->ForwardMSE(d->inpt[c], d->outpt[c]);
     // compute -derivative of err with respct to each output and mse
     rms+=computeDirPdfErr(m,d->outpt[c],&nrms);
     *nearrms+=nrms*nrms;
