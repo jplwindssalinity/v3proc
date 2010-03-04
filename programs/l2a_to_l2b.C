@@ -18,6 +18,7 @@
 //    [ -a start:end ]  The range of along track index.
 //    [ -n num_frames ] The maximum frame number.
 //    [ -i ]            Ignore bad l2a.
+//    [ -R ]     Remove measurements more than 10 stds from average
 //
 // OPERANDS
 //    The following operand is supported:
@@ -72,6 +73,7 @@ static const char rcs_id[] =
 #include "Tracking.h"
 #include "Tracking.C"
 #include "Array.h"
+#include "Meas.h"
 
 using std::list;
 using std::map; 
@@ -104,7 +106,7 @@ template class std::map<string,string,Options::ltstr>;
 //-----------//
 
 #define MAX_ALONG_TRACK_BINS  1624
-#define OPTSTRING "ia:n:w:"
+#define OPTSTRING "iRt:a:n:w:"
 
 //-------//
 // HACKS //
@@ -132,7 +134,8 @@ template class std::map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = {"[ -a start:end ]", "[ -n num_frames ]", "[ -i ]", "[ -w c_band_weight_file ]" , "<sim_config_file>", 0};
+const char* usage_array[] = {"[ -a start:end ]", "[ -n num_frames ]", "[ -i ]", 
+    "[ -w c_band_weight_file ]", "[ -R ]", "[ -t output_train_set_fn ]", "<sim_config_file>", 0};
 
 
 //--------------//
@@ -147,7 +150,7 @@ main(
 
     FILE* dirdiagfp=NULL;
     // comment out if you don't want debug output
-    // dirdiagfp=fopen("DIRDIAG.TXT","w");
+//    dirdiagfp=fopen("DIRDIAG_l2a_to_l2b.TXT","w");
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -159,6 +162,8 @@ main(
     float** weights=NULL;
     FILE* wfp;
     int ncti_wt=0, nati_wt=0, first_valid_ati=0, nvalid_ati=0;
+    bool opt_remove_outlying_s0=false;
+    FILE *out_train_set_f = NULL;
 
     const char* command = no_path(argv[0]);
     if (argc < 2)
@@ -180,6 +185,11 @@ main(
             exit(1);
           }
           break;
+          
+        case 'R':
+            opt_remove_outlying_s0=true;
+            break;
+            
         case 'n':
           if (sscanf(optarg, "%ld", &max_record_no) != 1)
           {
@@ -196,35 +206,44 @@ main(
                 command, optarg);
             exit(1);
           }
-
-	  wfp=fopen(weight_file,"r");
-	  if(!wfp){
-	    fprintf(stderr,"Cannot open file %s\n",weight_file);
-	    exit(1);
-	  }
-	  if(fread(&first_valid_ati,sizeof(int),1,wfp)!=1  ||
-	     fread(&nvalid_ati,sizeof(int),1,wfp)!=1  ||
-	     fread(&ncti_wt,sizeof(int),1,wfp)!=1){
-	    fprintf(stderr,"Error reading from file %s\n",weight_file);
-	    exit(1);
-	  }
-	  nati_wt=first_valid_ati+nvalid_ati;
-	  weights=(float**)make_array(sizeof(float),2,nati_wt,ncti_wt);
-	  for(int a=0;a<nati_wt;a++){
-	    for(int c=0;c<ncti_wt;c++){
-	      weights[a][c]=0.5;
-	    }
-	  }
-	  if(!read_array(wfp,&weights[first_valid_ati],sizeof(float),2,nvalid_ati,ncti_wt)){
-	    fprintf(stderr,"Error reading from file %s\n",weight_file);
-	    exit(1);
-	  }
-          use_freq_weights = 1;
-	  fclose(wfp);
-	  break;
+          wfp=fopen(weight_file,"r");
+          if(!wfp){
+            fprintf(stderr,"Cannot open file %s\n",weight_file);
+            exit(1);
+          }
+          if(fread(&first_valid_ati,sizeof(int),1,wfp)!=1  ||
+             fread(&nvalid_ati,sizeof(int),1,wfp)!=1  ||
+             fread(&ncti_wt,sizeof(int),1,wfp)!=1){
+            fprintf(stderr,"Error reading from file %s\n",weight_file);
+            exit(1);
+          }
+          nati_wt=first_valid_ati+nvalid_ati;
+          weights=(float**)make_array(sizeof(float),2,nati_wt,ncti_wt);
+          for(int a=0;a<nati_wt;a++){
+            for(int c=0;c<ncti_wt;c++){
+              weights[a][c]=0.5;
+            }
+          }
+          if(!read_array(wfp,&weights[first_valid_ati],sizeof(float),2,nvalid_ati,ncti_wt)){
+            fprintf(stderr,"Error reading from file %s\n",weight_file);
+            exit(1);
+          }
+                use_freq_weights = 1;
+          fclose(wfp);
+          break;
+          
+        case 't':
+          out_train_set_f = fopen(optarg, "w");
+          if(out_train_set_f == NULL) {
+            fprintf(stderr, "Error openning training set file %s for writing\n", optarg);
+            exit(1);
+          }
+          break;
+          
         case 'i':
           ignore_bad_l2a=1;
           break;
+          
         case '?':
           usage(command, usage_array, 1);
           break;
@@ -282,6 +301,16 @@ main(
         fprintf(stderr, "%s: error configuring GMF\n", command);
         exit(1);
     }
+    
+//    float val;
+//    for (float chi = 0; chi < 360; chi+=20) {
+//        for(float spd = 0; spd < 50; spd+=5) {
+//            gmf.GetInterpolatedValue(Meas::VV_MEAS_TYPE, 54*dtr, spd, chi, &val);
+//            printf("%e, ", val);
+//        }
+//        printf("\n");
+//    }
+//    exit(0);
 
     //--------------//
     // configure Kp //
@@ -322,8 +351,8 @@ main(
         exit(1);
     }
 
-    int along_track_bins = l2a.header.alongTrackBins;
-//        (int)(two_pi * r1_earth / l2a.header.alongTrackResolution + 0.5);
+    int along_track_bins = // l2a.header.alongTrackBins;
+        (int)(two_pi * r1_earth / l2a.header.alongTrackResolution + 0.5);
  
     if (! l2b.frame.swath.Allocate(l2a.header.crossTrackBins,
         along_track_bins))
@@ -405,18 +434,99 @@ main(
         {
         // end hack
 #endif
-	if(use_freq_weights)
-	  gmf.SetCBandWeight(weights[l2a.frame.ati][l2a.frame.cti]);
-        int retval = 1;
-        if (l2a.frame.ati >= start_ati && l2a.frame.ati <= end_ati) {
-          retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
-          if(frame_number%100==0) fprintf(stderr,"%d l2a frames processed\n",
-					frame_number);
-        } else if (l2a.frame.ati > end_ati) {
-          break;
-        }
+        // for debugging:
+        // printf("********* cti = %d; ati = %d *************\n", l2a.frame.cti, l2a.frame.ati);
 
+        if(use_freq_weights)
+            gmf.SetCBandWeight(weights[l2a.frame.ati][l2a.frame.cti]);
+        int retval = 1;
+        if(opt_remove_outlying_s0) gmf.RemoveBadCopol(&(l2a.frame.measList),&kp);
+        if (l2a.frame.ati >= start_ati && l2a.frame.ati <= end_ati) {
+            retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
+            if(frame_number%100==0)
+                fprintf(stderr,"%d l2a frames processed\n", frame_number);
+        } else if (l2a.frame.ati > end_ati) {
+            break;
+        }
         
+        
+        //--------------------------//
+        // output training set data //
+        //--------------------------//
+        
+        int ai=l2a.frame.ati;
+        int ci=l2a.frame.cti;
+        WVC* wvc0=l2b.frame.swath.GetWVC(ci,ai); 
+
+        if(wvc0 && out_train_set_f){  // nudge by hand
+            MeasList* meas_list = &(l2a.frame.measList);
+
+            wvc0->lonLat=meas_list->AverageLonLat();
+            wvc0->nudgeWV=new WindVectorPlus;
+            if (! l2a_to_l2b.nudgeField.InterpolatedWindVector(wvc0->lonLat,
+            				  wvc0->nudgeWV)) {
+                delete wvc0->nudgeWV;
+                wvc0->nudgeWV=NULL;
+            }
+            if(wvc0->ambiguities.NodeCount() && wvc0->nudgeWV){ // compute diagnostic data
+                int nc = meas_list->NodeCount();
+                int* look_idx = new int[nc];
+                int nmeas[8]={0,0,0,0,0,0,0,0};
+                float varest[8]={0,0,0,0,0,0,0,0};
+                float meanest[8]={0,0,0,0,0,0,0,0};
+                Meas* meas = meas_list->GetHead();
+                for (int c = 0; c < nc; c++) { // loop over measurement list
+                    switch (meas->measType)
+                    {
+                        case Meas::HH_MEAS_TYPE:
+                            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                                look_idx[c] = 0;
+                            else
+                                look_idx[c] = 1;
+                            break;
+                        case Meas::VV_MEAS_TYPE:
+                            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                                look_idx[c] = 2;
+                            else
+                                look_idx[c] = 3;
+                            break;
+                        case Meas::C_BAND_HH_MEAS_TYPE:
+                            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                                look_idx[c] = 4;
+                            else
+                                look_idx[c] = 5;
+                            break;
+                        case Meas::C_BAND_VV_MEAS_TYPE:
+                            if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+                                look_idx[c] = 6;
+                            else
+                                look_idx[c] = 7;
+                            break;
+                        default:
+                            look_idx[c] = -1;
+                            break;
+                    } // end loop over measurement list
+                    if (look_idx[c] >= 0) {
+                        varest[look_idx[c]] += meas->value*meas->value;
+                        meanest[look_idx[c]] += meas->value;
+                        nmeas[look_idx[c]]++;
+                    }
+                    meas = meas_list->GetNext();
+                }
+                fprintf(out_train_set_f, "%d %d %g %g", ai, ci, l2a.getCrossTrackDistance(), wvc0->rainProb);
+                
+                for(int i=0;i<8;i++){
+                    meanest[i]/=nmeas[i];
+                    varest[i]=(varest[i]-nmeas[i]*meanest[i]*meanest[i])/(nmeas[i]-1);
+                    if(nmeas[i]<1) meanest[i]=0;
+                    if(nmeas[i]<2) varest[i]=0.1;
+                    fprintf(out_train_set_f, " %d %g %g",nmeas[i],meanest[i],varest[i]);
+                }
+                fprintf(out_train_set_f, " %g %g\n",wvc0->nudgeWV->spd,wvc0->nudgeWV->dir*pi/180);
+            } // end compute diagnostic data
+        } // end nudge by hand
+        /* end output training set data */
+
 #ifdef LATLON_LIMIT_HACK
         // start hack
         if (retval != 1)
@@ -447,65 +557,68 @@ main(
         }
         // end hack
 #endif
-        int ai=l2a.frame.ati;
-        int ci=l2a.frame.cti;
-	WVC* wvc=l2b.frame.swath.GetWVC(ci,ai);
+        WVC* wvc=l2b.frame.swath.GetWVC(ci,ai);
+        
+        //-------------------------//
+        // output diagnostics info //
+        //-------------------------//
+        if(dirdiagfp && wvc){
+            // FORMAT IS
+            // ATI, CTI, NUMAMBIGS, 80perwidth, spd1 dir1 left1 right1,...
+            // objs(72) spds(72)
+            
+            
+            fprintf(dirdiagfp,"%d %d ",ai,ci);
+            WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+            
+            int namb=wvc->ambiguities.NodeCount();
+            float _dir[4],_spd[4],_obj[4],_right[4],_left[4];
+            float width=0;
+            for(int c=0;c<4;c++){
+                if(wvp==NULL){
+                    _spd[c]=-1;
+                    _dir[c]=0;
+                    _obj[c]=0;
+                    _right[c]=0;
+                    _left[c]=0;
+                } else {
+                    _spd[c]=wvp->spd;
+                    _dir[c]=wvp->dir*180/pi;
+                    _obj[c]=wvp->obj;
+                    
+                    AngleInterval* alist=wvc->directionRanges.GetByIndex(c);
+                    if(!alist){
+                        _left[c]=0;
+                        _right[c]=0;
+                    } else {
+                        _left[c]=alist->left;
+                        _right[c]=alist->right;
+                    }
+                    width+=ANGDIF(_left[c],_right[c]);
+                    _left[c]*=180/pi;
+                    _right[c]*=180/pi;
+                    wvp=wvc->ambiguities.GetNext();
+                }
+            }
+            fprintf(dirdiagfp,"%d %g ",namb,width*180/pi);
+            for(int c=0;c<4;c++){
+                fprintf(dirdiagfp,"%g %g %g %g %g ",_spd[c],_dir[c],_obj[c],_left[c],_right[c]);
+            }
+            for(int p=0;p<45;p++){
+                fprintf(dirdiagfp,"%g ",wvc->directionRanges.bestObj[p]);
+            }
+            for(int p=0;p<45;p++){
+               fprintf(dirdiagfp,"%g ",wvc->directionRanges.bestSpd[p]);
+            }
+            fprintf(dirdiagfp,"\n");
+    	} // end diagnostic output section
 
-       if(dirdiagfp && wvc){
-          // FORMAT IS
-          // ATI, CTI, NUMAMBIGS, 80perwidth, spd1 dir1 left1 right1,...
-          // objs(72) spds(72)
-          
-          
-	  fprintf(dirdiagfp,"%d %d ",ai,ci);
-	  WindVectorPlus* wvp=wvc->ambiguities.GetHead();
-          
-          int namb=wvc->ambiguities.NodeCount();
-          float _dir[4],_spd[4],_obj[4],_right[4],_left[4];
-          float width=0;
-          for(int c=0;c<4;c++){
-	    if(wvp==NULL){
-	      _spd[c]=-1;
-	      _dir[c]=0;
-	      _obj[c]=0;
-	      _right[c]=0;
-	      _left[c]=0;
-	    }
-	    else{
-	      _spd[c]=wvp->spd;
-              _dir[c]=wvp->dir*180/pi;
-	      _obj[c]=wvp->obj;
-
-	      AngleInterval* alist=wvc->directionRanges.GetByIndex(c);
-              if(!alist){
-		_left[c]=0;
-		_right[c]=0;
-	      }
-              else{
-		_left[c]=alist->left;
-		_right[c]=alist->right;
-	      }
-              width+=ANGDIF(_left[c],_right[c]);
-              _left[c]*=180/pi;
-              _right[c]*=180/pi;
-              wvp=wvc->ambiguities.GetNext();
-
-	    }
-          }
-          fprintf(dirdiagfp,"%d %g ",namb,width*180/pi);
-	  for(int c=0;c<4;c++){
-	    fprintf(dirdiagfp,"%g %g %g %g %g ",_spd[c],_dir[c],_obj[c],_left[c],_right[c]);
-	  }
-	  for(int p=0;p<45;p++){
-	    fprintf(dirdiagfp,"%g ",wvc->directionRanges.bestObj[p]);
-	  }
-          for(int p=0;p<45;p++){
-	    fprintf(dirdiagfp,"%g ",wvc->directionRanges.bestSpd[p]);
-	  }
-		  fprintf(dirdiagfp,"\n");
-	} // end diagnostic output section
     } // end loop over wind vector cells
-    if(dirdiagfp) fclose(dirdiagfp);
+    if(dirdiagfp) 
+        fclose(dirdiagfp);
+    if(out_train_set_f)
+        fclose(out_train_set_f);
+        
     l2a_to_l2b.InitFilterAndFlush(&l2b);
        
     l2a.Close();

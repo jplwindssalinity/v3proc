@@ -165,6 +165,11 @@ main(
 
     long int start_ati = -100000000;
     long int end_ati = 100000000;
+    
+    fprintf(stderr, 
+        "******************************** WARNING **********************************\n"
+        "*** hurricane_l2b_preproc is depreciated. DO NOT USE. Run l2a_to_l2b    ***\n"
+        "*** with the '-t train_set_fn' option for the equivalent functionality. ***\n");
 
     int c;
     while ((c = getopt(argc, argv, OPTSTRING)) != -1)
@@ -540,7 +545,7 @@ main(
 		  }
 		meas = meas_list->GetNext();
 	      }
-	    printf("%d %d %g",ai, ci,wvc0->rainProb);
+	    printf("%d %d %g %g",ai, ci,l2a.getCrossTrackDistance(), wvc0->rainProb);
 	  
 	    for(int i=0;i<8;i++){
 	      meanest[i]/=nmeas[i];
