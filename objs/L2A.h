@@ -141,6 +141,9 @@ public:
     int  ReadGroupRec(int reset, L2AFrame* frameGroup25,
              L2AFrame* frameGroup50);
     int  ReadGSDataRec();
+    float getCrossTrackDistance() {
+        return ((float)frame.cti - (((float)header.crossTrackBins - 1.0) /2.0))
+                    * header.crossTrackResolution; }
 
     //---------------------//
     // setting and getting //

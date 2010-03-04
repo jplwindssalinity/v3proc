@@ -12,6 +12,9 @@ static const char rcs_id_l2atol2b_h[] =
 #include "L2A.h"
 #include "L2B.h"
 #include "GMF.h"
+#include "MLPData.h"
+#include "MLP.h"
+
 
 class MLPDataArray;
 
@@ -62,6 +65,7 @@ public:
     int ReadNudgeArray(char* filename);
     float  NeuralNetRetrieve(L2A* l2a, L2B* l2b, MLPDataArray* spdnet, MLPDataArray* dirnet, GMF* gmf, Kp* kp, int need_all_looks);
     float  HybridNeuralNetRetrieve(L2A* l2a, L2B* l2b, MLPDataArray* spdnet, MLPDataArray* dirnet, GMF* gmf, Kp* kp, int need_all_looks);
+    int convertMeasToMLP_IOType(Meas* meas, char *type, char *out_buf);
     int MakeAmbigsFromDirectionArrays(WVC* wvc, float diroff);
     int BuildDirectionRanges(WVC* wvc, float thresh);
     float GetNeuralDirectionOffset(L2A* l2a);
@@ -138,9 +142,12 @@ public:
     WindField      hurricaneField;
     float          hurricaneRadius;  // km
     EarthPosition  hurricaneCenter;
+    MLP            mlp; // multilayer perceptron, used for the 
+                        // hybrid ann correction of sigma0
 
     int                   ann_train_ati;
     float                   ann_train_diroff;
+    char                  *ann_sigma0_corr_file;
     int                   useSigma0Weights;
     float                 sigma0WeightCorrLength;
     float                 atdToNadirLat[360];

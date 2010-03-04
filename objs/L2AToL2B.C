@@ -11,8 +11,6 @@ static const char rcs_id_l2atol2b_c[] =
 #include "L2AToL2B.h"
 #include "Constants.h"
 #include "Misc.h"
-#include "MLPData.h"
-#include "MLP.h"
 #include "Interpolate.h"
 #include "Wind.h"
 #include "Array.h"
@@ -400,7 +398,7 @@ L2AToL2B::SetWindRetrievalMethod(
       mlpinvec[spdnet->nMLPin-2]=reldir;
     }
 
-    smlp->Forward(&dummyout,mlpinvec);
+    smlp->ForwardMSE(mlpinvec, &dummyout);
     speed=smlp->outp[0];
 
  
@@ -418,7 +416,7 @@ L2AToL2B::SetWindRetrievalMethod(
       smlp=spdnet->getMLP(reldir,ctd);
       // check for reldir dependency in network
       if(USE_CTD_INPUT==2) mlpinvec[spdnet->nMLPin-2]=reldir;
-      smlp->Forward(&dummyout,mlpinvec);
+      smlp->ForwardMSE(mlpinvec, &dummyout);
       wvc->directionRanges.bestSpd[c]=smlp->outp[0];
     }
     if (useSigma0Weights == 1){
@@ -451,7 +449,7 @@ L2AToL2B::SetWindRetrievalMethod(
 	dmlp=dirnet->getMLP(reldir,ctd);
 	// check for reldir dependency in network
 	if(USE_CTD_INPUT) mlpinvec[spdnet->nMLPin-2]=reldir;
-	dmlp->Forward(&dummyout,mlpinvec);
+	dmlp->ForwardMSE(mlpinvec, &dummyout);
         
         double prob=dmlp->outp[0];
 	if(prob<0) prob=0;
@@ -830,7 +828,7 @@ L2AToL2B::SetWindRetrievalMethod(
       mlpinvec[spdnet->nMLPin-2]=reldir;
     }
 
-    smlp->Forward(&dummyout,mlpinvec);
+    smlp->ForwardMSE(mlpinvec, &dummyout);
     speed=smlp->outp[0];
 
  
@@ -848,7 +846,7 @@ L2AToL2B::SetWindRetrievalMethod(
       smlp=spdnet->getMLP(reldir,ctd);
       // check for reldir dependency in network
       if(USE_CTD_INPUT==2) mlpinvec[spdnet->nMLPin-2]=reldir;
-      smlp->Forward(&dummyout,mlpinvec);
+      smlp->ForwardMSE(mlpinvec, &dummyout);
       wvc->directionRanges.bestSpd[c]=smlp->outp[0];
     }
     if (useSigma0Weights == 1){
@@ -884,7 +882,7 @@ L2AToL2B::SetWindRetrievalMethod(
         dirinvec[0]=wvc->directionRanges.bestSpd[c];
         dirinvec[1]=reldir;
 	dirinvec[2]=ctd;
-	dmlp->Forward(&dummyout,dirinvec);
+	dmlp->ForwardMSE(dirinvec, &dummyout);
         double obj=0.0;
         float s0mag=0.0;
 	for(int i=0;i<nlooks;i++){
@@ -1615,7 +1613,66 @@ int  L2AToL2B::MakeAmbigsFromDirectionArrays(WVC* wvc, float diroff){
 
   
   return(1);
-}    
+}
+
+//--------------------------------//
+// L2AToL2B::convertMeasToMPL_IOType //
+//--------------------------------//
+// given an instance of a meas object and whether we're looking of the mean or variance of
+// that measurement, and an output buffer return the equivalent MPL_IOType string
+// type is either 'MEAN' or 'VAR' or CORR
+// output is in out_buf; return val is 1 on sucess 0 on failure
+int L2AToL2B::convertMeasToMLP_IOType(Meas* meas, char *type, char *out_buf) {
+    char band[IO_TYPE_STR_MAX_LENGTH] = "", pol[IO_TYPE_STR_MAX_LENGTH] = "",
+        beam[IO_TYPE_STR_MAX_LENGTH] = "", look_dir[IO_TYPE_STR_MAX_LENGTH] = "";
+    switch (meas->measType)
+    {
+        case Meas::HH_MEAS_TYPE:
+        case Meas::VV_MEAS_TYPE:
+            strcat(band, "K");
+            break;
+        case Meas::C_BAND_HH_MEAS_TYPE:
+        case Meas::C_BAND_VV_MEAS_TYPE:
+            strcat(band, "C");
+            break;
+        default:
+            fprintf(stderr, "ERROR: L2AToL2B::convertMeasToMPL_IOType: Unknown MeasType: %d\n", meas->measType);
+            return 0;
+    }
+    
+    switch (meas->measType)
+    {
+        case Meas::HH_MEAS_TYPE:
+        case Meas::C_BAND_HH_MEAS_TYPE:
+            strcat(pol, "HH");
+            strcat(beam, "INNER");
+            break;
+        case Meas::VV_MEAS_TYPE:
+        case Meas::C_BAND_VV_MEAS_TYPE:
+            strcat(pol, "VV");
+            strcat(beam, "OUTER");
+            break;
+    }
+    
+    if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+        strcat(look_dir, "FORE");
+    else
+        strcat(look_dir, "AFT");
+    
+    // clear the output buffer
+    out_buf[0] = NULL;
+    
+    // copy the strings into the buffer
+    strcat(out_buf, "S0_");
+    strcat(out_buf, type); strcat(out_buf, "_");
+    strcat(out_buf, band); strcat(out_buf, "_");
+    strcat(out_buf, pol); strcat(out_buf, "_");
+    strcat(out_buf, beam); strcat(out_buf, "_");
+    strcat(out_buf, look_dir);
+    return 1;
+}
+
+
 
 //---------------------------//
 // L2AToL2B::ConvertAndWrite //
@@ -1623,7 +1680,6 @@ int  L2AToL2B::MakeAmbigsFromDirectionArrays(WVC* wvc, float diroff){
 // returns 0 on failure for bad reason (memory, etc.)
 // returns 1 on success
 // returns higher numbers for other reasons
-
 int
 L2AToL2B::ConvertAndWrite(
     L2A*  l2a,
@@ -1692,6 +1748,113 @@ L2AToL2B::ConvertAndWrite(
 
     }
     
+    //---------------------------------------//
+    // Apply neural net rain Sig0 Correction //
+    //---------------------------------------//
+    if(ann_sigma0_corr_file)
+    {
+        // NOTE: mlp.Read called by configL2aToL2b
+        // allocate buffers
+        #define ALLOCATE_AND_ZERO(vartype, varname, numel) \
+            vartype *varname = (vartype *)malloc(numel * sizeof(vartype)); for(int i=0;i<numel;i++) varname[i] = 0;
+        ALLOCATE_AND_ZERO(float, in_buff_sum, mlp.nin)
+        ALLOCATE_AND_ZERO(float, in_buff_vars, mlp.nin)
+        ALLOCATE_AND_ZERO(int, in_buff_ct, mlp.nin)
+        ALLOCATE_AND_ZERO(float, in_buff, mlp.nin)
+        char meas_type_buff[IO_TYPE_STR_MAX_LENGTH];
+        int in_i, out_i;
+       
+        // accumulate the sum of each type of measurement, for calculating the mean
+        for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+        {
+            convertMeasToMLP_IOType(meas, "MEAN", meas_type_buff);
+            in_i = mlp.findIOTypeInd(meas_type_buff, MLP_IO_IN_TYPE);
+//            printf("input meas: %f; input meas type: %s; input type ind = %d\n", (float)meas->value, meas_type_buff, in_i);
+            if(in_i >= 0) {
+                in_buff_sum[in_i] += meas->value;
+                in_buff_ct[in_i]++;
+            }
+        }
+        
+        // accumulate the (difference between the value and the mean)^2 for each type of measurement,
+        // for calculating the variance.
+        for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+        {
+            // locate the corresponding mean
+            convertMeasToMLP_IOType(meas, "MEAN", meas_type_buff);
+            int mean_i = mlp.findIOTypeInd(meas_type_buff, MLP_IO_IN_TYPE);
+            
+            // calculate the sum of (val-mean)^2
+            convertMeasToMLP_IOType(meas, "VAR", meas_type_buff);
+            in_i = mlp.findIOTypeInd(meas_type_buff, MLP_IO_IN_TYPE);
+            if(in_i >= 0) {
+                float diff = meas->value - (in_buff_sum[mean_i]/in_buff_ct[mean_i]);
+                in_buff_vars[in_i] += (diff * diff);
+                in_buff_ct[in_i]++;
+            }
+        }
+        
+//        printf("in buffer = \n");
+        // build a the input array for the neural network
+        for(in_i = 0; in_i < mlp.nin; in_i++) {
+            if(!strcmp(mlp.in_types[in_i].str, "CROSS_TRACK_DISTANCE_FRAC")) {
+                // the "old" definition of cross track distance
+                in_buff[in_i] = ((float)l2a->frame.cti - ((float)l2a->header.crossTrackBins /2.0))
+                    / ((float)l2a->header.crossTrackBins /2.0);
+                continue;
+            }
+            
+            if(!strcmp(mlp.in_types[in_i].str, "CROSS_TRACK_DISTANCE_KM")) {
+                // new definition
+                in_buff[in_i] = l2a->getCrossTrackDistance();
+                continue;
+            }
+            
+            if (in_buff_ct[in_i] < 2) {
+                // fprintf(stderr, 
+                //     "L2AToL2B::ConvertAndWrite: Warning: insufficient number of points in frame for neural net correction\n");
+                return(17);
+            }
+            
+            if(strstr(mlp.in_types[in_i].str, "MEAN"))
+                in_buff[in_i] = in_buff_sum[in_i] / in_buff_ct[in_i];
+            else if(strstr(mlp.in_types[in_i].str, "VAR"))
+                in_buff[in_i] = in_buff_vars[in_i] / in_buff_ct[in_i];
+            else {
+                fprintf(stderr, "L2AToL2B::ConvertAndWrite: Error: unknown input type: %s\n", mlp.in_types[in_i].str);
+                exit(1);
+            }
+//            printf("[val = %f, ct = %d, in_type = %s];\n", (float)in_buff[in_i], in_buff_ct[in_i], mlp.in_types[in_i].str);
+        }
+        
+        // get the correction factors from that neural net
+        mlp.Forward(in_buff);
+        
+//        printf("out buffer = \n");
+//        for (out_i = 0; out_i < mlp.nout; out_i++) {
+//            float corr = pow(10.0, 0.1*mlp.outp[out_i]);
+//            printf("[val = %f; out type = %s]\n", corr, mlp.out_types[out_i].str);
+//        }
+        
+        // apply those correction factors to all the measurements
+        for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+        {
+            convertMeasToMLP_IOType(meas, "CORR", meas_type_buff);
+            out_i = mlp.findIOTypeInd(meas_type_buff, MLP_IO_OUT_TYPE);
+            if (out_i > -1) {
+                float corr = pow(10.0, 0.1*mlp.outp[out_i]);  // convert dB into straight amplitude
+                // apply correction
+                meas->value /= corr;
+            } else {
+                fprintf(stderr, "L2AToL2B::ConvertAndWrite: Error: neural network does not output a correction for measurement type: %s\n",
+                    meas_type_buff);
+                exit(1);
+            }
+        }
+        // clean up
+        free(in_buff_sum); free(in_buff_vars); free(in_buff_ct); free(in_buff);
+
+    }
 
     //---------------//
     // retrieve wind //

@@ -1342,6 +1342,18 @@ ConfigL2AToL2B(
         if (! config_list->GetFloat(SSW_CORRELATION_LENGTH_KEYWORD, &tmp_float))
             return(0);
         l2a_to_l2b->sigma0WeightCorrLength = tmp_float;
+        
+    char *sig0_corr_net_fn = config_list->Get(NEURAL_NET_SIG0_CORR_FILE);
+    if (sig0_corr_net_fn) {
+        l2a_to_l2b->ann_sigma0_corr_file = sig0_corr_net_fn;
+        // construct the neural net
+        if(!l2a_to_l2b->mlp.Read(l2a_to_l2b->ann_sigma0_corr_file)){
+          fprintf(stderr,"L2AToL2B::ConvertAndWrite: Error: Unable to read netfile %s\n",l2a_to_l2b->ann_sigma0_corr_file);
+          return 0;
+        }
+    }
+    else
+        l2a_to_l2b->ann_sigma0_corr_file = NULL;
 
     config_list->ExitForMissingKeywords();
 

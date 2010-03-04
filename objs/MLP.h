@@ -14,6 +14,12 @@ struct MLP_IOType {
 // in number of characters
 #define TRAIN_SETS_DESC_MAX_LENGTH		1000
 
+// defines for the argument taken by some functions; specifies whether to look in/ set
+// the input or output types
+#define MLP_IO_IN_TYPE      0
+#define MLP_IO_OUT_TYPE     1
+
+
 
 /***** Multi-Layer Perceptron Structure ***/
 class MLP{
@@ -75,8 +81,7 @@ public:
   /** function to locate the given type_str in the IO type defs, and set either in_types
     or out_types accordingly. must take in a pointer to the type defs and 
     the types buffer (either a pointer to in_types or out_types) **/
-  int setIOTypeByString(MLP_IOType *io_type_buf, MLP_IOType *io_type_defs, 
-    int num_io_type_defs, char *type_str, int input_idx);
+  int MLP::setIOTypeByString(char *type_str, int input_idx, int in_out);
 
   /** Set the inputs to be the specified string **/
   int setInputTypeByString(char *type_str, int input_idx);
@@ -84,6 +89,9 @@ public:
   /** Set the outputs to be the specified string **/
   int setOutputTypeByString(char *type_str, int input_idx);
   int setOutputTypesByString(char type_strs[][IO_TYPE_STR_MAX_LENGTH]);
+  
+  /** given an MLP_IOType string, find its index in the input or output **/
+  int findIOTypeInd(char *mlp_io_type_str, int in_out);
 
   /** set a string describing what data the neural network was trained on **/
   int setTrainSetString(char *train_set_str_);

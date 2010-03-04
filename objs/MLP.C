@@ -29,23 +29,24 @@ MLP_IOType mlp_input_type_defs[] =
     {"S0_MEAN_C_VV_OUTER_FORE", 15},
     {"S0_MEAN_C_VV_OUTER_AFT",  16},
 
-    {"S0_STD_K_HH_INNER_FORE",  17},
-    {"S0_STD_K_HH_INNER_AFT",   18},
-    {"S0_STD_K_HH_OUTER_FORE",  19},
-    {"S0_STD_K_HH_OUTER_AFT",   20},
-    {"S0_STD_K_VV_INNER_FORE",  21},
-    {"S0_STD_K_VV_INNER_AFT",   22},
-    {"S0_STD_K_VV_OUTER_FORE",  23},
-    {"S0_STD_K_VV_OUTER_AFT",   24},
-    {"S0_STD_C_HH_INNER_FORE",  25},
-    {"S0_STD_C_HH_INNER_AFT",   26},
-    {"S0_STD_C_HH_OUTER_FORE",  27},
-    {"S0_STD_C_HH_OUTER_AFT",   28},
-    {"S0_STD_C_VV_INNER_FORE",  29},
-    {"S0_STD_C_VV_INNER_AFT",   30},
-    {"S0_STD_C_VV_OUTER_FORE",  31},
-    {"S0_STD_C_VV_OUTER_AFT",   32},
-    {"CROSS_TRACK_DISTANCE",    33},
+    {"S0_VAR_K_HH_INNER_FORE",  17},
+    {"S0_VAR_K_HH_INNER_AFT",   18},
+    {"S0_VAR_K_HH_OUTER_FORE",  19},
+    {"S0_VAR_K_HH_OUTER_AFT",   20},
+    {"S0_VAR_K_VV_INNER_FORE",  21},
+    {"S0_VAR_K_VV_INNER_AFT",   22},
+    {"S0_VAR_K_VV_OUTER_FORE",  23},
+    {"S0_VAR_K_VV_OUTER_AFT",   24},
+    {"S0_VAR_C_HH_INNER_FORE",  25},
+    {"S0_VAR_C_HH_INNER_AFT",   26},
+    {"S0_VAR_C_HH_OUTER_FORE",  27},
+    {"S0_VAR_C_HH_OUTER_AFT",   28},
+    {"S0_VAR_C_VV_INNER_FORE",  29},
+    {"S0_VAR_C_VV_INNER_AFT",   30},
+    {"S0_VAR_C_VV_OUTER_FORE",  31},
+    {"S0_VAR_C_VV_OUTER_AFT",   32},
+    {"CROSS_TRACK_DISTANCE_KM", 33},
+    {"CROSS_TRACK_DISTANCE_FRAC", 33},
     {"DIRTH_SPEED",             34} };
 
 #define NUM_OUTPUT_TYPES         17
@@ -215,10 +216,22 @@ int MLP::Allocate(){
   else return(0);
 }
 
-/** function to locate the given type_str in the IO type defs, and set either in_types
-    or out_types accordingly. must take in a pointer to the type defs and 
+/** function to locate the given type_str in the IO type defs, and set the appropriate index
+    in either in_types or out_types accordingly. must take in a pointer to the type defs and 
     the types buffer (either a pointer to in_types or out_types) **/
-int MLP::setIOTypeByString(MLP_IOType *io_type_buf, MLP_IOType *io_type_defs, int num_io_type_defs, char *type_str, int input_idx) {
+int MLP::setIOTypeByString(char *type_str, int input_idx, int in_out) {
+    MLP_IOType *io_type_buf, *io_type_defs;
+    int num_io_type_defs;
+    if (in_out == MLP_IO_IN_TYPE) {
+        io_type_buf = in_types;
+        num_io_type_defs = NUM_INPUT_TYPES;
+        io_type_defs = mlp_input_type_defs;
+    } else {
+        io_type_buf = out_types;
+        num_io_type_defs = NUM_OUTPUT_TYPES;
+        io_type_defs = mlp_output_type_defs;
+    }
+    
     for(int type_idx = 0; type_idx < num_io_type_defs; type_idx++) {
         if(!strcasecmp(type_str, io_type_defs[type_idx].str)) {
             io_type_buf[input_idx] = io_type_defs[type_idx];
@@ -239,7 +252,7 @@ int MLP::setInputTypeByString(char *type_str, int input_idx){
         exit(1);
     }
     
-    return setIOTypeByString(in_types, mlp_input_type_defs, NUM_INPUT_TYPES, type_str, input_idx);
+    return setIOTypeByString(type_str, input_idx, MLP_IO_IN_TYPE);
 }
 
 /** Set the input types from a list of strings. There must be exactly
@@ -247,21 +260,22 @@ int MLP::setInputTypeByString(char *type_str, int input_idx){
     and the number of inputs (nin) must have already been set.
     (note the function name has 'typeS' rather than 'type') **/
 int MLP::setInputTypesByString(char type_strs[][IO_TYPE_STR_MAX_LENGTH]){
+    int ret = 0;
     for(int type_str_idx = 0; type_str_idx < nin; type_str_idx++) {
-        setInputTypeByString(type_strs[type_str_idx], type_str_idx);
+        ret += setInputTypeByString(type_strs[type_str_idx], type_str_idx);
     }
-    return(1);
+    return(ret);
 }
 
 /** Set the nth output to be the specified string **/
-int MLP::setOutputTypeByString(char *type_str, int input_idx){
-    if (input_idx >= nout) {
-        fprintf(stderr, "MLP::setOutputTypeByString: Error: input_idx %d is greater than the number of outputs.\n",
-            input_idx);
+int MLP::setOutputTypeByString(char *type_str, int output_idx){
+    if (output_idx >= nout) {
+        fprintf(stderr, "MLP::setOutputTypeByString: Error: output_idx %d is greater than the number of outputs.\n",
+            output_idx);
         exit(1);
     }
     
-    return setIOTypeByString(out_types, mlp_output_type_defs, NUM_OUTPUT_TYPES, type_str, input_idx);
+    return setIOTypeByString(type_str, output_idx, MLP_IO_OUT_TYPE);
 }
 
 /** Set the output types from a list of strings. There must be exactly
@@ -269,10 +283,11 @@ int MLP::setOutputTypeByString(char *type_str, int input_idx){
     and the number of outputs (nout) must have already been set.
     (note the function name has 'typeS' rather than 'type') **/
 int MLP::setOutputTypesByString(char type_strs[][IO_TYPE_STR_MAX_LENGTH]){
+    int ret = 0;
     for(int type_str_idx = 0; type_str_idx < nout; type_str_idx++) {
-        setOutputTypeByString(type_strs[type_str_idx], type_str_idx);
+        ret += setOutputTypeByString(type_strs[type_str_idx], type_str_idx);
     }
-    return(1);
+    return(ret);
 }
 
 
@@ -282,6 +297,31 @@ int MLP::setTrainSetString(char *train_set_str_) {
     train_set_str[TRAIN_SETS_DESC_MAX_LENGTH] = '\0';
     
     return(1);
+}
+
+//--------------------------------//
+// MLP::findIOTypeInd //
+//--------------------------------//
+// given an MLP_IOType string, and whether to look for the specified IO_type in the 
+// inputs or the outputs, determine which input or output index correspondes to mlp_io_type_str
+// return -1 if mlp_io_type_str is not an input or output
+int MLP::findIOTypeInd(char *mlp_io_type_str, int in_out) {
+    MLP_IOType *io_types;
+    int n_io_types;
+    if (in_out == MLP_IO_IN_TYPE) {
+        io_types = in_types;
+        n_io_types = nin;
+    } else {
+        io_types = out_types;
+        n_io_types = nout;
+    }
+        
+    for(int i = 0; i < n_io_types; i++) {
+        if(!strcmp(mlp_io_type_str, io_types[i].str))
+            return i;
+    }
+    
+    return -1;
 }
 
 
@@ -871,9 +911,8 @@ int MLP::WriteDelta(char* filename){
 
 int MLP::Read(FILE* ifp){
   if(!ReadHeader(ifp))return(0);
-
-  /*** allocate data structure **/
-  Allocate();
+  
+  // allocating the data structure is now done in ReadHeader
 
   /**** get weights between input and hidden units ****/
   for(int c=0;c<hn;c++) get_floats_array(win[c],(nin+1),ifp);
@@ -968,6 +1007,11 @@ int MLP::ReadHeader(FILE* ifp){
   value_string=skip_comments(ifp,line_from_file);
   value_string=strtok(NULL," :\n\t");
   nout=atoi(value_string);
+  
+  /*** allocate data structure; must be done here in order to have
+    space allocated for the lists of inputs/ outputs, which are read
+    in right after allocating **/
+  if(!Allocate()) return(0);
   
   /**** get the type of inputs ****/
   value_string=skip_comments(ifp,line_from_file);
