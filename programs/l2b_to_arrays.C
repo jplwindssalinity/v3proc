@@ -37,6 +37,7 @@
 //      <l2b_file>     The l2b file to read from
 //      <out_file>     The name of the file to write to
 //      [rank]         0 (default): selected
+//                     -2: nearest to truth (requires config file)
 //                     -1: nearest
 //                     5: nudge
 //                     6: hdfdirth
@@ -65,6 +66,8 @@
 //    Alexandra H Chau, modified 9/24/09
 //      added rank=7 to get truth, fixed rank=-1 (nearest) bug, and  
 //      updated the comments
+//    Alexandra H Chau, modified 4/1/10
+//      added rank = -2 to get nearest to truth
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -127,7 +130,7 @@ template class std::map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l2b_file>", "<out_file>", "[rank (-1=near, 0=sel, 5= nudge, 6= hdfdirth, 7=truth)]", "[config_file (required for truth)]", 0};
+const char* usage_array[] = { "<l2b_file>", "<out_file>", "[rank (-1=near, 0=sel, 5= nudge, 6= hdfdirth, 7=truth, -2=near truth)]", "[config_file (required for truth)]", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -179,10 +182,10 @@ main(
 	exit(1);
       }
     
-    //-------------------------------------------------------------//
-    // if rank = 7 (output truth), read truth parameters and field //
-    //-------------------------------------------------------------//
-    if (rank==7)
+    //-------------------------------------------------------------------//
+    // if rank = 7 (output truth) or -2, read truth parameters and field //
+    //-------------------------------------------------------------------//
+    if (rank==7 || rank==-2)
     {
       if (config_file)
       {
@@ -247,8 +250,12 @@ main(
 	}
 	config_list.ExitForMissingKeywords();
 
-	// MAKE TRUTH SELECTED
-	l2b.frame.swath.SelectTruth(&truth);
+	if (rank==7)
+	  // MAKE TRUTH SELECTED (set selected field to be truth)
+	  l2b.frame.swath.SelectTruth(&truth);
+	else if (rank==-2)
+	  // Make truth the nudge field (set nudge field to be the truth)
+	  l2b.frame.swath.GetNudgeVectors(&truth);
       }
       else // config_file does not exist
       {
@@ -283,6 +290,14 @@ main(
 	      
 	      switch (rank)
 	      {
+	      case -2: // nearest to truth (already set nudgeWV to truth above)
+		if(wvc->selected)
+		  wvp=wvc->GetNearestToDirection(wvc->nudgeWV->dir);
+		else 
+		{
+		  fprintf(stderr, "Didn't work");
+		  wvp=NULL;
+		}
 	      case -1: // nearest
 		if(wvc->nudgeWV)
 		  wvp=wvc->GetNearestToDirection(wvc->nudgeWV->dir);
