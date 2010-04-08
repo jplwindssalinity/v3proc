@@ -56,14 +56,14 @@ public:
     int  ReadHex(const char* filename);
     int  WriteHex(const char* filename);
     int  WriteAscii(const char* filename);
-
+    
     unsigned short  GetTableId()  { return(_tableId); };
 
     int  SetFromMro(char* mro);
 
 protected:
-
-    //-----------//
+    void SetEndian();
+     //-----------//
     // variables //
     //-----------//
 
@@ -72,6 +72,7 @@ protected:
     T**             _termArray;     // [step][term]
     unsigned int    _steps;
     unsigned short  _dither[2];
+    bool            _littleEndian;
 };
 
 #define DEFAULT_STEPS  256
@@ -205,5 +206,5 @@ public:
 int  azimuth_fit(int count, double* terms, double* a, double* p, double* c);
 int  write_hex(FILE* fp, char* buffer, int bytes);
 int  read_hex(FILE* fp, char* buffer, int bytes);
-
+bool ishex(char c); 
 #endif

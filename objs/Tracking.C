@@ -87,7 +87,7 @@ int int_cos_table[COS_TABLE_SIZE] =
     0x3f7ec482, 0x3f7f4e77, 0x3f7fb118, 0x3f7fec46
 };
 
-float* cos_table = (float *)int_cos_table;
+float* cos_table = (float*)int_cos_table;
 
 //=============//
 // TrackerBase //
@@ -99,7 +99,7 @@ TrackerBase<T>::TrackerBase()
 {
     for (int i = 0; i < 2; i++)
         _dither[i] = 0;
-
+    SetEndian();
     return;
 }
 
@@ -108,6 +108,23 @@ TrackerBase<T>::~TrackerBase()
 {
     return;
 }
+
+// determine whether the machine is little or big Endian
+template <class T>
+void TrackerBase<T>::SetEndian()
+{
+    unsigned int x = 1;
+    char* y = (char*) &x;
+     if((int)(y[0])==1){
+      _littleEndian=true;
+    }
+    else{
+      _littleEndian=false;
+    }
+    
+    return;
+}
+
 
 //-----------------------//
 // TrackerBase::Allocate //
@@ -489,39 +506,90 @@ TrackerBase<T>::ReadHex(
     // scale //
     //-------//
 
-    if (! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
-            sizeof(float)) ||
-        ! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
-            sizeof(float)) ||
-        ! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
-            sizeof(float)) ||
-        ! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
-            sizeof(float)) ||
-        ! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
-            sizeof(float)) ||
-        ! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
-            sizeof(float)))
-    {
-        fclose(fp);
-        return(0);
-    }
 
+    // fixed to avoid word swapping problem if little endian machine is used
+    // files written on a different Endian are still incompatible
+    // but MATLAB code for converting from one to the other exists
+    // Contact Bryan W. Stiles 
+    //  
+    if (! _littleEndian ){
+      if (! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
+		     sizeof(float)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
+		     sizeof(float)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
+		     sizeof(float)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
+		     sizeof(float)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
+		     sizeof(float)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
+		     sizeof(float)))
+	{
+	  fclose(fp);
+	  return(0);
+	}
+    }
+    else {
+      if (! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1)+2,
+		      sizeof(short)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
+		     sizeof(short)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0)+2,
+		     sizeof(short)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
+		     sizeof(short)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1)+2,
+		     sizeof(short)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
+		     sizeof(short)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0)+2,
+		     sizeof(short)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
+		     sizeof(short)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1)+2,
+		     sizeof(short)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
+		     sizeof(short)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0)+2,
+		     sizeof(short)) ||
+	  ! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
+		     sizeof(short)))
+	
+	{
+	  
+	  fclose(fp);
+	  return(0);
+	}
+    }
     //-------//
     // terms //
     //-------//
 
     unsigned int array_size = 3 * _steps * sizeof(T);
     unsigned char* term_array = (unsigned char *)malloc(array_size);
+    unsigned char* swap_term_array = (unsigned char *)malloc(array_size);
     if (term_array == NULL)
     {
         fclose(fp);
         return(0);
     }
 
-    if (! read_hex(fp, (char *)term_array, array_size))
+    if (! read_hex(fp, (char *)swap_term_array, array_size))
     {
         fclose(fp);
         return(0);
+    }
+    // because read_hex writes one short at a time, shorts are output
+    // correctly regardless of swapping, but characters are not so ..
+    for(unsigned int i=0;i<array_size;i++){
+      int iswap=2*(i/2)+!(i%2);
+      if(_littleEndian && sizeof(T)==1){
+	term_array[i]=swap_term_array[iswap];
+      }
+      else{
+	term_array[i]=swap_term_array[i];
+      }
     }
 
     unsigned int bytes = 0;
@@ -536,7 +604,7 @@ TrackerBase<T>::ReadHex(
     }
 
     free(term_array);
-
+    free(swap_term_array);
     //------------//
     // close file //
     //------------//
@@ -619,30 +687,66 @@ TrackerBase<T>::WriteHex(
     //-------//
     // scale //
     //-------//
+    // updated to avoid swapping words when little endian version is run
+    //--------------------------
+    if(! _littleEndian){
+      if (! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
+		      sizeof(float)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
+		      sizeof(float)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
+		      sizeof(float)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
+		      sizeof(float)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
+		      sizeof(float)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
+		      sizeof(float)))
+	{
 
-    if (! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
-            sizeof(float)) ||
-        ! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
-            sizeof(float)) ||
-        ! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
-            sizeof(float)) ||
-        ! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
-            sizeof(float)) ||
-        ! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
-            sizeof(float)) ||
-        ! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
-            sizeof(float)))
-    {
-        fclose(fp);
-        return(0);
+	  fclose(fp);
+	  return(0);
+	}
     }
+    else{
+      if (! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1)+2,
+		      sizeof(short)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
+		      sizeof(short)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0)+2,
+		      sizeof(short)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
+		      sizeof(short)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1)+2,
+		      sizeof(short)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
+		      sizeof(short)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0)+2,
+		      sizeof(short)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
+		      sizeof(short)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1)+2,
+		      sizeof(short)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
+		      sizeof(short)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0)+2,
+		      sizeof(short)) ||
+	  ! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
+		      sizeof(short)))
 
+	{
+
+	  fclose(fp);
+	  return(0);
+	}
+    }
     //-------//
     // terms //
     //-------//
 
     unsigned int array_size = 3 * _steps * sizeof(T);
     unsigned char* term_array = (unsigned char *)malloc(array_size);
+    unsigned char* swap_term_array = (unsigned char *)malloc(array_size);
     if (term_array == NULL)
     {
         fclose(fp);
@@ -654,12 +758,27 @@ TrackerBase<T>::WriteHex(
     {
         for (unsigned int step = 0; step < _steps; step++)
         {
-            memcpy(term_array + bytes, (*(_termArray + step) + term),
+            memcpy(swap_term_array + bytes, (*(_termArray + step) + term),
                 sizeof(T));
             bytes += sizeof(T);
+
+            
         }
     }
 
+    // because write_hex writes one short at a time, shorts are output
+    // correctly regardless of swapping, but characters are not so ..
+    for(unsigned int i=0;i<array_size;i++){
+      int iswap=2*(i/2)+!(i%2);
+      if(_littleEndian && sizeof(T)==1){
+	term_array[i]=swap_term_array[iswap];
+      }
+      else{
+	term_array[i]=swap_term_array[i];
+      }
+    }
+
+  
     if (! write_hex(fp, (char *)term_array, array_size))
     {
         fclose(fp);
@@ -667,7 +786,7 @@ TrackerBase<T>::WriteHex(
     }
 
     free(term_array);
-
+    free(swap_term_array);
     //------------//
     // close file //
     //------------//
@@ -1973,6 +2092,8 @@ write_hex(
     for (int i = 0; i < words; i++)
     {
         fprintf(fp, "%04hx\n", *(ptr + i));
+        //printf("%d\n",(int)*(ptr+i));
+        //fflush(stdout);
     }
     return(1);
 }
@@ -1991,8 +2112,33 @@ read_hex(
     unsigned short* ptr = (unsigned short *)buffer;
     for (int i = 0; i < words; i++)
     {
-        if (fscanf(fp, " %hx", ptr + i) != 1)
+        char str[5];
+	str[0]=' ';
+	while(!ishex(str[0])) fscanf(fp,"%c",str);
+	for(int c=1;c<4;c++){
+	  fscanf(fp,"%c",str+c);
+	}
+	str[4]='\0';
+        if (sscanf(str, "%hx", ptr + i) != 1)
             return(0);
+        //printf("%d\n",(int)*(ptr+i));
+        //fflush(stdout);
     }
     return(1);
+}
+
+bool ishex(char c){
+  unsigned int a_small=(unsigned int)'a';
+  unsigned int a_cap=(unsigned int)'A';
+  unsigned int f_small=(unsigned int)'f';
+  unsigned int f_cap=(unsigned int)'F';
+  unsigned int zero=(unsigned int)'0';
+  unsigned int nine=(unsigned int)'9';
+  unsigned int cint=(unsigned int) c;
+  if((zero<=cint && cint<=nine) ||
+     (a_small<=cint && cint<=f_small) ||
+     (a_cap<=cint && cint<=f_cap)){
+    return(true);
+  }
+  return(false);   
 }
