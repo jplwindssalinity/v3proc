@@ -72,6 +72,7 @@ static const char rcs_id[] =
 #include "L1BToL2A.h"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "ETime.h"
 
 using std::list;
 using std::map; 
@@ -206,15 +207,83 @@ main(
 	double grid_start_time, grid_end_time;
 	double instrument_start_time, instrument_end_time;
 	double spacecraft_start_time, spacecraft_end_time;
-
-	if (! ConfigControl(&spacecraft_sim, &config_list,
-		&grid_start_time, &grid_end_time,
-		&instrument_start_time, &instrument_end_time,
-		&spacecraft_start_time, &spacecraft_end_time))
-	{
-		fprintf(stderr, "%s: error configuring simulation times\n", command);
-		exit(1);
+        
+    int gen_grid_times_from_L1B = 0;
+    
+    // Don't quit just because the config file doesn't contain 
+    // the GEN_GRID_TIMES_FROM_L1B_KEYWORD string...
+    config_list.WarnForMissingKeywords();
+    
+    if( config_list.GetInt(GEN_GRID_TIMES_FROM_L1B_KEYWORD,
+                           &gen_grid_times_from_L1B) == 0  || gen_grid_times_from_L1B == 0 )
+    {
+        printf("Reading grid/instrument start/stop times from config file.\n");
+  		if (! ConfigControl(&spacecraft_sim, &config_list,
+			&grid_start_time, &grid_end_time,
+			&instrument_start_time, &instrument_end_time,
+			&spacecraft_start_time, &spacecraft_end_time))
+		{
+			fprintf(stderr, "%s: error configuring simulation times\n", command);
+			exit(1);
+		}
 	}
+	else // Generate the grid start/stop times from the L1B file itself.
+	{
+	  printf("Generating grid/instrument start/stop times from L1B file.\n");
+	  grid.l1b.OpenForReading();
+	  
+	  int i_rec = 0;
+	  double t_min, t_max;
+	  
+	  while ( grid.l1b.ReadDataRec() )
+	  {
+	    i_rec++;
+	    
+	    MeasSpot* meas_spot = grid.l1b.frame.spotList.GetHead();
+	    double t_now        = meas_spot->time;
+	    
+	    if( i_rec == 1 )
+	    {
+	      t_min = t_now;
+	      t_max = t_now;
+	    }
+	    if( t_now > t_max ) t_max = t_now;
+	  }
+	  
+	  // First and last measurement times
+	  instrument_start_time = t_min;
+	  instrument_end_time   = t_max;
+	  
+	  // 5 min boundary around measurement times for grid times.
+	  grid_start_time       = t_min - 5 * 60;
+	  grid_end_time         = t_max + 5 * 60;
+      
+      ETime dummy_time;
+      char  codeA_time_str[CODE_A_TIME_LENGTH];
+      
+      printf("\n");
+      printf("Generated grid/instrument start/end times: \n");
+      
+      dummy_time.SetTime(instrument_start_time);
+      dummy_time.ToCodeA(&codeA_time_str[0]);
+      printf("INSTRUMENT_START_TIME = %s\n",codeA_time_str);
+
+      dummy_time.SetTime(instrument_end_time);
+      dummy_time.ToCodeA(&codeA_time_str[0]);
+      printf("INSTRUMENT_END_TIME   = %s\n",codeA_time_str);
+
+      dummy_time.SetTime(grid_start_time);
+      dummy_time.ToCodeA(&codeA_time_str[0]);
+      printf("GRID_START_TIME       = %s\n",codeA_time_str);
+
+      dummy_time.SetTime(grid_end_time);
+      dummy_time.ToCodeA(&codeA_time_str[0]);
+      printf("GRID_END_TIME         = %s\n",codeA_time_str);
+      printf("\n");
+      
+	  grid.l1b.Close();
+	}
+	
 	grid.SetStartTime(grid_start_time);
 	grid.SetEndTime(grid_end_time);
 
@@ -293,7 +362,7 @@ main(
         long counter = 0;
 
         for (;;) {
-
+          
           counter++;
           if (max_record_no>0 && counter>max_record_no) break;
           if (counter % 100 == 0) {
@@ -305,7 +374,6 @@ main(
           //cout << "num of spots: " << nSpot << endl;
 
           for (long ss=0; ss<nSpot; ss++) {
-
             if (fread(&spotTime, sizeof(double), 1, grid.l1b.GetInputFp()) != 1) break; // find spot time
             if (fseeko(grid.l1b.GetInputFp(), spotSize-timeSize, SEEK_CUR) == -1) break;
             if (fread(&nm, sizeof(int), 1, grid.l1b.GetInputFp()) != 1) break; // find number of meas
