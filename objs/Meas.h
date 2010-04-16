@@ -325,7 +325,8 @@ public:
 	// input/output //
 	//--------------//
 
-    int  Write(FILE* fp, FILE* ephemeris_fp = NULL);
+    int  Write(FILE* fp);
+    int  WriteEphemeris(FILE* ephemeris_fp);
     int  WriteAscii(FILE* fp);
     int  Read(FILE* fp);
 

@@ -49,7 +49,7 @@ MLP_IOType mlp_input_type_defs[] =
     {"CROSS_TRACK_DISTANCE_FRAC", 33},
     {"DIRTH_SPEED",             34} };
 
-#define NUM_OUTPUT_TYPES         17
+#define NUM_OUTPUT_TYPES         19
 MLP_IOType mlp_output_type_defs[] = 
   { {"S0_CORR_K_HH_INNER_FORE", 1},
     {"S0_CORR_K_HH_INNER_AFT",  2},
@@ -67,7 +67,9 @@ MLP_IOType mlp_output_type_defs[] =
     {"S0_CORR_C_VV_INNER_AFT",  14},
     {"S0_CORR_C_VV_OUTER_FORE", 15},
     {"S0_CORR_C_VV_OUTER_AFT",  16},
-    {"WIND_SPEED",              17} };
+    {"WIND_SPEED",              17},
+    {"MSE_SPEED_ERROR",         18},
+    {"MSE_DIR_ERROR",           19} };
 
 
 MLP::MLP()
@@ -239,7 +241,7 @@ int MLP::setIOTypeByString(char *type_str, int input_idx, int in_out) {
         }
     }
     
-    fprintf(stderr, "MLP::setInputTypeByString: Error: %s is not a recognized input/output type. See MLP.h for allowed types\n", 
+    fprintf(stderr, "MLP::setInputTypeByString: Error: %s is not a recognized input/output type. See MLP.C for allowed types\n", 
         type_str);
     exit(1);
 }

@@ -133,6 +133,7 @@ OBJS = \
 	Spacecraft.o \
 	SpacecraftSim.o \
 	Sfile.o \
+	SwapEndian.o \
 	Topo.o \
 	Tracking.o \
 	Transform.o \
@@ -147,6 +148,7 @@ OBJS = \
 	Options.o \
 	Utils.o \
 	AscatL1bReader.o
+
 
 INCS = \
 	*.h \

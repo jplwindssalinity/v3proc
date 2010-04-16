@@ -100,10 +100,11 @@ public:
 	
 	int		ReadDataRec() { return(frame.spotList.Read(_inputFp)); };
 	int		WriteDataRec() { 
-		if ((frame.frame_i-1) % 100 == 0) // we don't need to write out more than about 1 ephemeris/ minute
-			return(frame.spotList.Write(_outputFp, ephemeris_fp));
-		else
-			return(frame.spotList.Write(_outputFp, NULL)); };
+			     return(frame.spotList.Write(_outputFp));
+			};
+	int     WriteEphemerisRec() {
+	             return(frame.spotList.WriteEphemeris(ephemeris_fp));
+	        };
 	int		WriteDataRecAscii();
 
 	//-----------//

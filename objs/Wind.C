@@ -1542,7 +1542,7 @@ WindField::ReadNSCAT(
 
 int
 WindField::ReadNCEP1(
-    const char*  filename)
+    const char*  filename, bool byteSwap)
 {
     if (_field != NULL)
         return(2);
@@ -1590,32 +1590,49 @@ WindField::ReadNCEP1(
     void* head_ptr = NULL;
     void* u_ptr = NULL;
     void* v_ptr = NULL;
-    int head_size = 0;
-    int uv_size = 0;
+    unsigned int head_len = 0;
+    unsigned int uv_len = 0;
+    size_t el_size;
     if (use_int)
     {
         head_ptr = int_head;
         u_ptr = int_u;
         v_ptr = int_v;
-        head_size = NCEP1_LON_DIM * sizeof(int);
-        uv_size = NCEP1_LON_DIM * NCEP1_LAT_DIM * sizeof(int);
+        head_len = NCEP1_LON_DIM;
+        uv_len = NCEP1_LON_DIM * NCEP1_LAT_DIM;
+        el_size = sizeof(int);
     }
     else
     {
         head_ptr = short_head;
         u_ptr = short_u;
         v_ptr = short_v;
-        head_size = NCEP1_LON_DIM * sizeof(short);
-        uv_size = NCEP1_LON_DIM * NCEP1_LAT_DIM * sizeof(short);
+        head_len = NCEP1_LON_DIM;
+        uv_len = NCEP1_LON_DIM * NCEP1_LAT_DIM;
+        el_size = sizeof(short);
     }
 
-    if (fread((void *)head_ptr, head_size, 1, fp) != 1 ||
-        fread((void *)u_ptr, uv_size, 1, fp) != 1 ||
-        fread((void *)v_ptr, uv_size, 1, fp) != 1)
+    if (fread((void *)head_ptr, el_size, head_len, fp) != head_len ||
+        fread((void *)u_ptr, el_size, uv_len, fp) != uv_len ||
+        fread((void *)v_ptr, el_size, uv_len, fp) != uv_len)
     {
         fclose(fp);
+        printf("WindField::ReadNCEP1: Error reading nudge file\n");
         return(0);
     }
+    
+    if (byteSwap) {
+        if (use_int) {
+            SWAP_ARRAY(head_ptr, head_len, int)
+            SWAP_ARRAY(u_ptr, uv_len, int)
+            SWAP_ARRAY(v_ptr, uv_len, int)
+        } else {
+            SWAP_ARRAY(head_ptr, head_len, short)
+            SWAP_ARRAY(u_ptr, uv_len, short)
+            SWAP_ARRAY(v_ptr, uv_len, short)
+        }
+    }
+        
 
     //------------//
     // close file //
@@ -1963,6 +1980,10 @@ WindField::ReadType(
     else if (strcasecmp(type, NCEP1_TYPE) == 0)
     {
         return(ReadNCEP1(filename));
+    }
+    else if (strcasecmp(type, NCEP1_BIGE_TYPE) == 0)
+    {
+        return(ReadNCEP1(filename, true));
     }
     else if (strcasecmp(type, NCEP2_TYPE) == 0)
     {

@@ -142,12 +142,13 @@ public:
     WindField      hurricaneField;
     float          hurricaneRadius;  // km
     EarthPosition  hurricaneCenter;
-    MLP            mlp; // multilayer perceptron, used for the 
+    MLP            s0corr_mlp; // multilayer perceptron, used for the 
                         // hybrid ann correction of sigma0
+    MLP            errEst_mlp; // for estimating the error of the retrieval
 
     int                   ann_train_ati;
     float                   ann_train_diroff;
-    char                  *ann_sigma0_corr_file;
+    char                  *ann_sigma0_corr_file, *ann_error_est_file;
     int                   useSigma0Weights;
     float                 sigma0WeightCorrLength;
     float                 atdToNadirLat[360];

@@ -19,6 +19,7 @@ static const char rcs_id_wind_h[] =
 #include "LonLat.h"
 #include "Index.h"
 #include "List.h"
+#include "SwapEndian.h"
 /*
 #include <mfhdf.h>
 #include "Misc.h"
@@ -229,6 +230,9 @@ public:
 #define NCEP1_LON_DIM       360
 #define NCEP1_LAT_DIM       181
 #define NCEP1_TYPE          "NCEP"
+// same is NCEP1_TYPE, but byte swapped (big endian) file
+// so bytes are unswapped on reading
+#define NCEP1_BIGE_TYPE     "NCEP_BIGENDIAN"
 #define NCEP1_SCALE_FACTOR  100
 
 #define NCEP2_LON_DIM       144
@@ -263,7 +267,7 @@ public:
     int  WriteEcmwfHiRes(const char* filename, int extra_time_flag = 0);
     int  ReadEcmwfLoRes(const char* filename);
     int  ReadNSCAT(const char* filename);
-    int  ReadNCEP1(const char* filename);
+    int  ReadNCEP1(const char* filename, bool byteSwap = false);
     int  ReadNCEP2(const char* filename);
     int  ReadType(const char* filename, const char* type);
     int  WriteVctr(const char* filename);

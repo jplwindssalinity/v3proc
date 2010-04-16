@@ -322,6 +322,7 @@ static const char rcs_id_configsimdefs_h[] =
 #define USE_SIGMA0_SPATIAL_WEIGHTS_KEYWORD     "USE_SIGMA0_SPATIAL_WEIGHTS"
 #define SSW_CORRELATION_LENGTH_KEYWORD         "SSW_CORRELATION_LENGTH"
 #define NEURAL_NET_SIG0_CORR_FILE              "NEURAL_NET_SIG0_CORR_FILE"
+#define NEURAL_NET_ERR_EST_FILE                "NEURAL_NET_ERR_EST_FILE"
 
 
 //------------------//

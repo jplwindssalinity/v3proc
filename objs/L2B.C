@@ -2159,6 +2159,8 @@ int L2B::ReadNudgeVectorsFromHdfL2B(
     if (alongTrackBins != swath->GetAlongTrackBins())
     {
         fprintf(stderr, "ReadNudgeVectorsFromHdfL2B: alongtrackbins mismatch\n");
+        fprintf(stderr, "along track bins allocated: %d; along track bins needed: %d\n",
+            swath->GetAlongTrackBins(), alongTrackBins);
         return(0);
     }
 

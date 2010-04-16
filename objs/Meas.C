@@ -43,7 +43,7 @@ Meas::Meas()
 :   value(0.0), XK(0.0), EnSlice(0.0), bandwidth(0.0), txPulseWidth(0.0),
     landFlag(0), measType(NONE), eastAzimuth(0.0), incidenceAngle(0.0),
     beamIdx(-1), startSliceIdx(-1), numSlices(0), scanAngle(0.0), A(0.0),
-    B(0.0), C(0.0), offset(0)
+    B(0.0), C(0.0), offset(0), azimuth_width(25.0), range_width(7.0)
 {
     return;
 }
@@ -381,14 +381,22 @@ Meas::UnpackL1BHdf(
     	beamIdx = 1;
 		measType = VV_MEAS_TYPE;
     }
-    numSlices = 1;
+    numSlices = -1;
     
     GET_HDF_VAR(uint16, antenna_azimuth, start, cur_edges, 0.01 * dtr)
     scanAngle = antenna_azimuth;
     
     GET_HDF_VAR(uint16, cell_kpc_a, start, cur_edges, 1e-4)
-    A = cell_kpc_a;
-  
+
+    // Estimate of QuikSCAT Kpc A coefficient need L2A value not 
+    // intemediate value kept in L2B
+
+    float nL=10.0; // assumes 10 looks per slice
+    A = 1+ 1/nL; 
+    float s0NE=EnSlice/XK;
+    B = 2.0*s0NE/nL;
+    C= s0NE*s0NE/nL;
+
 //    printf("start = %d, %d, %d; sig0 = %f; lon = %f; lat = %f\n", 
 //    	start[0], start[1], start[2], value, slice_lon*180/M_PI, slice_lat*180/M_PI);
     	
@@ -1058,9 +1066,13 @@ MeasSpot::UnpackL1BHdf(
     }
     
     ETime etime;
-    // as far as I can tell, the value of time that should go into the orbit stat
-    // is the number of seconds since Jan 1, 1993
-    etime.FromCodeB("1993-001T00:00:00.000");
+    // 4/7/10- Ken Oslund
+    // when this code was originally written (end of 2009) I determined that the time
+    // should be seconds since Jan 1, 1993. Now, from running l1b_to_l2a and having it fail
+    // due to incorrect time stamps, it would appear that this should be seconds since
+    // Jan 1 1970 (unix time). So, we're going to change it and cross our fingers that it
+    // doesn't break anything else.
+    etime.FromCodeB("1970-001T00:00:00.000");
     double time_base = (double)etime.GetSec() + (double)etime.GetMs()/1000;
 
     if(!etime.FromCodeB(frame_time)) {
@@ -1284,24 +1296,32 @@ MeasSpotList::~MeasSpotList()
 
 int
 MeasSpotList::Write(
-    FILE*    fp,
-    FILE*	ephemeris_fp)
+    FILE*    fp)
 {
     int count = NodeCount();
     if (fwrite((void *)&count, sizeof(int), 1, fp) != 1)
         return(0);
         
+    for (MeasSpot* meas_spot = GetHead(); meas_spot; meas_spot = GetNext())
+    {
+        if (! meas_spot->Write(fp))
+            return(0);
+    }
+    return(1);
+}
+//---------------------//
+// MeasSpotList::WriteEphemeris //
+//---------------------//
+
+int
+MeasSpotList::WriteEphemeris(
+    FILE*	ephemeris_fp)
+{
     if (ephemeris_fp != NULL)	// write the ephemeris for the first point in this frame
     {
     	MeasSpot* meas_spot = GetHead();
         if (meas_spot->scOrbitState.Write(ephemeris_fp) != 1)
         	return(0);
-    }
-
-    for (MeasSpot* meas_spot = GetHead(); meas_spot; meas_spot = GetNext())
-    {
-        if (! meas_spot->Write(fp))
-            return(0);
     }
     return(1);
 }
