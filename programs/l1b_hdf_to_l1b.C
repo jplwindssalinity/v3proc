@@ -9,7 +9,7 @@
 //
 // SYNOPSIS
 //		test_hdf_l1b [ -c config_file ] [ -l l1b_hdf_file ]
-//			[ -o output_file ]
+//			[ -o output_file ] [ -m landmapfile ]
 //
 // DESCRIPTION
 //		Generates output files containing ASCII output of a wind swatch
@@ -101,7 +101,7 @@ template class std::map<string,string,Options::ltstr>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING				"c:l:o:e:"
+#define OPTSTRING				"c:l:o:e:m:"
 
 
 //-----------------------//
@@ -117,7 +117,7 @@ template class std::map<string,string,Options::ltstr>;
 //------------------//
 
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l1b_hdf_file ]",
-	"[ -o output_file ]", 0 };
+	"[ -o output_file ] [-e ephemeris_file]", "[-m landmapfile]", 0 };
 
 // not always evil...
 const char*		command = NULL;
@@ -125,7 +125,76 @@ char*			l1b_hdf_file = NULL;
 char*			output_file = NULL;
 FILE*           output_fp = stdout;
 char*			ephemeris_file = NULL;
+char*  landmapfile = NULL;
 
+
+
+
+void landFlagL1BFrame(L1BFrame* f, LandMap* l){
+  MeasSpotList* msl= &(f->spotList);
+  for(MeasSpot* spot=msl->GetHead();spot;spot=msl->GetNext()){
+    for(Meas* meas=spot->GetHead();meas;meas=spot->GetNext()){
+      double alt,gdlat,lon;
+      meas->centroid.GetAltLonGDLat(&alt,&lon,&gdlat);
+      meas->landFlag=l->IsLand(lon,gdlat);
+    }
+  }
+}
+
+//------------------------------------------------------------//
+// Routine for extrapolating the ends of an ephemeris file    //
+//------------------------------------------------------------//
+void ExtendEphemerisEnds(char* infile, char* outfile, float timestep, int nsteps){
+	//----------------------------//
+	// open the input ephem file //
+	//---------------------------//
+
+	FILE* ephem_fp = fopen(infile,"r");
+	if (ephem_fp == NULL)
+	{
+		fprintf(stderr, "%s: error opening ephem file %s\n", command,
+			infile);
+		exit(1);
+	}
+
+	//------------------//
+	// open output file //
+	//------------------//
+
+	FILE* output_fp = fopen(outfile, "w");
+	if (output_fp == NULL)
+	{
+		fprintf(stderr, "%s: error opening output file %s\n", command,
+			output_file);
+		exit(1);
+	}
+
+        OrbitState os;
+        OrbitState lastos;
+        int first_time = 1;
+        while (os.Read(ephem_fp))
+	{
+          lastos=os;
+          if (first_time) {
+             for(int c=-nsteps;c<0;c++){
+	      os.time=lastos.time+c*timestep;
+              os.rsat=lastos.rsat+lastos.vsat*(c*timestep);
+              os.Write(output_fp);
+	    }
+            first_time = 0;
+          }
+	  lastos.Write(output_fp);
+	}
+        fclose(ephem_fp);
+
+	for(int c=1;c<=nsteps;c++){
+	  os.time=lastos.time+c*timestep;
+	  os.rsat=lastos.rsat+lastos.vsat*(c*timestep);
+	  os.Write(output_fp);
+	}
+        fclose(output_fp);
+
+}
 //--------------//
 // MAIN PROGRAM //
 //--------------//
@@ -141,6 +210,8 @@ main(
 
 	char* config_file = NULL;
 	ConfigList config_list;
+        LandMap landmap;
+        landmap.Initialize(NULL,0);
 	l1b_hdf_file = NULL;
 	output_file = NULL;
 
@@ -170,6 +241,10 @@ main(
 		case 'l':
 			l1b_hdf_file = optarg;
 			break;
+                case 'm':
+		  landmapfile = optarg;
+                  landmap.Initialize(landmapfile,1);
+		  break;
 		case 'o':
             output_file = optarg;
 			break;
@@ -211,12 +286,16 @@ main(
                                argv[0], output_file);
             exit(1);
         }
-        
-        if (ephemeris_file != NULL)
+      
+
+       // opens temporary file to write ephemeris to  
+       // this is later copied to ephemeris_file with extrapolated ephemeris added at both ends
+       if (ephemeris_file != NULL)
         {
+//        	if ((l1b.ephemeris_fp = fopen("l1bhdf_to_l1b_tmpfile", "w")) == NULL) {
         	if ((l1b.ephemeris_fp = fopen(ephemeris_file, "w")) == NULL) {
-	            fprintf(stderr, "%s: cannot open %s for output\n",
-                               argv[0], ephemeris_file);
+	            fprintf(stderr, "%s: cannot open l1bhdf_to_l1b_tmpfile for output\n",
+                               argv[0]);
     	        exit(1);
         	}
         }
@@ -224,18 +303,77 @@ main(
 		//-----------------------//
 		// write out as SVT L1B  //
 		//-----------------------//
-	    while (l1b.frame.ReadPureHdfFrame())
+
+
+       int frames_written = 0;
+       while (l1b.frame.ReadPureHdfFrame()) 
 	    {
-	        if (l1b.WriteDataRec())
-	        	fprintf(stderr, "Successfully wrote frame %d of %d\n", 
+	      if (!l1b.WriteEphemerisRec()) {
+	            fprintf(stderr, "%s: writing to %s failed.\n",
+	                               argv[0], ephemeris_file);
+	            exit(1);
+	        }
+
+
+	      // HACK-- remove measurements south of LOWER_LAT_LIM lat
+	      # define LOWER_LAT_LIM       -50.0
+          MeasSpotList* msl= &(l1b.frame.spotList);
+          for(MeasSpot* spot=msl->GetHead();spot;){
+            double alt,gdlat,lon;
+            spot->scOrbitState.rsat.GetAltLonGDLat(&alt,&lon,&gdlat);
+            if (gdlat*180/M_PI < LOWER_LAT_LIM) {
+//                printf("lat = %lf\n", gdlat*180/M_PI);
+                MeasSpot* toDelete = msl->RemoveCurrent();
+                delete toDelete;
+                spot = msl->GetCurrent();
+            } else {
+                spot=msl->GetNext();
+            }
+          }
+          if (l1b.frame.spotList.NodeCount() == 0)
+          {
+            if ( !(l1b.frame.frame_i % 20) )
+                  printf("Skipped frame %d because satellite is south of %lf latitude\n", l1b.frame.frame_i, LOWER_LAT_LIM);
+            continue;
+          }
+          // END HACK
+          
+            // hack
+//	        frames_written++;
+//	        if (frames_written > 1200)
+//	           break;      // so we stop writing everything and exit
+//	        if (frames_written > 500)
+//	        {
+//	           if ( !(l1b.frame.frame_i % 20) )
+//    	           printf("writing ephemeris for frame %d; frames_written = %d\n", l1b.frame.frame_i, frames_written);
+//	           continue;   // so we continue writing the ephemeris after we've written 500 frames
+//	        }
+	        // end hack
+
+              landFlagL1BFrame(&(l1b.frame),&landmap);
+	        if (l1b.WriteDataRec()) {
+	           if ( !(l1b.frame.frame_i % 20) )
+	        	fprintf(stderr, "Successfully wrote %d frames of %d\n", 
 	        		l1b.frame.frame_i, l1b.frame.num_l1b_frames);
+	        }
 	        else {
 	            fprintf(stderr, "%s: writing to %s failed.\n",
 	                               argv[0], output_file);
 	            exit(1);
 	        }
+	        
 	    }
     }
+
+    float extension_step=54; // units are seconds
+    float extension_num=100; // number of extra steps on each side
+
+    // This may not be needed.
+//   if (ephemeris_file != NULL)
+//        {
+//          fflush(l1b.ephemeris_fp);
+//          ExtendEphemerisEnds("l1bhdf_to_l1b_tmpfile",ephemeris_file,extension_step,extension_num);
+//	}
 
 	return 0;
 	
