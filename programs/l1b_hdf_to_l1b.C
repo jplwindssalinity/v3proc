@@ -1,45 +1,45 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology.    //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		test_hdf_l1b.C
+//        test_hdf_l1b.C
 //
 // SYNOPSIS
-//		test_hdf_l1b config_file
+//        test_hdf_l1b config_file
 //
 // DESCRIPTION
-//		Generates output files containing ASCII output of a wind swatch
-//		given a L1B HDF file.
+//        Generates output files containing ASCII output of a wind swatch
+//        given a L1B HDF file.
 //
 // OPTIONS
-//		The following keywords in the config file are used:
+//        The following keywords in the config file are used:
 //      required: L1B_HDF_FILE, L1B_FILE
 //      optional: LANDMAP_FILE, EPHEMERIS_FILE, SIM_LAT/LON_MIN/MAX
 //
 // OPERANDS
-//		None.
+//        None.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% test_hdf_l1b -c sally.cfg -l L1B_100.file -o l1b.out
+//        An example of a command line is:
+//            % test_hdf_l1b -c sally.cfg -l L1B_100.file -o l1b.out
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//        Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//        The following exit values are returned:
+//        0    Program executed successfully
+//        >0    Program had an error
 //
 // NOTES
-//		None.
+//        None.
 //
 // AUTHOR
-//		Sally Chou
-//		Sally.H.Chou@jpl.nasa.gov
+//        Sally Chou
+//        Sally.H.Chou@jpl.nasa.gov
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -47,7 +47,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -100,7 +100,7 @@ template class std::map<string,string,Options::ltstr>;
 // CONSTANTS //
 //-----------//
 
-//#define OPTSTRING				"c:l:o:e:m:"
+//#define OPTSTRING                "c:l:o:e:m:"
 
 
 //-----------------------//
@@ -138,54 +138,54 @@ void landFlagL1BFrame(L1BFrame* f, LandMap* l){
 #ifdef EXTEND_EPHEM
 void ExtendEphemerisEnds(char* infile, char* outfile, float timestep, 
     int nsteps, char *output_file, const char *command){
-	//----------------------------//
-	// open the input ephem file //
-	//---------------------------//
+    //----------------------------//
+    // open the input ephem file //
+    //---------------------------//
 
-	FILE* ephem_fp = fopen(infile,"r");
-	if (ephem_fp == NULL)
-	{
-		fprintf(stderr, "%s: error opening ephem file %s\n", command,
-			infile);
-		exit(1);
-	}
+    FILE* ephem_fp = fopen(infile,"r");
+    if (ephem_fp == NULL)
+    {
+        fprintf(stderr, "%s: error opening ephem file %s\n", command,
+            infile);
+        exit(1);
+    }
 
-	//------------------//
-	// open output file //
-	//------------------//
+    //------------------//
+    // open output file //
+    //------------------//
 
-	FILE* output_fp = fopen(outfile, "w");
-	if (output_fp == NULL)
-	{
-		fprintf(stderr, "%s: error opening output file %s\n", command,
-			output_file);
-		exit(1);
-	}
+    FILE* output_fp = fopen(outfile, "w");
+    if (output_fp == NULL)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            output_file);
+        exit(1);
+    }
 
-        OrbitState os;
-        OrbitState lastos;
-        int first_time = 1;
-        while (os.Read(ephem_fp))
-	{
-          lastos=os;
-          if (first_time) {
-             for(int c=-nsteps;c<0;c++){
-	      os.time=lastos.time+c*timestep;
-              os.rsat=lastos.rsat+lastos.vsat*(c*timestep);
-              os.Write(output_fp);
-	    }
+    OrbitState os;
+    OrbitState lastos;
+    int first_time = 1;
+    while (os.Read(ephem_fp))
+    {
+        lastos=os;
+        if (first_time) {
+            for(int c=-nsteps;c<0;c++){
+                os.time=lastos.time+c*timestep;
+                os.rsat=lastos.rsat+lastos.vsat*(c*timestep);
+                os.Write(output_fp);
+            }
             first_time = 0;
-          }
-	  lastos.Write(output_fp);
-	}
-        fclose(ephem_fp);
+        }
+        lastos.Write(output_fp);
+    }
+    fclose(ephem_fp);
 
-	for(int c=1;c<=nsteps;c++){
-	  os.time=lastos.time+c*timestep;
-	  os.rsat=lastos.rsat+lastos.vsat*(c*timestep);
-	  os.Write(output_fp);
-	}
-        fclose(output_fp);
+    for(int c=1;c<=nsteps;c++){
+        os.time=lastos.time+c*timestep;
+        os.rsat=lastos.rsat+lastos.vsat*(c*timestep);
+        os.Write(output_fp);
+    }
+    fclose(output_fp);
 
 }
 #endif
@@ -195,75 +195,77 @@ void ExtendEphemerisEnds(char* infile, char* outfile, float timestep,
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int        argc,
+    char*    argv[])
 {
-	//-----------//
-	// variables //
-	//-----------//
-    const char*		command = NULL;
-    char*			l1b_hdf_file = NULL;
-    char*			output_file = NULL;
-    char*			ephemeris_file = NULL;
+    //-----------//
+    // variables //
+    //-----------//
+    const char*        command = NULL;
+    char*            l1b_hdf_file = NULL;
+    char*            output_file = NULL;
+    char*            ephemeris_file = NULL;
     char*           landmapfile = NULL;
     float           lat_min, lon_min, lat_max, lon_max;
 
-	char* config_file = NULL;
-	ConfigList config_list;
+    char* config_file = NULL;
+    ConfigList config_list;
         LandMap landmap;
         landmap.Initialize(NULL,0);
 
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	command = no_path(argv[0]);
+    command = no_path(argv[0]);
 
-	if (argc != 2)
-		usage(command, usage_array, 1);
-		
-	config_file = argv[1];
-	if (! config_list.Read(config_file))
-	{
-		fprintf(stderr, "%s: error reading config file %s\n",
-			command, config_file);
-		exit(1);
-	}
+    if (argc != 2)
+        usage(command, usage_array, 1);
+        
+    config_file = argv[1];
+    if (! config_list.Read(config_file))
+    {
+        fprintf(stderr, "%s: error reading config file %s\n",
+            command, config_file);
+        exit(1);
+    }
 
 
-	//---------------------//
-	// check for config file parameters //
-	//---------------------//
+    //---------------------//
+    // check for config file parameters //
+    //---------------------//
 
-	l1b_hdf_file = config_list.Get(L1B_HDF_FILE_KEYWORD);
-	if (l1b_hdf_file == NULL) {
-		fprintf(stderr, "%s: config file must specify L1B_HDF_FILE\n", command);
-		exit(1);
-	} else {
-	   printf("Using l1b HDF file: %s\n", l1b_hdf_file);
-	}
-	
-	output_file = config_list.Get(L1B_FILE_KEYWORD);
-	if (output_file == NULL) {
-		fprintf(stderr, "%s: config file must specify L1B_FILE\n", command);
-		exit(1);
-	} else {
-	   printf("Using l1b file: %s\n", output_file);
-	}
-	
-	landmapfile = config_list.Get(LANDMAP_FILE_KEYWORD);
-	if (landmapfile != NULL) {
-	   landmap.Initialize(landmapfile,1);
-	   printf("Using landmap file: %s\n", landmapfile);
-	}
+    config_list.DoNothingForMissingKeywords();
 
-	ephemeris_file = config_list.Get(EPHEMERIS_FILE_KEYWORD);
-	if (ephemeris_file != NULL) {
+    l1b_hdf_file = config_list.Get(L1B_HDF_FILE_KEYWORD);
+    if (l1b_hdf_file == NULL) {
+        fprintf(stderr, "%s: config file must specify L1B_HDF_FILE\n", command);
+        exit(1);
+    } else {
+       printf("Using l1b HDF file: %s\n", l1b_hdf_file);
+    }
+    
+    output_file = config_list.Get(L1B_FILE_KEYWORD);
+    if (output_file == NULL) {
+        fprintf(stderr, "%s: config file must specify L1B_FILE\n", command);
+        exit(1);
+    } else {
+       printf("Using l1b file: %s\n", output_file);
+    }
+    
+    landmapfile = config_list.Get(LANDMAP_FILE_KEYWORD);
+    if (landmapfile != NULL) {
+       landmap.Initialize(landmapfile,1);
+       printf("Using landmap file: %s\n", landmapfile);
+    }
+
+    ephemeris_file = config_list.Get(EPHEMERIS_FILE_KEYWORD);
+    if (ephemeris_file != NULL) {
         printf("Using ephemeris file: %s\n", ephemeris_file);
-	}
-	
-	// get the box which all data should be in
-	#define GET_BOX_BOUNDS(keyword, var, default) \
+    }
+    
+    // get the box which all data should be in
+    #define GET_BOX_BOUNDS(keyword, var, default) \
         if (config_list.Get(keyword)) \
             config_list.GetFloat(keyword, &var); \
         else \
@@ -277,12 +279,12 @@ main(
     printf("Converting data inside of box: lat min = %.1lf, lat max = %.1lf, lon min = %.1lf, lon max = %.1lf\n",
         lat_min, lat_max, lon_min, lon_max);
 
-	//-----------------------//
-	// read in HDF 1B file   //
-	//-----------------------//
-	L1B l1b(l1b_hdf_file);
-	
-	// Prepare to write
+    //-----------------------//
+    // read in HDF 1B file   //
+    //-----------------------//
+    L1B l1b(l1b_hdf_file);
+    
+    // Prepare to write
     if (l1b.OpenForWriting(output_file) == 0) {
         fprintf(stderr, "%s: cannot open l1b file %s for output\n",
                             argv[0], output_file);
@@ -301,13 +303,13 @@ main(
         #endif
             fprintf(stderr, "%s: cannot open %s for output\n",
                             argv[0], ephemeris_file);
-	        exit(1);
+            exit(1);
         }
     }
 
-	//-----------------------//
-	// write out as SVT L1B  //
-	//-----------------------//
+    //-----------------------//
+    // write out as SVT L1B  //
+    //-----------------------//
 
 
 //    int frames_written = 0;
@@ -360,7 +362,7 @@ main(
 //        if (frames_written > 500)
 //        {
 //           if ( !(l1b.frame.frame_i % 20) )
-//	           printf("writing ephemeris for frame %d; frames_written = %d\n", l1b.frame.frame_i, frames_written);
+//               printf("writing ephemeris for frame %d; frames_written = %d\n", l1b.frame.frame_i, frames_written);
 //           continue;   // so we continue writing the ephemeris after we've written 500 frames
 //        }
         // end hack
@@ -386,9 +388,9 @@ main(
     if (ephemeris_file != NULL) {
           fflush(l1b.ephemeris_fp);
           ExtendEphemerisEnds("l1bhdf_to_l1b_tmpfile",ephemeris_file,extension_step,extension_num, output_file, command);
-	}
-	#endif
+    }
+    #endif
 
-	return 0;
-	
+    return 0;
+    
 } // main
