@@ -163,6 +163,7 @@ main(
     char* ext_filename       = NULL;
 
     int nudge_HDF_flag       = 0; // 1 if read nudges from HDF file, 0 if not.
+    int nudge_l2b_flag       = 0;
     
     int ext_file_flag        = 0; // 0 undefined, 1 HDF, 2 retdat
     int ext_source_flag      = 0; // 1 if load data from ext_file, 0 if not
@@ -191,6 +192,12 @@ main(
 	    ++optind;
 	    l2b_hdf_nudge_file = argv[optind];
 	    nudge_HDF_flag = 1;
+	    read_nudge_vectors_RETDAT = 0; // Turn off reading nudge vectors from RETDAT
+	  }
+	else if( sw == "-nudgel2b" )
+	  {
+	    ++optind;
+	    nudge_l2b_flag = 1;
 	    read_nudge_vectors_RETDAT = 0; // Turn off reading nudge vectors from RETDAT
 	  }
 	else if( sw == "-extfile" )
@@ -395,6 +402,12 @@ main(
     // Just Ambiguity Removal //
     //------------------------//
 
+    if( nudge_l2b_flag )
+    {
+      fprintf(stdout,"Using nudge vector located in l2b file.\n");
+      l2b.frame.swath.nudgeVectorsRead = 1;
+    }
+    
     int retval = l2a_to_l2b.InitFilterAndFlush(&l2b);
 
     switch (retval)
