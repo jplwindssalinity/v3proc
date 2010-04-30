@@ -6142,135 +6142,289 @@ GMF::CalculateSigma0Weights(
     EarthPosition wvc_loc;
     wvc_loc.SetAltLonGDLat(0.0,wvc_lon_lat.longitude, wvc_lon_lat.latitude);
     
+    float  cosang,sinang,rwid,awid;
+    double measHLL[3];
+    double coslon, sinlon;
+    double coslat, sinlat;
+    double r1, r2, r3;
+    
+    Vector3 rgLook;
+    Vector3 xvec, yvec, zvec;
+    
+    CoordinateSwitch gc_to_azimrange, azimrange_to_gc;
 
+    EarthPosition locgc;
+    Vector3       locar;
+    
+    float integrationStepSize;
+    int   nr, na;
+    float center_range_idx, center_azim_idx;
+    float response;
+    float sum_resp, sum_wt;
+    float val2;
+    float x, y;
+    float distsq;
+    
+    float delta_meas_wvc_x, delta_meas_wvc_y, delta_meas_wvc_z;
+    float delta_x, delta_y, delta_z;
+    
     for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
     {
-
-        float cosang,sinang,rwid,awid;
-
         cosang = cos(meas->eastAzimuth);
         sinang = sin(meas->eastAzimuth);
-    
         rwid   = meas->range_width;
         awid   = meas->azimuth_width;
-
-        double measHLL[3];
-        float measLon, measLat;
 
 // get alt, lon and lat at measurement centroid
         meas->centroid.GetAltLonGDLat(measHLL,measHLL+1,measHLL+2); 
 
-        measLon = measHLL[1];
-        measLat = measHLL[2];
 // the following sets up the CoordinateSwitch transformation 
 //   from dlat/dlon to drange/dazimuth
-        double coslon = cos(measHLL[1]);
-        double sinlon = sin(measHLL[1]);
-        double coslat = cos(measHLL[2]);
-        double sinlat = sin(measHLL[2]);
+        coslon = cos(measHLL[1]);
+        sinlon = sin(measHLL[1]);
+        coslat = cos(measHLL[2]);
+        sinlat = sin(measHLL[2]);
         
-        double r1 = cosang*coslat*sinlon - sinang*sinlat;
-        double r2 = cosang*coslon;
-        double r3 = cosang*sinlat*sinlon + sinang*coslat;
+        r1 = cosang*coslat*sinlon - sinang*sinlat;
+        r2 = cosang*coslon;
+        r3 = cosang*sinlat*sinlon + sinang*coslat;
         
-        Vector3 rgLook(r1,r2,r3);
+        rgLook.Set(r1,r2,r3);
 
-        Vector3 zvec = meas->centroid.Normal();
-        Vector3 yvec = zvec & rgLook;
-        Vector3 xvec = yvec & zvec;
-        CoordinateSwitch gc_to_azimrange(xvec,yvec,zvec);
-
+        zvec = meas->centroid.Normal();
+        yvec = zvec & rgLook;
+        xvec = yvec & zvec;
+        
+        gc_to_azimrange.SetAxes(xvec,yvec,zvec);
+        
+        azimrange_to_gc = gc_to_azimrange.ReverseDirection();
+        
 // zero width cases occur when the INTEGRATION_STEP was set coarsely during the simulation.
     //     if(rwid==0) rwid=0.01; 
     //     if(awid==0) awid=0.01;
         if(rwid==0) rwid=0.5;   // 100 meters default, not 10 meters
         if(awid==0) awid=0.5;
 
-        float integrationStepSize = 0.5;
+        integrationStepSize = 0.5;
       
-        int nr = (int) ceil(rwid/integrationStepSize) + 1;
-        int na = (int) ceil(awid*2.0/integrationStepSize) + 1;
-        float center_range_idx = (nr - 1)/2.0;
-        float center_azim_idx  = (na - 1)/2.0;
+        nr = (int) ceil(rwid/integrationStepSize) + 1;
+        na = (int) ceil(awid*2.0/integrationStepSize) + 1;
+        center_range_idx = (nr - 1)/2.0;
+        center_azim_idx  = (na - 1)/2.0;
         
-// Allocate response and integration grid CTD and ATD arrays
-        float response[nr][na];
-        float resp_lon[nr][na];
-        float resp_lat[nr][na];
-
-        float sum_resp = 0.0;  // holds normalization integral
-      
+        sum_resp = 0.0;  // holds normalization integral
+        sum_wt   = 0.0;
+        
+        // Compute these outside the loop over the "sub-cells" of this
+        // measurement.
+        delta_meas_wvc_x = meas->centroid.GetX() - wvc_loc.GetX();
+        delta_meas_wvc_y = meas->centroid.GetY() - wvc_loc.GetY();
+        delta_meas_wvc_z = meas->centroid.GetZ() - wvc_loc.GetZ();
+        
         for(int j=0;j<na;j++){
-            float jj=j;
-            
-            float val1;
-            float val2;
-            val2 = (jj - center_azim_idx)*integrationStepSize;
-            val2/=awid;
+        
+            x    = (float(j) - center_azim_idx)*integrationStepSize;  // x = d(azimuth)
+            val2 = x/awid;
+
             if (val2 != 0.) {
-                val1=sin(val2)*sin(val2)/val2/val2;  // sinc^2 in azimuth
+                response=sin(val2)*sin(val2)/val2/val2;  // sinc^2 in azimuth
             } else {
-                val1=1.0;
+                response=1.0;
             }
-
-            float x = (jj - center_azim_idx)*integrationStepSize;  // x = d(azimuth)
-          
-            for (int i=0;i<nr;i++){
-                float ii = i;
-              
-                response[i][j] = val1;   // response array value at i,j
-                sum_resp += response[i][j]*integrationStepSize*integrationStepSize;
-              
-                float y = (ii - center_range_idx)*integrationStepSize;  // y=d(range)
-
-                Vector3 locar(x,y,0.0);    // pixel location in azi-range plane
-                
-                EarthPosition locgc = gc_to_azimrange.Backward(locar);
-                locgc += meas->centroid;
-                
-                double alt, dlat, dlon;
-                if (! locgc.GetAltLonGDLat(&alt, &dlon, &dlat))  // delta lon & lat
-                {
-                    fprintf(stderr, "Problem in locgc CoordinateSwitch\n");
-                    return;  
-                }
-                
-                
-//                 resp_lon[i][j] = dlon + measLon;  // turn these into EarthPositions later
-//                 resp_lat[i][j] = dlat + measLat;
-                resp_lon[i][j] = dlon;  // turn these into EarthPositions later
-                resp_lat[i][j] = dlat;
+            response *= integrationStepSize*integrationStepSize;
             
+            for (int i=0;i<nr;i++){
+                y = (float(i) - center_range_idx)*integrationStepSize;  // y=d(range)
+
+                locar.Set(x,y,0.0);    // pixel location in azi-range plane
+                
+                locgc     = azimrange_to_gc.Forward(locar);
+                
+                // This is an approximation.  This distance is computed as the
+                // vector distance between the two vectors, not as the distance
+                // on the surface of the Earth between the two points on the 
+                // surface of the Earth pointed to by the two vectors.
+                // Since each measurement/slice is quite small compared to the size
+                // of the Earth, I think we are OK with this approximation.
+                delta_x   = locgc.GetX() + delta_meas_wvc_x;
+                delta_y   = locgc.GetY() + delta_meas_wvc_y;
+                delta_z   = locgc.GetZ() + delta_meas_wvc_z;
+                distsq    = delta_x*delta_x + delta_y*delta_y + delta_z*delta_z;
+                
+                // This is the correct calculation (slower!)       
+                // distsq    = wvc_loc.SurfaceDistance( locgc + meas->centroid );
+                // distsq   *= distsq;
+                
+                sum_resp += response;
+                sum_wt   += response*distsq;
+
+                //printf("AGF i, j, distsq, weight: %5d %5d %12.6f %f\n", i,j,distsq,
+                //      response*distsq);
+
             } // range steps
-              
         } // az steps
 
-        float sum_wt = 0.0;
-         
-        for (int i=0;i<nr;i++){
-
-            for (int j=0;j<na;j++){
-                
-//                 float dx = resp_lon[i][j] - wvc_lon_lat.longitude; // replace these with SurfaceDistance
-//                 float dy = resp_lat[i][j] - wvc_lon_lat.latitude;
-//                 float distsq = dx*dx + dy*dy;   // need earth radius
-
-                EarthPosition resp_loc;
-                resp_loc.SetAltLonGDLat(0.0,resp_lon[i][j],resp_lat[i][j]);
-                float distsq = wvc_loc.SurfaceDistance(resp_loc);
-                distsq *=distsq;
-                
-                sum_wt+= response[i][j]*integrationStepSize*integrationStepSize*distsq;
-                
-            }
-        }
-         
         sum_wt /= sum_resp;   // normalize by the total response
 
        // Insert weight integral value into the measurement in place of meas->XK
 
         meas->XK = 1.0/sum_wt;
-
+        //printf("meas->XK: %f\n",meas->XK);
+        
     } // loop over measurements
     return;
 }
+
+//  AGF made a optimized version of this function 4/30/2010
+//
+// void GMF::CalculateSigma0Weights_orig(
+//     MeasList* meas_list)
+// 
+// // Code for computing sigma0 weights among WVC's prior to wind retrieval
+// // Uses integration of 1/distance^2 over the antenna pattern, relative to
+// // the sigma0 centroid within the WVC. Insert the weight in place of the
+// // XK (X-factor) value in each measurement in the MeasList.
+// 
+// // Don't know yet whether to put this in GMF:: or L2A::
+// // Don't know yet what I don't know...;-)
+// 
+// {
+//     LonLat wvc_lon_lat = meas_list->AverageLonLat();
+//     // Turn wvc_lon_lat into an EarthPosition at (alt=0.0, wvc_lon_lat)
+//     EarthPosition wvc_loc;
+//     wvc_loc.SetAltLonGDLat(0.0,wvc_lon_lat.longitude, wvc_lon_lat.latitude);
+//     
+// 
+//     for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+//     {
+// 
+//         float cosang,sinang,rwid,awid;
+// 
+//         cosang = cos(meas->eastAzimuth);
+//         sinang = sin(meas->eastAzimuth);
+//     
+//         rwid   = meas->range_width;
+//         awid   = meas->azimuth_width;
+// 
+//         double measHLL[3];
+//         float measLon, measLat;
+// 
+// // get alt, lon and lat at measurement centroid
+//         meas->centroid.GetAltLonGDLat(measHLL,measHLL+1,measHLL+2); 
+// 
+//         measLon = measHLL[1];
+//         measLat = measHLL[2];
+// // the following sets up the CoordinateSwitch transformation 
+// //   from dlat/dlon to drange/dazimuth
+//         double coslon = cos(measHLL[1]);
+//         double sinlon = sin(measHLL[1]);
+//         double coslat = cos(measHLL[2]);
+//         double sinlat = sin(measHLL[2]);
+//         
+//         double r1 = cosang*coslat*sinlon - sinang*sinlat;
+//         double r2 = cosang*coslon;
+//         double r3 = cosang*sinlat*sinlon + sinang*coslat;
+//         
+//         Vector3 rgLook(r1,r2,r3);
+// 
+//         Vector3 zvec = meas->centroid.Normal();
+//         Vector3 yvec = zvec & rgLook;
+//         Vector3 xvec = yvec & zvec;
+//         CoordinateSwitch gc_to_azimrange(xvec,yvec,zvec);
+// 
+// // zero width cases occur when the INTEGRATION_STEP was set coarsely during the simulation.
+//     //     if(rwid==0) rwid=0.01; 
+//     //     if(awid==0) awid=0.01;
+//         if(rwid==0) rwid=0.5;   // 100 meters default, not 10 meters
+//         if(awid==0) awid=0.5;
+// 
+//         float integrationStepSize = 0.5;
+//       
+//         int nr = (int) ceil(rwid/integrationStepSize) + 1;
+//         int na = (int) ceil(awid*2.0/integrationStepSize) + 1;
+//         float center_range_idx = (nr - 1)/2.0;
+//         float center_azim_idx  = (na - 1)/2.0;
+//         
+// // Allocate response and integration grid CTD and ATD arrays
+//         float response[nr][na];
+//         float resp_lon[nr][na];
+//         float resp_lat[nr][na];
+// 
+//         float sum_resp = 0.0;  // holds normalization integral
+//       
+//         for(int j=0;j<na;j++){
+//             float jj=j;
+//             
+//             float val1;
+//             float val2;
+//             val2 = (jj - center_azim_idx)*integrationStepSize;
+//             val2/=awid;
+//             if (val2 != 0.) {
+//                 val1=sin(val2)*sin(val2)/val2/val2;  // sinc^2 in azimuth
+//             } else {
+//                 val1=1.0;
+//             }
+// 
+//             float x = (jj - center_azim_idx)*integrationStepSize;  // x = d(azimuth)
+//           
+//             for (int i=0;i<nr;i++){
+//                 float ii = i;
+//               
+//                 response[i][j] = val1;   // response array value at i,j
+//                 sum_resp += response[i][j]*integrationStepSize*integrationStepSize;
+//               
+//                 float y = (ii - center_range_idx)*integrationStepSize;  // y=d(range)
+// 
+//                 Vector3 locar(x,y,0.0);    // pixel location in azi-range plane
+//                 
+//                 EarthPosition locgc = gc_to_azimrange.Backward(locar);
+//                 locgc += meas->centroid;
+//                 
+//                 double alt, dlat, dlon;
+//                 if (! locgc.GetAltLonGDLat(&alt, &dlon, &dlat))  // delta lon & lat
+//                 {
+//                     fprintf(stderr, "Problem in locgc CoordinateSwitch\n");
+//                     return;  
+//                 }
+//                 
+//                 
+// //                 resp_lon[i][j] = dlon + measLon;  // turn these into EarthPositions later
+// //                 resp_lat[i][j] = dlat + measLat;
+//                 resp_lon[i][j] = dlon;  // turn these into EarthPositions later
+//                 resp_lat[i][j] = dlat;
+//             
+//             } // range steps
+//               
+//         } // az steps
+// 
+//         float sum_wt = 0.0;
+//          
+//         for (int i=0;i<nr;i++){
+// 
+//             for (int j=0;j<na;j++){
+//                 
+// //                 float dx = resp_lon[i][j] - wvc_lon_lat.longitude; // replace these with SurfaceDistance
+// //                 float dy = resp_lat[i][j] - wvc_lon_lat.latitude;
+// //                 float distsq = dx*dx + dy*dy;   // need earth radius
+// 
+//                 EarthPosition resp_loc;
+//                 resp_loc.SetAltLonGDLat(0.0,resp_lon[i][j],resp_lat[i][j]);
+//                 float distsq = wvc_loc.SurfaceDistance(resp_loc);
+//                 distsq *=distsq;
+//                 
+//                 sum_wt+= response[i][j]*integrationStepSize*integrationStepSize*distsq;
+//                 printf("ORI i, j, distsq, weight: %5d %5d %12.6f %f\n", i,j,distsq,
+//                        response[i][j]*integrationStepSize*integrationStepSize*distsq);   
+//             }
+//         }
+//          
+//         sum_wt /= sum_resp;   // normalize by the total response
+// 
+//        // Insert weight integral value into the measurement in place of meas->XK
+// 
+//         meas->XK = 1.0/sum_wt;
+//         printf("meas->XK: %f\n",meas->XK);
+//         
+//     } // loop over measurements
+//     return;
+// }
