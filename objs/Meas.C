@@ -344,6 +344,9 @@ Meas::UnpackL1BHdf(
     
     GET_HDF_VAR(int16, slice_sigma0, start, cur_edges, 0.01)
     value = (float) pow( 10.0, slice_sigma0 / 10.0 );
+    int neg_mask = 1 << sliceIndex*4+1;
+    if (neg_mask & (int)slice_qual_flag)
+        value *= -1;
     
     GET_HDF_VAR(int16, x_factor, start, cur_edges, 0.01)
     XK = (float) pow( 10.0, x_factor / 10.0 );
@@ -394,8 +397,8 @@ Meas::UnpackL1BHdf(
     float nL=10.0; // assumes 10 looks per slice
     A = 1+ 1/nL; 
     float s0NE=EnSlice/XK;
-    B = 2.0*s0NE/nL;
-    C= s0NE*s0NE/nL;
+    B = fabs(2.0*s0NE/nL);
+    C = fabs(s0NE*s0NE/nL);
 
 //    printf("start = %d, %d, %d; sig0 = %f; lon = %f; lat = %f\n", 
 //    	start[0], start[1], start[2], value, slice_lon*180/M_PI, slice_lat*180/M_PI);
