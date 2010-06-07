@@ -688,12 +688,13 @@ OvwmL1AToL1B::Convert(
                   azimwid = ovwm->azRes/2.;
 
                   // correction factor for 1/e as in PTR
-                  rangewid *= 1.6;
-                  if (beam_id%2==0) { // outer beam
-                    azimwid *= 1.2;
-                  } else if (beam_id%2==1) { // inner beam
-                    azimwid *= 1.4;
-                  }
+		  // Not here for range, and not at all for az - JMM 6/7/2010
+                  // rangewid *= 1.6;
+                  // if (beam_id%2==0) { // outer beam
+                  //   azimwid *= 1.2;
+                  // } else if (beam_id%2==1) { // inner beam
+                  //   azimwid *= 1.4;
+                  // }
 
                   if (azimwid >= ptrTable.azGroundWidthMax) {
                     azimwid = ptrTable.azGroundWidthMax;
@@ -717,9 +718,10 @@ OvwmL1AToL1B::Convert(
           //  azimwid = 1.00;
           //  //meas->azimuth_width = 2.*azimwid;
           //}
-
-                if (fabs(range_km) >= ptrTable.rngGroundWidthMax/2.) rangewid = 0.;
-                if (fabs(azimuth_km) >= ptrTable.azGroundWidthMax/2.) azimwid = 0.;
+		if (ptrTable.use_PTR_table) {  // only set to 0 if using PTR_table - JMM 6/7/2010
+		  if (fabs(range_km) >= ptrTable.rngGroundWidthMax/2.) rangewid = 0.;
+		  if (fabs(azimuth_km) >= ptrTable.azGroundWidthMax/2.) azimwid = 0.;
+		}
 
                 // remove meas if it is out of ptr range
 
@@ -828,7 +830,7 @@ OvwmL1AToL1B::Convert(
 		      }
 		      for(int n=0;n<nL;n++){
 			float val1=(ii-center_range_idx[n])*integrationStepSize;
-			val1/=rangewid;
+			val1/=rangewid*1.6;  // adjust sinc^2 width to approx Gaussian width - JMM
 			val1*=val1;
 
 			//_ptr_array[i][j]+=exp(-(val1+val2));

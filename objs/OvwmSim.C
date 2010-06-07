@@ -2061,8 +2061,10 @@ OvwmSim::SetMeasurements(
           // range and azimuth window specified in the config file by
           // PTRTAB_RANGE_MAX_GROUND_WIDTH and PTRTAB_AZIMUTH_MAX_GROUND_WIDTH
           //-----------------------------------------------------------
-          if (fabs(range_km) >= ptrTable->rngGroundWidthMax/2.) rangewid = 0.;
-          if (fabs(azimuth_km) >= ptrTable->azGroundWidthMax/2.) azimwid = 0.;
+	  if (ptrTable->use_PTR_table){  // Only if PTR_table is used - JMM 6/7/2010
+	    if (fabs(range_km) >= ptrTable->rngGroundWidthMax/2.) rangewid = 0.;
+	    if (fabs(azimuth_km) >= ptrTable->azGroundWidthMax/2.) azimwid = 0.;
+	  }
 
           //----------------------------------------------------
           // If the widths are zero and we are not in a special
