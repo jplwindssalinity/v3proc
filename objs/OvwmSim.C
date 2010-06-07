@@ -2020,7 +2020,8 @@ OvwmSim::SetMeasurements(
             // Range Correction factor for 1/e in Point Target Response
             // The scale difference between the half power point and the
             // sigma parameter of the Gaussian function
-            rangewid *= 1.6;
+            // rangewid *= 1.6;
+	    // Got rid of this code here, since rangewid should not change.
 
 
             // Range Correction factor for 1/e in Point Target Response
@@ -2029,12 +2030,17 @@ OvwmSim::SetMeasurements(
             // The factors differ for the inner and outer beam
             // The azimuth width only matter for the XOWVM SAR case 
             // for which these values were hard-coded 
-            // I am unsure why they vary by beam in any case. -- BWS 07/21/2009        
-            if (beam_id%2==0) { // outer beam
-              azimwid *= 1.2;
-            } else if (beam_id%2==1) { // inner beam
-              azimwid *= 1.4;
-            }
+            // I am unsure why they vary by beam in any case. -- BWS 07/21/2009
+
+	    // Commented the following out because they make no sense
+	    // It cannot be the sinc^2 >> Gaussian correction, because the sinc^2
+	    // is actually used in the azimuth PTR construction below.
+	    // If the these corrections are valid, it's something else - JMM 6/7/2010
+            // if (beam_id%2==0) { // outer beam
+            //  azimwid *= 1.2;
+            // } else if (beam_id%2==1) { // inner beam
+            //  azimwid *= 1.4;
+	    // }
 
             if (azimwid >= ptrTable->azGroundWidthMax) {
               azimwid = ptrTable->azGroundWidthMax;
@@ -2210,7 +2216,10 @@ OvwmSim::SetMeasurements(
 
 	       for(int n=0;n<nL;n++){
 		 float val1=(ii-center_range_idx[n])*integrationStepSize;
-		 val1/=rangewid;
+		 val1/=rangewid*1.6; // rangewid correction factor for 1/e
+		 // The scale difference between the half power point of the sinc
+		 // and the sigma parameter of the Gaussian function
+		 // correction by JMM 07/06/2010
 		 val1*=val1;
 
 		 //--------------------------------------------------------------------------------
