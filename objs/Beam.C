@@ -83,7 +83,9 @@ Beam::SetElectricalBoresight(
     // Rotate so the x-axis of the antenna frame points along the boresight.
     Attitude attitude;
     attitude.Set(0.0, _elecBoresightLook - pi / 2.0, _elecBoresightAzim,
-        1, 2, 3);
+        1, 3, 2);
+    // Corrected the order of attitude rotations to 1.3.2 from 1,2,3 to get correct
+    // boresight pointing - JMM 6/8/2010
     CoordinateSwitch antennaFrameToBoreFrame;
     antennaFrameToBoreFrame.SetRotation(attitude);
 

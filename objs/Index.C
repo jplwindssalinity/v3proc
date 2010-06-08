@@ -69,7 +69,8 @@ Index::SpecifyWrappedCenters(
     float  max,
     int    bins)
 {
-    _step = (max - min) / (float)bins;
+  _step = (max - min) / (float)(bins - 1);
+  // corrected (bins) to (bins - 1) to make _step correct - JMM 6/8/2010
     _min = min;
     _max = max - _step;
     _bins = bins;
