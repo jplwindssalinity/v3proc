@@ -127,6 +127,12 @@ public:
 #define LAND_ICE_FLAG_COAST 0x01    // bit 0 1/0 = land / no land
 #define LAND_ICE_FLAG_ICE   0x02    // bit 1 1/0 = ice  / no ice
 
+#define L2B_QUAL_FLAG_LAND            0x01   // bit 0 1/0 = land / no land
+#define L2B_QUAL_FLAG_ICE             0x02   // bit 1 1/0 = ice  / no ice
+#define L2B_QUAL_FLAG_RAIN_UNUSABLE   0x04   // bit 2 1/0 = not usable/usable
+#define L2B_QUAL_FLAG_RAIN            0x08   // bit 3 1/0 = rain/no rain
+#define L2B_QUAL_FLAG_RAIN_LOCATION   0x10   // bit 4 1/0 = outer/inner
+
 class WVC
 {
 public:
@@ -144,6 +150,7 @@ public:
 
     int  WriteL2B(FILE* fp);
     int  ReadL2B(FILE* fp);
+    int  ReadL2B_v2(FILE* fp); // AGF added 6/3/2010
     int  WriteVctr(FILE* fp, const int rank);    // 0 = selected
     int  WriteAscii(FILE* fp);
     int  WriteFlower(FILE* fp);
@@ -193,6 +200,10 @@ public:
     char                   landiceFlagBits;
     // bit 0 1/0 = land / no land
     // bit 1 1/0 = ice  / no ice
+    
+    
+    unsigned int           qualFlag;   //AGF 6/3/2010 for v2 of L2B data file
+    float                  rainImpact; //AGF 6/3/2010 for v2 of L2B data file
     
     // these are in the ground system L2B, so we put 'em in too
     // they currently are only used when HDF-ing

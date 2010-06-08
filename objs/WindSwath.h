@@ -214,6 +214,8 @@ public:
     WVC***  swath;
     int     useNudgeVectorsAsTruth;
     int     nudgeVectorsRead;
+    int     version_id_major;
+    int     version_id_minor;
 
 protected:
 

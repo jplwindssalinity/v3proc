@@ -300,7 +300,27 @@ WVC::~WVC()
 int
 WVC::WriteL2B(
     FILE*  fp)
-{
+{    
+    //--AGF added for v2 of L2B data file 6/3/2010
+    // Sets bits of qualFlag depending on rainFlagBits and landiceFlagBits.
+    qualFlag = 0;
+    if( landiceFlagBits & LAND_ICE_FLAG_COAST ) qualFlag += L2B_QUAL_FLAG_LAND;
+    if( landiceFlagBits & LAND_ICE_FLAG_ICE )   qualFlag += L2B_QUAL_FLAG_ICE;
+    if( rainFlagBits    & RAIN_FLAG_UNUSABLE )  qualFlag += L2B_QUAL_FLAG_RAIN_UNUSABLE;
+    if( rainFlagBits    & RAIN_FLAG_RAIN )      qualFlag += L2B_QUAL_FLAG_RAIN;
+    if( rainFlagBits    & RAIN_FLAG_LOCATION )  qualFlag += L2B_QUAL_FLAG_RAIN_LOCATION;
+    
+    //fpos_t pos;
+    //fgetpos(fp,&pos);
+    //fprintf(stdout,"File position before attempting to write %d\n",pos);
+    if( fwrite( (void *)&qualFlag,   sizeof(unsigned int), 1, fp) != 1 ||
+        fwrite( (void *)&rainImpact, sizeof(float),        1, fp) != 1 )
+    {
+        fprintf(stderr,"WVC::WriteL2B: Error writing qualFlag, rainImpact!\n"); 
+        return(0);
+    }
+    //--End of AGF modifications for v2 of l2b data file 6/3/2010
+
     //----------------------------------//
     // write the longitude and latitude //
     //----------------------------------//
@@ -314,9 +334,9 @@ WVC::WriteL2B(
     //---------------------------//
     // write the number of nodes //
     //---------------------------//
-
     unsigned char count = ambiguities.NodeCount();
         if(selected_allocated) count++;
+        
     if (fwrite((void *)&count, sizeof(unsigned char), 1, fp) != 1)
         return(0);
 
@@ -372,6 +392,45 @@ WVC::WriteL2B(
 
     if (! directionRanges.Write(fp))
         return(0);
+   
+    return(1);
+}
+
+//-----------------//
+// WVC::ReadL2B_v2 //
+//-----------------//
+
+int
+WVC::ReadL2B_v2(
+    FILE*  fp)
+{
+    // Reads v2 of the WVC from the L2B data file AGF 6/3/2010  
+    // 1st read quality flag and rain impact
+    //fpos_t pos;
+    //fgetpos(fp,&pos);
+    //fprintf(stdout,"File position before attempting to read %d\n",pos);
+    if( fread((void *)&qualFlag,   sizeof(unsigned int), 1, fp) != 1 ||
+        fread((void *)&rainImpact, sizeof(float),        1, fp) != 1)
+    {
+        fprintf(stderr,"In WVC::ReadL2B_v2: ERROR reading qualFlag, rainImpact!\n");         
+        return(0);
+    }
+    
+    // Set bits of rainFlagBits and landiceFlagBits depending on qualFlag
+    landiceFlagBits = 0;
+    rainFlagBits    = 0;
+    if( qualFlag & L2B_QUAL_FLAG_LAND          ) landiceFlagBits += LAND_ICE_FLAG_COAST;
+    if( qualFlag & L2B_QUAL_FLAG_ICE           ) landiceFlagBits += LAND_ICE_FLAG_ICE;
+    if( qualFlag & L2B_QUAL_FLAG_RAIN_UNUSABLE ) rainFlagBits    += RAIN_FLAG_UNUSABLE;
+    if( qualFlag & L2B_QUAL_FLAG_RAIN          ) rainFlagBits    += RAIN_FLAG_RAIN;
+    if( qualFlag & L2B_QUAL_FLAG_RAIN_LOCATION ) rainFlagBits    += RAIN_FLAG_LOCATION;
+    
+    // 2nd call ReadL2B to read the rest of the data.
+    if (! ReadL2B(fp))
+    {
+    	fprintf(stderr,"In WVC::ReadL2B_v2: ERROR in ReadL2B!\n"); 
+    	return(0);
+    }
 
     return(1);
 }
@@ -451,7 +510,6 @@ WVC::ReadL2B(
     //----------------------//
     // Read directionRanges //
     //----------------------//
-
     if (! directionRanges.Read(fp))
         return(0);
 

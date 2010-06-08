@@ -55,6 +55,9 @@ public:
     float  alongTrackResolution;
     int    zeroIndex;
     float  inclination;
+    
+    int    version_id_major;
+    int    version_id_minor;
 };
 
 //======================================================================
@@ -134,7 +137,7 @@ public:
     int  WriteRETDAT( const char* filename, int write_speed_ridges_flag = 1 );
     int  ReadRETDAT(const char* filename, int read_nudge_vectors_flag = 1);
     
-    int  ReadHeader() { return(header.Read(_inputFp)); };
+    int  ReadHeader(); // 6/3/2010 AGF moved this method from inline here to L2B.C
     int  WriteHeader() { return(header.Write(_outputFp)); };
 
     int  ReadDataRec() { return(frame.swath.ReadL2B(_inputFp)); };

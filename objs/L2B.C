@@ -50,6 +50,37 @@ int
 L2BHeader::Read(
     FILE*  fp)
 {
+	//---start of mods by AGF to add version IDs to L2B header (6/3/2010)
+    fpos_t pos;
+    char   l2b_ascii_header[80];
+    
+    // get file position
+    if( fgetpos(fp,&pos) != 0 ) 
+    	return(0);    
+    // Attempt to read ASCII header with version ID (if present).
+    if( fread((void *)&l2b_ascii_header[0], sizeof(char), 80, fp) != 80) 
+    	return(0);
+    
+    if( strncmp( l2b_ascii_header, "QSCATSIM_L2B_VERSION_ID", 23 ) == 0 )
+    {
+    	printf( "In L2BHeader::Read: ASCII Header: %s\n", l2b_ascii_header );
+        char* str_version_id       = strstr( l2b_ascii_header, "==" ) + 2;
+        char* str_version_id_minor = strstr( str_version_id, "." )    + 1;
+    
+        version_id_major = int( floor( atof( str_version_id ) ) );
+        version_id_minor = atoi( str_version_id_minor );
+    }
+    else
+    {
+    	printf("In L2BHeader::Read: No ASCII Header found\n");
+    	version_id_major = 1;
+    	version_id_minor = 0;
+    	if( fsetpos(fp,&pos) !=0 ) return(0);
+    }
+    printf("In L2BHeader::Read, L2B version ID: %d.%d\n",
+           version_id_major, version_id_minor);
+    //---end of AGF 6/3/2010 mods.
+    
     if (fread(&crossTrackResolution, sizeof(float), 1, fp) != 1 ||
         fread(&alongTrackResolution, sizeof(float), 1, fp) != 1 ||
         fread(&zeroIndex, sizeof(int), 1, fp) != 1)
@@ -67,7 +98,10 @@ int
 L2BHeader::Write(
     FILE*  fp)
 {
-    if (fwrite(&crossTrackResolution, sizeof(float), 1, fp) != 1 ||
+    char l2b_ascii_header[80] = "QSCATSIM_L2B_VERSION_ID==2.0";
+    
+    if (fwrite((void *)&l2b_ascii_header[0], sizeof(char), 80, fp) != 80 ||
+        fwrite(&crossTrackResolution, sizeof(float), 1, fp) != 1 ||
         fwrite(&alongTrackResolution, sizeof(float), 1, fp) != 1 ||
         fwrite(&zeroIndex, sizeof(int), 1, fp) != 1)
     {
@@ -87,6 +121,7 @@ L2BHeader::WriteAscii(
     fprintf(fp, "############################################\n");
     fprintf(fp, "##                L2B DataFile            ##\n");
     fprintf(fp, "############################################\n");
+    fprintf(fp, "L2B VERSION ID == %d.%d\n", version_id_major, version_id_minor );
     fprintf(fp,"\n\nCrossTrackRes %g AlongTrackRes %g ZeroIndex %d\n\n",
     crossTrackResolution,alongTrackResolution,zeroIndex);
     return(1);
@@ -119,6 +154,20 @@ L2B::L2B()
 L2B::~L2B()
 {
     return;
+}
+
+//-----------------//
+// L2B::ReadHeader //
+//-----------------//
+int L2B::ReadHeader()
+{
+  // AGF moved this method from L2B.h to L2B.C so I can also copy
+  // over the version ids from the header to the swath structures.
+  // 6/3/2010
+  if( !header.Read(_inputFp) ) return(0);
+  frame.swath.version_id_major = header.version_id_major;
+  frame.swath.version_id_minor = header.version_id_minor;
+  return (1);
 }
 
 //----------------//
@@ -160,6 +209,7 @@ L2B::Read(
             filename);
         return(0);
     }
+    
     if (! ReadDataRec())
     {
         fprintf(stderr, "L2B::Read: error reading data record from file %s\n",
