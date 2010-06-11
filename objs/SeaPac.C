@@ -67,10 +67,9 @@ ijbin(
     {
         fprintf(stderr, "SLR too small (divide by zero)\n");
         return(0);
-    }
-
-    double pnode = -1.5 * two_pi * rj2 * cosi / (nodal_period / (slr * slr));
-
+    } 
+    double pnode = -1.5 * two_pi * rj2 * cosi / (nodal_period * (slr * slr));
+    
     if (fabs(wa - pnode) < EPSILON)
     {
         fprintf(stderr, "Nodal quantity too small\n");
