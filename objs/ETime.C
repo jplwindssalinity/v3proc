@@ -180,7 +180,7 @@ ETime::FromCodeB(
     if (strptime(time_string, CODE_B_STRPTIME_FORMAT, &tm_time) == NULL)
     	return(0);
     	
-   	// F***ing piece of sh*t library functions- strptime sets year day, but is too stupid
+   	// strptime sets year day, but is too stupid
    	// to realize that corresponds precisely to a month and month day, so do that
    	// conversion here b/c those fields are needed later.
    	// number of days in each month
