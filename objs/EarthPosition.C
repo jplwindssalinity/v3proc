@@ -309,8 +309,12 @@ EarthPosition::SurfaceDistance(
     EarthPosition  r)
 {
     double mag2 = Magnitude()*r.Magnitude();
-    double theta = acos((*this % r) / mag2);
-    return(sqrt(mag2) * theta);
+    double dot  = *this % r;
+    
+    if( dot >= mag2 ) // only happens due to round-off errors when r == *this
+      return(0.0);    // and somehow dot > mag2. If dot == mag2 then 
+    else              // we want to return 0 as well.
+      return(sqrt(mag2) * acos(dot / mag2) );
 }
 
 //----------------------//
