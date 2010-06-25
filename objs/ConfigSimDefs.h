@@ -321,7 +321,6 @@ static const char rcs_id_configsimdefs_h[] =
 #define USE_RANDOM_RANK_INIT_KEYWORD           "USE_RANDOM_RANK_INIT"
 #define USE_SIGMA0_SPATIAL_WEIGHTS_KEYWORD     "USE_SIGMA0_SPATIAL_WEIGHTS"
 #define SSW_CORRELATION_LENGTH_KEYWORD         "SSW_CORRELATION_LENGTH"
-#define NEURAL_NET_SIG0_CORR_FILE              "NEURAL_NET_SIG0_CORR_FILE"
 #define NEURAL_NET_ERR_EST_FILE                "NEURAL_NET_ERR_EST_FILE"
 
 
@@ -360,6 +359,18 @@ static const char rcs_id_configsimdefs_h[] =
 #define RAIN_REFL_ATTN_FILE_KEYWORD         "RAIN_REFL_ATTN_FILE"
 #define RAIN_SPLASH_FILE_KEYWORD            "RAIN_SPLASH_FILE"
 
+//-------------------------------//
+// Rain Correction and Flagging  //
+//-------------------------------//
+#define RAIN_CORRECTION_METHOD_KEYWORD      "RAIN_CORRECTION_METHOD"
+#define RAIN_FLAG_METHOD_KEYWORD            "RAIN_FLAG_METHOD"
+#define NEURAL_NET_SIG0_CORR_FILE_KEYWORD           "NEURAL_NET_SIG0_CORR_FILE"
+#define NEURAL_NET_LIQUID1_FILE_KEYWORD             "NEURAL_NET_LIQUID1_FILE"
+#define NEURAL_NET_SPEED1_FILE_KEYWORD              "NEURAL_NET_SPEED1_FILE"
+#define NEURAL_NET_SPEED2_FILE_KEYWORD              "NEURAL_NET_SPEED2_FILE"
+#define NEURAL_NET_RAINFLAG_FILE_KEYWORD            "NEURAL_NET_RAINFLAG_FILE"
+#define RAIN_IMPACT_FLAG_THRESHOLD_KEYWORD          "RAIN_IMPACT_FLAG_THRESHOLD"     
+#define RAIN_IMPACT_CORR_THRESHOLD_KEYWORD          "RAIN_IMPACT_CORR_THRESHOLD"     
 //-----//
 // GMF //
 //-----//

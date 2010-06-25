@@ -5,6 +5,7 @@
 
 /**** struct to store/ define the types of inputs ****/
 #define IO_TYPE_STR_MAX_LENGTH          64
+#define NUM_MLP_IO_TYPES         59
 struct MLP_IOType {
 	char str[IO_TYPE_STR_MAX_LENGTH];
 	int id;
@@ -48,6 +49,7 @@ public:
   float* err;  /*** error at outputs ***/
   float* herr; /*** derivative of Mean Square Error with respect to hidden
                     unit output ***/
+  float* inpt;  /*** array for holding inputs ***/
   float moment;/*** momentum coefficient ***/
   float ssize; /*** training step size ****/
   
@@ -123,6 +125,8 @@ public:
 
   /**** a single forward pass through the MLP ***/
   int Forward(float* inpts);
+  bool AssignInputs(float* inpts, bool* mask);
+  int Forward();
   float ForwardMSE(float* inpts, float* doutx);
 
   /*** a single backward pass ****/

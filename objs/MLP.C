@@ -10,9 +10,10 @@
 /**** defines for types of input data ****/
 // this define should equal the length of the array directly bellow it;
 // be sure to update it if you change the array.
-#define NUM_INPUT_TYPES         34
-MLP_IOType mlp_input_type_defs[] = 
-  { {"S0_MEAN_K_HH_INNER_FORE", 1},
+
+MLP_IOType mlp_io_type_defs[] = 
+  { {"INVALID", 0},
+    {"S0_MEAN_K_HH_INNER_FORE", 1},
     {"S0_MEAN_K_HH_INNER_AFT",  2},
     {"S0_MEAN_K_HH_OUTER_FORE", 3},
     {"S0_MEAN_K_HH_OUTER_AFT",  4},
@@ -28,7 +29,6 @@ MLP_IOType mlp_input_type_defs[] =
     {"S0_MEAN_C_VV_INNER_AFT",  14},
     {"S0_MEAN_C_VV_OUTER_FORE", 15},
     {"S0_MEAN_C_VV_OUTER_AFT",  16},
-
     {"S0_VAR_K_HH_INNER_FORE",  17},
     {"S0_VAR_K_HH_INNER_AFT",   18},
     {"S0_VAR_K_HH_OUTER_FORE",  19},
@@ -46,30 +46,31 @@ MLP_IOType mlp_input_type_defs[] =
     {"S0_VAR_C_VV_OUTER_FORE",  31},
     {"S0_VAR_C_VV_OUTER_AFT",   32},
     {"CROSS_TRACK_DISTANCE_KM", 33},
-    {"CROSS_TRACK_DISTANCE_FRAC", 33},
-    {"DIRTH_SPEED",             34} };
-
-#define NUM_OUTPUT_TYPES         19
-MLP_IOType mlp_output_type_defs[] = 
-  { {"S0_CORR_K_HH_INNER_FORE", 1},
-    {"S0_CORR_K_HH_INNER_AFT",  2},
-    {"S0_CORR_K_HH_OUTER_FORE", 3},
-    {"S0_CORR_K_HH_OUTER_AFT",  4},
-    {"S0_CORR_K_VV_INNER_FORE", 5},
-    {"S0_CORR_K_VV_INNER_AFT",  6},
-    {"S0_CORR_K_VV_OUTER_FORE", 7},
-    {"S0_CORR_K_VV_OUTER_AFT",  8},
-    {"S0_CORR_C_HH_INNER_FORE", 9},
-    {"S0_CORR_C_HH_INNER_AFT",  10},
-    {"S0_CORR_C_HH_OUTER_FORE", 11},
-    {"S0_CORR_C_HH_OUTER_AFT",  12},
-    {"S0_CORR_C_VV_INNER_FORE", 13},
-    {"S0_CORR_C_VV_INNER_AFT",  14},
-    {"S0_CORR_C_VV_OUTER_FORE", 15},
-    {"S0_CORR_C_VV_OUTER_AFT",  16},
-    {"WIND_SPEED",              17},
-    {"MSE_SPEED_ERROR",         18},
-    {"MSE_DIR_ERROR",           19} };
+    {"CROSS_TRACK_DISTANCE_FRAC", 34},
+    {"SPEED_DIRTH",             35}, 
+    {"S0_CORR_K_HH_INNER_FORE", 36},
+    {"S0_CORR_K_HH_INNER_AFT",  37},
+    {"S0_CORR_K_HH_OUTER_FORE", 38},
+    {"S0_CORR_K_HH_OUTER_AFT",  39},
+    {"S0_CORR_K_VV_INNER_FORE", 40},
+    {"S0_CORR_K_VV_INNER_AFT",  41},
+    {"S0_CORR_K_VV_OUTER_FORE", 42},
+    {"S0_CORR_K_VV_OUTER_AFT",  43},
+    {"S0_CORR_C_HH_INNER_FORE", 44},
+    {"S0_CORR_C_HH_INNER_AFT",  45},
+    {"S0_CORR_C_HH_OUTER_FORE", 46},
+    {"S0_CORR_C_HH_OUTER_AFT",  47},
+    {"S0_CORR_C_VV_INNER_FORE", 48},
+    {"S0_CORR_C_VV_INNER_AFT",  49},
+    {"S0_CORR_C_VV_OUTER_FORE", 50},
+    {"S0_CORR_C_VV_OUTER_AFT",  51},
+    {"SPEED_FIRST_RANK",        52},
+    {"MSE_SPEED_ERROR",         53},
+    {"MSE_DIR_ERROR",           54}, 
+    {"SPEED1",                  55}, 
+    {"SPEED2",                  56}, 
+    {"RAINFLAG10",              57}, 
+    {"ATMOSPHERIC_LIQUID1",     58}};
 
 
 MLP::MLP()
@@ -157,6 +158,7 @@ MLP::Deallocate(){
     free_array((void*)err,1,nout);
     free_array((void*)hnout,1,hn);
     free_array((void*)herr,1,hn);
+    free_array((void*)inpt,1,nin);
     free(in_types);
     free(out_types);
     nin=0;
@@ -208,6 +210,7 @@ int MLP::Allocate(){
   err=(float*)make_array(sizeof(float),1,nout);
   herr=(float*)make_array(sizeof(float),1,hn);
   hnout=(float*)make_array(sizeof(float),1,hn);
+  inpt=(float*)make_array(sizeof(float),1,nin);
   in_types=(MLP_IOType*)malloc(nin*sizeof(MLP_IOType));
   out_types=(MLP_IOType*)malloc(nout*sizeof(MLP_IOType));
   train_set_str[0] = '\0';
@@ -222,21 +225,16 @@ int MLP::Allocate(){
     in either in_types or out_types accordingly. must take in a pointer to the type defs and 
     the types buffer (either a pointer to in_types or out_types) **/
 int MLP::setIOTypeByString(char *type_str, int input_idx, int in_out) {
-    MLP_IOType *io_type_buf, *io_type_defs;
-    int num_io_type_defs;
+    MLP_IOType *io_type_buf;
     if (in_out == MLP_IO_IN_TYPE) {
-        io_type_buf = in_types;
-        num_io_type_defs = NUM_INPUT_TYPES;
-        io_type_defs = mlp_input_type_defs;
+      io_type_buf = in_types;
     } else {
-        io_type_buf = out_types;
-        num_io_type_defs = NUM_OUTPUT_TYPES;
-        io_type_defs = mlp_output_type_defs;
+      io_type_buf = out_types;
     }
-    
-    for(int type_idx = 0; type_idx < num_io_type_defs; type_idx++) {
-        if(!strcasecmp(type_str, io_type_defs[type_idx].str)) {
-            io_type_buf[input_idx] = io_type_defs[type_idx];
+
+    for(int type_idx = 0; type_idx < NUM_MLP_IO_TYPES; type_idx++) {
+        if(!strcasecmp(type_str, mlp_io_type_defs[type_idx].str)) {
+            io_type_buf[input_idx] = mlp_io_type_defs[type_idx];
             return(1);
         }
     }
@@ -659,8 +657,23 @@ float MLP::Test(MLPData* pattern,
   return(sum);
 }
 
-/*** perform one forward pass ***/
+bool MLP::AssignInputs(float* inpts, bool* mask){
+  for(int c=0;c<nin;c++){
+    int idx=in_types[c].id;
+    if(!mask[idx]){
+      return(false);
+    }
+    inpt[c]=inpts[idx];
+  }
+  return(true);
+}
+
 int MLP::Forward(float* inpts){
+  for(int c=0;c<nin;c++) inpt[c]=inpts[c];
+  return(Forward());
+}
+/*** perform one forward pass ***/
+int MLP::Forward(){
   int c,d;
   float sum;
 
@@ -668,7 +681,7 @@ int MLP::Forward(float* inpts){
   for(c=0;c<hn;c++){
     sum=0;
     for(d=0;d<nin;d++){
-      sum+=inpts[d]*win[c][d];
+      sum+=inpt[d]*win[c][d];
     }
     /*** add threshold **/
     sum+=win[c][nin];

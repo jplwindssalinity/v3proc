@@ -15,6 +15,9 @@ static const char rcs_id_l2atol2b_c[] =
 #include "Wind.h"
 #include "Array.h"
 #define NOMINAL_TRACK_LENGTH (1624*25)
+
+extern MLP_IOType* mlp_io_type_defs;
+
 //==========//
 // L2AToL2B //
 //==========//
@@ -175,12 +178,14 @@ L2AToL2B::SetWindRetrievalMethod(
 }
 
 
-#define OMIT_VAR_IN_ANN 0
-#define USE_CTD_INPUT 2
+//#define OMIT_VAR_IN_ANN 0
+//#define USE_CTD_INPUT 2
 //---------------------------//
 // L2AToL2B::NeuralNetRetrieve//
 //---------------------------//
 // retrieve using a neural network
+
+/**** OBSOLETE ROUTINE
  float  
 
  
@@ -312,7 +317,6 @@ L2AToL2B::SetWindRetrievalMethod(
     if(!OMIT_VAR_IN_ANN) nlooks/=2;
 
     float mlpinvec[18]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    float mlpinvec2[85];
     float wtsum[8]={0,0,0,0,0,0,0,0};
     Meas* meas = meas_list->GetHead();
     for (int c = 0; c < nc; c++)
@@ -595,12 +599,14 @@ L2AToL2B::SetWindRetrievalMethod(
     return(speed);
 
  }
-
+*****/
 
 //---------------------------//
 // L2AToL2B::HybridNeuralNetRetrieve//
 //---------------------------//
 // retrieve using a neural network Dirnet estimates "trues0s" used to get obj
+
+/**** Obsolete routine
  float  
 
  
@@ -732,10 +738,8 @@ L2AToL2B::SetWindRetrievalMethod(
     if(!OMIT_VAR_IN_ANN) nlooks/=2;
 
     float mlpinvec[18]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    float mlpinvec2[85];
     float eastaz[8]={0,0,0,0,0,0,0,0};
     float inc[8]={0,0,0,0,0,0,0,0};
-    Meas::MeasTypeE mtype[8]={Meas::HH_MEAS_TYPE,Meas::HH_MEAS_TYPE,Meas::VV_MEAS_TYPE,Meas::VV_MEAS_TYPE,Meas::C_BAND_HH_MEAS_TYPE,Meas::C_BAND_HH_MEAS_TYPE,Meas::C_BAND_VV_MEAS_TYPE,Meas::C_BAND_VV_MEAS_TYPE};
     float wtsum[8]={0,0,0,0,0,0,0,0};
     Meas* meas = meas_list->GetHead();
     for (int c = 0; c < nc; c++)
@@ -895,7 +899,6 @@ L2AToL2B::SetWindRetrievalMethod(
 	  float s0=mlpinvec[i]/s0mag;
           float var=0.06; // HACK this is how well the first QuikSCAT ANN
 	                     // estimated sigma0 on 090112
-	  float chi=phi-eastaz[i]+pi;
           obj-=(ts0-s0)*(ts0-s0)/var;
 	}
 	wvc->directionRanges.bestObj[c]=obj;
@@ -1020,6 +1023,7 @@ L2AToL2B::SetWindRetrievalMethod(
     return(speed);
 
  }
+*****/
 
 #define INTERP_RATIO 8
 #define MERGE_BORDERS 0
@@ -1052,7 +1056,6 @@ L2AToL2B::BuildDirectionRanges(
        pdf=new float[pdfarraysize];
        float sum=0.0;
        float* _bestObj = wvc->directionRanges.bestObj;
-       float* _bestSpd = wvc->directionRanges.bestSpd;
        // Set up arrays for wraparound cubic spline
        // By including four extra wrapped points on each end
        double* xarray = new double[_phiCount+8];
@@ -1262,7 +1265,7 @@ L2AToL2B::BuildDirectionRanges(
 // Routine to compute direction offset for  //
 // along track and cross track index        //
 //------------------------------------------//
-/*** Obsolete version
+/*** Obsolete version of obsolete routine
 float L2AToL2B::GetNeuralDirectionOffset(L2A* l2a){
 
   // diroff is the value to add to the reldir form the neural network
@@ -1326,7 +1329,7 @@ float L2AToL2B::GetNeuralDirectionOffset(L2A* l2a){
 }
 *****/
 
-
+/**** Newer version of Obsolete routine
 float L2AToL2B::GetNeuralDirectionOffset(L2A* l2a){
     int n=0;
     float az=0;
@@ -1382,6 +1385,7 @@ float L2AToL2B::GetNeuralDirectionOffset(L2A* l2a){
     azave/=n;
     return(-azave);
 }
+***/
 
 float
 L2AToL2B::computeGroundTrackParameters(){
@@ -1642,16 +1646,18 @@ int L2AToL2B::convertMeasToMLP_IOType(Meas* meas, char *type, char *out_buf) {
     
     switch (meas->measType)
     {
-        case Meas::HH_MEAS_TYPE:
-        case Meas::C_BAND_HH_MEAS_TYPE:
-            strcat(pol, "HH");
-            strcat(beam, "INNER");
-            break;
-        case Meas::VV_MEAS_TYPE:
-        case Meas::C_BAND_VV_MEAS_TYPE:
-            strcat(pol, "VV");
-            strcat(beam, "OUTER");
-            break;
+    case Meas::HH_MEAS_TYPE:
+    case Meas::C_BAND_HH_MEAS_TYPE:
+      strcat(pol, "HH");
+      strcat(beam, "INNER");
+      break;
+    case Meas::VV_MEAS_TYPE:
+    case Meas::C_BAND_VV_MEAS_TYPE:
+      strcat(pol, "VV");
+      strcat(beam, "OUTER");
+      break;
+    default:
+      break;
     }
     
     if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
@@ -1688,6 +1694,12 @@ L2AToL2B::ConvertAndWrite(
     L2B*  l2b)
 {
     static int last_rev_number = 0;
+
+    // initialize MLP inputs arrays
+    for(int c=0;c<NUM_MLP_IO_TYPES;c++){
+      MLP_inpt_array[c]=0;
+      MLP_valid_array[c]=false;
+    }
 
     MeasList* meas_list = &(l2a->frame.measList);
 
@@ -1747,117 +1759,42 @@ L2AToL2B::ConvertAndWrite(
         }
 
     }
-    
+
     //---------------------------------------//
     // Apply neural net rain Sig0 Correction //
     //---------------------------------------//
-    if(ann_sigma0_corr_file)
-    {
-        // NOTE: s0corr_mlp.Read called by configL2aToL2b
-        // allocate buffers
-        #define ALLOCATE_AND_ZERO(vartype, varname, numel) \
-            vartype *varname = (vartype *)malloc(numel * sizeof(vartype)); for(int i=0;i<numel;i++) varname[i] = 0;
-        ALLOCATE_AND_ZERO(float, in_buff_sum, s0corr_mlp.nin)
-        ALLOCATE_AND_ZERO(float, in_buff_vars, s0corr_mlp.nin)
-        ALLOCATE_AND_ZERO(int, in_buff_ct, s0corr_mlp.nin)
-        ALLOCATE_AND_ZERO(float, in_buff, s0corr_mlp.nin)
-        char meas_type_buff[IO_TYPE_STR_MAX_LENGTH];
-        int in_i, out_i;
-       
-        // accumulate the sum of each type of measurement, for calculating the mean
-        for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
-        {
-            convertMeasToMLP_IOType(meas, "MEAN", meas_type_buff);
-            in_i = s0corr_mlp.findIOTypeInd(meas_type_buff, MLP_IO_IN_TYPE);
-//            printf("input meas: %f; input meas type: %s; input type ind = %d\n", (float)meas->value, meas_type_buff, in_i);
-            if(in_i >= 0) {
-                in_buff_sum[in_i] += meas->value;
-                in_buff_ct[in_i]++;
-            }
-        }
-        
-        // accumulate the (difference between the value and the mean)^2 for each type of measurement,
-        // for calculating the variance.
-        for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
-        {
-            // locate the corresponding mean
-            convertMeasToMLP_IOType(meas, "MEAN", meas_type_buff);
-            int mean_i = s0corr_mlp.findIOTypeInd(meas_type_buff, MLP_IO_IN_TYPE);
-            
-            // calculate the sum of (val-mean)^2
-            convertMeasToMLP_IOType(meas, "VAR", meas_type_buff);
-            in_i = s0corr_mlp.findIOTypeInd(meas_type_buff, MLP_IO_IN_TYPE);
-            if(in_i >= 0) {
-                float diff = meas->value - (in_buff_sum[mean_i]/in_buff_ct[mean_i]);
-                in_buff_vars[in_i] += (diff * diff);
-                in_buff_ct[in_i]++;
-            }
-        }
-        
-//        printf("in buffer = \n");
-        // build a the input array for the neural network
-        for(in_i = 0; in_i < s0corr_mlp.nin; in_i++) {
-            if(!strcmp(s0corr_mlp.in_types[in_i].str, "CROSS_TRACK_DISTANCE_FRAC")) {
-                // the "old" definition of cross track distance
-                in_buff[in_i] = ((float)l2a->frame.cti - ((float)l2a->header.crossTrackBins /2.0))
-                    / ((float)l2a->header.crossTrackBins /2.0);
-                continue;
-            }
-            
-            if(!strcmp(s0corr_mlp.in_types[in_i].str, "CROSS_TRACK_DISTANCE_KM")) {
-                // new definition
-                in_buff[in_i] = l2a->getCrossTrackDistance();
-                continue;
-            }
-            
-            if (in_buff_ct[in_i] < 2) {
-                // fprintf(stderr, 
-                //     "L2AToL2B::ConvertAndWrite: Warning: insufficient number of points in frame for neural net correction\n");
-                return(17);
-            }
-            
-            if(strstr(s0corr_mlp.in_types[in_i].str, "MEAN"))
-                in_buff[in_i] = in_buff_sum[in_i] / in_buff_ct[in_i];
-            else if(strstr(s0corr_mlp.in_types[in_i].str, "VAR"))
-                in_buff[in_i] = in_buff_vars[in_i] / in_buff_ct[in_i];
-            else {
-                fprintf(stderr, "L2AToL2B::ConvertAndWrite: Error: unknown input type: %s\n", s0corr_mlp.in_types[in_i].str);
-                exit(1);
-            }
-//            printf("[val = %f, ct = %d, in_type = %s];\n", (float)in_buff[in_i], in_buff_ct[in_i], s0corr_mlp.in_types[in_i].str);
-        }
-        
-        // get the correction factors from that neural net
-        s0corr_mlp.Forward(in_buff);
-//        errEst_mlp.Forward(in_buff);
 
-//        printf("out buffer = \n");
-//        for (out_i = 0; out_i < errEst_mlp.nout; out_i++) {
-//            float corr = pow(10.0, 0.1*s0corr_mlp.outp[out_i]);
-//            float corr = errEst_mlp.outp[out_i];
-//            printf("[val = %f]\n", corr); //, s0corr_mlp.out_types[out_i].str);
-//        }
-        
-        // apply those correction factors to all the measurements
-        for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
-        {
-            convertMeasToMLP_IOType(meas, "CORR", meas_type_buff);
-            out_i = s0corr_mlp.findIOTypeInd(meas_type_buff, MLP_IO_OUT_TYPE);
-            if (out_i > -1) {
+    // NOTE: MLPs read and Input Buffers allocated in ConfigL2AToL2B
+    if(rainCorrectMethod==ANN_NRCS_CORRECTION)
+    {
+      ComputeMLPInputs(l2a,meas_list,NULL);
+          
+      // if MLP inputs are valid
+      if(s0corr_mlp.AssignInputs(MLP_inpt_array,MLP_valid_array)){
+	  s0corr_mlp.Forward();
+
+	  // apply those correction factors to all the measurements
+	  for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+	    {
+              char* meas_type_buff;
+	      convertMeasToMLP_IOType(meas, "CORR", meas_type_buff);
+	      int out_i = s0corr_mlp.findIOTypeInd(meas_type_buff, MLP_IO_OUT_TYPE);
+	      if (out_i > -1) {
                 float corr = pow(10.0, 0.1*s0corr_mlp.outp[out_i]);  // convert dB into straight amplitude
                 // apply correction
                 meas->value /= corr;
-            } else {
+	      } else {
                 fprintf(stderr, "L2AToL2B::ConvertAndWrite: Error: neural network does not output a correction for measurement type: %s\n",
-                    meas_type_buff);
+			meas_type_buff);
                 exit(1);
-            }
-        }
-        // clean up
-        free(in_buff_sum); free(in_buff_vars); free(in_buff_ct); free(in_buff);
-
-    }
-
+	      }
+	    } // end loop over measurements to apply corrections
+      } // end valid inputs to MLP case
+      // for now exit if inputs are invalid (this will toss out single beam swath )
+      else{
+	return(18);
+      }
+    } // end of RainCorrectMethod==ANN_NRCS_CORRECTION
     //---------------//
     // retrieve wind //
     //---------------//
@@ -2031,6 +1968,118 @@ L2AToL2B::ConvertAndWrite(
     if(wrMethod == CoastSpecial){
       wvc->lonLat = meas_list->AverageLonLat(1);       
     }
+
+    // set Artificial Neural Network outputs to zero
+    float liquid_est=0;
+    float ann_speed1=0;
+    float ann_speed2=0;
+
+    //----------------------------------------------------------
+    // Code for ANN speed correction and rain flagging, for now the speed correction
+    // only works when the rain flagging is on, but this need not be the case.
+    // This was done so that a rain impact threshold could be used to determine when to
+    // do the speed correction. We could ALWAYS do the speed correction.
+    if(rainFlagMethod == ANNRainFlag1 || rainCorrectMethod == ANNSpeed1){
+      // compute liquid and ann_speed1 quantities
+      ComputeMLPInputs(l2a,meas_list,wvc);
+      
+      // assign inputs to MLPs and check that all inputs are valid
+      if(spdnet1_mlp.AssignInputs(MLP_inpt_array,MLP_valid_array)){
+
+        // Estimate speed
+	spdnet1_mlp.Forward();
+	ann_speed1=spdnet1_mlp.outp[0];
+        
+	// Add speed estimate to MLP inputs array and mark it valid
+        int idx=spdnet1_mlp.out_types[0].id;
+        MLP_inpt_array[idx]=ann_speed1;
+        MLP_valid_array[idx]=true;
+
+        // This should never happen because liqnet1 inputs are the same and spdnet1 inputs
+        // except for the spdnet1 output that was jsut computed and added to input array
+        if(!liqnet1_mlp.AssignInputs(MLP_inpt_array,MLP_valid_array)){
+	  fprintf(stderr,"Liqnet1 inputs wer invalid although spdnet1 inputs were OK.\n");
+	  fprintf(stderr,"THIS SHOULD NEVER HAPPEN! Dying now.\n");
+          exit(1);
+	}
+	// estimate liquid 
+	liqnet1_mlp.Forward();
+	liquid_est=liqnet1_mlp.outp[0];
+	
+	// Add liquid estimate to MLP inputs array and mark it valid
+	idx=liqnet1_mlp.out_types[0].id;
+	MLP_inpt_array[idx]=liquid_est;
+	MLP_valid_array[idx]=true;
+
+ 
+        //------ compute rain flag quantity if desired -//
+	if(rainFlagMethod== ANNRainFlag1){
+ 
+	  if(rainflag_mlp.AssignInputs(MLP_inpt_array,MLP_valid_array) ){
+
+	    rainflag_mlp.Forward();
+	    wvc->rainImpact=rainflag_mlp.outp[0];
+          
+	    // Set WVC flag value and bits
+	    if(wvc->rainImpact>rain_impact_thresh_for_flagging){
+	      wvc->rainFlagBits=2;
+	    }  
+	    else{
+	      wvc->rainFlagBits=0;
+	    }
+        
+	    //------ perform ann speed correction if desired -//
+	    if(rainCorrectMethod == ANNSpeed1 && wvc->rainImpact>rain_impact_thresh_for_correction &&
+	       spdnet2_mlp.AssignInputs(MLP_inpt_array,MLP_valid_array) ){
+	      
+	      spdnet2_mlp.Forward();
+	      ann_speed2=spdnet2_mlp.outp[0];
+
+	      //------ remove residual speed bias -//
+	      float bias=-0.4967*ann_speed2-0.8227*log(cosh(0.5*(ann_speed2-15)))+5.7520;
+	      float spd=ann_speed2-bias;
+          
+	      //------ modify first rank ambiguity -//
+	      WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+	      wvp->spd=spd;
+	      wvp->obj=0;
+	      // modify all other ambiguities
+              wvp=wvc->ambiguities.GetNext();
+	      while(wvp){
+		wvp->spd=spd;
+                wvp->obj=0;
+                wvp=wvc->ambiguities.GetNext();
+	      }
+	      //---------modify directionRanges speed array --------//
+
+	      // set first rank angle interval to cover all 360 degrees
+
+	      int nbins=wvc->directionRanges.dirIdx.GetBins();
+	      for(int c=0;c<nbins;c++){
+		wvc->directionRanges.bestSpd[c]=spd;
+		wvc->directionRanges.bestObj[c]=0;
+	      }
+		
+	    }// end rainCorrectMethod==ANNSpeed1, and correction rain flag threshold exceeded
+	
+	  } // end valid inputs to rainflag MLP case
+
+	  // Handle invalid inputs to rainflag case
+	  // for now throw away those cells
+	  else{
+	    delete(wvc);
+	    return(17);
+	  } 
+	} // end if rainFlagMethod==ANNRainFlag1 case
+      } // end of invalid inputs to liquid or speed1 networks
+      // Handle invalid inputs to liquid or speed net1 case
+      // for now throw away those cells
+      else{
+	delete(wvc);
+	return(17);
+      } 
+    } // end of rainFlagMethod==ANNRainFlag1 || rainCorrectMethodANNSpeed1 case
+
     //-------------------------//
     // determine grid indicies //
     //-------------------------//
@@ -2317,3 +2366,86 @@ L2AToL2B::WriteSolutionCurves(
     return(1);
 }
 
+void
+	L2AToL2B::ComputeMLPInputs(L2A* l2a, MeasList* meas_list, WVC* wvc){
+  // to simplify my life and speed up the code
+  // I am just hardcoding the numbers from the MLP_IO_TYPE table
+  // in MLP.C rather than doing a bunch of string operations
+  // -- BWS June 23 2010
+
+  // hardcoded indicies
+  int firstrank_spd_idx=52;
+  int mean_idx[]={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+  int var_idx[]={17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32};
+  int ctd_idx=33;
+  int ctd_frac_idx=34;
+
+  // set First Rank wind speed
+  if(wvc){
+    WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+    if(wvp){
+      MLP_inpt_array[firstrank_spd_idx]=wvp->spd;
+      MLP_valid_array[firstrank_spd_idx]=true;
+    }
+  }
+
+  // set Cross Track distance values
+
+  MLP_inpt_array[ctd_frac_idx] = ((float)l2a->frame.cti - ((float)l2a->header.crossTrackBins /2.0))
+                    / ((float)l2a->header.crossTrackBins /2.0);
+  MLP_valid_array[ctd_frac_idx] = true;
+  MLP_inpt_array[ctd_idx]=l2a->getCrossTrackDistance();
+  MLP_valid_array[ctd_idx] = true;
+
+  // set sigma0 mean and variance values
+  // array list includes all possible polarization, incidence angle, frequency, 
+  // and look angle combinations, but only half of these are currently implemented in the
+  // measurement class. Inner beam Ku VV and Outer beam Ku HH are unlikely to ever be used for
+  // consistency of climate record reasons, and currently we implement C band outer HH and
+  // C band inner VV by changing the GMF. As far as the code knows the inner beam is always HH
+  // and the outer beam is always VV.
+  float s0_mean[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  float s0_var[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  int s0_n[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+  
+  // accumulate the sum of each type of measurement, for calculating the mean
+  for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+      int i=-1;
+      int aftfore= !(meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2);
+      switch (meas->measType){
+      case Meas::HH_MEAS_TYPE:
+        i=0+aftfore;
+	break;
+      case Meas::VV_MEAS_TYPE:
+        i=6+aftfore;
+	break;
+      case Meas::C_BAND_HH_MEAS_TYPE:
+        i=8+aftfore;
+	break;
+      case Meas::C_BAND_VV_MEAS_TYPE:
+        i=14+aftfore;
+	break;
+      default:
+	break;
+      }
+      if(i!=-1){
+	s0_n[i]++;
+        s0_mean[i]+=meas->value;
+        s0_var[i]+=meas->value*meas->value;
+      }
+    }
+
+  for(int c=0;c<16;c++){
+    // populate valid mean arrays
+    if(s0_n[c]>0){
+      MLP_inpt_array[mean_idx[c]]=s0_mean[c]/s0_n[c];
+      MLP_valid_array[mean_idx[c]]=true;
+    }
+    // populate valid variance arrays
+    if(s0_n[c]>1){
+      MLP_inpt_array[var_idx[c]]=(s0_var[c]-(s0_mean[c]*s0_mean[c])/s0_n[c])/(s0_n[c]-1);
+      MLP_valid_array[var_idx[c]]=true;
+    }
+  }
+}
