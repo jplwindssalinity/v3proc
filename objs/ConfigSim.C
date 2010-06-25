@@ -1299,180 +1299,272 @@ ConfigL2AToL2B(
     L2AToL2B*    l2a_to_l2b,
     ConfigList*  config_list)
 {
-    int tmp_int;
-    float tmp_float;
+  int tmp_int;
+  float tmp_float;
 
-    if (! config_list->GetInt(MEDIAN_FILTER_WINDOW_SIZE_KEYWORD, &tmp_int))
-        return(0);
-    l2a_to_l2b->medianFilterWindowSize = tmp_int;
+  if (! config_list->GetInt(MEDIAN_FILTER_WINDOW_SIZE_KEYWORD, &tmp_int))
+    return(0);
+  l2a_to_l2b->medianFilterWindowSize = tmp_int;
 
-    if (! config_list->GetInt(MEDIAN_FILTER_MAX_PASSES_KEYWORD, &tmp_int))
-        return(0);
-    l2a_to_l2b->medianFilterMaxPasses = tmp_int;
+  if (! config_list->GetInt(MEDIAN_FILTER_MAX_PASSES_KEYWORD, &tmp_int))
+    return(0);
+  l2a_to_l2b->medianFilterMaxPasses = tmp_int;
 
-    if (! config_list->GetInt(MAX_RANK_FOR_NUDGING_KEYWORD, &tmp_int))
-        return(0);
-    l2a_to_l2b->maxRankForNudging = tmp_int;
+  if (! config_list->GetInt(MAX_RANK_FOR_NUDGING_KEYWORD, &tmp_int))
+    return(0);
+  l2a_to_l2b->maxRankForNudging = tmp_int;
+  
+  if (! config_list->GetInt(USE_MANY_AMBIGUITIES_KEYWORD, &tmp_int))
+    return(0);
+  l2a_to_l2b->useManyAmbiguities = tmp_int;
+  
+  if (! config_list->GetInt(USE_AMBIGUITY_WEIGHTS_KEYWORD, &tmp_int))
+    return(0);
+  l2a_to_l2b->useAmbiguityWeights = tmp_int;
 
-    if (! config_list->GetInt(USE_MANY_AMBIGUITIES_KEYWORD, &tmp_int))
-        return(0);
-    l2a_to_l2b->useManyAmbiguities = tmp_int;
-
-    if (! config_list->GetInt(USE_AMBIGUITY_WEIGHTS_KEYWORD, &tmp_int))
-        return(0);
-    l2a_to_l2b->useAmbiguityWeights = tmp_int;
-
-    config_list->DoNothingForMissingKeywords();
+  config_list->DoNothingForMissingKeywords();
     
-        if (! config_list->GetInt("NEURAL_NET_TRAIN_ATI", &tmp_int))
-	  l2a_to_l2b->ann_train_ati=0;
-        else l2a_to_l2b->ann_train_ati=tmp_int;
-	if (! config_list->GetFloat(INCLINATION_KEYWORD, &tmp_float))
-	  l2a_to_l2b->orbitInclination=0;
-        else l2a_to_l2b->orbitInclination=tmp_float*pi/180;
+  if (! config_list->GetInt("NEURAL_NET_TRAIN_ATI", &tmp_int))
+    l2a_to_l2b->ann_train_ati=0;
+  else l2a_to_l2b->ann_train_ati=tmp_int;
+  if (! config_list->GetFloat(INCLINATION_KEYWORD, &tmp_float))
+    l2a_to_l2b->orbitInclination=0;
+  else l2a_to_l2b->orbitInclination=tmp_float*pi/180;
+  
+  if (! config_list->GetFloat("NEURAL_NET_TRAIN_DIRECTION_OFFSET", &tmp_float))
+    l2a_to_l2b->ann_train_diroff=0;
+  else l2a_to_l2b->ann_train_diroff=tmp_float*pi/180;
+  
+  if (! config_list->GetInt(USE_SIGMA0_SPATIAL_WEIGHTS_KEYWORD, &tmp_int))
+    return(0);
+  l2a_to_l2b->useSigma0Weights = tmp_int;
+  
+  if (! config_list->GetFloat(SSW_CORRELATION_LENGTH_KEYWORD, &tmp_float))
+    return(0);
+  l2a_to_l2b->sigma0WeightCorrLength = tmp_float;
+    
+  //-----------------------------------------------
+  // Configure Rain Flagging and Correction methods
+  //-------------------------------------------------
+         
 
-	if (! config_list->GetFloat("NEURAL_NET_TRAIN_DIRECTION_OFFSET", &tmp_float))
-	  l2a_to_l2b->ann_train_diroff=0;
-        else l2a_to_l2b->ann_train_diroff=tmp_float*pi/180;
+  // Determine flagging method
+  char*   flagmeth = config_list->Get(RAIN_FLAG_METHOD_KEYWORD);
 
-        if (! config_list->GetInt(USE_SIGMA0_SPATIAL_WEIGHTS_KEYWORD, &tmp_int))
-            return(0);
-        l2a_to_l2b->useSigma0Weights = tmp_int;
-
-        if (! config_list->GetFloat(SSW_CORRELATION_LENGTH_KEYWORD, &tmp_float))
-            return(0);
-        l2a_to_l2b->sigma0WeightCorrLength = tmp_float;
+  //      No  flagging Case
+  if(flagmeth==NULL || strcasecmp(flagmeth,"NONE")==0){
+    l2a_to_l2b->rainFlagMethod=L2AToL2B::NOFLAG;
+  }
         
-    l2a_to_l2b->ann_sigma0_corr_file = config_list->Get(NEURAL_NET_SIG0_CORR_FILE);
-    if (l2a_to_l2b->ann_sigma0_corr_file) {
-        // construct the neural net
-        if(!l2a_to_l2b->s0corr_mlp.Read(l2a_to_l2b->ann_sigma0_corr_file)){
-          fprintf(stderr,"L2AToL2B::ConvertAndWrite: Error: Unable to read netfile %s\n",l2a_to_l2b->ann_sigma0_corr_file);
-          return 0;
-        }
+  //      Neural Net Rain Flag
+  else if (strcasecmp(flagmeth,"ANN_RAINFLAG1")==0){
+    l2a_to_l2b->rainFlagMethod=L2AToL2B::ANNRainFlag1;
+
+          
+    config_list->ExitForMissingKeywords(); // require that these keyword be there
+
+    // Read in rain flag neural network
+    char* filename = config_list->Get(NEURAL_NET_RAINFLAG_FILE_KEYWORD);
+    if(!l2a_to_l2b->rainflag_mlp.Read(filename)){
+      fprintf(stderr,"ConfigL2AToL2B: Error: Unable to read netfile %s\n",filename);
+      return 0;
+    }
+ 
+    // configure flag threshold
+    config_list->GetFloat(RAIN_IMPACT_FLAG_THRESHOLD_KEYWORD,
+			  &(l2a_to_l2b->rain_impact_thresh_for_flagging));
+    config_list->DoNothingForMissingKeywords(); // go back to ignore nonexistent keywords
+  } 
+  
+  // Bad input case
+  else{
+    fprintf(stderr,"ConfigL2AToL2B: Unknown rain flagging method: %s\n",flagmeth);
+    exit(1);
+  }
+  
+  //--- Configure Rain Correction
+  char*   corrmeth = config_list->Get(RAIN_CORRECTION_METHOD_KEYWORD);
+  //     No correction case
+  if(corrmeth==NULL || strcasecmp(corrmeth,"NONE")==0){
+    l2a_to_l2b->rainCorrectMethod=L2AToL2B::NOCORR;
+  }
+
+  /// Neural net speed correction case
+  else if(strcasecmp(corrmeth,"ANN_SPEED1")==0){
+    l2a_to_l2b->rainCorrectMethod=L2AToL2B::ANNSpeed1;
+    
+    // for now flagging is required to use ANNSpeed1 rain correction
+    if(l2a_to_l2b->rainFlagMethod==L2AToL2B::NOFLAG){
+      fprintf(stderr,"ConfigL2AToL2B Error: ANNSpeed1 requires rain flagging\n");
+      exit(1);
+    }
+    config_list->ExitForMissingKeywords(); // require that these keywords be there
+    
+    // Read in liquid net 1 neural network
+    char* filename = config_list->Get(NEURAL_NET_LIQUID1_FILE_KEYWORD);
+    if(!l2a_to_l2b->liqnet1_mlp.Read(filename)){
+      fprintf(stderr,"ConfigL2AToL2B: Error: Unable to read netfile %s\n",filename);
+      return 0;
     }
 
-    l2a_to_l2b->ann_error_est_file = config_list->Get(NEURAL_NET_ERR_EST_FILE);
-    if (l2a_to_l2b->ann_error_est_file) {
-        // construct the neural net
-        if(!l2a_to_l2b->errEst_mlp.Read(l2a_to_l2b->ann_error_est_file)){
-          fprintf(stderr,"L2AToL2B::ConvertAndWrite: Error: Unable to read netfile %s\n",l2a_to_l2b->ann_error_est_file);
-          return 0;
-        }
+    filename = config_list->Get(NEURAL_NET_SPEED1_FILE_KEYWORD);
+    if(!l2a_to_l2b->spdnet1_mlp.Read(filename)){
+      fprintf(stderr,"ConfigL2AToL2B: Error: Unable to read netfile %s\n",filename);
+      return 0;
     }
 
-    config_list->ExitForMissingKeywords();
+    filename = config_list->Get(NEURAL_NET_SPEED2_FILE_KEYWORD);
+    if(!l2a_to_l2b->spdnet2_mlp.Read(filename)){
+      fprintf(stderr,"ConfigL2AToL2B: Error: Unable to read netfile %s\n",filename);
+      return 0;
+    }
+       
+    // set rain impact threshold used to determine when to correct speeds
+    config_list->GetFloat(RAIN_IMPACT_CORR_THRESHOLD_KEYWORD,
+			  &(l2a_to_l2b->rain_impact_thresh_for_correction));
+    config_list->DoNothingForMissingKeywords();
+          
+  }
+  else if(strcasecmp(corrmeth, "ANN_NRCS_CORRECTION")==0){
+    l2a_to_l2b->rainCorrectMethod=L2AToL2B::ANN_NRCS_CORRECTION;
+    
+    
+    config_list->ExitForMissingKeywords(); // require that these keywords be there
+    char* filename = config_list->Get(NEURAL_NET_SIG0_CORR_FILE_KEYWORD);
+    if(!l2a_to_l2b->s0corr_mlp.Read(filename)){
+      fprintf(stderr,"ConfigL2AToL2B: Error: Unable to read netfile %s\n",filename);
+      return 0;
+    }
+    config_list->DoNothingForMissingKeywords();
+  }
+  // Bad input case
+  else{
+    fprintf(stderr,"ConfigL2AToL2B: Unknown rain correction method: %s\n",corrmeth);
+    exit(1);
+  }
+  
+  // This may never be used but I'm leaving it in for now -- BWS June 23 2010
+  l2a_to_l2b->ann_error_est_file = config_list->Get(NEURAL_NET_ERR_EST_FILE);
+  if (l2a_to_l2b->ann_error_est_file) {
+    // construct the neural net
+    if(!l2a_to_l2b->errEst_mlp.Read(l2a_to_l2b->ann_error_est_file)){
+      fprintf(stderr,"L2AToL2B::ConvertAndWrite: Error: Unable to read netfile %s\n",l2a_to_l2b->ann_error_est_file);
+      return 0;
+    }
+  }
+  
+  config_list->ExitForMissingKeywords();
+  
+  char* wr_method = config_list->Get(WIND_RETRIEVAL_METHOD_KEYWORD);
+  if (wr_method == NULL)
+    return(0);
+  if (! l2a_to_l2b->SetWindRetrievalMethod(wr_method))
+    return(0);
+  
+  //---------//
+  // nudging //
+  //---------//
 
-    char* wr_method = config_list->Get(WIND_RETRIEVAL_METHOD_KEYWORD);
-    if (wr_method == NULL)
-        return(0);
-    if (! l2a_to_l2b->SetWindRetrievalMethod(wr_method))
-        return(0);
-
-    //---------//
-    // nudging //
-    //---------//
-
-    int use_nudging;
-    if (! config_list->GetInt(USE_NUDGING_KEYWORD, &use_nudging))
-        return(0);
-
-    l2a_to_l2b->useNudging = use_nudging;
-    if (use_nudging)
+  int use_nudging;
+  if (! config_list->GetInt(USE_NUDGING_KEYWORD, &use_nudging))
+    return(0);
+  
+  l2a_to_l2b->useNudging = use_nudging;
+  if (use_nudging)
     {
-        //------------------------//
-        // configure nudging flags //
-        //------------------------//
+      //------------------------//
+      // configure nudging flags //
+      //------------------------//
 
-        if (! config_list->GetInt(SMART_NUDGE_FLAG_KEYWORD, &tmp_int))
-            return(0);
-        l2a_to_l2b->smartNudgeFlag = tmp_int;
+      if (! config_list->GetInt(SMART_NUDGE_FLAG_KEYWORD, &tmp_int))
+	return(0);
+      l2a_to_l2b->smartNudgeFlag = tmp_int;
+      
+      config_list->DoNothingForMissingKeywords();
+      if (! config_list->GetInt("ARRAY_NUDGING", &tmp_int))
+	tmp_int=0;
+      l2a_to_l2b->arrayNudgeFlag = tmp_int;
+      
+      if(l2a_to_l2b->arrayNudgeFlag && l2a_to_l2b->smartNudgeFlag){
+	fprintf(stderr,"Use either SMART or ARRAY nudging but not both!\n");
+	exit(1);
+      }
+      
+      config_list->ExitForMissingKeywords();
+      //-----------------------//
+      // configure nudge field //
+      //-----------------------//
 
-        config_list->DoNothingForMissingKeywords();
-        if (! config_list->GetInt("ARRAY_NUDGING", &tmp_int))
-	  tmp_int=0;
-        l2a_to_l2b->arrayNudgeFlag = tmp_int;
-
-        if(l2a_to_l2b->arrayNudgeFlag && l2a_to_l2b->smartNudgeFlag){
-	  fprintf(stderr,"Use either SMART or ARRAY nudging but not both!\n");
-	  exit(1);
-	}
-
-        config_list->ExitForMissingKeywords();
-        //-----------------------//
-        // configure nudge field //
-        //-----------------------//
-
-        char* nudge_type = config_list->Get(NUDGE_WINDFIELD_TYPE_KEYWORD);
-        if (nudge_type == NULL)
-            return(0);
-
-        if (strcasecmp(nudge_type, "SV") == 0)
+      char* nudge_type = config_list->Get(NUDGE_WINDFIELD_TYPE_KEYWORD);
+      if (nudge_type == NULL)
+	return(0);
+      
+      if (strcasecmp(nudge_type, "SV") == 0)
         {
-            if (!config_list->GetFloat(NUDGE_WINDFIELD_LAT_MIN_KEYWORD,
-                                       &l2a_to_l2b->nudgeField.lat_min) ||
-                !config_list->GetFloat(NUDGE_WINDFIELD_LAT_MAX_KEYWORD,
-                                       &l2a_to_l2b->nudgeField.lat_max) ||
-                !config_list->GetFloat(NUDGE_WINDFIELD_LON_MIN_KEYWORD,
-                                       &l2a_to_l2b->nudgeField.lon_min) ||
-                !config_list->GetFloat(NUDGE_WINDFIELD_LON_MAX_KEYWORD,
-                                       &l2a_to_l2b->nudgeField.lon_max))
+	  if (!config_list->GetFloat(NUDGE_WINDFIELD_LAT_MIN_KEYWORD,
+				     &l2a_to_l2b->nudgeField.lat_min) ||
+	      !config_list->GetFloat(NUDGE_WINDFIELD_LAT_MAX_KEYWORD,
+				     &l2a_to_l2b->nudgeField.lat_max) ||
+	      !config_list->GetFloat(NUDGE_WINDFIELD_LON_MIN_KEYWORD,
+				     &l2a_to_l2b->nudgeField.lon_min) ||
+	      !config_list->GetFloat(NUDGE_WINDFIELD_LON_MAX_KEYWORD,
+				     &l2a_to_l2b->nudgeField.lon_max))
             {
               fprintf(stderr, "ConfigNudgeWindField: SV can't determine range of lat and lon\n");
               return(0);
             }
         }
-	float dummy;
-        int fixed_speed_set=0;
-	config_list->DoNothingForMissingKeywords();
-	if (config_list->GetFloat(TRUTH_WIND_FIXED_SPEED_KEYWORD, &dummy))
-	  {
-	    fixed_speed_set=1;
-	  }
-	config_list->ExitForMissingKeywords();
-        char* nudge_windfield = config_list->Get(NUDGE_WINDFIELD_FILE_KEYWORD);
-        if (nudge_windfield == NULL)
-            return(0);
-       
-        if (l2a_to_l2b->smartNudgeFlag)
+      float dummy;
+      int fixed_speed_set=0;
+      config_list->DoNothingForMissingKeywords();
+      if (config_list->GetFloat(TRUTH_WIND_FIXED_SPEED_KEYWORD, &dummy))
+	{
+	  fixed_speed_set=1;
+	}
+      config_list->ExitForMissingKeywords();
+      char* nudge_windfield = config_list->Get(NUDGE_WINDFIELD_FILE_KEYWORD);
+      if (nudge_windfield == NULL)
+	return(0);
+      
+      if (l2a_to_l2b->smartNudgeFlag)
         {
 	  if(fixed_speed_set){
 	    fprintf(stderr,"Cannot use SMART NUDGE WITH FIXED TRUTH SPEED\n");
 	  }
-            if (!config_list->GetFloat(NUDGE_WINDFIELD_LAT_MIN_KEYWORD,
-                                       &l2a_to_l2b->nudgeVctrField.latMin) ||
-                !config_list->GetFloat(NUDGE_WINDFIELD_LAT_MAX_KEYWORD,
-                                       &l2a_to_l2b->nudgeVctrField.latMax) ||
-                !config_list->GetFloat(NUDGE_WINDFIELD_LON_MIN_KEYWORD,
-                                       &l2a_to_l2b->nudgeVctrField.lonMin) ||
-                !config_list->GetFloat(NUDGE_WINDFIELD_LON_MAX_KEYWORD,
-                                       &l2a_to_l2b->nudgeVctrField.lonMax))
+	  if (!config_list->GetFloat(NUDGE_WINDFIELD_LAT_MIN_KEYWORD,
+				     &l2a_to_l2b->nudgeVctrField.latMin) ||
+	      !config_list->GetFloat(NUDGE_WINDFIELD_LAT_MAX_KEYWORD,
+				     &l2a_to_l2b->nudgeVctrField.latMax) ||
+	      !config_list->GetFloat(NUDGE_WINDFIELD_LON_MIN_KEYWORD,
+				     &l2a_to_l2b->nudgeVctrField.lonMin) ||
+	      !config_list->GetFloat(NUDGE_WINDFIELD_LON_MAX_KEYWORD,
+				     &l2a_to_l2b->nudgeVctrField.lonMax))
             {
               fprintf(stderr, "Config NudgeVectorField:  can't determine range of lat and lon\n");
               return(0);
             }
-            l2a_to_l2b->nudgeVctrField.lonMax*=dtr;
-            l2a_to_l2b->nudgeVctrField.lonMin*=dtr;
-            l2a_to_l2b->nudgeVctrField.latMax*=dtr;
-            l2a_to_l2b->nudgeVctrField.latMin*=dtr;
-            if (! l2a_to_l2b->nudgeVctrField.ReadVctr(nudge_windfield))
-                return(0);
+	  l2a_to_l2b->nudgeVctrField.lonMax*=dtr;
+	  l2a_to_l2b->nudgeVctrField.lonMin*=dtr;
+	  l2a_to_l2b->nudgeVctrField.latMax*=dtr;
+	  l2a_to_l2b->nudgeVctrField.latMin*=dtr;
+	  if (! l2a_to_l2b->nudgeVctrField.ReadVctr(nudge_windfield))
+	    return(0);
         }
-        else if(l2a_to_l2b->arrayNudgeFlag){
-	  if(fixed_speed_set){
-	    fprintf(stderr,"Cannot use ARRAY NUDGE WITH FIXED TRUTH SPEED\n");
-	  }
-	  l2a_to_l2b->ReadNudgeArray(nudge_windfield);
-        }
-        else
+      else if(l2a_to_l2b->arrayNudgeFlag){
+	if(fixed_speed_set){
+	  fprintf(stderr,"Cannot use ARRAY NUDGE WITH FIXED TRUTH SPEED\n");
+	}
+	l2a_to_l2b->ReadNudgeArray(nudge_windfield);
+      }
+      else
         {
             if (! l2a_to_l2b->nudgeField.ReadType(nudge_windfield, nudge_type))
-                return(0);
-
+	      return(0);
+	    
             //--------------------------//
             // Scale or Fix Wind Speeds //
             //--------------------------//
-
+	    
             config_list->DoNothingForMissingKeywords();
             float fixed_speed;
 	    if (config_list->GetFloat(TRUTH_WIND_FIXED_SPEED_KEYWORD, &fixed_speed))
@@ -1481,119 +1573,119 @@ ConfigL2AToL2B(
 	      }
             float scale;
             if (config_list->GetFloat(TRUTH_WIND_SPEED_MULTIPLIER_KEYWORD,
-                &scale))
-            {
+				      &scale))
+	      {
                 l2a_to_l2b->nudgeField.ScaleSpeed(scale);
-            }
+	      }
             config_list->ExitForMissingKeywords();
         }
 
-        //----------------//
-        // threshold flag //
-        //----------------//
+      //----------------//
+      // threshold flag //
+      //----------------//
 
-        if (! config_list->GetInt(USE_NUDGING_THRESHOLD_KEYWORD, &tmp_int))
-            return(0);
-        l2a_to_l2b->useNudgeThreshold = tmp_int;
-
-        if(l2a_to_l2b->useNudgeThreshold)
+      if (! config_list->GetInt(USE_NUDGING_THRESHOLD_KEYWORD, &tmp_int))
+	return(0);
+      l2a_to_l2b->useNudgeThreshold = tmp_int;
+      
+      if(l2a_to_l2b->useNudgeThreshold)
         {
-            if (! config_list->GetFloat(NEAR_SWATH_NUDGE_THRESHOLD_KEYWORD,
-                &tmp_float))
+	  if (! config_list->GetFloat(NEAR_SWATH_NUDGE_THRESHOLD_KEYWORD,
+				      &tmp_float))
             {
-                return(0);
+	      return(0);
             }
-            l2a_to_l2b->nudgeThresholds[0]=tmp_float;
-            if (! config_list->GetFloat(FAR_SWATH_NUDGE_THRESHOLD_KEYWORD,
-                &tmp_float))
+	  l2a_to_l2b->nudgeThresholds[0]=tmp_float;
+	  if (! config_list->GetFloat(FAR_SWATH_NUDGE_THRESHOLD_KEYWORD,
+				      &tmp_float))
             {
-                return(0);
+	      return(0);
             }
-            l2a_to_l2b->nudgeThresholds[1] = tmp_float;
+	  l2a_to_l2b->nudgeThresholds[1] = tmp_float;
         }
-        else
+      else
         {
-            config_list->DoNothingForMissingKeywords();
-            if (! config_list->GetInt(USE_STREAM_NUDGING_KEYWORD, &tmp_int))
+	  config_list->DoNothingForMissingKeywords();
+	  if (! config_list->GetInt(USE_STREAM_NUDGING_KEYWORD, &tmp_int))
             {
-                l2a_to_l2b->useNudgeStream = 0;  // default
+	      l2a_to_l2b->useNudgeStream = 0;  // default
             }
-            else
+	  else
             {
-                l2a_to_l2b->useNudgeStream = tmp_int;
-                if (! config_list->GetFloat(STREAM_THRESHOLD_KEYWORD,
-                    &tmp_float))
+	      l2a_to_l2b->useNudgeStream = tmp_int;
+	      if (! config_list->GetFloat(STREAM_THRESHOLD_KEYWORD,
+					  &tmp_float))
                 {
-                    l2a_to_l2b->streamThreshold = 0.0; // default
+		  l2a_to_l2b->streamThreshold = 0.0; // default
                 }
-                else
+	      else
                 {
-                    l2a_to_l2b->streamThreshold = tmp_float;
+		  l2a_to_l2b->streamThreshold = tmp_float;
                 }
             }
-            config_list->ExitForMissingKeywords();
+	  config_list->ExitForMissingKeywords();
         }
     }
-
-    if (! config_list->GetInt(USE_NARROW_MEDIAN_FILTER_KEYWORD, &tmp_int))
-        return(0);
-    l2a_to_l2b->useNMF = tmp_int;
-
-    if (! config_list->GetInt(USE_RANDOM_RANK_INIT_KEYWORD, &tmp_int))
-        return(0);
-    l2a_to_l2b->useRandomInit = tmp_int;
-
-    config_list->DoNothingForMissingKeywords();
-    if ( config_list->GetInt(USE_HURRICANE_NUDGE_KEYWORD, &tmp_int) && tmp_int)
+  
+  if (! config_list->GetInt(USE_NARROW_MEDIAN_FILTER_KEYWORD, &tmp_int))
+    return(0);
+  l2a_to_l2b->useNMF = tmp_int;
+  
+  if (! config_list->GetInt(USE_RANDOM_RANK_INIT_KEYWORD, &tmp_int))
+    return(0);
+  l2a_to_l2b->useRandomInit = tmp_int;
+  
+  config_list->DoNothingForMissingKeywords();
+  if ( config_list->GetInt(USE_HURRICANE_NUDGE_KEYWORD, &tmp_int) && tmp_int)
     {
-        config_list->ExitForMissingKeywords();
-        l2a_to_l2b->useHurricaneNudgeField = tmp_int;
-        char* hurricane_file
-            = config_list->Get(HURRICANE_WINDFIELD_FILE_KEYWORD);
-        if (hurricane_file == NULL)
-            return(0);
-        if (! l2a_to_l2b->hurricaneField.ReadHurricane(hurricane_file))
-            return(0);
-        if (! config_list->GetFloat(HURRICANE_RADIUS_KEYWORD,&tmp_float))
-            return(0);
-        l2a_to_l2b->hurricaneRadius = tmp_float; // km
-        float lat, lon;
-        if (! config_list->GetFloat(HURRICANE_CENTER_LATITUDE_KEYWORD,
-            &tmp_float))
+      config_list->ExitForMissingKeywords();
+      l2a_to_l2b->useHurricaneNudgeField = tmp_int;
+      char* hurricane_file
+	= config_list->Get(HURRICANE_WINDFIELD_FILE_KEYWORD);
+      if (hurricane_file == NULL)
+	return(0);
+      if (! l2a_to_l2b->hurricaneField.ReadHurricane(hurricane_file))
+	return(0);
+      if (! config_list->GetFloat(HURRICANE_RADIUS_KEYWORD,&tmp_float))
+	return(0);
+      l2a_to_l2b->hurricaneRadius = tmp_float; // km
+      float lat, lon;
+      if (! config_list->GetFloat(HURRICANE_CENTER_LATITUDE_KEYWORD,
+				  &tmp_float))
         {
-            return(0);
+	  return(0);
         }
-        lat = tmp_float * dtr;
-        if (! config_list->GetFloat(HURRICANE_CENTER_LONGITUDE_KEYWORD,
-            &tmp_float))
+      lat = tmp_float * dtr;
+      if (! config_list->GetFloat(HURRICANE_CENTER_LONGITUDE_KEYWORD,
+				  &tmp_float))
         {
-            return(0);
+	  return(0);
         }
-        lon = tmp_float * dtr;
-        l2a_to_l2b->hurricaneCenter.SetAltLonGDLat(0.0, lon, lat);
+      lon = tmp_float * dtr;
+      l2a_to_l2b->hurricaneCenter.SetAltLonGDLat(0.0, lon, lat);
     }
-    else
+  else
     {
-        l2a_to_l2b->useHurricaneNudgeField = 0;
+      l2a_to_l2b->useHurricaneNudgeField = 0;
     }
-
-    // configure Kprc
-    config_list->ExitForMissingKeywords();
-    int sim_kprc = 0;
-    float kprc_value = 0.0;
-    config_list->GetInt(SIM_KPRC_KEYWORD, &sim_kprc);
-    if (sim_kprc)
+  
+  // configure Kprc
+  config_list->ExitForMissingKeywords();
+  int sim_kprc = 0;
+  float kprc_value = 0.0;
+  config_list->GetInt(SIM_KPRC_KEYWORD, &sim_kprc);
+  if (sim_kprc)
     {
-        config_list->GetFloat(KPRC_VALUE_KEYWORD, &kprc_value);
+      config_list->GetFloat(KPRC_VALUE_KEYWORD, &kprc_value);
     }
-
-    // convert from dB
-    float std = pow(10.0, 0.1 * (kprc_value)) - 1.0;
-    l2a_to_l2b->kprc.SetVariance(std*std);
-    l2a_to_l2b->kprc.SetMean(0.0);
-    l2a_to_l2b->kprc.SetSeed(get_seed(config_list, KPRC_SEED_KEYWORD,
-        DEFAULT_KPRC_SEED));
-    return(1);
+  
+  // convert from dB
+  float std = pow(10.0, 0.1 * (kprc_value)) - 1.0;
+  l2a_to_l2b->kprc.SetVariance(std*std);
+  l2a_to_l2b->kprc.SetMean(0.0);
+  l2a_to_l2b->kprc.SetSeed(get_seed(config_list, KPRC_SEED_KEYWORD,
+				    DEFAULT_KPRC_SEED));
+  return(1);
 }
 
 //-----------------//
