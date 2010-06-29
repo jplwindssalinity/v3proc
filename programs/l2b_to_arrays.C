@@ -68,6 +68,8 @@
 //      updated the comments
 //    Alexandra H Chau, modified 4/1/10
 //      added rank = -2 to get nearest to truth
+//    Brent Williams, modified 6/28/10
+//      added output rain flag
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -277,6 +279,9 @@ main(
     float ** lat=(float**)make_array(sizeof(float),2,nati,ncti);
     float ** lon=(float**)make_array(sizeof(float),2,nati,ncti);
 
+    char ** flg=(char**)make_array(sizeof(char),2,nati,ncti);
+    
+
     int found_valid=0;
     int first_valid_ati=0, nvalid_ati=0;
     for(int a=0;a<nati;a++){
@@ -342,6 +347,7 @@ main(
 		dir[a][c]=wvp->dir;
 		lat[a][c]=wvc->lonLat.latitude;
 		lon[a][c]=wvc->lonLat.longitude;
+		flg[a][c]=wvc->rainFlagBits;//find correct object
 	      }
 	      else good =false;
 	      nvalid_ati=a+1-first_valid_ati;
@@ -357,6 +363,7 @@ main(
               dir[a][c]=0;
 	      lat[a][c]=0;
 	      lon[a][c]=0;
+	      flg[a][c]=0;
 	    }
       } // end c loop
     } // end a loop
@@ -379,7 +386,8 @@ main(
        !write_array(wfp,&spd[f],sizeof(float),2,n,ncti) ||
        !write_array(wfp,&dir[f],sizeof(float),2,n,ncti) ||
        !write_array(wfp,&lat[f],sizeof(float),2,n,ncti) ||
-       !write_array(wfp,&lon[f],sizeof(float),2,n,ncti)){
+       !write_array(wfp,&lon[f],sizeof(float),2,n,ncti) ||
+       !write_array(wfp,&flg[f],sizeof(char),2,n,ncti)){
       fprintf(stderr,"Error writing to file %s\n",out_file);
       exit(1);
     }
@@ -387,6 +395,7 @@ main(
     free_array(dir,2,nati,ncti);
     free_array(lat,2,nati,ncti);
     free_array(lon,2,nati,ncti);
+    free_array(flg,2,nati,ncti);
     fclose(wfp);
     return (0);
 }
