@@ -2198,9 +2198,32 @@ ConfigGrid(
       config_list->GetFloat(REGRID_OVERLAP_FACTOR_KEYWORD,&(grid->overlapFactor));
     }
     else{
-      fprintf(stderr,"ConfigGrid:Bad regrid method");
+      fprintf(stderr,"ConfigGrid:Bad regrid method\n");
       return(0);
     }
+    
+    config_list->WarnForMissingKeywords();
+	char* algostr=config_list->Get(REGRID_ALGORITHM_KEYWORD);
+	if( algostr == NULL )
+	{
+      fprintf(stderr,"ConfigGrid: Using SUBTRACK Gridding alogirthm.\n");
+      grid->algorithm=Grid::SUBTRACK;
+    }
+    else
+    {
+  	  if(strcasecmp(algostr,"som")==0){
+        grid->algorithm=Grid::SOM;
+      }
+      else if(strcasecmp(algostr,"subtrack")==0){
+        grid->algorithm=Grid::SUBTRACK;
+      }
+      else{
+        fprintf(stderr,"ConfigGrid: Unknown gridding alogirthm.\n");
+        exit(1);
+      }
+    }
+    config_list->ExitForMissingKeywords();
+    
     return(1);
 }
 
