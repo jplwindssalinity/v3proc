@@ -110,7 +110,11 @@ public:
              double measurement_time, float *crosstrack, float *alongtrack);
     int  GetSubtrackPosition(double ctd, double atd, double start_time,
              EarthPosition* rground);
-
+             
+    int GetSOMCoordinates( EarthPosition rground,
+             double measurement_time, double *ct_lat, double *at_lon);
+    
+    
 protected:
 
     int  _GetBracketingOrbitStates(double time, OrbitState** os1,

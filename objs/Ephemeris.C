@@ -15,6 +15,7 @@ static const char rcs_id_ephemeris_c[] =
 #include "List.C"
 #include "Interpolate.h"
 #include "Constants.h"
+#include "SeaPac.h"
 
 //============//
 // OrbitState //
@@ -476,6 +477,240 @@ Ephemeris::GetNextOrbitState(
 
     *os = *ptr;
     return(1);
+}
+
+#define EPSILON              1E-30
+
+int
+Ephemeris::GetSOMCoordinates(
+    EarthPosition    rground,
+    double           measurement_time,
+    double*          ct_lat,
+    double*          at_lon)
+{	
+	double sc_pos[3];
+	double sc_vel[3];
+	double nodal_period;
+	double arg_lat;
+	double long_asc_node;
+	double orb_inclination;
+	double orb_smaj_axis;
+	double orb_eccen;
+	double arg_per;
+	double mean_anom;
+    double obs_alt, obs_lon, obs_lat;
+	OrbitState os;
+	
+	// Interpolate ephem to measurement_time.
+	GetOrbitState(measurement_time, EPHEMERIS_INTERP_ORDER, &os);
+      
+    // Copy state vector from OrbitState object & convert to meters, meters/second 
+	sc_pos[0] = os.rsat.GetX()*1000;
+	sc_pos[1] = os.rsat.GetY()*1000;
+	sc_pos[2] = os.rsat.GetZ()*1000;
+	sc_vel[0] = os.vsat.GetX()*1000;
+	sc_vel[1] = os.vsat.GetY()*1000;
+	sc_vel[2] = os.vsat.GetZ()*1000;
+	
+	// Compute osculating orbit elements.
+	if( !compute_orbit_elements( sc_pos[0], sc_pos[1], sc_pos[2],
+	     sc_vel[0], sc_vel[1], sc_vel[2], &nodal_period, &arg_lat, 
+	     &long_asc_node, &orb_inclination,&orb_smaj_axis,  &orb_eccen,
+	     &arg_per, &mean_anom ) )
+	{
+	  fprintf( stderr, "Ephemeris::GetSOMCoordinates: ERROR in compute_orbit_elements!\n");
+	  return(0);
+	}
+	
+	// Get alt, lon, geodetic lat for this Meas
+	rground.GetAltLonGDLat(&obs_alt,&obs_lon,&obs_lat);
+	
+	double meas_lon = obs_lon * rtd;
+	double meas_lat = obs_lat * rtd;
+	
+	//--All of the following code is from IJBIN; I only modified it to return
+	// the SOM coordinates instead of array indices.
+     double earth_a = r1_earth * 1000.0; // convert from km to m.
+
+    //--------------------------------------------------------//
+    // Set some common conversions of orbit element variables //
+    //--------------------------------------------------------//
+    
+    double aa = orb_smaj_axis;
+    double ecc = orb_eccen;
+    double inc = orb_inclination * dtr;
+    double cosi = cos(inc);
+    double sini = sin(inc);
+    double lzero = long_asc_node * dtr;
+    double arglat = arg_lat * dtr;
+    double arglmod = arglat + pi_over_two;
+    if (arglmod > two_pi)
+        arglmod -= two_pi;
+ 
+    //--------------------------------------------//
+    // Compute orbit and nodal precession periods //
+    //--------------------------------------------//
+
+    double arat = aa / earth_a;   // axis to radius ratio
+    double slr = arat * (1.0 - ecc*ecc);    // normalized orbit ellipse
+ 
+    if (fabs(nodal_period) < EPSILON)
+    {
+        fprintf(stderr, "Nodal period too small\n");
+        return(0);
+    }
+    if (fabs(slr) < EPSILON)
+    {
+        fprintf(stderr, "SLR too small (divide by zero)\n");
+        return(0);
+    } 
+    double pnode = -1.5 * two_pi * rj2 * cosi / (nodal_period * (slr * slr));
+    
+    if (fabs(wa - pnode) < EPSILON)
+    {
+        fprintf(stderr, "Nodal quantity too small\n");
+        return(0);
+    }
+
+    double p1 = two_pi / (wa - pnode);    // earth period
+    double prat = nodal_period / p1;    // period ratio
+ 
+    //-----------------------------------------------//
+    // Compute bin coordinates for each cell in beam //
+    //-----------------------------------------------//
+
+    double mlon = meas_lon * dtr;    // cell longitude in radians
+    double mlat = meas_lat * dtr;    // cell latitude in radians
+    double snlat = sin(mlat);
+    double cslat = cos(mlat);
+
+    if (fabs(cslat) < EPSILON)
+    {
+        fprintf(stderr, "cslat too small\n");
+        return(0);
+    }
+
+    double tnlat = snlat / cslat;
+ 
+    //------------------------------------------------------------------//
+    // Get a trial value of along-track longitude to seed the iteration //
+    //------------------------------------------------------------------//
+
+    int ascend = 1;
+    double lnode = lzero;    // ascending node longitude
+    double lit0 = mlon - lnode;  // nadir node longitude difference
+    double cslit0 = cos(lit0);
+    double snlit0 = sin(lit0);
+
+    if (fabs(cslit0) < EPSILON)
+    {
+        fprintf(stderr, "cslit0 too small\n");
+        return(0);
+    }
+
+    if (cslit0 < 0.0)
+        ascend = 0;
+ 
+    // along-track longitude
+    double lip = atan((cosi*snlit0 + sini*tnlat) / cslit0);
+ 
+    if (! ascend)
+        lip += pi;
+
+    if (lip < 0.0)
+        lip += two_pi;
+
+    lip += pi_over_two;
+
+    if (lip > two_pi)
+        lip -= two_pi;
+
+    //-----------------------------------------------//
+    // Begin iteration to get along-track longitude  //
+    // Compute new value for along-track `longitude' //
+    //-----------------------------------------------//
+
+    double diff = 1.0;    // set initial value greater than tolerance
+    double slt = 0.0;
+
+    while (diff > 1.0e-5)
+    {
+        diff = lip - arglmod;    // angular difference
+        double d = pi - fabs(pi - fabs(diff));
+ 
+        double ddif = 0.0;
+        if (fabs(diff) > pi)
+        {
+            if (diff < -pi)
+                ddif = d;    // angular difference minimum
+            if (diff > pi)
+                ddif = -d;
+        }
+        else
+        {
+            ddif = diff;
+        }
+
+        lnode = lzero - prat*ddif;    // ascending node longitude
+        double lit = mlon - lnode;    // cell node longitude difference
+        slt = sin(lit);
+        double clt = cos(lit);
+        ascend = 1;
+ 
+        if (fabs(clt) < EPSILON)
+        {
+            fprintf(stderr, "abs_clt too small\n");
+            return(0);
+        }
+
+        if (clt < 0.0)
+            ascend = 0;
+
+        double lip1 = atan((cosi*slt + (1.0 - e2) * sini*tnlat) / clt);
+  
+        if (! ascend)
+            lip1 += pi;
+
+        if (lip1 < 0.0)
+            lip1 += two_pi;
+
+        lip1 += pi_over_two;
+  
+        if (lip1 > two_pi)
+            lip1 -= two_pi;
+ 
+        //--------------------------------//
+        // Check convergence of iteration //
+        //--------------------------------//
+
+        diff = fabs(lip - lip1);    // angular difference
+        lip = lip1;    // along-track longitude
+    }
+
+    //----------------------------------------------------//
+    // Iteration to get along-track longitude is complete //
+    // Now compute cross-track `latitude'                 //
+    //----------------------------------------------------//
+ 
+    double sphipi = (1.0 - e2)*cosi*snlat - sini*cslat*slt;
+    sphipi /= sqrt(1.0 - e2*snlat*snlat);
+    double phipi = asin(sphipi);    // cross-track latitude	
+	
+	*at_lon = lip*rtd;   // along-track longitude
+    *ct_lat = phipi*rtd; // cross-track latitude
+	
+	
+	// Un-wrap along-track longitude depending on ascending/decending.
+	// Near end of orbit, sc_vel[2] (VZ) should be less than zero 
+	// (approaches zero at orbit boundary).
+	if( *at_lon > 340 && sc_vel[2] > 0 ) 
+	  *at_lon -= 360;
+	
+	// Similar logic on other boundary.
+	if( *at_lon < 20 && sc_vel[2] < 0 )
+	  *at_lon += 360;
+	
+	return(1);
 }
 
 //---------------------------------------------------------------------------//
