@@ -77,7 +77,7 @@ Grid::SetStartTime(
       double r_n_at_bins      = 1624.0 * 25.0 / _alongtrack_res; 
       double atrack_bin_const = 360.0         / r_n_at_bins; 
       _start_vati_SOM         = (int)floor( at_lon / atrack_bin_const + 1.0 ) - 1;
-      fprintf(stdout,"Grid::SetStartTime: at_lon, _start_vati_SOM: %12.6f %d\n",at_lon,_start_vati_SOM);
+      //fprintf(stdout,"Grid::SetStartTime: at_lon, _start_vati_SOM: %12.6f %d\n",at_lon,_start_vati_SOM);
     }
     return(1);
 }
