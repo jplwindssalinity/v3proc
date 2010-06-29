@@ -34,6 +34,7 @@ class Grid
 {
 public:
         enum GridMethodE{ CENTROID, OVERLAP };
+        enum GridAlgoE{ SOM, SUBTRACK };
 	//--------------//
 	// construction //
 	//--------------//
@@ -52,7 +53,6 @@ public:
 	//---------------------//
 
 	int		Add(Meas *meas, double meas_time, long spot_id, int do_composite);
-
 	//--------------//
 	// input/output //
 	//--------------//
@@ -80,6 +80,7 @@ public:
         double lat_end_time;
 
         GridMethodE method;
+        GridAlgoE   algorithm;
         float overlapFactor;
 protected:
 
@@ -101,6 +102,8 @@ protected:
 	EarthPosition _start_position;
 	double _start_time;
 	double _end_time;
+	
+	int _start_vati_SOM; // used to store the starting ati computed using SOM algorithm
 
 	// index corresponding to _end_time.
 	int _max_vati;
@@ -120,7 +123,7 @@ protected:
 
 	int				_ati_start;
 	int				_ati_offset;
-
+	
 	double			_orbit_period;
 
 	OffsetListList**	_grid;			// the grid of lists of offset lists

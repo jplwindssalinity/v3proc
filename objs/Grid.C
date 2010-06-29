@@ -64,8 +64,21 @@ Grid::SetStartTime(
             "Grid::SetStartTime: Grid start time is out of ephemeris range\n");
         exit(1);
     }
-
+    
     _start_position = _start_position.Nadir();
+    
+    // Added for flexible SOM (IJBIN) gridding; need starting ati index
+    // start_time must be the least measurement time; not a time before the 
+    // grid start (i.e. want grid start time == instrument start time).
+    if( algorithm == SOM )
+    {
+      double at_lon, ct_lat;
+      ephemeris.GetSOMCoordinates( _start_position, _start_time, &ct_lat, &at_lon );
+      double r_n_at_bins      = 1624.0 * 25.0 / _alongtrack_res; 
+      double atrack_bin_const = 360.0         / r_n_at_bins; 
+      _start_vati_SOM         = (int)floor( at_lon / atrack_bin_const + 1.0 ) - 1;
+      fprintf(stdout,"Grid::SetStartTime: at_lon, _start_vati_SOM: %12.6f %d\n",at_lon,_start_vati_SOM);
+    }
     return(1);
 }
 
@@ -201,7 +214,56 @@ Grid::Add(
     //----------------------------------//
     // calculate the subtrack distances //
     //----------------------------------//
+	
+	float ctd, atd;
+	int cti0, vati0;
+	int numWVCs=0;
+	
+	
+	if( algorithm == SOM )
+	{
+      int    ijbin_ati,   ijbin_cti;
+      double ijbin_r_ati, ijbin_r_cti;
+      double ijbin_atlon, ijbin_ctlat;
+      
+      ephemeris.GetSOMCoordinates( meas->centroid, meas_time, &ijbin_ctlat, &ijbin_atlon );
 
+      // # of along-track bins for 360 of along-track longitude.
+      double r_n_at_bins = 1624.0 * 25.0 / _alongtrack_res; 
+      
+      // Bin into equiangular bins, using the following constants.
+      double atrack_bin_const = 360.0 / r_n_at_bins;                   // converts from at_lon to ati
+      double xtrack_bin_const = 180.0*_crosstrack_res / (r1_earth*pi); // converts from ct_lat to cti
+      int    j_offset         = (int)(_crosstrack_bins / 2);
+
+      // Construct the floating-point along-track and cross-track indicies.
+      ijbin_r_ati = ijbin_atlon / atrack_bin_const - _start_vati_SOM;
+      ijbin_r_cti = ijbin_ctlat / xtrack_bin_const;
+      
+      // Construct the integer indicies.
+      ijbin_ati   =  (int)floor( ijbin_r_ati + 1.0 );
+      ijbin_cti   = -(int)floor( ijbin_r_cti ) + j_offset;
+      
+      ijbin_r_cti = -ijbin_r_cti + j_offset;
+      
+      // Create cross-track, along-track "distances" for rest of Grid::Add
+      // created such that the logic used below will give the right cti, ati 
+      // for the ijbin algorithm.  Need to set this way so that we can re-use
+      // the existing OVERLAP code below.
+      ctd   = _crosstrack_res * ( ijbin_r_cti - 0.5 ) - 0.5 * _crosstrack_size;
+      atd   = ijbin_r_ati * _alongtrack_res;
+      
+      // Subtract 1 for C 0-based array indexing.
+      cti0  = ijbin_cti - 1;
+      vati0 = ijbin_ati - 1;
+      
+      //printf("at_lon, ct_lat, r_ati, vati0, r_cti, cti0: %12.6f %12.6f %12.6f %6d %12.6f %6d\n",
+      //        ijbin_atlon, ijbin_ctlat, ijbin_r_ati, vati0, ijbin_r_cti, cti0);
+      
+	}
+	else if( algorithm == SUBTRACK )
+	{  
+	
     static int firstTime = 1;
     static double refTime = 0.;
     double hll[3];
@@ -381,8 +443,6 @@ Grid::Add(
 
     }
 
-    float ctd, atd;
-    int numWVCs=0;
     float measLon, measLat, lonFact, latFact;
     int lonIdx1, lonIdx2, latIdx1, latIdx2;
     double measHLL[3];
@@ -452,9 +512,16 @@ Grid::Add(
     // side at cti = 0.
     //
 
-    int cti0 = (int) ((ctd + _crosstrack_size/2.0)/_crosstrack_res + 0.5);
-    int vati0 = (int) (atd/_alongtrack_res);    // virtual along track index.
-
+    cti0 = (int) ((ctd + _crosstrack_size/2.0)/_crosstrack_res + 0.5);
+    vati0 = (int) (atd/_alongtrack_res);    // virtual along track index.
+	
+	} //---End of conditional on which gridding method to use [ if( algorithm == SOM ) ]
+	else
+	{
+	  fprintf(stderr,"Grid::Add: unknown REGRID_ALGORITHM choice, quitting!\n");
+	  exit(1);
+	}
+	
     int ctimin,ctimax,vatimin,vatimax;
     float ctdmin=ctd,ctdmax=ctd,atdmin=atd,atdmax=atd;
     // compute bounds on measurement if we are using overlap
@@ -506,6 +573,10 @@ Grid::Add(
     vatimin = (int) (atdmin/_alongtrack_res);    // virtual along track index.
     ctimax = (int) ((ctdmax + _crosstrack_size/2.0)/_crosstrack_res + 0.5);
     vatimax = (int) (atdmax/_alongtrack_res);    // virtual along track index.
+    
+    //printf("ctimin,cti,ctimax,atimin,ati,atimax: %6d %6d %6d %6d %6d %6d\n",
+    //       ctimin,cti0,ctimax,vatimin,vati0,vatimax);
+    
     }
     else{
       ctimin=cti0;
