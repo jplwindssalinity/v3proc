@@ -2067,16 +2067,16 @@ L2AToL2B::ConvertAndWrite(
 	  // Handle invalid inputs to rainflag case
 	  // for now throw away those cells
 	  else{
-	    delete(wvc);
-	    return(17);
+	    //delete(wvc);
+	    //return(17);
 	  } 
 	} // end if rainFlagMethod==ANNRainFlag1 case
       } // end of invalid inputs to liquid or speed1 networks
       // Handle invalid inputs to liquid or speed net1 case
       // for now throw away those cells
       else{
-	delete(wvc);
-	return(17);
+	//delete(wvc);
+	//return(17);
       } 
     } // end of rainFlagMethod==ANNRainFlag1 || rainCorrectMethodANNSpeed1 case
 
