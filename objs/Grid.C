@@ -237,7 +237,7 @@ Grid::Add(
       int    j_offset         = (int)(_crosstrack_bins / 2);
 
       // Construct the floating-point along-track and cross-track indicies.
-      ijbin_r_ati = ijbin_atlon / atrack_bin_const - _start_vati_SOM;
+      ijbin_r_ati = ijbin_atlon / atrack_bin_const - double(_start_vati_SOM);
       ijbin_r_cti = ijbin_ctlat / xtrack_bin_const;
       
       // Construct the integer indicies.
