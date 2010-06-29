@@ -253,10 +253,26 @@ main(
 	  // First and last measurement times
 	  instrument_start_time = t_min;
 	  instrument_end_time   = t_max;
+
+	  if( grid.algorithm == Grid::SUBTRACK )
+	  {
+	    // 5 min boundary around measurement times for grid times.
+		grid_start_time = t_min - 5 * 60;
+		grid_end_time   = t_max + 5 * 60;
+	  }
+	  else if( grid.algorithm == Grid::SOM )
+	  { // SOM binning uses this for setting up the SOM coordinate
+	    // to grid index conversion; SUBTRACK binning does not.
+		grid_start_time = t_min;
+		grid_end_time   = t_max;
+	  }
+	  else
+	  {
+	  	fprintf(stderr,"%s: Unknown gridding algo; quitting\n",command);
+	  	exit(1);
+	  }
 	  
-	  // 5 min boundary around measurement times for grid times.
-	  grid_start_time       = t_min - 5 * 60;
-	  grid_end_time         = t_max + 5 * 60;
+	  
       
       ETime dummy_time;
       char  codeA_time_str[CODE_A_TIME_LENGTH];
