@@ -2182,7 +2182,8 @@ OvwmSim::SetMeasurements(
 	   for(int i=0;i<nrsteps;i++){
 	     if(i>=i0 & i<=i1){
 	       for(int j=0;j<nasteps;j++){
-		 _ptr_array[i][j]=0.87*sin(1)*sin(1);		      
+		 _ptr_array[i][j]=1.0;
+		 // changed from 0.87*sin(1)*sin(1) to 1.0 by JMM, 7/27/10
 	       }
 	     }
 	   }
@@ -2209,11 +2210,12 @@ OvwmSim::SetMeasurements(
 	       }
 	       //---- If not in SAR mode do not include azimuth compression response
 	       else{
-		 val2=1.0; // ERROR?? this should probably be zero; using 1  puts in a constant scale factor of 0.708
+		 val2=0.0; // ERROR?? this should probably be zero; using 1  puts in a constant scale factor of 0.708
 		 // I would expect this to reduce SNR by 1.5 dB but there may be some reason for this
 		 // that I am missing.  The fact that using 1 here instead of 0 scales the whole point target
 		 // response array by 1/sqrt(2) is highly suspicious. I suspect that Samuel Chan or I
 		 // used this a kludge to get the correct SNR values. I need to check this --- BWS 07/22/2009
+		 // Changed to 0.0 - should be right with correct losses and gains elsewhere -- JMM 7/27/2010
 	       }
 
 	       for(int n=0;n<nL;n++){

@@ -805,7 +805,8 @@ OvwmL1AToL1B::Convert(
 		  for(int i=0;i<nrsteps;i++){
                     if(i>=i0 & i<=i1){
 		      for(int j=0;j<nasteps;j++){
-			_ptr_array[i][j]=0.87*sin(1)*sin(1);		      
+			_ptr_array[i][j]=1.0;
+			// Same fix as in setMeasurement: 0.87*sin(1)*sin(1) -> 1.0  JMM 7/27/2010
 		      }
 		    }
 		  }
@@ -826,7 +827,7 @@ OvwmL1AToL1B::Convert(
 			val2*=E_FACTOR;
 		      }
 		      else{
-			val2=1.0;
+			val2=0.0;  // same fix as in setMeasurement  JMM 7/27/2010
 		      }
 		      for(int n=0;n<nL;n++){
 			float val1=(ii-center_range_idx[n])*integrationStepSize;
