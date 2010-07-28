@@ -261,7 +261,8 @@ WindVectorField::InterpolateVectorField(
 
 WVC::WVC()
 :   nudgeWV(NULL), selected(NULL), selected_allocated(0), specialVector(NULL),
-    rainProb(0.0), rainFlagBits(0)
+    rainProb(0.0), rainFlagBits(0), landiceFlagBits(0), qualFlag(0),
+    rainImpact(0.0), numInFore(0), numInAft(0), numOutFore(0), numOutAft(0)
 {
     return;
 }
