@@ -396,15 +396,36 @@ main(
 
             for (int mm=0; mm<nm; mm++) {
               if (meas->Read(grid.l1b.GetInputFp()) != 1) {
-                fprintf(stderr, "Error in Read of Meas in l1b frame %d  spot %d meas %d!\n",counter-1,ss,mm);
+                fprintf(stderr, "Error in Read of Meas in l1b frame %ld  spot %ld meas %d!\n",counter-1,ss,mm);
                 break;
                 //exit(1);
               }
               if(argc==3) fprintf(grid.GetIndFp(),"%d ",(int)counter-1);
-              if (grid.Add(meas, spotTime, ss, use_compositing) != 1) {
+
+              // Measurement Sanity Check added by BWS 7-30-2010
+              if(isnan(meas->value) || (meas->range_width > 1000) || meas->azimuth_width > 1000){
+               double malt,mlat,mlon;
+                meas->centroid.GetAltLonGDLat(&malt,&mlon,&mlat);
+                mlon=mlon*rtd;
+                mlat=mlat*rtd;
+                cerr << "Warning Meas " << mm << " of Spot " << ss << " of frame " << counter-1 << " could not be added to Grid." << endl;
+                cerr << "      Value = " << meas->value << " azim width = " << meas->azimuth_width << "range width = " << meas->range_width << endl;
+                cerr << "      Lat = " << mlat << "  Long = " << mlon << endl;
+	      }
+              else if (grid.Add(meas, spotTime, ss, use_compositing) != 1) {
                 fprintf(stderr, "Error in Add of Grid!\n");
-                break;
-                //exit(1);
+                // BWS bug fix 7-30-2010
+                // Breaking out of the read meas loop 
+                // for an unaddable Measurement causes the next spot read to fail
+                // instead we issue a warning
+                double malt,mlat,mlon;
+                meas->centroid.GetAltLonGDLat(&malt,&mlon,&mlat);
+                mlon=mlon*rtd;
+                mlat=mlat*rtd;
+                cerr << "Warning Meas " << mm << " of Spot " << ss << " of frame " << counter-1 << " could not be added to Grid." << endl;
+                cerr << "      Value = " << meas->value << " azim width = " << meas->azimuth_width << "range width = " << meas->range_width << endl;
+                cerr << "      Lat = " << mlat << "  Long = " << mlon << endl;
+
               }
             } // meas loop
 

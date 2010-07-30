@@ -447,14 +447,27 @@ Grid::Add(
     int lonIdx1, lonIdx2, latIdx1, latIdx2;
     double measHLL[3];
 
+    
     meas->centroid.GetAltLonGDLat(measHLL,measHLL+1,measHLL+2); // get alt, lon and lat
 
     measLon = measHLL[1]*rtd;
     measLat = measHLL[2]*rtd;
+
+
+    // Measurement Sanity check to avoid unnecessary computations for bad measurements
+    if(isnan(meas->value) || (meas->range_width > 1000) || meas->azimuth_width > 1000){
+                cerr << "Warning Grid::Add Meas (meas_time =)" << meas_time << " could not be added to Grid." << endl;
+                cerr << "      Value = " << meas->value << " azim width = " << meas->azimuth_width << "range width = " << meas->range_width << endl;
+                cerr << "      Lat = " << measLat << "  Long = " << measLon << endl;
+    }
+    // BWS bug fix July 30 2010 so taht negative latitudes are propoerly interpolated
+    // originally they were extrapolated from neighboring cells, so it should not matter much
+    // still assumes positive longitude
+    // PUT in floor functions to do the fix.
     lonIdx1 = (int)(measLon*2.);
     lonIdx2 = (int)(measLon*2.)+1;
-    latIdx1 = (int)(measLat*2.);
-    latIdx2 = (int)(measLat*2.)+1;
+    latIdx1 = (int)floor(measLat*2.);
+    latIdx2 = (int)floor(measLat*2.)+1;
     lonFact = measLon*2. - lonIdx1;
     latFact = measLat*2. - latIdx1;
 
@@ -843,7 +856,7 @@ Grid::Add(
     } // end vati loop
 
     if(_writeIndices){
-      fprintf(_indfp,"%d %d %d %g %g %d %d\n",spot_id,meas->startSliceIdx,numWVCs,atd,ctd,vati0,cti0);
+      fprintf(_indfp,"%ld %d %d %g %g %d %d\n",spot_id,meas->startSliceIdx,numWVCs,atd,ctd,vati0,cti0);
     }
     //printf("%d %d %f %f\n",cti,vati,ctd,atd);
     if(_plotMode){
