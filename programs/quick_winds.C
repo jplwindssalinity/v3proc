@@ -585,11 +585,13 @@ main(
 
         retWindSpdMean = true_speed+speed_bias;
         retWindSpdSd = sqrt(sum2/(n-zero_count)-retWindSpdMean*retWindSpdMean);
+       // output metrics to file
+      
+        fprintf(ofp,"%g %g %g %g %g %g %g %d\n",ctd,dir_rms,speed_rms,speed_bias,skill,
+                  retWindSpdMean,retWindSpdSd,zero_count);
       }
 
-      // output metrics to file
-      fprintf(ofp,"%g %g %g %g %g %g %g %d\n",ctd,dir_rms,speed_rms,speed_bias,skill,
-                  retWindSpdMean,retWindSpdSd,zero_count);
+ 
        
       
     }

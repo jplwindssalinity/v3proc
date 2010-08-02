@@ -190,7 +190,7 @@ main(
         int nMeas[MAX_NBEAMS][NDIRS][XBIN];
         float nes0[MAX_NBEAMS][NDIRS][XBIN], azAng[MAX_NBEAMS][NDIRS][XBIN];
         float incAng[MAX_NBEAMS][NDIRS][XBIN];
-     
+        float ctd[XBIN];
         // polarization info
         for (int bb=0; bb<nbeams; bb++) {
           for (int ff=0; ff<NDIRS; ff++) {
@@ -232,6 +232,7 @@ main(
 	while (l2a.ReadDataRec() && l2a.frame.ati <= ati)
 	  { 
 	    if (l2a.frame.ati == ati) {
+              ctd[l2a.frame.cti]=l2a.getCrossTrackDistance();
 	      for (Meas* meas = l2a.frame.measList.GetHead();
 		   meas; meas = l2a.frame.measList.GetNext())
 		{
@@ -263,7 +264,7 @@ main(
 		  
 		  if (meas->scanAngle <= pi/2. || meas->scanAngle >= 3.*pi/2.) {
 		    
-		    nLook[beamidx][0] = int(1./(meas->A-1.));
+		    nLook[beamidx][0] = (int)(1./(meas->A-1.) + 0.5);
 		    nMeas[beamidx][0][l2a.frame.cti]++;
 		    nes0[beamidx][0][l2a.frame.cti] += meas->EnSlice/meas->XK;
 		    azAng[beamidx][0][l2a.frame.cti] += meas->eastAzimuth;
@@ -310,9 +311,15 @@ main(
         // write out info
         fprintf(outfileP, "%d %f\n", nbeams, res);
 
-        for (int ii=0; ii<int(CROSS_DIST/res); ii++) {
-
-          fprintf(outfileP, "%f ", (ii+0.5)*res-CROSS_DIST/2);
+        for (int ii=0; ii<l2a.header.crossTrackBins; ii++) {
+          int totl=0;
+          for (int bb=0; bb<nbeams-1; bb++) {
+            for (int ff=0; ff<NDIRS; ff++) {
+	      totl+=nLook[bb][ff];
+	    }
+	  }
+          if(totl==0) continue;
+          fprintf(outfileP, "%f ", ctd[ii]);
 
           for (int bb=0; bb<nbeams-1; bb++) {
             for (int ff=0; ff<NDIRS; ff++) {
