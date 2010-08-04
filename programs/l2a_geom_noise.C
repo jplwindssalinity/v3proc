@@ -274,7 +274,7 @@ main(
 		    
 		  } else if (meas->scanAngle > pi/2. && meas->scanAngle < 3.*pi/2.) {
 		    
-		    nLook[beamidx][1] = int(1./(meas->A-1.));
+		    nLook[beamidx][1] = int(1./(meas->A-1.) + 0.5);
 		    nMeas[beamidx][1][l2a.frame.cti]++;
 		    nes0[beamidx][1][l2a.frame.cti] += meas->EnSlice/meas->XK;
 		    azAng[beamidx][1][l2a.frame.cti] += meas->eastAzimuth;
