@@ -1980,6 +1980,10 @@ L2AToL2B::ConvertAndWrite(
     // This was done so that a rain impact threshold could be used to determine when to
     // do the speed correction. We could ALWAYS do the speed correction.
     if(rainFlagMethod == ANNRainFlag1 || rainCorrectMethod == ANNSpeed1){
+      
+      if( rainFlagMethod == ANNRainFlag1 )   // init with rain flag not usable
+        wvc->rainFlagBits = RAIN_FLAG_UNUSABLE;
+      
       // compute liquid and ann_speed1 quantities
       ComputeMLPInputs(l2a,meas_list,wvc);
       
@@ -1987,10 +1991,10 @@ L2AToL2B::ConvertAndWrite(
       if(spdnet1_mlp.AssignInputs(MLP_inpt_array,MLP_valid_array)){
 
         // Estimate speed
-	spdnet1_mlp.Forward();
-	ann_speed1=spdnet1_mlp.outp[0];
+        spdnet1_mlp.Forward();
+        ann_speed1=spdnet1_mlp.outp[0];
         
-	// Add speed estimate to MLP inputs array and mark it valid
+        // Add speed estimate to MLP inputs array and mark it valid
         int idx=spdnet1_mlp.out_types[0].id;
         MLP_inpt_array[idx]=ann_speed1;
         MLP_valid_array[idx]=true;
@@ -1998,85 +2002,86 @@ L2AToL2B::ConvertAndWrite(
         // This should never happen because liqnet1 inputs are the same and spdnet1 inputs
         // except for the spdnet1 output that was jsut computed and added to input array
         if(!liqnet1_mlp.AssignInputs(MLP_inpt_array,MLP_valid_array)){
-	  fprintf(stderr,"Liqnet1 inputs wer invalid although spdnet1 inputs were OK.\n");
-	  fprintf(stderr,"THIS SHOULD NEVER HAPPEN! Dying now.\n");
+          fprintf(stderr,"Liqnet1 inputs wer invalid although spdnet1 inputs were OK.\n");
+          fprintf(stderr,"THIS SHOULD NEVER HAPPEN! Dying now.\n");
           exit(1);
-	}
-	// estimate liquid 
-	liqnet1_mlp.Forward();
-	liquid_est=liqnet1_mlp.outp[0];
-	
-	// Add liquid estimate to MLP inputs array and mark it valid
-	idx=liqnet1_mlp.out_types[0].id;
-	MLP_inpt_array[idx]=liquid_est;
-	MLP_valid_array[idx]=true;
-
- 
-        //------ compute rain flag quantity if desired -//
-	if(rainFlagMethod== ANNRainFlag1){
- 
-	  if(rainflag_mlp.AssignInputs(MLP_inpt_array,MLP_valid_array) ){
-
-	    rainflag_mlp.Forward();
-	    wvc->rainImpact=rainflag_mlp.outp[0];
-          
-	    // Set WVC flag value and bits
-	    if(wvc->rainImpact>rain_impact_thresh_for_flagging){
-	      wvc->rainFlagBits=2;
-	    }  
-	    else{
-	      wvc->rainFlagBits=0;
-	    }
+        }
         
-	    //------ perform ann speed correction if desired -//
-	    if(rainCorrectMethod == ANNSpeed1 && wvc->rainImpact>rain_impact_thresh_for_correction &&
-	       spdnet2_mlp.AssignInputs(MLP_inpt_array,MLP_valid_array) ){
-	      
-	      spdnet2_mlp.Forward();
-	      ann_speed2=spdnet2_mlp.outp[0];
+        // estimate liquid 
+        liqnet1_mlp.Forward();
+        liquid_est=liqnet1_mlp.outp[0];
 
-	      //------ remove residual speed bias -//
-	      float bias=-0.4967*ann_speed2-0.8227*log(cosh(0.5*(ann_speed2-15)))+5.7520;
-	      float spd=ann_speed2-bias;
-          
-	      //------ modify first rank ambiguity -//
-	      WindVectorPlus* wvp=wvc->ambiguities.GetHead();
-	      wvp->spd=spd;
-	      wvp->obj=0;
-	      // modify all other ambiguities
+        // Add liquid estimate to MLP inputs array and mark it valid
+        idx=liqnet1_mlp.out_types[0].id;
+        MLP_inpt_array[idx]=liquid_est;
+        MLP_valid_array[idx]=true;
+
+
+        //------ compute rain flag quantity if desired -//
+        if(rainFlagMethod== ANNRainFlag1){
+
+          if(rainflag_mlp.AssignInputs(MLP_inpt_array,MLP_valid_array) ){
+
+            rainflag_mlp.Forward();
+            wvc->rainImpact=rainflag_mlp.outp[0];
+
+            // Set WVC flag value and bits
+            if(wvc->rainImpact>rain_impact_thresh_for_flagging){
+              // flag as rain & rain flag usable.
+              wvc->rainFlagBits=RAIN_FLAG_RAIN; 
+            }  
+            else{
+              // flag as no-rain & rain flag usable.
+              wvc->rainFlagBits=0; 
+            }
+
+            //------ perform ann speed correction if desired -//
+            if(rainCorrectMethod == ANNSpeed1 && wvc->rainImpact>rain_impact_thresh_for_correction &&
+               spdnet2_mlp.AssignInputs(MLP_inpt_array,MLP_valid_array) ){
+
+              spdnet2_mlp.Forward();
+              ann_speed2=spdnet2_mlp.outp[0];
+
+              //------ remove residual speed bias -//
+              float bias=-0.4967*ann_speed2-0.8227*log(cosh(0.5*(ann_speed2-15)))+5.7520;
+              float spd=ann_speed2-bias;
+
+              //------ modify first rank ambiguity -//
+              WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+              wvp->spd=spd;
+              wvp->obj=0;
+              
+              // modify all other ambiguities
               wvp=wvc->ambiguities.GetNext();
-	      while(wvp){
-		wvp->spd=spd;
+              while(wvp){
+                wvp->spd=spd;
                 wvp->obj=0;
                 wvp=wvc->ambiguities.GetNext();
-	      }
-	      //---------modify directionRanges speed array --------//
+              }
+              //---------modify directionRanges speed array --------//
+              // set best speed and obj function curves to be flat vs azimuth.
 
-	      // set first rank angle interval to cover all 360 degrees
+              int nbins=wvc->directionRanges.dirIdx.GetBins();
+              for(int c=0;c<nbins;c++){
+                wvc->directionRanges.bestSpd[c]=spd;
+                wvc->directionRanges.bestObj[c]=0;
+              }
+              
 
-	      int nbins=wvc->directionRanges.dirIdx.GetBins();
-	      for(int c=0;c<nbins;c++){
-		wvc->directionRanges.bestSpd[c]=spd;
-		wvc->directionRanges.bestObj[c]=0;
-	      }
-		
-	    }// end rainCorrectMethod==ANNSpeed1, and correction rain flag threshold exceeded
-	
-	  } // end valid inputs to rainflag MLP case
+            }// end rainCorrectMethod==ANNSpeed1, and correction rain flag threshold exceeded
 
-	  // Handle invalid inputs to rainflag case
-	  // for now throw away those cells
-	  else{
-	    //delete(wvc);
-	    //return(17);
-	  } 
-	} // end if rainFlagMethod==ANNRainFlag1 case
+          } // end valid inputs to rainflag MLP case
+            // Handle invalid inputs to rainflag case; flag as rain flag unusable.
+          else{
+            //wvc->rainFlagBits=RAIN_FLAG_UNUSABLE;
+          } 
+        } // end if rainFlagMethod==ANNRainFlag1 case
       } // end of invalid inputs to liquid or speed1 networks
-      // Handle invalid inputs to liquid or speed net1 case
-      // for now throw away those cells
+
+      // Handle invalid inputs to liquid or speed net1 case.
       else{
-	//delete(wvc);
-	//return(17);
+        //delete(wvc);
+        //return(17);
       } 
     } // end of rainFlagMethod==ANNRainFlag1 || rainCorrectMethodANNSpeed1 case
 
