@@ -70,6 +70,8 @@
 //      added rank = -2 to get nearest to truth
 //    Brent Williams, modified 6/28/10
 //      added output rain flag
+//    Alexandra H Chau, modified 8/9/10
+//      fixed bug in getting nearest to truth (rank=-2) -- was sometimes crashing with bus error
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -287,6 +289,7 @@ main(
     for(int a=0;a<nati;a++){
       for(int c=0;c<ncti;c++){
 	    
+	//fprintf(stderr,"Starting %d %d",a,c);
 	    WVC* wvc=l2b.frame.swath.GetWVC(c,a);
 
             bool good = true;
@@ -296,13 +299,7 @@ main(
 	      switch (rank)
 	      {
 	      case -2: // nearest to truth (already set nudgeWV to truth above)
-		if(wvc->selected)
-		  wvp=wvc->GetNearestToDirection(wvc->nudgeWV->dir);
-		else 
-		{
-		  fprintf(stderr, "Didn't work");
-		  wvp=NULL;
-		}
+		// fall through to rank = -1, select nearest to nudge
 	      case -1: // nearest
 		if(wvc->nudgeWV)
 		  wvp=wvc->GetNearestToDirection(wvc->nudgeWV->dir);
@@ -365,6 +362,7 @@ main(
 	      lon[a][c]=0;
 	      flg[a][c]=0;
 	    }
+	    //fprintf(stderr, "here %d %d\n",a,c);
       } // end c loop
     } // end a loop
 
