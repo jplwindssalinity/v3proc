@@ -1484,6 +1484,12 @@ ConfigL2AToL2B(
       if (! config_list->GetInt("ARRAY_NUDGING", &tmp_int))
 	tmp_int=0;
       l2a_to_l2b->arrayNudgeFlag = tmp_int;
+
+      if (! config_list->GetInt("ISRO_ECMWF_ARRAY_NUDGING", &tmp_int))
+	tmp_int=0;
+      int isroecmwfarray=tmp_int;
+      l2a_to_l2b->arrayNudgeFlag = l2a_to_l2b->arrayNudgeFlag || tmp_int;
+ 
       
       if(l2a_to_l2b->arrayNudgeFlag && l2a_to_l2b->smartNudgeFlag){
 	fprintf(stderr,"Use either SMART or ARRAY nudging but not both!\n");
@@ -1554,7 +1560,13 @@ ConfigL2AToL2B(
 	if(fixed_speed_set){
 	  fprintf(stderr,"Cannot use ARRAY NUDGE WITH FIXED TRUTH SPEED\n");
 	}
-	l2a_to_l2b->ReadNudgeArray(nudge_windfield);
+	
+	if(isroecmwfarray){
+	  l2a_to_l2b->ReadISROECMWFNudgeArray(nudge_windfield);
+	}
+        else{
+	  l2a_to_l2b->ReadNudgeArray(nudge_windfield);
+	}
       }
       else
         {

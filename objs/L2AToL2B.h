@@ -69,6 +69,7 @@ public:
     // conversion //
     //------------//
     int ReadNudgeArray(char* filename);
+    int ReadISROECMWFNudgeArray(char* filename);
     // float  NeuralNetRetrieve(L2A* l2a, L2B* l2b, MLPDataArray* spdnet, MLPDataArray* dirnet, GMF* gmf, Kp* kp, int need_all_looks); // Obsolete routine
 
 
@@ -80,6 +81,8 @@ public:
     float GetSpacecraftVelocityAngle(float atd, float ctd);
     int  ConvertAndWrite(L2A* l2a, GMF* gmf, Kp* kp, L2B* l2b);
     int  InitAndFilter(L2B* l2b);
+    int  PopulateNudgeVectors(L2B* l2b);
+    int  PopulateOneNudgeVector(L2B* l2b, int cti, int ati, MeasList* ml);
     int  InitFilterAndFlush(L2B* l2b);
     void ComputeMLPInputs(L2A* l2a, MeasList* meas_list, WVC* wvc);
     //------------------------------------------//

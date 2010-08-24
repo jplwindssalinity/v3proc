@@ -45,6 +45,64 @@ L2AToL2B::~L2AToL2B()
     return;
 }
 
+// this is fragile. It assumes the L2A file and the ECMWF (E2B) array file 
+// are both the proper ISRO 50 km size
+int
+L2AToL2B::ReadISROECMWFNudgeArray(char* filename){
+  FILE * ifp=fopen(filename,"r");
+  if(ifp==NULL){
+    fprintf(stderr,"L2AToL2B::ReadNudgeArray cannot open file %s\n",filename);
+    exit(1);
+  }
+  arrayNudgeNcti=36;
+  arrayNudgeNati=860;
+  if(arrayNudgeSpd!=NULL){
+    fprintf(stderr,"L2AToL2B::ReadNudgeArray ran twice!\n");
+    exit(1);
+  }
+  arrayNudgeSpd=(float**) make_array(sizeof(float),2,arrayNudgeNati,arrayNudgeNcti);
+  arrayNudgeDir=(float**) make_array(sizeof(float),2,arrayNudgeNati,arrayNudgeNcti);
+  
+  for(int a=0;a<arrayNudgeNati;a++){
+    for(int c=0;c<arrayNudgeNcti;c++){
+      arrayNudgeSpd[a][c]=-1;
+      arrayNudgeDir[a][c]=0;
+    }
+  }
+  int nati=arrayNudgeNati;
+  int ncti=arrayNudgeNcti;
+  // skip over lat and lon arrays
+  if( ! read_array(ifp,&arrayNudgeSpd[0],sizeof(float),2,nati,ncti) ||
+      ! read_array(ifp,&arrayNudgeDir[0],sizeof(float),2,nati,ncti)){
+
+    fprintf(stderr,"L2AToL2B::ReadNudgeArray error reading arrays from file %s\n",filename);
+    exit(1);
+ 
+  }
+  // read speed and direction arrays
+  if( ! read_array(ifp,&arrayNudgeSpd[0],sizeof(float),2,nati,ncti) ||
+      ! read_array(ifp,&arrayNudgeDir[0],sizeof(float),2,nati,ncti)){
+
+    fprintf(stderr,"L2AToL2B::ReadNudgeArray error reading arrays from file %s\n",filename);
+    exit(1);
+ 
+  }
+
+  for(int a=0;a<arrayNudgeNati;a++){
+    for(int c=0;c<arrayNudgeNcti;c++){
+      if(arrayNudgeDir[a][c]!=0 || arrayNudgeSpd[a][c]!=0){ 
+	arrayNudgeDir[a][c]=450-arrayNudgeDir[a][c];
+	if(arrayNudgeDir[a][c]>360) arrayNudgeDir[a][c]=arrayNudgeDir[a][c]-360;
+	arrayNudgeDir[a][c]*=dtr;
+      }
+    }
+  }
+  return(1);
+}
+
+
+
+
 int
 L2AToL2B::ReadNudgeArray(char* filename){
   FILE * ifp=fopen(filename,"r");
@@ -2169,11 +2227,59 @@ L2AToL2B::HurrSp1Top(
 #define S3_WINDOW_SIZE            medianFilterWindowSize
 #define S3_NUDGE                  0
 
-int
-L2AToL2B::InitAndFilter(
+
+
+int 
+L2AToL2B::PopulateOneNudgeVector(L2B* l2b,
+			       int cti,
+				 int ati,
+			       MeasList* ml){
+  WVC* wvc=l2b->frame.swath.swath[cti][ati];
+  if(!wvc) return(0);
+
+  wvc->nudgeWV=new WindVectorPlus;
+  wvc->lonLat=ml->AverageLonLat();
+  //-----------------------------------------------------//
+  // Copy Interpolated NudgeVectors to Wind Vector Cells //
+  //-----------------------------------------------------//
+    
+  if (useNudging && ! l2b->frame.swath.nudgeVectorsRead && !smartNudgeFlag &&!arrayNudgeFlag)
+    {
+      if(!nudgeField.InterpolatedWindVector(wvc->lonLat,wvc->nudgeWV)){
+	delete wvc->nudgeWV;
+        wvc->nudgeWV=NULL;
+        return(0);
+      }
+    }
+  else if(useNudging && ! l2b->frame.swath.nudgeVectorsRead && smartNudgeFlag){
+    if(!nudgeVctrField.InterpolateVectorField(wvc->lonLat,wvc->nudgeWV,0)){
+	delete wvc->nudgeWV;
+        wvc->nudgeWV=NULL;
+        return(0);
+      }
+  }
+  else if(useNudging && ! l2b->frame.swath.nudgeVectorsRead && arrayNudgeFlag){
+    wvc->nudgeWV->spd=arrayNudgeSpd[ati][cti];
+    wvc->nudgeWV->dir=arrayNudgeDir[ati][cti];
+    if(wvc->nudgeWV->spd ==0 && wvc->nudgeWV->dir==0){
+	delete wvc->nudgeWV;
+        wvc->nudgeWV=NULL;
+        return(0);
+    }
+  }
+  if (useHurricaneNudgeField)
+    {
+	delete wvc->nudgeWV;
+        wvc->nudgeWV=NULL;
+        return(0);
+    }
+  return(1);
+}
+int 
+L2AToL2B::PopulateNudgeVectors(
     L2B*  l2b)
 {
-    //-----------------------------------------------------//
+   //-----------------------------------------------------//
     // Copy Interpolated NudgeVectors to Wind Vector Cells //
     //-----------------------------------------------------//
     
@@ -2192,7 +2298,14 @@ L2AToL2B::InitAndFilter(
         l2b->frame.swath.GetHurricaneNudgeVectors(&hurricaneField,
             &hurricaneCenter, hurricaneRadius);
     }
-
+  return(1);
+}
+int
+L2AToL2B::InitAndFilter(
+    L2B*  l2b)
+{
+ 
+    PopulateNudgeVectors(l2b);
     //------------//
     // initialize //
     //------------//
