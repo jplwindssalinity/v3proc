@@ -457,27 +457,27 @@ main(
         int ai=l2a.frame.ati;
         int ci=l2a.frame.cti;
         WVC* wvc0=l2b.frame.swath.GetWVC(ci,ai); 
-
-        if(wvc0 && out_train_set_f){  // nudge by hand
+         
+        if(wvc0 && out_train_set_f){  
             MeasList* meas_list = &(l2a.frame.measList);
-
-            wvc0->lonLat=meas_list->AverageLonLat();
-            wvc0->nudgeWV=new WindVectorPlus;
-            if (! l2a_to_l2b.nudgeField.InterpolatedWindVector(wvc0->lonLat,
-            				  wvc0->nudgeWV)) {
-                delete wvc0->nudgeWV;
-                wvc0->nudgeWV=NULL;
-            }
+            l2a_to_l2b.PopulateOneNudgeVector(&l2b,ci,ai,meas_list);
+            
             if(wvc0->ambiguities.NodeCount() && wvc0->nudgeWV){ // compute diagnostic data
                 int nc = meas_list->NodeCount();
                 int* look_idx = new int[nc];
                 int nmeas[8]={0,0,0,0,0,0,0,0};
                 float varest[8]={0,0,0,0,0,0,0,0};
                 float meanest[8]={0,0,0,0,0,0,0,0};
+		float gmf_meanest[8]={0,0,0,0,0,0,0,0};
+		float sinchi_meanest[8]={0,0,0,0,0,0,0,0};
+		float coschi_meanest[8]={0,0,0,0,0,0,0,0};
                 Meas* meas = meas_list->GetHead();
-                for (int c = 0; c < nc; c++) { // loop over measurement list
+                 for (int c = 0; c < nc; c++) { // loop over measurement list
+
                     switch (meas->measType)
                     {
+
+
                         case Meas::HH_MEAS_TYPE:
                             if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
                                 look_idx[c] = 0;
@@ -509,6 +509,12 @@ main(
                     if (look_idx[c] >= 0) {
                         varest[look_idx[c]] += meas->value*meas->value;
                         meanest[look_idx[c]] += meas->value;
+                        float gmfs0;
+                        float chi= wvc0->nudgeWV->dir-meas->eastAzimuth +pi;
+			gmf.GetInterpolatedValue(meas->measType,meas->incidenceAngle,wvc0->nudgeWV->spd,chi,&gmfs0);
+			gmf_meanest[look_idx[c]] += gmfs0 ;                   
+		        sinchi_meanest[look_idx[c]] += sin(chi) ;                   
+			coschi_meanest[look_idx[c]] += cos(chi) ;                   
                         nmeas[look_idx[c]]++;
                     }
                     meas = meas_list->GetNext();
@@ -517,12 +523,25 @@ main(
                 
                 for(int i=0;i<8;i++){
                     meanest[i]/=nmeas[i];
+		    gmf_meanest[i]/=nmeas[i];
+                    sinchi_meanest[i]/=nmeas[i];
+                    coschi_meanest[i]/=nmeas[i];
                     varest[i]=(varest[i]-nmeas[i]*meanest[i]*meanest[i])/(nmeas[i]-1);
-                    if(nmeas[i]<1) meanest[i]=0;
+                    if(nmeas[i]<1) {
+		      meanest[i]=0;
+		      gmf_meanest[i]=0;
+		      sinchi_meanest[i]=0;
+		      coschi_meanest[i]=0;
+		    }
                     if(nmeas[i]<2) varest[i]=0.1;
                     fprintf(out_train_set_f, " %d %g %g",nmeas[i],meanest[i],varest[i]);
-                }
-                fprintf(out_train_set_f, " %g %g\n",wvc0->nudgeWV->spd,wvc0->nudgeWV->dir*pi/180);
+                } 
+
+                fprintf(out_train_set_f, " %g %g",wvc0->nudgeWV->spd,wvc0->nudgeWV->dir*rtd);
+                for(int i=0;i<8;i++){
+		  fprintf(out_train_set_f, " %g %g %g",gmf_meanest[i],coschi_meanest[i],sinchi_meanest[i]);
+		}
+                fprintf(out_train_set_f,"\n");
             } // end compute diagnostic data
         } // end nudge by hand
         /* end output training set data */
