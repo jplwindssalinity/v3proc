@@ -17,6 +17,10 @@ static const char rcs_id_interpolate_h[] =
 //		Polynomial fitting
 //======================================================================
 
+
+int newtonian_interpolation( double minus_val, double center_val, 
+                             double plus_val, double* offset, double* maximum );
+
 // for polint, n is the order+1
 int polint(double xa[], double ya[], int n, double x, double* y);
 

@@ -11,6 +11,29 @@ static const char rcs_id_interpolate_c[] =
 #include <malloc.h>
 #include "Interpolate.h"
 
+//-------------------------//
+// newtonian_interpolation //
+//-------------------------//
+
+int 
+newtonian_interpolation( double  minus_val, 
+                         double  center_val, 
+                         double  plus_val, 
+                         double* offset, 
+                         double* maximum )
+{
+
+  double diff1 = plus_val - minus_val;
+  double diff2 = plus_val + minus_val - 2 * center_val;
+  
+  if( diff2 == 0.0 ) return(0);
+  
+  *offset  = -0.5 * diff1 / diff2;
+  *maximum = center_val - ( diff1 * diff1 / diff2 ) / 8.0;
+  
+  return(1);
+}
+
 //--------//
 // polint //
 //--------//
