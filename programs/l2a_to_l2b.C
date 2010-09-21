@@ -17,6 +17,7 @@
 // OPTIONS
 //    [ -a start:end ]  The range of along track index.
 //    [ -n num_frames ] The maximum frame number.
+//    [ -N ]            Exclude negative sigma0s
 //    [ -i ]            Ignore bad l2a.
 //    [ -R ]     Remove measurements more than 10 stds from average
 //
@@ -106,7 +107,7 @@ template class std::map<string,string,Options::ltstr>;
 //-----------//
 
 #define MAX_ALONG_TRACK_BINS  1624
-#define OPTSTRING "iRt:a:n:w:"
+#define OPTSTRING "iRt:a:n:w:N"
 
 //-------//
 // HACKS //
@@ -135,9 +136,31 @@ template class std::map<string,string,Options::ltstr>;
 //------------------//
 
 const char* usage_array[] = {"[ -a start:end ]", "[ -n num_frames ]", "[ -i ]", 
-    "[ -w c_band_weight_file ]", "[ -R ]", "[ -t output_train_set_fn ]", "<sim_config_file>", 0};
+    "[ -w c_band_weight_file ]", "[ -R ]", "[ -N ]", "[ -t output_train_set_fn ]", "<sim_config_file>", 0};
 
 
+//-------------------//
+// function to remove //
+// negative sigma0s //
+//-----------------//
+
+int RemoveNegativeSigma0s(MeasList * meas_list){
+ 
+    // Remove Negative Measurements (and identically zero if any)
+    Meas* meas = meas_list->GetHead();
+    for (int c = 0; c < meas_list->NodeCount(); c++)
+    {
+            if (meas->value <=0 )
+            {
+                meas = meas_list->RemoveCurrent();
+                delete meas;
+                meas = meas_list->GetCurrent();
+            }
+            else
+                meas = meas_list->GetNext();
+    }
+    return(1);
+}
 //--------------//
 // MAIN PROGRAM //
 //--------------//
@@ -163,6 +186,7 @@ main(
     FILE* wfp;
     int ncti_wt=0, nati_wt=0, first_valid_ati=0, nvalid_ati=0;
     bool opt_remove_outlying_s0=false;
+    bool opt_remove_negative_s0 = false;
     FILE *out_train_set_f = NULL;
 
     const char* command = no_path(argv[0]);
@@ -188,6 +212,10 @@ main(
           
         case 'R':
             opt_remove_outlying_s0=true;
+            break;
+
+        case 'N':
+            opt_remove_negative_s0=true;
             break;
             
         case 'n':
@@ -441,6 +469,9 @@ main(
             gmf.SetCBandWeight(weights[l2a.frame.ati][l2a.frame.cti]);
         int retval = 1;
         if(opt_remove_outlying_s0) gmf.RemoveBadCopol(&(l2a.frame.measList),&kp);
+
+        if(opt_remove_negative_s0) RemoveNegativeSigma0s(&(l2a.frame.measList));
+
         if (l2a.frame.ati >= start_ati && l2a.frame.ati <= end_ati) {
             retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
             if(frame_number%100==0)
