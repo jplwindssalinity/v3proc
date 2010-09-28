@@ -1281,8 +1281,9 @@ WindField::ReadSV(
     //-------------------------------//
     // transfer to wind field format //
     //-------------------------------//
-
-    _lon.SpecifyWrappedCenters(lon_min * dtr, lon_max * dtr, lonDim);
+    // Since Svetla's wind files are not global, use SpecifyCenters
+    // instead of SpecifyWrappedCenters for lons - JMM 09/28/2010
+    _lon.SpecifyCenters(lon_min * dtr, lon_max * dtr, lonDim);
     _lat.SpecifyCenters(lat_min * dtr, lat_max * dtr, latDim);
 
     if (! _Allocate())
