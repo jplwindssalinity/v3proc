@@ -63,7 +63,7 @@ L2BHeader::Read(
     
     if( strncmp( l2b_ascii_header, "QSCATSIM_L2B_VERSION_ID", 23 ) == 0 )
     {
-    	printf( "In L2BHeader::Read: ASCII Header: %s\n", l2b_ascii_header );
+    	//printf( "In L2BHeader::Read: ASCII Header: %s\n", l2b_ascii_header );
         char* str_version_id       = strstr( l2b_ascii_header, "==" ) + 2;
         char* str_version_id_minor = strstr( str_version_id, "." )    + 1;
     
@@ -72,7 +72,7 @@ L2BHeader::Read(
     }
     else
     {
-    	printf("In L2BHeader::Read: No ASCII Header found\n");
+    	//printf("In L2BHeader::Read: No ASCII Header found\n");
     	version_id_major = 1;
     	version_id_minor = 0;
     	if( fsetpos(fp,&pos) !=0 ) return(0);
