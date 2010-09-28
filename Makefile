@@ -29,13 +29,12 @@ core: eadata/Makefile objs/Makefile programs/Makefile scripts/Makefile
 #----------------------------------------------------------------------
 
 clean:
-	@ (cd HDF; echo "Making clean (Makefile.svt) in `pwd`"; \
-	make clean -f Makefile.svt)
 	@ for dir in eadata objs programs eaprograms scripts; \
 		do (cd $$dir; \
 			echo "Making clean in `pwd`"; \
 			make clean; \
-			/bin/rm -f Makefile); \
+); \
+	#			/bin/rm -f Makefile); \
 	done
 
 #----------------------------------------------------------------------
