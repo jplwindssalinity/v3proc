@@ -13,7 +13,11 @@ DEBUG =       NODEBUG
 INCDIR =      ../../include
 MALLOC_INCDIR =         /usr/include/malloc
 LIBDIR =      ../../lib
-HDFINCDIR =   /sw/include
+ifneq '$(shell uname -s)' 'Linux'
+    HDFINCDIR =   /sw/include
+else
+    HDFINCDIR = /usr/include/hdf
+endif
 
 INCFLAGS =    -I$(HDFINCDIR) -I$(MALLOC_INCDIR) -I.
 

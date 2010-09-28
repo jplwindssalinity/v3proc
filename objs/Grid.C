@@ -11,8 +11,10 @@ static const char rcs_id_grid_c[] =
 #include "Meas.h"
 #include "Sigma0.h"
 #include <time.h>
-#include <iostream.h>
+#include <iostream>
 #include "Misc.h"
+
+using namespace std;
 
 #define OFFSET_CK_DUP 52
 //#define TIME_STEP 16.8 // second for moving 1 deg in lat roughly

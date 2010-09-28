@@ -12,6 +12,7 @@ static const char rcs_id_misctable_c[] =
 #include "Interpolate.h"
 #include "Constants.h"
 #include "Array.h"
+#include "math.h"
 
 #define INC_TO_REAL_IDX(A) ((A - _incMin) / _incStep)
 #define SPD_TO_REAL_IDX(A) ((A - _spdMin) / _spdStep)

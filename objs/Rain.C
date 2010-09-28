@@ -8,7 +8,7 @@ static const char rcs_id_wind_c[] =
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <iostream.h>
+#include <iostream>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>

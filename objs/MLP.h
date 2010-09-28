@@ -83,7 +83,7 @@ public:
   /** function to locate the given type_str in the IO type defs, and set either in_types
     or out_types accordingly. must take in a pointer to the type defs and 
     the types buffer (either a pointer to in_types or out_types) **/
-  int MLP::setIOTypeByString(char *type_str, int input_idx, int in_out);
+  int setIOTypeByString(char *type_str, int input_idx, int in_out);
 
   /** Set the inputs to be the specified string **/
   int setInputTypeByString(char *type_str, int input_idx);

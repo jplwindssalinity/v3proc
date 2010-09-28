@@ -8,11 +8,13 @@ static const char rcs_id_l1a_c[] =
 
 #include <memory.h>
 #include <malloc.h>
-#include <iostream.h>
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include "OvwmL1A.h"
 #include "Misc.h"
+
+using namespace std;
 
 #define GET_L1A_FIRST_PULSE(x) ((x & 0x00000004) >> 2)
 

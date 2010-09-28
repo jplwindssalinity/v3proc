@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <istream>
 #include <math.h>
+#include <strings.h>
 #include"AmbigTable.h"
 #include "Array.h"
 

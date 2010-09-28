@@ -138,7 +138,7 @@ substitute_string(
     const char*  replace,
     char*        result)
 {
-    char* ptr = strstr(string, find);
+    const char* ptr = strstr(string, find);
     if (ptr == 0)
         return(0);
 

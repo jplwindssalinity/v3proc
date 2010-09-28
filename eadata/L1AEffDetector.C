@@ -5,6 +5,9 @@
 // CM Log
 //
 // $Log$
+// Revision 1.10  2000/09/05 21:24:52  hudd
+// made ANSI compliant
+//
 // Revision 1.9  1999/09/30 23:01:39  sally
 // update 9/30/99
 //
@@ -437,7 +440,7 @@ L1AEffDetector::DetectEffects(
                 return(_status=EFFDETECTOR_ERROR_EXTRACT_DATA);
             }
             
-            if (( (int) param->data )== 0 )
+            if (( param->data )== 0 )
                 AddEffect(effect_time, EFF_ELECTRONICS_ON);
             
             // Valid Command Count

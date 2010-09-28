@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.9  1999/09/30 23:01:39  sally
+// update 9/30/99
+//
 // 
 //    Rev 1.28   09 Apr 1999 13:58:38   sally
 // read number of words from files if the table length is variable
@@ -115,7 +118,7 @@
 static const char rcs_id_command_h[] =
     "@(#) $Header$";
 
-#include <strings.h>
+#include <string.h>
 
 #include "CommonDefs.h"
 #include "Tpg.h"

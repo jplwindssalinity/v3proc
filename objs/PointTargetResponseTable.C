@@ -1,5 +1,9 @@
+#include <stdio.h>
+
 #include"PointTargetResponseTable.h"
 #include"Constants.h"
+
+using namespace std;
 
 PointTargetResponseTable::PointTargetResponseTable()
 {

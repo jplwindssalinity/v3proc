@@ -3,6 +3,7 @@
 //---------
 #include <iostream>
 #include <math.h>
+#include <stdlib.h>
 #include "SchToXyz.h"
 #include "Utils.h"
 using std::cout;

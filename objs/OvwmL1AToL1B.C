@@ -13,6 +13,8 @@ static const char rcs_id_l1atol1b_c[] =
 #include "OvwmSigma0.h"
 #include "Ovwm.h"
 
+using namespace std;
+
 #define dX_THRESHOLD 0.05 // threshold for eliminate meas record with land
 #define E_FACTOR 1.644    // value for sinc square to drop to 1/e
 

@@ -7,7 +7,13 @@ SHELL =			/bin/csh
 
 INCDIR =		../../include
 TARGET_LIB =	../../lib/libSim.a
-HDFINCDIR =     /sw/include
+
+ifneq '$(shell uname -s)' 'Linux'
+    HDFINCDIR =     /sw/include
+else
+    HDFINCDIR = /usr/include/hdf
+endif
+
 MALLOC_DIR =    /usr/include/malloc
 DEBUGFLAGS =    -ggdb2 --save-temps 
 #DEBUGFLAGS =    -O2
