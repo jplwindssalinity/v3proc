@@ -7,6 +7,9 @@
 // CM Log
 //
 // $Log$
+// Revision 1.5  1999/09/30 23:01:39  sally
+// update 9/30/99
+//
 // 
 //    Rev 1.2   23 Jun 1999 11:54:52   sally
 // fixed * = const*
@@ -1300,7 +1303,7 @@ UpldTbl::SetCommandDate(const char *l1_time ) {
 
 int 
 UpldTbl::IsQpa( const char *filename) {
-    char * p = strstr( filename, "QPA");
+    const char * p = strstr( filename, "QPA");
     return (p != NULL );
 
 } // end IsQpa
