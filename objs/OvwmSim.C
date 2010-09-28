@@ -21,6 +21,8 @@ static const char rcs_id_ovwmsim_c[] =
 #include "Beam.h"
 #include "Sigma0Map.h"
 
+using namespace std;
+
 #define SNR_CUTOFF 1.e-3
 #define dX_THRESHOLD 0.10 // threshold for eliminate meas record with land
 #define E_FACTOR 1.644    // value for sinc square to drop to 1/e

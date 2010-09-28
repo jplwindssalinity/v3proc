@@ -16,6 +16,8 @@ static const char rcs_id_ovwm_c[] =
 #include "BYUXTable.h"
 #include "AccurateGeom.h"
 
+using namespace std;
+
 //=================//
 // OvwmTargetInfo //
 //=================//

@@ -71,9 +71,9 @@ public:
     int  ReadPolarimetric(const char* filename);
 
     // internal worker functions- don't use these directly
-    int GMF::_ReadArrayFile(const char*  filename,
+    int _ReadArrayFile(const char*  filename,
         bool mirrorChiValues = false, bool discardFirstVal = false);
-    int GMF::_ReadArrayFileLoop(const char*  filename, 
+    int _ReadArrayFileLoop(const char*  filename, 
         bool mirrorChiValues = false, bool discardFirstVal = false,
         int met_idx_start = -1, int n_met = -1);
 
