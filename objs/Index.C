@@ -69,10 +69,16 @@ Index::SpecifyWrappedCenters(
     float  max,
     int    bins)
 {
-  _step = (max - min) / (float)(bins - 1);
+  //_step = (max - min) / (float)(bins - 1);
   // corrected (bins) to (bins - 1) to make _step correct - JMM 6/8/2010
-    _min = min;
-    _max = max - _step;
+  // AGF thinks that it should be bins not bins - 1  since this method is used
+  // when a wrapped quantity is specified i.e angle posted at [0:delta:360-delta]
+  // and lacking a posting point at 360 (wrapped to zero). 
+  // User beware, this method seems to be used such that "bins" is the number of 
+  // posting points, not the number of intervals between posting points!  AGF 9/28/2010
+    _step = (max - min) / (float)(bins);
+    _min  = min;
+    _max  = max - _step;
     _bins = bins;
     return(1);
 }
