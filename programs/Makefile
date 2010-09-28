@@ -5,14 +5,22 @@
 
 SHELL =			/bin/csh
 INCDIR =		../../include
-HDFINCDIR =		/sw/include
+ifneq '$(shell uname -s)' 'Linux'
+    HDFINCDIR =		/sw/include
+else
+    HDFINCDIR = /usr/include/hdf
+endif
 
-EALIBS =		../../lib/libEAData.a /sw/lib/libtiff.a
+EALIBS =		../../lib/libEAData.a 
+ifneq '$(shell uname -s)' 'Linux'
+    EALIBS += /sw/lib/libtiff.a
+endif
 HDFLIBS =		-L/sw/lib -lmfhdf -ldf -ljpeg -lz
+NETCDFLIBS :=   -lnetcdf -lhdf5_hl -lhdf5 -lz -lm
 LIBS =			../../lib/libSim.a
 #OMITTED_LIBS = -lnsl -lsocket -lstdc++
 # using g++ should account for this
-LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm
+LDLIBS =		$(NETCDFLIBS) $(LIBS) $(EALIBS) $(HDFLIBS) -lm
 PURE =
 
 CCC =			$(PURE) g++
@@ -122,6 +130,7 @@ PROGRAMS = \
 	get_foff \
     check_inst_tracking \
 	make_simple_land_map \
+	l2b_to_netcdf
 #	l00_to_l1a
 #   check_l1b 
 #   nof_and_qual

@@ -295,15 +295,15 @@ main(
                 }
                 swath = &(l2b.frame.swath);
             }
-            int ncti=swath.GetCrossTrackBins();
-	    int nati=swath.GetCrossTrackBins();
+            int ncti=swath->GetCrossTrackBins();
+	    int nati=swath->GetCrossTrackBins();
             //----------------------------//
             // read in "truth" wind field //
             //----------------------------//
 
             WindField truth_windfield;
             L2B truth_l2b;
-            float* truthspd,truthdir;
+            float* truthspd, *truthdir;
 	    
             LonLatWind* truth = NULL;
             bool use_truth_arrays=false;
@@ -377,9 +377,9 @@ main(
             if (swath != NULL)
             {
 	      if(use_truth_arrays){
-                if (! metrics.Evaluate(swath, l2b.header.crossTrackResolution,
+                if (! metrics.Evaluate(swath, *l2b.header.crossTrackResolution,
 				       SPEED_BINS, SPEED_RESOLUTION, 
-				       truthspd,truthdir));
+				       *truthspd,*truthdir));
 		  {
                     fprintf(stderr, "%s: error evaluating wind field\n",
 			    command);
