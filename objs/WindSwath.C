@@ -592,8 +592,8 @@ WindSwath::ReadL2B(
 {
     DeleteEntireSwath();    // in case
 
-    printf("In WindSwath::ReadL2B, L2B version ID: %d.%d\n",
-           version_id_major, version_id_minor);
+    //printf("In WindSwath::ReadL2B, L2B version ID: %d.%d\n",
+    //       version_id_major, version_id_minor);
 
     if (fread((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
         fread((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
