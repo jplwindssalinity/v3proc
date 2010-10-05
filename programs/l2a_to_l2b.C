@@ -573,6 +573,7 @@ main(
 		  fprintf(out_train_set_f, " %g %g %g",gmf_meanest[i],coschi_meanest[i],sinchi_meanest[i]);
 		}
                 fprintf(out_train_set_f,"\n");
+                delete look_idx;
             } // end compute diagnostic data
         } // end nudge by hand
         /* end output training set data */
