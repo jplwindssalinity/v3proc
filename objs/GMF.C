@@ -2001,8 +2001,9 @@ GMF::GetVariance(
           }
         }
 
-        float kpm = sqrt(kpm2);
-        float alpha = (1.0 + kpm*kpm) * meas->A - 1.0;
+//        float kpm = sqrt(kpm2);
+//        float alpha = (1.0 + kpm*kpm) * meas->A - 1.0;
+        float alpha = (1.0 + (float)kpm2)*meas->A - 1.0;
         var = (alpha*trial_sigma0 + meas->B) * trial_sigma0 + meas->C;
     }
     else
@@ -2122,7 +2123,7 @@ GMF::_ObjectiveFunctionOld(
         }
         else if (retrieveUsingLogVar)
         {
-            fv += wt*s*s / var + wt*log(var);
+            fv += wt*s*s / var + wt*logf(var);
         }
         else
         {
