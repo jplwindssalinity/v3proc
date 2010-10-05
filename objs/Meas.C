@@ -900,7 +900,7 @@ OffsetList::MakeMeasList(
 void
 OffsetList::FreeContents()
 {
-    off_t* offset = new off_t;
+    off_t* offset;
     GotoHead();
     while ((offset = RemoveCurrent()) != NULL)
         delete offset;
@@ -929,7 +929,7 @@ OffsetListList::~OffsetListList()
 void
 OffsetListList::FreeContents()
 {
-    OffsetList* offsetlist = new OffsetList;
+    OffsetList* offsetlist;
     GotoHead();
     while ((offsetlist = RemoveCurrent()) != NULL)
         delete offsetlist;
