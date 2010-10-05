@@ -1046,6 +1046,8 @@ int MLP::ReadHeader(FILE* ifp){
   value_string=skip_comments(ifp,line_from_file);
   value_string=strtok(NULL,"\n");
   setTrainSetString(value_string);
+
+  free(line_from_file);
   
   return(1);
 }
