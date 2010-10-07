@@ -97,11 +97,11 @@ typedef enum {
     SEL_SPEED,
     SEL_DIRECTION,
     RAIN_IMPACT,
-    DIVERGENCE,
-    CURL,
+    WIND_DIVERGENCE,
+    WIND_CURL,
     WIND_STRESS,
-    WIND_STRESS_DIVERGENCE,
-    WIND_STRESS_CURL,
+    STRESS_DIVERGENCE,
+    STRESS_CURL,
     TIME,
     FLAGS,
 
@@ -132,6 +132,7 @@ typedef struct {
     const char *command;
     const char *input_file;
     const char *output_file;
+    const char *l1b_hdf_source_file;
     char extended;
 } l2b_to_netcdf_config;
 
@@ -215,6 +216,7 @@ main(
         exit(1);
     }
 
+    l2b.header.version_id_major++;
 
     /********************************************
      * Build NetCDF DB                          *
@@ -226,7 +228,7 @@ main(
      * point is a variable length array (ambiguities); each element
      * of the array is a (u,v) two-float compounddata type.
      */
-    int ncid, tmp;
+    int ncid;
 
     int max_ambiguities = l2b.frame.swath.GetMaxAmbiguityCount();
     int cross_track_dim_id, along_track_dim_id, ambiguities_dim_id;
@@ -313,7 +315,7 @@ main(
     varlist[LONGITUDE].attrs[VALID_MAX].value.f = 360.0f;
     varlist[LONGITUDE].attrs[LONG_NAME].name = "long_name";
     varlist[LONGITUDE].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[LONGITUDE].attrs[LONG_NAME].value.s = "latitude";
+    varlist[LONGITUDE].attrs[LONG_NAME].value.s = "longitude";
     varlist[LONGITUDE].attrs[num_standard_attrs].name = "units";
     varlist[LONGITUDE].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[LONGITUDE].attrs[num_standard_attrs].value.s = "degrees_east";
@@ -338,7 +340,7 @@ main(
     varlist[SEL_SPEED].attrs[VALID_MIN].value.f = 0.0f;
     varlist[SEL_SPEED].attrs[VALID_MAX].name = "valid_max";
     varlist[SEL_SPEED].attrs[VALID_MAX].type = varlist[SEL_SPEED].type;
-    varlist[SEL_SPEED].attrs[VALID_MAX].value.f = HUGE_VAL;
+    varlist[SEL_SPEED].attrs[VALID_MAX].value.f = 100.0f;
     varlist[SEL_SPEED].attrs[LONG_NAME].name = "long_name";
     varlist[SEL_SPEED].attrs[LONG_NAME].type = NC_CHAR;
     varlist[SEL_SPEED].attrs[LONG_NAME].value.s = "wind_speed";
@@ -381,7 +383,7 @@ main(
     varlist[RAIN_IMPACT].type  = NC_FLOAT;
     varlist[RAIN_IMPACT].ndims = 2;
     varlist[RAIN_IMPACT].dims = dimensions; 
-    varlist[RAIN_IMPACT].nattrs = num_standard_attrs + 2;
+    varlist[RAIN_IMPACT].nattrs = num_standard_attrs + 1;
     ERR((varlist[RAIN_IMPACT].attrs = (typeof varlist[RAIN_IMPACT].attrs)
                 malloc(varlist[RAIN_IMPACT].nattrs * 
                     (sizeof *varlist[RAIN_IMPACT].attrs))) == NULL);
@@ -394,72 +396,69 @@ main(
     varlist[RAIN_IMPACT].attrs[VALID_MIN].value.f = 0.0f;
     varlist[RAIN_IMPACT].attrs[VALID_MAX].name = "valid_max";
     varlist[RAIN_IMPACT].attrs[VALID_MAX].type = varlist[RAIN_IMPACT].type;
-    varlist[RAIN_IMPACT].attrs[VALID_MAX].value.f = HUGE_VAL;
+    varlist[RAIN_IMPACT].attrs[VALID_MAX].value.f = HUGE_VALF;
     varlist[RAIN_IMPACT].attrs[LONG_NAME].name = "long_name";
     varlist[RAIN_IMPACT].attrs[LONG_NAME].type = NC_CHAR;
     varlist[RAIN_IMPACT].attrs[LONG_NAME].value.s = "rain_impact";
     varlist[RAIN_IMPACT].attrs[num_standard_attrs].name = "units";
     varlist[RAIN_IMPACT].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[RAIN_IMPACT].attrs[num_standard_attrs].value.s = "???";
-    varlist[RAIN_IMPACT].attrs[num_standard_attrs + 1].name = "scale_factor";
-    varlist[RAIN_IMPACT].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-    varlist[RAIN_IMPACT].attrs[num_standard_attrs + 1].value.f = 1.0f;
+    varlist[RAIN_IMPACT].attrs[num_standard_attrs].value.s = "1";
   
-    varlist[DIVERGENCE].name  = "wind_divergence";
-    varlist[DIVERGENCE].type  = NC_FLOAT;
-    varlist[DIVERGENCE].ndims = 2;
-    varlist[DIVERGENCE].dims = dimensions; 
-    varlist[DIVERGENCE].nattrs = num_standard_attrs + 2;
-    ERR((varlist[DIVERGENCE].attrs = (typeof varlist[DIVERGENCE].attrs)
-                malloc(varlist[DIVERGENCE].nattrs * 
-                    (sizeof *varlist[DIVERGENCE].attrs))) == NULL);
+    varlist[WIND_DIVERGENCE].name  = "wind_divergence";
+    varlist[WIND_DIVERGENCE].type  = NC_FLOAT;
+    varlist[WIND_DIVERGENCE].ndims = 2;
+    varlist[WIND_DIVERGENCE].dims = dimensions; 
+    varlist[WIND_DIVERGENCE].nattrs = num_standard_attrs + 2;
+    ERR((varlist[WIND_DIVERGENCE].attrs = (typeof varlist[WIND_DIVERGENCE].attrs)
+                malloc(varlist[WIND_DIVERGENCE].nattrs * 
+                    (sizeof *varlist[WIND_DIVERGENCE].attrs))) == NULL);
 
-    varlist[DIVERGENCE].attrs[FILL_VALUE].name = "FillValue";
-    varlist[DIVERGENCE].attrs[FILL_VALUE].type = varlist[DIVERGENCE].type;
-    varlist[DIVERGENCE].attrs[FILL_VALUE].value.f = 0.0f;
-    varlist[DIVERGENCE].attrs[VALID_MIN].name = "valid_min";
-    varlist[DIVERGENCE].attrs[VALID_MIN].type = varlist[DIVERGENCE].type;
-    varlist[DIVERGENCE].attrs[VALID_MIN].value.f = 0.0f;
-    varlist[DIVERGENCE].attrs[VALID_MAX].name = "valid_max";
-    varlist[DIVERGENCE].attrs[VALID_MAX].type = varlist[DIVERGENCE].type;
-    varlist[DIVERGENCE].attrs[VALID_MAX].value.f = HUGE_VAL;
-    varlist[DIVERGENCE].attrs[LONG_NAME].name = "long_name";
-    varlist[DIVERGENCE].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[DIVERGENCE].attrs[LONG_NAME].value.s = "wind_divergence";
-    varlist[DIVERGENCE].attrs[num_standard_attrs].name = "units";
-    varlist[DIVERGENCE].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[DIVERGENCE].attrs[num_standard_attrs].value.s = "s-1";
-    varlist[DIVERGENCE].attrs[num_standard_attrs + 1].name = "scale_factor";
-    varlist[DIVERGENCE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-    varlist[DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
+    varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].name = "FillValue";
+    varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].type = varlist[WIND_DIVERGENCE].type;
+    varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[WIND_DIVERGENCE].attrs[VALID_MIN].name = "valid_min";
+    varlist[WIND_DIVERGENCE].attrs[VALID_MIN].type = varlist[WIND_DIVERGENCE].type;
+    varlist[WIND_DIVERGENCE].attrs[VALID_MIN].value.f = -1.0f;
+    varlist[WIND_DIVERGENCE].attrs[VALID_MAX].name = "valid_max";
+    varlist[WIND_DIVERGENCE].attrs[VALID_MAX].type = varlist[WIND_DIVERGENCE].type;
+    varlist[WIND_DIVERGENCE].attrs[VALID_MAX].value.f = 1.0f;
+    varlist[WIND_DIVERGENCE].attrs[LONG_NAME].name = "long_name";
+    varlist[WIND_DIVERGENCE].attrs[LONG_NAME].type = NC_CHAR;
+    varlist[WIND_DIVERGENCE].attrs[LONG_NAME].value.s = "wind_divergence";
+    varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].name = "units";
+    varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].type = NC_CHAR;
+    varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].value.s = "s-1";
+    varlist[WIND_DIVERGENCE].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[WIND_DIVERGENCE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
+    varlist[WIND_DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
  
-    varlist[CURL].name  = "wind_curl";
-    varlist[CURL].type  = NC_FLOAT;
-    varlist[CURL].ndims = 2;
-    varlist[CURL].dims = dimensions; 
-    varlist[CURL].nattrs = num_standard_attrs + 2;
-    ERR((varlist[CURL].attrs = (typeof varlist[CURL].attrs)
-                malloc(varlist[CURL].nattrs * 
-                    (sizeof *varlist[CURL].attrs))) == NULL);
+    varlist[WIND_CURL].name  = "wind_curl";
+    varlist[WIND_CURL].type  = NC_FLOAT;
+    varlist[WIND_CURL].ndims = 2;
+    varlist[WIND_CURL].dims = dimensions; 
+    varlist[WIND_CURL].nattrs = num_standard_attrs + 2;
+    ERR((varlist[WIND_CURL].attrs = (typeof varlist[WIND_CURL].attrs)
+                malloc(varlist[WIND_CURL].nattrs * 
+                    (sizeof *varlist[WIND_CURL].attrs))) == NULL);
 
-    varlist[CURL].attrs[FILL_VALUE].name = "FillValue";
-    varlist[CURL].attrs[FILL_VALUE].type = varlist[CURL].type;
-    varlist[CURL].attrs[FILL_VALUE].value.f = 0.0f;
-    varlist[CURL].attrs[VALID_MIN].name = "valid_min";
-    varlist[CURL].attrs[VALID_MIN].type = varlist[CURL].type;
-    varlist[CURL].attrs[VALID_MIN].value.f = 0.0f;
-    varlist[CURL].attrs[VALID_MAX].name = "valid_max";
-    varlist[CURL].attrs[VALID_MAX].type = varlist[CURL].type;
-    varlist[CURL].attrs[VALID_MAX].value.f = HUGE_VAL;
-    varlist[CURL].attrs[LONG_NAME].name = "long_name";
-    varlist[CURL].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[CURL].attrs[LONG_NAME].value.s = "wind_curl";
-    varlist[CURL].attrs[num_standard_attrs].name = "units";
-    varlist[CURL].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[CURL].attrs[num_standard_attrs].value.s = "s-1";
-    varlist[CURL].attrs[num_standard_attrs + 1].name = "scale_factor";
-    varlist[CURL].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-    varlist[CURL].attrs[num_standard_attrs + 1].value.f = 1.0f;
+    varlist[WIND_CURL].attrs[FILL_VALUE].name = "FillValue";
+    varlist[WIND_CURL].attrs[FILL_VALUE].type = varlist[WIND_CURL].type;
+    varlist[WIND_CURL].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[WIND_CURL].attrs[VALID_MIN].name = "valid_min";
+    varlist[WIND_CURL].attrs[VALID_MIN].type = varlist[WIND_CURL].type;
+    varlist[WIND_CURL].attrs[VALID_MIN].value.f = -1.0f;
+    varlist[WIND_CURL].attrs[VALID_MAX].name = "valid_max";
+    varlist[WIND_CURL].attrs[VALID_MAX].type = varlist[WIND_CURL].type;
+    varlist[WIND_CURL].attrs[VALID_MAX].value.f = 1.0f;
+    varlist[WIND_CURL].attrs[LONG_NAME].name = "long_name";
+    varlist[WIND_CURL].attrs[LONG_NAME].type = NC_CHAR;
+    varlist[WIND_CURL].attrs[LONG_NAME].value.s = "wind_curl";
+    varlist[WIND_CURL].attrs[num_standard_attrs].name = "units";
+    varlist[WIND_CURL].attrs[num_standard_attrs].type = NC_CHAR;
+    varlist[WIND_CURL].attrs[num_standard_attrs].value.s = "s-1";
+    varlist[WIND_CURL].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[WIND_CURL].attrs[num_standard_attrs + 1].type = NC_FLOAT;
+    varlist[WIND_CURL].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
     varlist[WIND_STRESS].name  = "stress";
     varlist[WIND_STRESS].type  = NC_FLOAT;
@@ -475,10 +474,10 @@ main(
     varlist[WIND_STRESS].attrs[FILL_VALUE].value.f = 0.0f;
     varlist[WIND_STRESS].attrs[VALID_MIN].name = "valid_min";
     varlist[WIND_STRESS].attrs[VALID_MIN].type = varlist[WIND_STRESS].type;
-    varlist[WIND_STRESS].attrs[VALID_MIN].value.f = 0.0f;
+    varlist[WIND_STRESS].attrs[VALID_MIN].value.f = -HUGE_VALF;
     varlist[WIND_STRESS].attrs[VALID_MAX].name = "valid_max";
     varlist[WIND_STRESS].attrs[VALID_MAX].type = varlist[WIND_STRESS].type;
-    varlist[WIND_STRESS].attrs[VALID_MAX].value.f = HUGE_VAL;
+    varlist[WIND_STRESS].attrs[VALID_MAX].value.f = HUGE_VALF;
     varlist[WIND_STRESS].attrs[LONG_NAME].name = "long_name";
     varlist[WIND_STRESS].attrs[LONG_NAME].type = NC_CHAR;
     varlist[WIND_STRESS].attrs[LONG_NAME].value.s = "wind_stress";
@@ -490,64 +489,64 @@ main(
     varlist[WIND_STRESS].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
     
-    varlist[WIND_STRESS_DIVERGENCE].name  = "stress_divergence";
-    varlist[WIND_STRESS_DIVERGENCE].type  = NC_FLOAT;
-    varlist[WIND_STRESS_DIVERGENCE].ndims = 2;
-    varlist[WIND_STRESS_DIVERGENCE].dims = dimensions; 
-    varlist[WIND_STRESS_DIVERGENCE].nattrs = num_standard_attrs + 2;
-    ERR((varlist[WIND_STRESS_DIVERGENCE].attrs = (typeof varlist[WIND_STRESS_DIVERGENCE].attrs)
-                malloc(varlist[WIND_STRESS_DIVERGENCE].nattrs * 
-                    (sizeof *varlist[WIND_STRESS_DIVERGENCE].attrs))) == NULL);
+    varlist[STRESS_DIVERGENCE].name  = "stress_divergence";
+    varlist[STRESS_DIVERGENCE].type  = NC_FLOAT;
+    varlist[STRESS_DIVERGENCE].ndims = 2;
+    varlist[STRESS_DIVERGENCE].dims = dimensions; 
+    varlist[STRESS_DIVERGENCE].nattrs = num_standard_attrs + 2;
+    ERR((varlist[STRESS_DIVERGENCE].attrs = (typeof varlist[STRESS_DIVERGENCE].attrs)
+                malloc(varlist[STRESS_DIVERGENCE].nattrs * 
+                    (sizeof *varlist[STRESS_DIVERGENCE].attrs))) == NULL);
 
-    varlist[WIND_STRESS_DIVERGENCE].attrs[FILL_VALUE].name = "FillValue";
-    varlist[WIND_STRESS_DIVERGENCE].attrs[FILL_VALUE].type = varlist[WIND_STRESS_DIVERGENCE].type;
-    varlist[WIND_STRESS_DIVERGENCE].attrs[FILL_VALUE].value.f = 0.0f;
-    varlist[WIND_STRESS_DIVERGENCE].attrs[VALID_MIN].name = "valid_min";
-    varlist[WIND_STRESS_DIVERGENCE].attrs[VALID_MIN].type = varlist[WIND_STRESS_DIVERGENCE].type;
-    varlist[WIND_STRESS_DIVERGENCE].attrs[VALID_MIN].value.f = 0.0f;
-    varlist[WIND_STRESS_DIVERGENCE].attrs[VALID_MAX].name = "valid_max";
-    varlist[WIND_STRESS_DIVERGENCE].attrs[VALID_MAX].type = varlist[WIND_STRESS_DIVERGENCE].type;
-    varlist[WIND_STRESS_DIVERGENCE].attrs[VALID_MAX].value.f = HUGE_VAL;
-    varlist[WIND_STRESS_DIVERGENCE].attrs[LONG_NAME].name = "long_name";
-    varlist[WIND_STRESS_DIVERGENCE].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[WIND_STRESS_DIVERGENCE].attrs[LONG_NAME].value.s = "stress_divergence";
-    varlist[WIND_STRESS_DIVERGENCE].attrs[num_standard_attrs].name = "units";
-    varlist[WIND_STRESS_DIVERGENCE].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[WIND_STRESS_DIVERGENCE].attrs[num_standard_attrs].value.s = "s-1";
-    varlist[WIND_STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].name = "scale_factor";
-    varlist[WIND_STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-    varlist[WIND_STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
+    varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].name = "FillValue";
+    varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].type = varlist[STRESS_DIVERGENCE].type;
+    varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].name = "valid_min";
+    varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].type = varlist[STRESS_DIVERGENCE].type;
+    varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].value.f = -HUGE_VALF;
+    varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].name = "valid_max";
+    varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].type = varlist[STRESS_DIVERGENCE].type;
+    varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].value.f = HUGE_VALF;
+    varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].name = "long_name";
+    varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].type = NC_CHAR;
+    varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].value.s = "stress_divergence";
+    varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].name = "units";
+    varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].type = NC_CHAR;
+    varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].value.s = "s-1";
+    varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
+    varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
-    varlist[WIND_STRESS_CURL].name  = "stress_curl";
-    varlist[WIND_STRESS_CURL].type  = NC_FLOAT;
-    varlist[WIND_STRESS_CURL].ndims = 2;
-    varlist[WIND_STRESS_CURL].dims = dimensions; 
-    varlist[WIND_STRESS_CURL].nattrs = num_standard_attrs + 2;
-    ERR((varlist[WIND_STRESS_CURL].attrs = (typeof varlist[WIND_STRESS_CURL].attrs)
-                malloc(varlist[WIND_STRESS_CURL].nattrs * 
-                    (sizeof *varlist[WIND_STRESS_CURL].attrs))) == NULL);
+    varlist[STRESS_CURL].name  = "stress_curl";
+    varlist[STRESS_CURL].type  = NC_FLOAT;
+    varlist[STRESS_CURL].ndims = 2;
+    varlist[STRESS_CURL].dims = dimensions; 
+    varlist[STRESS_CURL].nattrs = num_standard_attrs + 2;
+    ERR((varlist[STRESS_CURL].attrs = (typeof varlist[STRESS_CURL].attrs)
+                malloc(varlist[STRESS_CURL].nattrs * 
+                    (sizeof *varlist[STRESS_CURL].attrs))) == NULL);
 
-    varlist[WIND_STRESS_CURL].attrs[FILL_VALUE].name = "FillValue";
-    varlist[WIND_STRESS_CURL].attrs[FILL_VALUE].type = varlist[WIND_STRESS_CURL].type;
-    varlist[WIND_STRESS_CURL].attrs[FILL_VALUE].value.f = 0.0f;
-    varlist[WIND_STRESS_CURL].attrs[VALID_MIN].name = "valid_min";
-    varlist[WIND_STRESS_CURL].attrs[VALID_MIN].type = varlist[WIND_STRESS_CURL].type;
-    varlist[WIND_STRESS_CURL].attrs[VALID_MIN].value.f = 0.0f;
-    varlist[WIND_STRESS_CURL].attrs[VALID_MAX].name = "valid_max";
-    varlist[WIND_STRESS_CURL].attrs[VALID_MAX].type = varlist[WIND_STRESS_CURL].type;
-    varlist[WIND_STRESS_CURL].attrs[VALID_MAX].value.f = HUGE_VAL;
-    varlist[WIND_STRESS_CURL].attrs[LONG_NAME].name = "long_name";
-    varlist[WIND_STRESS_CURL].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[WIND_STRESS_CURL].attrs[LONG_NAME].value.s = "stress_curl";
-    varlist[WIND_STRESS_CURL].attrs[num_standard_attrs].name = "units";
-    varlist[WIND_STRESS_CURL].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[WIND_STRESS_CURL].attrs[num_standard_attrs].value.s = "s-1";
-    varlist[WIND_STRESS_CURL].attrs[num_standard_attrs + 1].name = "scale_factor";
-    varlist[WIND_STRESS_CURL].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-    varlist[WIND_STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
+    varlist[STRESS_CURL].attrs[FILL_VALUE].name = "FillValue";
+    varlist[STRESS_CURL].attrs[FILL_VALUE].type = varlist[STRESS_CURL].type;
+    varlist[STRESS_CURL].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[STRESS_CURL].attrs[VALID_MIN].name = "valid_min";
+    varlist[STRESS_CURL].attrs[VALID_MIN].type = varlist[STRESS_CURL].type;
+    varlist[STRESS_CURL].attrs[VALID_MIN].value.f = -HUGE_VALF;
+    varlist[STRESS_CURL].attrs[VALID_MAX].name = "valid_max";
+    varlist[STRESS_CURL].attrs[VALID_MAX].type = varlist[STRESS_CURL].type;
+    varlist[STRESS_CURL].attrs[VALID_MAX].value.f = HUGE_VALF;
+    varlist[STRESS_CURL].attrs[LONG_NAME].name = "long_name";
+    varlist[STRESS_CURL].attrs[LONG_NAME].type = NC_CHAR;
+    varlist[STRESS_CURL].attrs[LONG_NAME].value.s = "stress_curl";
+    varlist[STRESS_CURL].attrs[num_standard_attrs].name = "units";
+    varlist[STRESS_CURL].attrs[num_standard_attrs].type = NC_CHAR;
+    varlist[STRESS_CURL].attrs[num_standard_attrs].value.s = "s-1";
+    varlist[STRESS_CURL].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[STRESS_CURL].attrs[num_standard_attrs + 1].type = NC_FLOAT;
+    varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
     
     varlist[TIME].name = "time";
-    varlist[TIME].type = NC_INT;
+    varlist[TIME].type = NC_CHAR;
     varlist[TIME].ndims = 1;
     varlist[TIME].dims = dimensions;
     varlist[TIME].nattrs = num_standard_attrs + 1;
@@ -557,13 +556,13 @@ main(
 
     varlist[TIME].attrs[FILL_VALUE].name = "FillValue";
     varlist[TIME].attrs[FILL_VALUE].type = varlist[TIME].type;
-    varlist[TIME].attrs[FILL_VALUE].value.i = 0;
+    varlist[TIME].attrs[FILL_VALUE].value.s = "";
     varlist[TIME].attrs[VALID_MIN].name = "valid_min";
     varlist[TIME].attrs[VALID_MIN].type = varlist[TIME].type;
-    varlist[TIME].attrs[VALID_MIN].value.i = INT_MIN;
+    varlist[TIME].attrs[VALID_MIN].value.s = "";
     varlist[TIME].attrs[VALID_MAX].name = "valid_max";
     varlist[TIME].attrs[VALID_MAX].type = varlist[TIME].type;
-    varlist[TIME].attrs[VALID_MAX].value.i = INT_MAX;
+    varlist[TIME].attrs[VALID_MAX].value.s = "";
     varlist[TIME].attrs[LONG_NAME].name = "long_name";
     varlist[TIME].attrs[LONG_NAME].type = NC_CHAR;
     varlist[TIME].attrs[LONG_NAME].value.s = "time";
@@ -631,7 +630,7 @@ main(
         varlist[NUDGE_SPEED].attrs[VALID_MIN].value.f = 0.0f;
         varlist[NUDGE_SPEED].attrs[VALID_MAX].name = "valid_max";
         varlist[NUDGE_SPEED].attrs[VALID_MAX].type = varlist[NUDGE_SPEED].type;
-        varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f = HUGE_VAL;
+        varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f = 100.0f;
         varlist[NUDGE_SPEED].attrs[LONG_NAME].name = "long_name";
         varlist[NUDGE_SPEED].attrs[LONG_NAME].type = NC_CHAR;
         varlist[NUDGE_SPEED].attrs[LONG_NAME].value.s = "nudge_speed";
@@ -642,7 +641,7 @@ main(
         varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].value.f = 1.0f;
                  
-        varlist[NUDGE_DIRECTION].name  = "nudge_direction";
+        varlist[NUDGE_DIRECTION].name  = "nudge_to_direction";
         varlist[NUDGE_DIRECTION].type  = NC_FLOAT;
         varlist[NUDGE_DIRECTION].ndims = 2;
         varlist[NUDGE_DIRECTION].dims = dimensions; 
@@ -662,7 +661,7 @@ main(
         varlist[NUDGE_DIRECTION].attrs[VALID_MAX].value.f = 360.0f;
         varlist[NUDGE_DIRECTION].attrs[LONG_NAME].name = "long_name";
         varlist[NUDGE_DIRECTION].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[NUDGE_DIRECTION].attrs[LONG_NAME].value.s = "nudge_direction";
+        varlist[NUDGE_DIRECTION].attrs[LONG_NAME].value.s = "nudge_to_direction";
         varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].name = "units";
         varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].type = NC_CHAR;
         varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].value.s = "degrees";
@@ -717,7 +716,7 @@ main(
         varlist[AMBIG_SPEED].attrs[VALID_MIN].value.f = 0.0f;
         varlist[AMBIG_SPEED].attrs[VALID_MAX].name = "valid_max";
         varlist[AMBIG_SPEED].attrs[VALID_MAX].type = varlist[AMBIG_SPEED].type;
-        varlist[AMBIG_SPEED].attrs[VALID_MAX].value.f = HUGE_VAL;
+        varlist[AMBIG_SPEED].attrs[VALID_MAX].value.f = 100.0f;
         varlist[AMBIG_SPEED].attrs[LONG_NAME].name = "long_name";
         varlist[AMBIG_SPEED].attrs[LONG_NAME].type = NC_CHAR;
         varlist[AMBIG_SPEED].attrs[LONG_NAME].value.s = "ambig_speed";
@@ -728,7 +727,7 @@ main(
         varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
-        varlist[AMBIG_DIRECTION].name  = "ambiguity_direction";
+        varlist[AMBIG_DIRECTION].name  = "ambiguity_to_direction";
         varlist[AMBIG_DIRECTION].type  = NC_FLOAT;
         varlist[AMBIG_DIRECTION].ndims = 3;
         varlist[AMBIG_DIRECTION].dims = dimensions; 
@@ -748,7 +747,7 @@ main(
         varlist[AMBIG_DIRECTION].attrs[VALID_MAX].value.f = 360.0f;
         varlist[AMBIG_DIRECTION].attrs[LONG_NAME].name = "long_name";
         varlist[AMBIG_DIRECTION].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[AMBIG_DIRECTION].attrs[LONG_NAME].value.s = "ambig_direction";
+        varlist[AMBIG_DIRECTION].attrs[LONG_NAME].value.s = "ambig_to_direction";
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].name = "units";
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].type = NC_CHAR;
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].value.s = "degrees";
@@ -864,7 +863,7 @@ main(
         varlist[N_OUT_AFT].type  = NC_BYTE;
         varlist[N_OUT_AFT].ndims = 2;
         varlist[N_OUT_AFT].dims = dimensions; 
-        varlist[N_OUT_AFT].nattrs = 0;
+        varlist[N_OUT_AFT].nattrs = num_standard_attrs + 1;
         ERR((varlist[N_OUT_AFT].attrs = (typeof varlist[N_OUT_AFT].attrs)
                     malloc(varlist[N_OUT_AFT].nattrs * 
                         (sizeof *varlist[N_OUT_AFT].attrs))) == NULL);
@@ -927,19 +926,12 @@ main(
                 NC_FLOAT, (size_t)(1), &l2b.header.alongTrackResolution));
     NCERR(nc_put_att_int  (ncid, NC_GLOBAL, "zero_index", 
                 NC_INT,   (size_t)(1), &l2b.header.zeroIndex));
-    NCERR(nc_put_att_float(ncid, NC_GLOBAL, "inclination", 
-                NC_FLOAT, (size_t)(1), &l2b.header.inclination));
     NCERR(nc_put_att_int  (ncid, NC_GLOBAL, "version_id_major", 
                 NC_INT,   (size_t)(1), &l2b.header.version_id_major));
     NCERR(nc_put_att_int  (ncid, NC_GLOBAL, "version_id_minor", 
                 NC_INT,   (size_t)(1), &l2b.header.version_id_minor));
-
-    tmp = l2b.frame.swath.GetCrossTrackBins();
-    NCERR(nc_put_att_int  (ncid, NC_GLOBAL, "cross_track_bins", 
-                NC_INT,   (size_t)(1), &tmp));
-    tmp = l2b.frame.swath.GetAlongTrackBins();
-    NCERR(nc_put_att_int  (ncid, NC_GLOBAL, "along_track_bins", 
-                NC_INT,   (size_t)(1), &tmp));
+    NCERR(nc_put_att_text (ncid, NC_GLOBAL, "source_file",
+                strlen(config.l1b_hdf_source_file), config.l1b_hdf_source_file));
 
     NCERR(nc_enddef(ncid));
 
@@ -948,25 +940,28 @@ main(
     size_t idx[3];
     WVC *wvc;
     unsigned char flags;
-    const int zero = 0;
     const float zerof = 0.0f;
     float conversion;
 
-    for (idx[1] = 0; (int)idx[1] < l2b.frame.swath.GetCrossTrackBins(); idx[1]++) {
-        for (idx[0] = 0; (int)idx[0] < l2b.frame.swath.GetAlongTrackBins(); idx[0]++) {
+    for (idx[0] = 0; (int)idx[0] < l2b.frame.swath.GetAlongTrackBins(); idx[0]++) {
+
+        NCERR(nc_put_var1_text(ncid, varlist[TIME].id, idx, 
+                varlist[TIME].attrs[FILL_VALUE].value.s));
+
+        for (idx[1] = 0; (int)idx[1] < l2b.frame.swath.GetCrossTrackBins(); idx[1]++) {
 
             wvc = l2b.frame.swath.swath[idx[1]][idx[0]];
 
-            NCERR(nc_put_var1_float(ncid, varlist[DIVERGENCE].id, idx, 
-                        &zerof));
-            NCERR(nc_put_var1_float(ncid, varlist[CURL].id, idx, 
-                        &zerof));
+            NCERR(nc_put_var1_float(ncid, varlist[WIND_DIVERGENCE].id, idx, 
+                        &varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].value.f));
+            NCERR(nc_put_var1_float(ncid, varlist[WIND_CURL].id, idx, 
+                        &varlist[WIND_CURL].attrs[FILL_VALUE].value.f));
             NCERR(nc_put_var1_float(ncid, varlist[WIND_STRESS].id, idx, 
-                        &zerof));
-            NCERR(nc_put_var1_float(ncid, varlist[WIND_STRESS_DIVERGENCE].id, idx, 
-                        &zerof));
-            NCERR(nc_put_var1_float(ncid, varlist[WIND_STRESS_CURL].id, idx, 
-                        &zerof));
+                        &varlist[WIND_STRESS].attrs[FILL_VALUE].value.f));
+            NCERR(nc_put_var1_float(ncid, varlist[STRESS_DIVERGENCE].id, idx, 
+                        &varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].value.f));
+            NCERR(nc_put_var1_float(ncid, varlist[STRESS_CURL].id, idx, 
+                        &varlist[STRESS_CURL].attrs[FILL_VALUE].value.f));
     
 
             /* && wvc->selected != NULL */
@@ -980,9 +975,15 @@ main(
                             &wvc->lonLat.latitude));
                 NCERR(nc_put_var1_float(ncid, varlist[LONGITUDE].id, idx, 
                             &wvc->lonLat.longitude));
-                NCERR(nc_put_var1_float(ncid, varlist[SEL_SPEED].id, idx, 
+                if (wvc->selected->spd <= varlist[SEL_SPEED].attrs[VALID_MAX].value.f) {
+                    NCERR(nc_put_var1_float(ncid, varlist[SEL_SPEED].id, idx, 
                             &wvc->selected->spd));
-                conversion = (wvc->selected->dir)*180.0f/(float)(M_PI);
+                } else {
+                    NCERR(nc_put_var1_float(ncid, varlist[SEL_SPEED].id, idx, 
+                            &varlist[SEL_SPEED].attrs[VALID_MAX].value.f));
+                }
+                conversion = 450.0f - (wvc->selected->dir)*180.0f/(float)(M_PI);
+                conversion = conversion - 360.0f*((int)(conversion/360.0f));
                 NCERR(nc_put_var1_float(ncid, varlist[SEL_DIRECTION].id, idx, 
                             &conversion));
                 NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
@@ -994,10 +995,17 @@ main(
                 if (config.extended) {
                     NCERR(nc_put_var1_float(ncid, varlist[SEL_OBJ].id, idx,
                                 &wvc->selected->obj));
-    
-                    NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
+
+                    if (wvc->nudgeWV->spd <= varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f) {
+                        NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
                                 &wvc->nudgeWV->spd));
-                    conversion = (wvc->nudgeWV->dir)*180.0f/(float)(M_PI);
+                    } else {
+                        NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
+                                &varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f));
+                    }
+
+                    conversion = 450.0f - (wvc->nudgeWV->dir)*180.0f/(float)(M_PI);
+                    conversion = conversion - 360.0f*((int)(conversion/360.0f));
                     NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
                                 &conversion));
     
@@ -1017,9 +1025,16 @@ main(
                     for (idx[2] = 0; (int)idx[2] < num_ambiguities && wv != NULL; 
                             idx[2]++, wv = wvc->ambiguities.GetNext()) {
         
-                        NCERR(nc_put_var1(ncid, varlist[AMBIG_SPEED].id, 
+                        if (wv->spd <= varlist[AMBIG_SPEED].attrs[VALID_MAX].value.f) {
+                            NCERR(nc_put_var1(ncid, varlist[AMBIG_SPEED].id, 
                                     idx, &wv->spd));
-                        conversion = (wv->dir)*180.0f/(float)(M_PI);
+                        } else {
+                            NCERR(nc_put_var1(ncid, varlist[AMBIG_SPEED].id, 
+                                    idx, &varlist[AMBIG_SPEED].attrs[VALID_MAX].value.f));
+                        }
+
+                        conversion = 450.0f - (wv->dir)*180.0f/(float)(M_PI);
+                        conversion = conversion - 360.0f*((int)(conversion/360.0f));
                         NCERR(nc_put_var1(ncid, varlist[AMBIG_DIRECTION].id, 
                                     idx, &conversion));
                         NCERR(nc_put_var1(ncid, varlist[AMBIG_OBJ].id, 
@@ -1037,44 +1052,43 @@ main(
             } else {
             
                 NCERR(nc_put_var1_float(ncid, varlist[LATITUDE].id, idx, 
-                            &zerof));
+                            &varlist[LATITUDE].attrs[FILL_VALUE].value.f));
                 NCERR(nc_put_var1_float(ncid, varlist[LONGITUDE].id, idx, 
-                            &zerof));
+                            &varlist[LONGITUDE].attrs[FILL_VALUE].value.f));
                 NCERR(nc_put_var1_float(ncid, varlist[SEL_SPEED].id, idx, 
-                            &zerof));
+                            &varlist[SEL_SPEED].attrs[FILL_VALUE].value.f));
                 NCERR(nc_put_var1_float(ncid, varlist[SEL_DIRECTION].id, idx, 
-                            &zerof));
+                            &varlist[SEL_DIRECTION].attrs[FILL_VALUE].value.f));
                 NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
-                            &zerof));
+                            &varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f));
                 NCERR(nc_put_var1_ubyte(ncid, varlist[FLAGS].id, idx, 
-                        &flags));
-
+                            &varlist[FLAGS].attrs[FILL_VALUE].value.c));
 
                 /* Extended variables */
                 if (config.extended) {
                     NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
-                                &zerof));
+                                &varlist[NUDGE_SPEED].attrs[FILL_VALUE].value.f));
                     NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
-                                &zerof));
+                                &varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f));
                     NCERR(nc_put_var1_float(ncid, varlist[SEL_OBJ].id, idx, 
-                                &zerof));
+                                &varlist[SEL_OBJ].attrs[FILL_VALUE].value.f));
                     NCERR(nc_put_var1_ubyte(ncid, varlist[N_IN_FORE].id, idx, 
-                                (unsigned char *)&zero));
+                                &varlist[N_IN_FORE].attrs[FILL_VALUE].value.c));
                     NCERR(nc_put_var1_ubyte(ncid, varlist[N_IN_AFT].id, idx, 
-                                (unsigned char *)&zero));
+                                &varlist[N_IN_AFT].attrs[FILL_VALUE].value.c));
                     NCERR(nc_put_var1_ubyte(ncid, varlist[N_OUT_FORE].id, idx, 
-                                (unsigned char *)&zero));
+                                &varlist[N_OUT_FORE].attrs[FILL_VALUE].value.c));
                     NCERR(nc_put_var1_ubyte(ncid, varlist[N_OUT_AFT].id, idx, 
-                                (unsigned char *)&zero));
+                                &varlist[N_OUT_AFT].attrs[FILL_VALUE].value.c));
         
                     for (idx[2] = 0; (int)idx[2] < max_ambiguities; idx[2]++) {
         
-                        NCERR(nc_put_var1(ncid, varlist[AMBIG_SPEED].id, 
-                                    idx, &zero));
-                        NCERR(nc_put_var1(ncid, varlist[AMBIG_DIRECTION].id, 
-                                    idx, &zero));
-                        NCERR(nc_put_var1(ncid, varlist[AMBIG_OBJ].id, 
-                                    idx, &zero));
+                        NCERR(nc_put_var1_float(ncid, varlist[AMBIG_SPEED].id, idx,
+                                    &varlist[AMBIG_SPEED].attrs[FILL_VALUE].value.f));
+                        NCERR(nc_put_var1_float(ncid, varlist[AMBIG_DIRECTION].id, idx,
+                                    &varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].value.f));
+                        NCERR(nc_put_var1_float(ncid, varlist[AMBIG_OBJ].id, idx,
+                                    &varlist[AMBIG_OBJ].attrs[FILL_VALUE].value.f));
                     }
                 }
             }
@@ -1094,7 +1108,7 @@ main(
 
 int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
 
-    const char* usage_array = "--input=<input_file>" "--output=<output_file>" "[--extended]";
+    const char* usage_array = "--input=<input_file> --output=<output_file> --source=<l1b hdf source file> [--extended]";
     int opt;
 
     /* Initialize configuration structure */
@@ -1105,19 +1119,23 @@ int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
 
     struct option longopts[] = 
     {
-        { "input", required_argument, NULL, 'i'},
-        { "output", required_argument, NULL, 'o'},
-        { "extended", no_argument, NULL, 'e'},
+        { "input",    required_argument, NULL, 'i'},
+        { "output",   required_argument, NULL, 'o'},
+        { "source",   required_argument, NULL, 's'},
+        { "extended", no_argument,       NULL, 'e'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "i:o:e", longopts, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "i:o:s:e", longopts, NULL)) != -1) {
         switch (opt) {
             case 'i': 
                 config->input_file = optarg;
                 break;
             case 'o':
                 config->output_file = optarg;
+                break;
+            case 's':
+                config->l1b_hdf_source_file = optarg;
                 break;
             case 'e':
                 config->extended = 1;
@@ -1126,7 +1144,9 @@ int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
 
     }
 
-    if (config->input_file == NULL || config->output_file == NULL) {
+    if (config->input_file == NULL || config->output_file == NULL 
+            || config->l1b_hdf_source_file == NULL) {
+
         fprintf(stderr, "%s: %s\n", config->command, usage_array);
         return -1;
     }

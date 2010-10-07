@@ -20,11 +20,11 @@ NETCDFLIBS :=   -lnetcdf -lhdf5_hl -lhdf5 -lz -lm
 LIBS =			../../lib/libSim.a
 #OMITTED_LIBS = -lnsl -lsocket -lstdc++
 # using g++ should account for this
-LDLIBS =		$(NETCDFLIBS) $(LIBS) $(EALIBS) $(HDFLIBS) -lm
+LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm
 PURE =
 
 CCC =			$(PURE) g++
-DEBUGFLAGS =	-ggdb2 --save-temps 
+DEBUGFLAGS =	-ggdb2 --save-temps -O0 -g
 #DEBUGFLAGS = -O2
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -DNOPM
 
@@ -257,6 +257,9 @@ install: $(PROGRAMS)
 
 %.h: $(SIM_CENTRAL_TREE)/src/programs/RCS/%.h,v
 	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
+
+l2b_to_netcdf: l2b_to_netcdf.C $(LIBS) $(EALIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(NETCDFLIBS) $(LDLIBS)
 
 %: %.C $(LIBS) $(EALIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
