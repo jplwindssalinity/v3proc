@@ -1115,6 +1115,7 @@ int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
     config->command = no_path(argv[0]);
     config->input_file = NULL;
     config->output_file = NULL;
+    config->l1b_hdf_source_file = NULL;
     config->extended = 0;
 
     struct option longopts[] = 
