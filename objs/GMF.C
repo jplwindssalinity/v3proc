@@ -206,20 +206,30 @@ int GMF::_ReadArrayFileLoop(
     }
         
     float value;
+    float values[_incCount]; // AGF 9-29-2010 (slight speed up)
     for (int met_idx = met_idx_start; met_idx < (met_idx_start+n_met); met_idx++)
     {
         metValid[met_idx]=true;
         for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
         {
             for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
-            {
+            {   
+                if( read(fd,&values,_incCount*sizeof(float)) != _incCount*sizeof(float) )
+                {
+                    close(fd);
+                    return(0);
+                } // AGF 9-29-2010
+                
                 for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
                 {
-                    if (read(fd, &value, sizeof(float)) != sizeof(float))
-                    {
-                        close(fd);
-                        return(0);
-                    }
+                    //if (read(fd, &value, sizeof(float)) != sizeof(float))
+                    //{
+                    //    close(fd);
+                    //    return(0);
+                    //} AGF 9-29-2010
+                    
+                    value = values[inc_idx]; // AGF 9-29-2010
+                    
                     *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
                         (float)value;
                                                 
@@ -297,13 +307,13 @@ int GMF::ReadQScatStyle(
     _incMax = 60.0 * dtr;
     _incStep = 1.0 * dtr;
 
-    _spdCount = 51;
+    _spdCount = 501;
     _spdMin = 0.0;
     _spdMax = 50.0;
-    _spdStep = 1.0;
+    _spdStep = 0.1;
 
-    _chiCount = 361;
-    _chiStep = 1.0;
+    _chiCount = 360;
+    _chiStep = two_pi / _chiCount;
     
     if (! _Allocate())
         return(0);
@@ -2005,6 +2015,9 @@ GMF::GetVariance(
 //        float alpha = (1.0 + kpm*kpm) * meas->A - 1.0;
         float alpha = (1.0 + (float)kpm2)*meas->A - 1.0;
         var = (alpha*trial_sigma0 + meas->B) * trial_sigma0 + meas->C;
+        
+        //printf("       %12.6f %12.6e %12.6e %f %15.9f %12.6e\n",
+        //       meas->A, meas->B, meas->C, kpm2, trial_sigma0, var );        
     }
     else
     {
@@ -2016,6 +2029,11 @@ GMF::GetVariance(
         printf("%g %g %g %g %g %g ", trial_sigma0, vpc, kpri2, kprs2, vpm,
             var);
     }
+    // if var == 0 assume it was on purpose to turn off variance weighting.
+    // else set it to be at least WIND_VARIANCE_LIMIT.
+    if( var > 0 && var < WIND_VARIANCE_LIMIT ) 
+      var = WIND_VARIANCE_LIMIT;
+        
     return(var);
 }
 
@@ -2082,15 +2100,32 @@ GMF::_ObjectiveFunctionOld(
     //-------------------------//
     // for each measurement... //
     //-------------------------//
-
+    
+    //int ii=0;
+    //printf("-------------------------------------------------------------------\n");
+    //printf("obj_func speed, direction: %9.3f %9.3f\n",spd,phi*rtd);
     for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
     {
+        //ii+=1;
         //---------------------------------------//
         // get sigma-0 for the trial wind vector //
         //---------------------------------------//
-
+        
+        // Keep in mind the GMF table has 180 deg wind direction from
+        // how we usually define wind direction (hence +pi)
         float chi = phi - meas->eastAzimuth + pi;
         float trial_value;
+        
+        // For obtaining best agreement with official F90 QS processor AGF 10/7/2010
+        // note phi must then be interpreted as being measured
+        // CW from north (not the case for rest of code!).
+        // chi = 5*pi/2 - meas->eastAzimuth - phi; 
+        
+        // For obtaining best agreement with official F90 QS processor AGF 10/7/2010
+        // official doesn't interpolate in speed or azimuth.
+        //spd = quantize(spd,0.1);
+        //chi = quantize(chi,dtr);
+        
         GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
             &trial_value);
 
@@ -2105,10 +2140,15 @@ GMF::_ObjectiveFunctionOld(
 
         float s = trial_value - meas->value;
         float wt=kuBandWeight;
-	if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE || 
-	   meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
-	  wt=cBandWeight;
-	}
+        if( meas->measType==Meas::C_BAND_VV_MEAS_TYPE || 
+            meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
+        	wt=cBandWeight;
+        }
+        
+        //printf("%6d %15.9f %12.6f %12.6f\n",
+        //      ii,meas->value,meas->incidenceAngle*rtd,
+        //      pe_rad_to_gs_deg(meas->eastAzimuth));        
+        
         //-------------------------------------------------------//
         // calculate the expected variance for the trial sigma-0 //
         //-------------------------------------------------------//
@@ -2124,12 +2164,14 @@ GMF::_ObjectiveFunctionOld(
         else if (retrieveUsingLogVar)
         {
             fv += wt*s*s / var + wt*logf(var);
+            //printf(" obj func increment = %12.6f\n",-wt*s*s / var - wt*log(var));            
         }
         else
         {
             fv += wt*s*s / var;
         }
     }
+    //printf("obj func computed value: %12.6f\n",-fv);    
     return(-fv);
 
 }
@@ -2713,9 +2755,11 @@ GMF::RetrieveWinds_GS(
 {
 //
 //  Step 1:  Find an initial set of coarse wind solutions.
+//  Computes coarse and fine ambig search (revised by AGF to agree with
+//  offical proc ~ Oct 2010).
 //
 
-  Calculate_Init_Wind_Solutions(meas_list, kp, wvc, polar_special,prior_dir);
+    Calculate_Init_Wind_Solutions(meas_list, kp, wvc, polar_special,prior_dir);
 
     WindVectorPlus* wvp = NULL;
 
@@ -2724,13 +2768,13 @@ GMF::RetrieveWinds_GS(
 //    {
 //        printf("init obj,spd,dir= %g %g %g\n",wvp->obj,wvp->spd,rtd*wvp->dir);
 //    }
-
+//
 //
 //  Step 2:  Iterate to find an optimized set of wind solutions.
+//  (not used anymore AGF Oct 2010)
 //
-
-    Optimize_Wind_Solutions(meas_list,kp,wvc,prior_dir);
-
+//    Optimize_Wind_Solutions(meas_list,kp,wvc,prior_dir);
+//
 //  Step 3:  Rank the optimized wind solutions for use in ambiguity
 //           removal.
 
@@ -2742,15 +2786,15 @@ GMF::RetrieveWinds_GS(
 
     wvc->SortByObj();
 
-    //----------------------------------------//
-    // keep only the 4 highest rank solutions //
-    //----------------------------------------//
+    //------------------------------------------------------------//
+    // keep only the DEFAULT_MAX_SOLUTIONS highest rank solutions //
+    //------------------------------------------------------------//
 
-    if (wvc->ambiguities.NodeCount() > 4)
+    if (wvc->ambiguities.NodeCount() > DEFAULT_MAX_SOLUTIONS)
     {
         wvp = NULL;
         wvc->ambiguities.GotoHead();
-        for (int i=1; i <= 4; i++)
+        for (int i=1; i <= DEFAULT_MAX_SOLUTIONS; i++)
         {
             wvp = wvc->ambiguities.GetNext();
         }
@@ -2771,6 +2815,224 @@ GMF::RetrieveWinds_GS(
 
     return(1);
 }
+
+
+//-------------------------//
+// GMF::FindLocalMLEMaxima //
+//-------------------------//
+// Translated from Fortran processor by AGF approx 9/15/2010
+//
+// This function finds the coarse MLE maxima; discards peaks
+// if more than WIND_MAX_SOLUTIONS found, and refines them using 
+// newtonian interpolation.
+int
+GMF::FindLocalMLEMaxima( int    num_dir_samples,
+                         float* obj_avg, 
+                         int*   num_mle_maxima )
+{
+  int   k_minus, k_plus, num_mle_maxima_;
+  int   k, i, ii, j, jj;
+  float current_objective;
+  
+  for ( k = 2; k <= num_dir_samples - 1; k++)  {
+    k_minus = k - 1;
+    k_plus  = k + 1;
+    
+    if( k == 2 )                   k_minus = num_dir_samples - 1;
+    if( k == num_dir_samples - 1 ) k_plus  = 2;    
+    
+    // obj_avg is 3 element moving average of _objective_buffer
+    obj_avg[k] = ( _objective_buffer[k]       + 
+                   _objective_buffer[k_minus] + 
+                   _objective_buffer[k_plus]    ) / 3.0;
+    //obj_avg[k] =  _objective_buffer[k];
+    //printf("k, obj, obj_avg: %5d %12.6f %12.6f\n",k,_objective_buffer[k],obj_avg[k]);
+  }
+  // Make obj_avg "circularly continuous".
+  obj_avg[1]               = obj_avg[num_dir_samples - 1];
+  obj_avg[num_dir_samples] = obj_avg[2];
+  
+  // search for mle maxima.
+  num_mle_maxima_ = 0;  
+  for ( k = 2; k <= num_dir_samples - 1; k++)  {
+    k_minus      = k - 1;
+    k_plus       = k + 1;
+    
+    if( k == 2 )                   k_minus = num_dir_samples - 1;
+    if( k == num_dir_samples - 1 ) k_plus  = 2;
+    
+    // Check for peaks
+    if( obj_avg[k] > obj_avg[k_minus] && obj_avg[k] > obj_avg[k_plus] ) {
+      num_mle_maxima_++;
+      _dir_mle_maxima[num_mle_maxima_] = k;
+      //printf("_dir_mle_maxima[%d] = %d\n",num_mle_maxima_,_dir_mle_maxima[num_mle_maxima_]);
+    }
+  }
+  
+//   If the number of local MLE maximas exceeds the desired maximum
+//   wind solutions (= WIND_MAX_SOLUTIONS), sort and select the
+//   (WIND_MAX_SOLUTIONS) highest.
+  if (num_mle_maxima_ > WIND_MAX_SOLUTIONS) {
+    
+    for (i=1; i <= num_mle_maxima_; i++)  {
+      k = 0;
+      current_objective = obj_avg[_dir_mle_maxima[i]];
+      ii = i + num_mle_maxima_;
+      for (j=1; j <= num_mle_maxima_; j++) {
+        jj = _dir_mle_maxima[j];
+        if( current_objective < obj_avg[jj] ) 
+          k = k + 1;
+      }
+
+//
+//    Tag current maxima index as -2 if it is not in the highest
+//    "WIND_MAX_SOLUTIONS" rank.  Otherwise, tag as -1.
+//
+
+      if (k >= WIND_MAX_SOLUTIONS)
+        _dir_mle_maxima [ii] = -2;
+      else
+        _dir_mle_maxima [ii] = -1;
+    }
+
+//
+//    Select and store "highest rank" directional indices into
+//    "latter" dimensions of the array.
+//
+
+    ii = 0;
+    for (i=1; i <= num_mle_maxima_; i++)  {
+      if (_dir_mle_maxima[i + num_mle_maxima_] == -1)  {
+        ii = ii + 1;
+        _dir_mle_maxima [ii + 2 * num_mle_maxima_] = _dir_mle_maxima [i];
+      }
+    }
+
+//
+//    Move "highest rank" directions back to the front.
+//
+    for (k=1; k <= WIND_MAX_SOLUTIONS; k++)  {
+      _dir_mle_maxima [k] = _dir_mle_maxima [k + 2 * num_mle_maxima_];
+    }
+    num_mle_maxima_ = WIND_MAX_SOLUTIONS;
+  }
+  	
+  *num_mle_maxima = num_mle_maxima_;
+  return(1);
+}
+
+
+//-------------------//
+// GMF::LineMaximize //
+//-------------------//
+// Translated from Fortran processor by AGF approx 9/15/2010
+
+int 
+GMF::LineMaximize( MeasList* meas_list, 
+                   float     spd_start, 
+                   float     angle,
+                   Kp*       kp,
+                   float     delta_spd,
+                   int       do_interp,
+                   float*    final_spd,
+                   float*    final_obj,
+                   float     prior_dir )
+{
+  float  center_spd, minus_spd, plus_spd;
+  float  center_obj, minus_obj, plus_obj;
+  float  out_obj, out_spd;  
+  double spd_offset, max_obj;
+  int    do_center, do_minus, do_plus;
+  int    found, interp;
+  int    speed_iterations;
+
+  do_center        = 1;
+  do_minus         = 1;
+  do_plus          = 1;
+  speed_iterations = 0;
+  found            = 0;
+  center_spd       = spd_start;  
+  
+// Check that center_spd is at least delta_spd away from bounds.  
+  if( center_spd < delta_spd )
+    center_spd = delta_spd;
+  else if( center_spd > UPPER_SPEED_BOUND - delta_spd )
+    center_spd = UPPER_SPEED_BOUND - delta_spd;
+  
+  while( !found && speed_iterations <= 500 ) {
+    if( do_minus ) {
+      minus_spd = center_spd - delta_spd;
+      if( minus_spd < LOWER_SPEED_BOUND ) minus_spd = LOWER_SPEED_BOUND;
+      minus_obj = _ObjectiveFunction(meas_list, minus_spd, dtr * angle, kp, prior_dir);
+    }
+    if( do_center ) {
+      center_obj = _ObjectiveFunction(meas_list, center_spd, dtr * angle, kp, prior_dir);
+    }
+    if( do_plus ) {
+      plus_spd = center_spd + delta_spd;
+      if( plus_spd > UPPER_SPEED_BOUND ) plus_spd = UPPER_SPEED_BOUND;
+      plus_obj = _ObjectiveFunction(meas_list, plus_spd, dtr * angle, kp, prior_dir);
+    }
+    
+    found  = 1;
+    interp = 1;
+    
+    if( plus_obj > center_obj && plus_obj > minus_obj ) {
+      found     = 0;
+      minus_obj = center_obj;
+      minus_spd = center_spd;
+      
+      center_obj = plus_obj;
+      center_spd = plus_spd;
+      
+      if( plus_spd >= UPPER_SPEED_BOUND ) {
+        center_spd = UPPER_SPEED_BOUND;
+        found      = 1;
+        interp     = 0;
+      }
+      
+      do_minus  = 0;
+      do_center = 0;
+      do_plus   = 1;
+    }
+    
+    if( minus_obj > center_obj && minus_obj > plus_obj ) {
+      found      = 0;
+      plus_obj   = center_obj;
+      plus_spd   = center_spd;
+      
+      center_obj = minus_obj;
+      center_spd = minus_spd;
+      
+      if( minus_spd <= LOWER_SPEED_BOUND ) {
+        center_spd = LOWER_SPEED_BOUND;
+        found      = 1;
+        interp     = 0;
+      }
+      
+      do_minus  = 1;
+      do_center = 0;
+      do_plus   = 0;
+    }  
+    speed_iterations++;
+  }
+  
+  if( do_interp && interp && newtonian_interpolation( minus_obj, center_obj, 
+                plus_obj, &spd_offset, &max_obj ) ) {
+    out_obj = max_obj;
+    out_spd = center_spd + spd_offset * delta_spd;
+  }
+  else {
+    out_obj = center_obj;
+    out_spd = center_spd;
+  }
+  
+  *final_spd = out_spd;
+  *final_obj = out_obj;
+  
+  return(1);
+}
+
 
 //------------------------------------//
 // GMF::Calculate_Init_Wind_Solutions //
@@ -2803,41 +3065,23 @@ GMF::Calculate_Init_Wind_Solutions(
     //
 
     int    i;
-    int    j;
     int    k;
-    int    ii;
-    int    jj;
-    float  center_speed;
-    float  minus_speed;
-    float  plus_speed;
-    int    good_speed;
-    float  center_objective;
-    float  minus_objective;
-    float  plus_objective;
+    
+    float center_spd, minus_spd, plus_spd;
+    float center_obj, minus_obj, plus_obj;
+    float minus_dir, center_dir, plus_dir;
+
     float  dir_spacing;
     int    num_dir_samples;
     float  angle;
-    float  diff_objective_1;
-    float  diff_objective_2;
-    float  current_objective;
     int    num_mle_maxima;
-    //  float  speed_buffer [MAX_DIR_SAMPLES+1];
-    //  float  objective_buffer [MAX_DIR_SAMPLES+1] ;
-    //  int    dir_mle_maxima [MAX_DIR_SAMPLES+1];
-
-    for (i = 0; i < MAX_DIR_SAMPLES + 1; i++)
-    {
+    
+    
+    for (i = 0; i < MAX_DIR_SAMPLES + 1; i++) {
         _speed_buffer[i] = 0.0;
         _objective_buffer[i] = 0.0;
         _dir_mle_maxima[i] = 0;
     }
-
-    center_speed = (int)(WIND_START_SPEED);
-    if (center_speed < (LOWER_SPEED_BOUND + 2))
-        center_speed = (LOWER_SPEED_BOUND + 2);
-
-    if (center_speed > (UPPER_SPEED_BOUND - 1))
-        center_speed = (UPPER_SPEED_BOUND -1);
 
     //
     // Calculate number of wind direction samples.
@@ -2854,10 +3098,13 @@ GMF::Calculate_Init_Wind_Solutions(
     int tmp = 0;
     float tmp2, tmp3, max_multiridge_sep = 0, ave_multiridge_sep = 0;
     float multiridge_width = 0.0, min_multiridge_sep = HUGE_VAL;
+    
+    float coarse_start_speed = WIND_START_SPEED;
+    
     for (k = 2; k <= num_dir_samples - 1; k++)
     {
         if (polar_special) {
-	  tmp = FindMultiSpeedRidge(meas_list, kp, k, &tmp2, &tmp3,prior_dir);
+            tmp = FindMultiSpeedRidge(meas_list, kp, k, &tmp2, &tmp3,prior_dir);
             if (tmp > multiridge)
                 multiridge = tmp;
             if (tmp > 1) {
@@ -2872,259 +3119,207 @@ GMF::Calculate_Init_Wind_Solutions(
         }
         angle = dir_spacing * (float)(k - 1) - dir_spacing;
 
-        //
-        // Compute MLE at 3 points centered about center speed.
-        //
-        minus_speed = center_speed - WIND_SPEED_INTV_INIT;
-        plus_speed  = center_speed + WIND_SPEED_INTV_INIT;
-
-        minus_objective = _ObjectiveFunction(meas_list, minus_speed,
-					     dtr * angle, kp, prior_dir);
-        center_objective = _ObjectiveFunction(meas_list, center_speed,
-					      dtr * angle, kp, prior_dir);
-        plus_objective = _ObjectiveFunction(meas_list, plus_speed,
-					    dtr * angle, kp,prior_dir);
-
-        //
-        // Move the triplet in the speed dimension until center_objective
-        // reaches maximum.   Clip search at 0 m/sec and 50 m/sec.
-        //
-
-        good_speed = 1;
-
-        while (good_speed &&
-            (center_objective < minus_objective  ||
-             center_objective < plus_objective) )
-        {
-
-//
-//  If "minus speed" has the largest objective value, shift the speed
-//  "downward".
-//
-
-            if (minus_objective >= center_objective  &&
-               minus_objective >= plus_objective    &&
-               good_speed )
-            {
-               center_speed = center_speed
-                           - WIND_SPEED_INTV_INIT ;
-               plus_objective = center_objective;
-               center_objective = minus_objective;
-               minus_speed = center_speed
-                          - WIND_SPEED_INTV_INIT;
-
-//
-//   Clip search at null (0) speed.
-//
-
-               if (minus_speed < (float)(LOWER_SPEED_BOUND))
-                {
-                  _speed_buffer[k] = center_speed;
-                 _objective_buffer [k] = center_objective;
-                  center_speed = center_speed + WIND_SPEED_INTV_INIT;
-                  good_speed = 0;
-                }
-
-//
-//   Re-Evaluate objective function with shifted minus speed.
-//
-
-               if (good_speed)
-                {
-                    minus_objective = _ObjectiveFunction(meas_list,
-							 minus_speed,dtr*angle,kp,prior_dir);
-                }
-            }
-
-//
-//  If "plus speed" has the largest objective value, shift the speed
-//  "upward".
-//
-
-            if (plus_objective > center_objective  &&
-               plus_objective > minus_objective   &&
-               good_speed  )
-            {
-               center_speed = center_speed + WIND_SPEED_INTV_INIT;
-               minus_objective = center_objective;
-               center_objective = plus_objective;
-               plus_speed = center_speed + WIND_SPEED_INTV_INIT;
-
-//
-//   Clip search at maximum (50) speed.
-//
-
-               if  (plus_speed > (float)(UPPER_SPEED_BOUND))
-                {
-                  _speed_buffer [k] = center_speed;
-                  _objective_buffer [k] = center_objective;
-                  center_speed = center_speed - WIND_SPEED_INTV_INIT;
-                  good_speed = 0;
-                }
-
-//
-//   Re-Evaluate objective function with shifted plus speed.
-//
-
-               if   (good_speed)
-                {
-                    plus_objective = _ObjectiveFunction(meas_list,
-							plus_speed,dtr*angle,kp,prior_dir);
-                }
-            }
-        }    // while loop
-
-
-         if (center_objective >= minus_objective  &&
-            center_objective >= plus_objective   &&
-            good_speed)
-        {
-            diff_objective_1 = plus_objective - minus_objective;
-            diff_objective_2 = (plus_objective + minus_objective)
-                            - 2.0 * center_objective;
-
-            if(diff_objective_2==0) _speed_buffer[k]=center_speed;
-            else _speed_buffer [k] = center_speed  - 0.5
-                            * (diff_objective_1 / diff_objective_2)
-                            * WIND_SPEED_INTV_INIT;
-
-#define GSFIXED
-#ifdef GSFIXED
-            // Re-evaluate objective function to avoid interpolation bumps
-            // that introduce artificial peaks.
-            _objective_buffer[k] = _ObjectiveFunction(meas_list,
-						      _speed_buffer[k],dtr*angle,kp,prior_dir);
-#else
-            _objective_buffer [k] = center_objective
-                                - (diff_objective_1*diff_objective_1
-                                  /diff_objective_2) / 8.0;
-#endif
-
-        }
+        float dir_search_step = WIND_SPEED_INTV_INIT;
+        // For obtaining best agreement with official F90 QS processor AGF 10/7/2010
+        // (replicate bug in official proc).
+        //if(k==2) dir_search_step = 0.5;
+        
+        LineMaximize( meas_list, coarse_start_speed, angle, kp, dir_search_step, 1,
+                   &_speed_buffer[k], &_objective_buffer[k], prior_dir );
+        
+        // Seed start speed for next angle with solution for this angle
+        coarse_start_speed = quantize( _speed_buffer[k], WIND_SPEED_INTV_INIT );
     }    // end of angular k loop
 
-      if(polar_special){
-    ave_multiridge_sep/=multiridge_width/dir_spacing;
-    printf("%d %g %g %g %g ",multiridge, multiridge_width,
+    if(polar_special){
+      ave_multiridge_sep/=multiridge_width/dir_spacing;
+      printf("%d %g %g %g %g ",multiridge, multiridge_width,
                    ave_multiridge_sep, max_multiridge_sep,
                            min_multiridge_sep);
-      }
+    }
 //
 //   Make speed/objective buffers "circularly continuous".
 //
 
-      _speed_buffer [1] = _speed_buffer [num_dir_samples - 1];
-      _speed_buffer [num_dir_samples] = _speed_buffer [2];
+    _speed_buffer[1]                   = _speed_buffer[num_dir_samples - 1];
+    _speed_buffer[num_dir_samples]     = _speed_buffer[2];
 
-      _objective_buffer [1]  = _objective_buffer [num_dir_samples - 1];
-      _objective_buffer [num_dir_samples]  = _objective_buffer [2];
+    _objective_buffer[1]               = _objective_buffer[num_dir_samples - 1];
+    _objective_buffer[num_dir_samples] = _objective_buffer[2];
 
-//
-//   Find local MLE maximas over the angular intervals.
-//
+    float obj_avg[MAX_DIR_SAMPLES];
+    float dir_max[WIND_MAX_SOLUTIONS+1];// we don't use the 1st element (index 0 )
+    float spd_max[WIND_MAX_SOLUTIONS+1];
+    float obj_max[WIND_MAX_SOLUTIONS+1];
+    
+    FindLocalMLEMaxima( num_dir_samples, &obj_avg[0], &num_mle_maxima );
+    
+    //for (int k = 2; k <= num_dir_samples - 1; k++) {
+    //  fprintf(stdout,"angle, obj, avg_obj: %12.6f %12.6f %12.6f\n",dir_spacing*(k-2),_objective_buffer[k],obj_avg[k]);
+    //}
 
-      num_mle_maxima = 0;
+    if( num_mle_maxima == 0 )
+      return(0);
 
-    for (k=2; k <= num_dir_samples-1; k++)
-    {
+//    
+//  Here we extend the original function of Calculate_Init_Wind_Solutions
+//  to refine & optimize the ambiguities
+//    
+// Fit the direction to a quadratic    
+// Interpolate using the 3 cell moving average objective function values.
+    for( i=1; i <= num_mle_maxima; i++) {
+      k           =  _dir_mle_maxima[i];
+      int k_minus = k - 1;
+      int k_plus  = k + 1;
+    
+      if( k == 2 )                   k_minus = num_dir_samples - 1;
+      if( k == num_dir_samples - 1 ) k_plus  = 2;    
+      
+      minus_obj  = obj_avg[k_minus];
+      center_obj = obj_avg[k];
+      plus_obj   = obj_avg[k_plus];
 
-      // Added >= to eliminate missed peaks
-        if (_objective_buffer[k] > _objective_buffer[k-1] &&
-            _objective_buffer[k] >= _objective_buffer[k+1])
-        {
-            num_mle_maxima = num_mle_maxima + 1;
-            _dir_mle_maxima [num_mle_maxima] = k;
-        }
+      double offset, max_mle;
+      
+      dir_max[i] = dir_spacing * (float)(k - 1) - dir_spacing;
+      spd_max[i] = _speed_buffer[k];
+      
+      if( newtonian_interpolation( minus_obj, center_obj, 
+            plus_obj, &offset, &max_mle ) ) {
+        dir_max[i] += offset * dir_spacing;
+        
+        while( dir_max[i] >= 360 ) dir_max[i] -= 360;
+        while( dir_max[i] <  0   ) dir_max[i] += 360;
+      }
+      //fprintf(stdout,"i, _dir_mle_maxima[i]: %6d %12.6f %12.6f\n",i,dir_spacing*(k-2),dir_max[i]);      
     }
 
-//
-//   If the number of local MLE maximas exceeds the desired maximum
-//   wind solutions (= WIND_MAX_SOLUTIONS), sort and select the
-//   (WIND_MAX_SOLUTIONS) highest.
-//
+    //
+    // Do a fine line search
+    //
+    
+    for( i=1; i <= num_mle_maxima; i++)  {
+    
+      int do_minus    = 1;
+      int do_center   = 1;
+      int do_plus     = 1;
+      int good_speed  = 0;
+      int iterations  = 0;
 
-    if (num_mle_maxima > WIND_MAX_SOLUTIONS)
-    {
-//        printf("number greater than 10 = %d\n",num_mle_maxima);
-//         write(99,*) objective_buffer
+      float direction = dir_max[i];
+      float speed     = spd_max[i];
+      
+      while( !good_speed && iterations <= 500 ) {
+        
+        direction = quantize( direction, WIND_DIR_INTV_OPTI   );
+        speed     = quantize( speed,     WIND_SPEED_INTV_OPTI );
 
-        for (i=1; i <= num_mle_maxima; i++)
-        {
-            k = 0;
-            current_objective = _objective_buffer [_dir_mle_maxima[i]];
-            ii = i + num_mle_maxima;
-            for (j=1; j <= num_mle_maxima; j++)
-            {
-               jj = _dir_mle_maxima [j];
-               if (current_objective < _objective_buffer [jj] )
-                  k = k + 1;
-            }
-
-//
-//    Tag current maxima index as -2 if it is not in the highest
-//    "WIND_MAX_SOLUTIONS" rank.  Otherwise, tag as -1.
-//
-
-            if (k >= WIND_MAX_SOLUTIONS)
-                _dir_mle_maxima [ii] = -2;
-            else
-                _dir_mle_maxima [ii] = -1;
+        if( do_minus ) {
+          minus_dir = direction - WIND_DIR_INTV_OPTI;
+          if( minus_dir < 0 ) minus_dir += 360;
+          LineMaximize( meas_list, speed, minus_dir, kp, WIND_SPEED_INTV_OPTI, 1,
+                   &minus_spd, &minus_obj, prior_dir );
         }
-
-//
-//    Select and store "highest rank" directional indices into
-//    "latter" dimensions of the array.
-//
-
-        ii = 0;
-        for (i=1; i <= num_mle_maxima; i++)
-        {
-            if (_dir_mle_maxima[i + num_mle_maxima] == -1)
-            {
-               ii = ii + 1;
-               _dir_mle_maxima [ii + 2 * num_mle_maxima] = _dir_mle_maxima [i];
-            }
+        if( do_center ) {
+          center_dir = direction;
+          LineMaximize( meas_list, speed, center_dir, kp, WIND_SPEED_INTV_OPTI, 1,
+                   &center_spd, &center_obj, prior_dir );
         }
-
-//
-//    Move "highest rank" directions back to the front.
-//
-
-        for (k=1; k <= WIND_MAX_SOLUTIONS; k++)
-        {
-            _dir_mle_maxima [k] = _dir_mle_maxima [k + 2 * num_mle_maxima];
+        if( do_plus ) {
+          plus_dir =  direction + WIND_DIR_INTV_OPTI;
+          if( plus_dir >= 360 ) plus_dir -= 360;
+          LineMaximize( meas_list, speed, plus_dir, kp, WIND_SPEED_INTV_OPTI, 1,
+                   &plus_spd, &plus_obj, prior_dir );
         }
-        num_mle_maxima = WIND_MAX_SOLUTIONS;
-//        printf("dir_mle_maxima = %d\n",dir_mle_maxima);
-
+        good_speed = 1;
+        
+        if( plus_obj > center_obj && plus_obj > minus_obj ) {
+          minus_spd = center_spd;
+          minus_dir = center_dir;
+          minus_obj = center_obj;
+          
+          center_spd = plus_spd;
+          center_dir = plus_dir;
+          center_obj = plus_obj;
+          
+          speed      = plus_spd;
+          direction  = plus_dir;
+          good_speed = 0;
+          
+          do_minus   = 0;
+          do_center  = 0;
+          do_plus    = 1;
+        }
+        
+        if( minus_obj > center_obj && minus_obj > plus_obj )  {
+          plus_spd   = center_spd;
+          plus_dir   = center_dir;
+          plus_obj   = center_obj;
+          
+          center_spd = minus_spd;
+          center_dir = minus_dir;
+          center_obj = minus_obj;
+          
+          speed      = minus_spd;
+          direction  = minus_dir;
+          good_speed = 0;
+          
+          do_minus   = 1;
+          do_center  = 0;
+          do_plus    = 0;
+        }        
+        iterations++;
+      }
+      //printf("iterations, spd_max[i], center_speed: %6d %12.6f %12.6f\n",iterations,spd_max[i], center_spd);
+      
+      if( good_speed ) {
+        double offset, max_mle;
+        
+        if( newtonian_interpolation( minus_obj, center_obj, plus_obj, 
+            &offset, &max_mle ) ) {
+            
+          if( offset >= -1 && offset <= 0 )
+            spd_max[i] = minus_spd * fabs( offset ) + center_spd * (1-fabs(offset));
+          else if ( offset <= 1 )
+            spd_max[i] = center_spd * (1-offset) + plus_spd * offset;
+          else
+            spd_max[i] = center_spd;
+            
+          dir_max[i] = center_dir + offset * WIND_DIR_INTV_OPTI;
+          while( dir_max[i] >= 360 ) dir_max[i] -= 360;
+          while( dir_max[i] < 0    ) dir_max[i] += 360;
+          obj_max[i] = max_mle;
+        }
+        else {
+          spd_max[i] = center_spd;
+          dir_max[i] = center_dir;
+          obj_max[i] = center_obj;
+        }
+      }
+      else {
+        spd_max[i] = center_spd;
+        dir_max[i] = center_dir;
+        obj_max[i] = center_obj;
+      }
     }
-
+    
 //
 //   Finally, fill in the output WR variables/arrays.
 //
-
-    int wr_num_ambigs = num_mle_maxima;
-    for (i=1; i <= wr_num_ambigs; i++)
+    for (i=1; i <= num_mle_maxima; i++)
     {
-        jj = _dir_mle_maxima [i];
-//        wr_wind_dir [i] = dir_spacing * (float)(jj - 1) - dir_spacing;
-//        wr_wind_speed [i] = speed_buffer [jj];
-//        wr_mle [i] = objective_buffer [jj];
-
-        WindVectorPlus* wvp = new WindVectorPlus();
-        if (! wvp)
-            return(0);
-        wvp->spd = _speed_buffer [jj];
-        wvp->dir = dtr * (dir_spacing * (float)(jj - 1) - dir_spacing);
-        wvp->obj = _objective_buffer [jj];
-//        printf("init: obj,spd,dir= %g %g %g\n",wvp->obj,wvp->spd,rtd*wvp->dir);
-        if (! wvc->ambiguities.Append(wvp))
-        {
-            delete wvp;
-            return(0);
-        }
+      WindVectorPlus* wvp = new WindVectorPlus();
+      if (! wvp) return(0);
+      
+      wvp->spd = spd_max[i];
+      wvp->dir = dir_max[i] * dtr;
+      wvp->obj = obj_max[i];
+//        printf("init: obj,spd,dir= %g %g %g\n",wvp->obj,wvp->spd,rtd*wvp->dir);      
+      if (! wvc->ambiguities.Append(wvp) ) {
+        delete wvp;
+        return(0);
+      }
     }
-
     return(1);
 }
 
@@ -3722,14 +3917,17 @@ GMF::Optimize_Wind_Solutions(
 
 int
 GMF::CopyBuffersGSToPE(){
-  if(WIND_DIR_INTV_INIT!=360.0/_phiCount) return(0);
+  if(WIND_DIR_INTV_INIT!=360.0/_phiCount) {
+    fprintf(stdout, "Fail in GMF::CopyBuffersGSToPE: WIND_DIR_INTV_INIT, _phiCount: %12.6f %6d\n", 
+            WIND_DIR_INTV_INIT, _phiCount);
+    return(0);
+  }
   for(int c=0;c<_phiCount;c++){
     _bestObj[c]=_objective_buffer[c+2];
     _bestSpd[c]=_speed_buffer[c+2];
   }
   return(1);
 }
-
 
 //-----------------------//
 // Brute Force Retrieval   //
@@ -5692,10 +5890,25 @@ GMF::RetrieveWinds_S3(
     // generate coarse solution curve //
     //--------------------------------//
 
-    if (_phiCount != H2_PHI_COUNT)
-        SetPhiCount(H2_PHI_COUNT);
+    // AGF 9-21-2010
+    // need _phiCount to equal the following such that we can copy over the 
+    // obj func and best speed ridges over from the GS inversion.
+    // GMF::CopyBuffersGSToPE will fail if it is not so.
+    int expected_phi_count = int( quantize( 360.0 / WIND_DIR_INTV_INIT, 1.0 ) );
+    if( _phiCount != expected_phi_count ) {
+      fprintf( stdout,
+              "GMF::RetrieveWinds_S3: resetting phi count from %d to %d\n",
+              _phiCount, expected_phi_count );
+      SetPhiCount(expected_phi_count);
+    }
+    // old code was fragile; expected GSparameters.h to contain something
+    // that matched the macro H2_PHI_COUNT. end AGF 9-21-2010
+    //if (_phiCount != H2_PHI_COUNT)     SetPhiCount(H2_PHI_COUNT);
+    
     Calculate_Init_Wind_Solutions(meas_list, kp, wvc,0,prior_dir);
-    Optimize_Wind_Solutions(meas_list, kp, wvc,prior_dir);
+    // This function not used anymore AGF Oct 2010
+    //Optimize_Wind_Solutions(meas_list, kp, wvc,prior_dir);
+
     if (! CopyBuffersGSToPE())
         return(0);
     wvc->Rank_Wind_Solutions();
@@ -5717,6 +5930,25 @@ GMF::RetrieveWinds_S3(
 
     wvc->SortByObj();
 
+    //------------------------------------------//
+    // limit to DEFAULT_MAX_SOLUTIONS solutions //
+    //------------------------------------------//
+    
+    int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
+    if (delete_count > 0)
+    {
+        fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
+        for (int i = 0; i < delete_count; i++)
+        {
+            wvc->ambiguities.GotoTail();
+            wvc->directionRanges.GotoTail();
+            WindVectorPlus* wvp = wvc->ambiguities.RemoveCurrent();
+            AngleInterval* ai = wvc->directionRanges.RemoveCurrent();
+            delete wvp;
+            delete ai;
+        }
+    }
+
     //-------------------------------------------//
     // Determine Direction Intervals Comprising  //
     // (S3_PROB_THRESHOLD)*100% of the probability//
@@ -5727,27 +5959,9 @@ GMF::RetrieveWinds_S3(
             return(0);
     }
 
-    //------------------------------------------//
-    // limit to DEFAULT_MAX_SOLUTIONS solutions //
-    //------------------------------------------//
-
-    int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
-    if (delete_count > 0)
-    {
-        fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
-        for (int i = 0; i < delete_count; i++)
-        {
-            wvc->ambiguities.GotoTail();
-            wvc->directionRanges.GotoTail();
-            WindVectorPlus* wvp = wvc->ambiguities.RemoveCurrent();
-        AngleInterval* ai = wvc->directionRanges.RemoveCurrent();
-            delete wvp;
-        delete ai;
-        }
-    }
-
     return(1);
 }
+
 
 int
 GMF::BuildDirectionRangesByMSE(

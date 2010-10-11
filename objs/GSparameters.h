@@ -20,14 +20,14 @@ static const char rcs_id_gs_parameters_h[] =
 #define UPPER_AZIMUTH_BOUND    90
 #define WIND_MAX_SOLUTIONS     10
 #define WIND_SPEED_BAND        4
-#define WIND_SPEED_INTV_INIT   0.5
+#define WIND_SPEED_INTV_INIT   0.2
+#define WIND_SPEED_INTV_OPTI   0.1
 #define WIND_DIR_INTV_INIT     8.0
-#define WIND_DIR_INTV_OPTI     2.5
-#define WIND_SPEED_INTV_OPTI   0.25
+#define WIND_DIR_INTV_OPTI     1.0
 #define WIND_VARIANCE_LIMIT    1.0e-9
 #define MAX_DIR_SAMPLES        800
 
-#define WIND_SPEED_DELTA       0.1
+#define WIND_SPEED_DELTA       0.5
 #define WIND_DIR_DELTA         5.0
 #define WIND_LIKELIHOOD_DELTA  0.5
 

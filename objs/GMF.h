@@ -111,6 +111,12 @@ public:
     int  FindMaxima(WVC* wvc);
     int  FindMany(WVC* wvc);
 
+    int  FindLocalMLEMaxima( int num_dir_samples, float* obj_avg, int* num_mle_maxima );
+    
+    int  LineMaximize( MeasList* meas_list, float spd_start, 
+             float angle, Kp* kp, float delta_spd, int do_interp,
+             float* final_spd, float* final_obj, float prior_dir=0 );
+
     //------------------------//
     // special wind retrieval //
     //------------------------//
