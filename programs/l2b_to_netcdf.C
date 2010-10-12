@@ -8,7 +8,7 @@
 //    l2b_to_netcdf
 //
 // SYNOPSIS
-//    l2b_to_netcdf <input_file> <output_file> 
+//    l2b_to_netcdf <l2b_file> <l2bc_file> 
 //
 // DESCRIPTION
 //    Reads frames from a L2B file and
@@ -37,6 +37,8 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <mfhdf.h>
+
 #include "Misc.h"
 #include "L2B.h"
 #include "List.h"
@@ -53,10 +55,16 @@ static const char rcs_id[] =
 #define STRINGIFY(x) #x
 #define S(x) STRINGIFY(x)
 
+#ifdef ZERO_FILL
+    #define FILL(x, y) (x)
+#else
+    #define FILL(x, y) (y)
+#endif
+
 #define ERR(call) \
     if (call) { \
         perror("Error in " __FILE__ " @ " S(__LINE__)); \
-        exit(EXIT_FAILURE); \
+        return EXIT_FAILURE; \
     }
     
 #define NCERR(call) \
@@ -65,9 +73,16 @@ static const char rcs_id[] =
     if ((error = call) != NC_NOERR) { \
         fprintf(stderr, "Error %d in %s @ %d: %s\n", error, \
                 __FILE__, __LINE__, nc_strerror(error)); \
-        exit(EXIT_FAILURE); \
+        return EXIT_FAILURE; \
     } \
 }
+
+#define HDFERR(call) \
+    if (call) { \
+        fprintf(stderr, "Error in " __FILE__ " @ " S(__LINE__) ":\n"); \
+        HEprint(stderr, 0); \
+        return EXIT_FAILURE; \
+    }
 
 enum {
     USABLE_MASK = 0x01,
@@ -92,7 +107,8 @@ template class TrackerBase<unsigned short>;
 
 
 typedef enum {
-    LATITUDE = 0,
+    TIME = 0,
+    LATITUDE,
     LONGITUDE,
     SEL_SPEED,
     SEL_DIRECTION,
@@ -102,7 +118,6 @@ typedef enum {
     WIND_STRESS,
     STRESS_DIVERGENCE,
     STRESS_CURL,
-    TIME,
     FLAGS,
 
     first_extended_variable,
@@ -130,9 +145,10 @@ typedef enum {
 
 typedef struct {
     const char *command;
-    const char *input_file;
-    const char *output_file;
-    const char *l1b_hdf_source_file;
+    const char *l2b_file;
+    const char *l2bhdf_file;
+    const char *l2bc_file;
+    const char *l1bhdf_file;
     char extended;
 } l2b_to_netcdf_config;
 
@@ -157,64 +173,51 @@ typedef struct {
     attribute *attrs;
 } netcdf_variable;
 
-
 int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config);
-
+int copy_l2bhdf_attributes(int ncid, int hdfid);
 
 //--------------//
 // MAIN PROGRAM //
 //--------------//
 
-int
-main(
-    int    argc,
-    char*  argv[])
-{
-    
+int main(int argc, char **argv) {
 
     l2b_to_netcdf_config config;
+    L2B l2b;
 
-    //------------------------//
-    // parse the command line //
-    //------------------------//
+    /* File IDs */
+    int l2bhdf_fid, ncid;
 
+    /* Net CDF dimension information */
+    int max_ambiguities;
+    int cross_track_dim_id, along_track_dim_id, ambiguities_dim_id;
+    int dimensions[3];
+
+    /* For extracting times from L2B HDF file */
+    const char time_vdata_name[] = "wvc_row_time";
+    const char time_vdata_fname[] = "wvc_row_time";
+    int time_vdata_ref, time_vdata_id, time_vdata_fsize;
+    int n_elem;
+    char *buffer;
+
+    /* For populating Net CDF file */
+    size_t idx[3];
+    WVC *wvc;
+    unsigned char flags;
+    const float zerof = 0.0f;
+    float conversion;
+
+    // parse the command line
     if (parse_commandline(argc, argv, &config) != 0) {
         return -1;
     }
 
-    //-------------------//
-    // create L2B object //
-    //-------------------//
+    // open the input files
+    ERR(l2b.OpenForReading(config.l2b_file) == 0);
+    HDFERR((l2bhdf_fid = Hopen(config.l2bhdf_file, DFACC_READ, 0)) == FAIL);
 
-    L2B l2b;
-
-    //---------------------//
-    // open the input file //
-    //---------------------//
-
-    if (! l2b.OpenForReading(config.input_file))
-    {
-        fprintf(stderr, "%s: error opening input file %s\n", config.command,
-            config.input_file);
-        exit(1);
-    }
-
-    //---------------------//
-    // copy desired frames //
-    //---------------------//
-
-    if (! l2b.ReadHeader())
-    {
-        fprintf(stderr, "%s: error reading from input file %s\n", config.command,
-            config.input_file);
-        exit(1);
-    }
-    if (! l2b.ReadDataRec())
-    {
-        fprintf(stderr, "%s: error reading from input file %s\n", config.command,
-            config.input_file);
-        exit(1);
-    }
+    ERR(l2b.ReadHeader() == 0); 
+    ERR(l2b.ReadDataRec() == 0);
 
     l2b.header.version_id_major++;
 
@@ -228,14 +231,14 @@ main(
      * point is a variable length array (ambiguities); each element
      * of the array is a (u,v) two-float compounddata type.
      */
-    int ncid;
 
-    int max_ambiguities = l2b.frame.swath.GetMaxAmbiguityCount();
-    int cross_track_dim_id, along_track_dim_id, ambiguities_dim_id;
+    max_ambiguities = l2b.frame.swath.GetMaxAmbiguityCount();
 
     // Initialize the NetCDF DB
-    NCERR(nc_create(config.output_file, (NC_NETCDF4 | NC_NOFILL) & 
+    NCERR(nc_create(config.l2bc_file, (NC_NETCDF4 | NC_NOFILL) & 
                 ~NC_CLASSIC_MODEL, &ncid));
+
+    ERR(copy_l2bhdf_attributes(ncid, l2bhdf_fid) != 0);
 
     // Create the data dimensions
     NCERR(nc_def_dim(ncid, "along_track", 
@@ -255,8 +258,6 @@ main(
      *
      ************************************************************/
 
-    int dimensions[3];
-
     /* We're being sneaky here.  We can pass dimensions to both two-
      * and three-dimensional variables, since they all use the same
      * first two dimensions.
@@ -267,7 +268,7 @@ main(
 
     netcdf_variable varlist[num_variables];
    
-    varlist[LATITUDE].name  = "latitude";
+    varlist[LATITUDE].name  = "lat";
     varlist[LATITUDE].type  = NC_FLOAT;
     varlist[LATITUDE].ndims = 2;
     varlist[LATITUDE].dims = dimensions; 
@@ -278,7 +279,7 @@ main(
 
     varlist[LATITUDE].attrs[FILL_VALUE].name = "FillValue";
     varlist[LATITUDE].attrs[FILL_VALUE].type = varlist[LATITUDE].type;
-    varlist[LATITUDE].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[LATITUDE].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
     varlist[LATITUDE].attrs[VALID_MIN].name = "valid_min";
     varlist[LATITUDE].attrs[VALID_MIN].type = varlist[LATITUDE].type;
     varlist[LATITUDE].attrs[VALID_MIN].value.f = -90.0f;
@@ -295,7 +296,7 @@ main(
     varlist[LATITUDE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[LATITUDE].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
-    varlist[LONGITUDE].name  = "longitude";
+    varlist[LONGITUDE].name  = "lon";
     varlist[LONGITUDE].type  = NC_FLOAT;
     varlist[LONGITUDE].ndims = 2;
     varlist[LONGITUDE].dims = dimensions; 
@@ -306,7 +307,7 @@ main(
 
     varlist[LONGITUDE].attrs[FILL_VALUE].name = "FillValue";
     varlist[LONGITUDE].attrs[FILL_VALUE].type = varlist[LONGITUDE].type;
-    varlist[LONGITUDE].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[LONGITUDE].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
     varlist[LONGITUDE].attrs[VALID_MIN].name = "valid_min";
     varlist[LONGITUDE].attrs[VALID_MIN].type = varlist[LONGITUDE].type;
     varlist[LONGITUDE].attrs[VALID_MIN].value.f = 0.0f;
@@ -334,7 +335,7 @@ main(
 
     varlist[SEL_SPEED].attrs[FILL_VALUE].name = "FillValue";
     varlist[SEL_SPEED].attrs[FILL_VALUE].type = varlist[SEL_SPEED].type;
-    varlist[SEL_SPEED].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[SEL_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
     varlist[SEL_SPEED].attrs[VALID_MIN].name = "valid_min";
     varlist[SEL_SPEED].attrs[VALID_MIN].type = varlist[SEL_SPEED].type;
     varlist[SEL_SPEED].attrs[VALID_MIN].value.f = 0.0f;
@@ -362,7 +363,7 @@ main(
 
     varlist[SEL_DIRECTION].attrs[FILL_VALUE].name = "FillValue";
     varlist[SEL_DIRECTION].attrs[FILL_VALUE].type = varlist[SEL_DIRECTION].type;
-    varlist[SEL_DIRECTION].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[SEL_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
     varlist[SEL_DIRECTION].attrs[VALID_MIN].name = "valid_min";
     varlist[SEL_DIRECTION].attrs[VALID_MIN].type = varlist[SEL_DIRECTION].type;
     varlist[SEL_DIRECTION].attrs[VALID_MIN].value.f = 0.0f;
@@ -390,7 +391,7 @@ main(
 
     varlist[RAIN_IMPACT].attrs[FILL_VALUE].name = "FillValue";
     varlist[RAIN_IMPACT].attrs[FILL_VALUE].type = varlist[RAIN_IMPACT].type;
-    varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
     varlist[RAIN_IMPACT].attrs[VALID_MIN].name = "valid_min";
     varlist[RAIN_IMPACT].attrs[VALID_MIN].type = varlist[RAIN_IMPACT].type;
     varlist[RAIN_IMPACT].attrs[VALID_MIN].value.f = 0.0f;
@@ -415,7 +416,7 @@ main(
 
     varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].name = "FillValue";
     varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].type = varlist[WIND_DIVERGENCE].type;
-    varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
     varlist[WIND_DIVERGENCE].attrs[VALID_MIN].name = "valid_min";
     varlist[WIND_DIVERGENCE].attrs[VALID_MIN].type = varlist[WIND_DIVERGENCE].type;
     varlist[WIND_DIVERGENCE].attrs[VALID_MIN].value.f = -1.0f;
@@ -443,7 +444,7 @@ main(
 
     varlist[WIND_CURL].attrs[FILL_VALUE].name = "FillValue";
     varlist[WIND_CURL].attrs[FILL_VALUE].type = varlist[WIND_CURL].type;
-    varlist[WIND_CURL].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[WIND_CURL].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
     varlist[WIND_CURL].attrs[VALID_MIN].name = "valid_min";
     varlist[WIND_CURL].attrs[VALID_MIN].type = varlist[WIND_CURL].type;
     varlist[WIND_CURL].attrs[VALID_MIN].value.f = -1.0f;
@@ -471,7 +472,7 @@ main(
 
     varlist[WIND_STRESS].attrs[FILL_VALUE].name = "FillValue";
     varlist[WIND_STRESS].attrs[FILL_VALUE].type = varlist[WIND_STRESS].type;
-    varlist[WIND_STRESS].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[WIND_STRESS].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
     varlist[WIND_STRESS].attrs[VALID_MIN].name = "valid_min";
     varlist[WIND_STRESS].attrs[VALID_MIN].type = varlist[WIND_STRESS].type;
     varlist[WIND_STRESS].attrs[VALID_MIN].value.f = -HUGE_VALF;
@@ -500,7 +501,7 @@ main(
 
     varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].name = "FillValue";
     varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].type = varlist[STRESS_DIVERGENCE].type;
-    varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
     varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].name = "valid_min";
     varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].type = varlist[STRESS_DIVERGENCE].type;
     varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].value.f = -HUGE_VALF;
@@ -528,7 +529,7 @@ main(
 
     varlist[STRESS_CURL].attrs[FILL_VALUE].name = "FillValue";
     varlist[STRESS_CURL].attrs[FILL_VALUE].type = varlist[STRESS_CURL].type;
-    varlist[STRESS_CURL].attrs[FILL_VALUE].value.f = 0.0f;
+    varlist[STRESS_CURL].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
     varlist[STRESS_CURL].attrs[VALID_MIN].name = "valid_min";
     varlist[STRESS_CURL].attrs[VALID_MIN].type = varlist[STRESS_CURL].type;
     varlist[STRESS_CURL].attrs[VALID_MIN].value.f = -HUGE_VALF;
@@ -546,7 +547,7 @@ main(
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
     
     varlist[TIME].name = "time";
-    varlist[TIME].type = NC_CHAR;
+    varlist[TIME].type = NC_STRING;
     varlist[TIME].ndims = 1;
     varlist[TIME].dims = dimensions;
     varlist[TIME].nattrs = num_standard_attrs + 1;
@@ -555,20 +556,20 @@ main(
                     (sizeof *varlist[TIME].attrs))) == NULL);
 
     varlist[TIME].attrs[FILL_VALUE].name = "FillValue";
-    varlist[TIME].attrs[FILL_VALUE].type = varlist[TIME].type;
+    varlist[TIME].attrs[FILL_VALUE].type = NC_CHAR;
     varlist[TIME].attrs[FILL_VALUE].value.s = "";
     varlist[TIME].attrs[VALID_MIN].name = "valid_min";
-    varlist[TIME].attrs[VALID_MIN].type = varlist[TIME].type;
+    varlist[TIME].attrs[VALID_MIN].type = NC_CHAR;
     varlist[TIME].attrs[VALID_MIN].value.s = "";
     varlist[TIME].attrs[VALID_MAX].name = "valid_max";
-    varlist[TIME].attrs[VALID_MAX].type = varlist[TIME].type;
+    varlist[TIME].attrs[VALID_MAX].type = NC_CHAR;
     varlist[TIME].attrs[VALID_MAX].value.s = "";
     varlist[TIME].attrs[LONG_NAME].name = "long_name";
     varlist[TIME].attrs[LONG_NAME].type = NC_CHAR;
     varlist[TIME].attrs[LONG_NAME].value.s = "time";
     varlist[TIME].attrs[num_standard_attrs].name = "units";
     varlist[TIME].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[TIME].attrs[num_standard_attrs].value.s = "seconds since 1990-01-01 00:00:00";
+    varlist[TIME].attrs[num_standard_attrs].value.s = "YYYYDDDTHH:MM:SS.SSS";
 
     varlist[FLAGS].name  = "flags";
     varlist[FLAGS].type  = NC_BYTE;
@@ -624,7 +625,7 @@ main(
     
         varlist[NUDGE_SPEED].attrs[FILL_VALUE].name = "FillValue";
         varlist[NUDGE_SPEED].attrs[FILL_VALUE].type = varlist[NUDGE_SPEED].type;
-        varlist[NUDGE_SPEED].attrs[FILL_VALUE].value.f = 0.0f;
+        varlist[NUDGE_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
         varlist[NUDGE_SPEED].attrs[VALID_MIN].name = "valid_min";
         varlist[NUDGE_SPEED].attrs[VALID_MIN].type = varlist[NUDGE_SPEED].type;
         varlist[NUDGE_SPEED].attrs[VALID_MIN].value.f = 0.0f;
@@ -652,7 +653,7 @@ main(
     
         varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].name = "FillValue";
         varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].type = varlist[NUDGE_DIRECTION].type;
-        varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f = 0.0f;
+        varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
         varlist[NUDGE_DIRECTION].attrs[VALID_MIN].name = "valid_min";
         varlist[NUDGE_DIRECTION].attrs[VALID_MIN].type = varlist[NUDGE_DIRECTION].type;
         varlist[NUDGE_DIRECTION].attrs[VALID_MIN].value.f = 0.0f;
@@ -681,7 +682,7 @@ main(
     
         varlist[SEL_OBJ].attrs[FILL_VALUE].name = "FillValue";
         varlist[SEL_OBJ].attrs[FILL_VALUE].type = varlist[SEL_OBJ].type;
-        varlist[SEL_OBJ].attrs[FILL_VALUE].value.f = 0.0f;
+        varlist[SEL_OBJ].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
         varlist[SEL_OBJ].attrs[VALID_MIN].name = "valid_min";
         varlist[SEL_OBJ].attrs[VALID_MIN].type = varlist[SEL_OBJ].type;
         varlist[SEL_OBJ].attrs[VALID_MIN].value.f = 0.0f;
@@ -710,7 +711,7 @@ main(
     
         varlist[AMBIG_SPEED].attrs[FILL_VALUE].name = "FillValue";
         varlist[AMBIG_SPEED].attrs[FILL_VALUE].type = varlist[AMBIG_SPEED].type;
-        varlist[AMBIG_SPEED].attrs[FILL_VALUE].value.f = 0.0f;
+        varlist[AMBIG_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
         varlist[AMBIG_SPEED].attrs[VALID_MIN].name = "valid_min";
         varlist[AMBIG_SPEED].attrs[VALID_MIN].type = varlist[AMBIG_SPEED].type;
         varlist[AMBIG_SPEED].attrs[VALID_MIN].value.f = 0.0f;
@@ -738,7 +739,7 @@ main(
     
         varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].name = "FillValue";
         varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].type = varlist[AMBIG_DIRECTION].type;
-        varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].value.f = 0.0f;
+        varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
         varlist[AMBIG_DIRECTION].attrs[VALID_MIN].name = "valid_min";
         varlist[AMBIG_DIRECTION].attrs[VALID_MIN].type = varlist[AMBIG_DIRECTION].type;
         varlist[AMBIG_DIRECTION].attrs[VALID_MIN].value.f = 0.0f;
@@ -766,7 +767,7 @@ main(
     
         varlist[AMBIG_OBJ].attrs[FILL_VALUE].name = "FillValue";
         varlist[AMBIG_OBJ].attrs[FILL_VALUE].type = varlist[AMBIG_OBJ].type;
-        varlist[AMBIG_OBJ].attrs[FILL_VALUE].value.f = 0.0f;
+        varlist[AMBIG_OBJ].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
         varlist[AMBIG_OBJ].attrs[VALID_MIN].name = "valid_min";
         varlist[AMBIG_OBJ].attrs[VALID_MIN].type = varlist[AMBIG_OBJ].type;
         varlist[AMBIG_OBJ].attrs[VALID_MIN].value.f = 0.0f;
@@ -931,22 +932,29 @@ main(
     NCERR(nc_put_att_int  (ncid, NC_GLOBAL, "version_id_minor", 
                 NC_INT,   (size_t)(1), &l2b.header.version_id_minor));
     NCERR(nc_put_att_text (ncid, NC_GLOBAL, "source_file",
-                strlen(config.l1b_hdf_source_file), config.l1b_hdf_source_file));
+                strlen(config.l1bhdf_file), config.l1bhdf_file));
 
     NCERR(nc_enddef(ncid));
 
 
-    /* Same sneakiness with idx as described above with dimensions */
-    size_t idx[3];
-    WVC *wvc;
-    unsigned char flags;
-    const float zerof = 0.0f;
-    float conversion;
+    /* Set up for grabbing timestamp data later */
+    HDFERR(Vstart(l2bhdf_fid) == FAIL);
+    HDFERR((time_vdata_ref = VSfind(l2bhdf_fid, time_vdata_name)) == 0);
+    HDFERR((time_vdata_id  = VSattach(l2bhdf_fid, time_vdata_ref, "r")) == FAIL);
+    HDFERR(VSsetfields(time_vdata_id, time_vdata_fname) == FAIL);
+    HDFERR((n_elem = VSelts(time_vdata_id)) == FAIL);
+    
+    HDFERR((time_vdata_fsize = VSsizeof(time_vdata_id, 
+                    (char *)time_vdata_fname)) == FAIL);
+    ERR((buffer = (char *)calloc(time_vdata_fsize + 1, 1)) == NULL);
 
+
+
+    /* Same sneakiness with idx as described above with dimensions */
     for (idx[0] = 0; (int)idx[0] < l2b.frame.swath.GetAlongTrackBins(); idx[0]++) {
 
-        NCERR(nc_put_var1_text(ncid, varlist[TIME].id, idx, 
-                varlist[TIME].attrs[FILL_VALUE].value.s));
+        HDFERR(VSread(time_vdata_id, (uint8 *)buffer, 1, FULL_INTERLACE) == FAIL);
+        NCERR(nc_put_var1_string(ncid, varlist[TIME].id, idx, (const char**)&buffer));
 
         for (idx[1] = 0; (int)idx[1] < l2b.frame.swath.GetCrossTrackBins(); idx[1]++) {
 
@@ -1095,6 +1103,12 @@ main(
         }
     }
 
+    free(buffer);
+
+    HDFERR(VSdetach(time_vdata_id) == FAIL);
+    HDFERR(Vend(l2bhdf_fid) == FAIL);
+    HDFERR(Hclose(l2bhdf_fid) == FAIL);
+
     NCERR(nc_close(ncid));
 
     //----------------------//
@@ -1108,35 +1122,40 @@ main(
 
 int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
 
-    const char* usage_array = "--input=<input_file> --output=<output_file> --source=<l1b hdf source file> [--extended]";
+    const char* usage_array = "--l2b=<l2b file> --l2bhdf=<l2b hdf file> --l2bc=<l2bc file> --l1bhdf=<l1b hdf source file> [--extended]";
     int opt;
 
     /* Initialize configuration structure */
     config->command = no_path(argv[0]);
-    config->input_file = NULL;
-    config->output_file = NULL;
-    config->l1b_hdf_source_file = NULL;
+    config->l2b_file = NULL;
+    config->l2bhdf_file = NULL;
+    config->l2bc_file = NULL;
+    config->l1bhdf_file = NULL;
     config->extended = 0;
 
     struct option longopts[] = 
     {
-        { "input",    required_argument, NULL, 'i'},
-        { "output",   required_argument, NULL, 'o'},
-        { "source",   required_argument, NULL, 's'},
+        { "l2b",      required_argument, NULL, 'i'},
+        { "l2bhdf",   required_argument, NULL, 'h'},
+        { "l2bc",     required_argument, NULL, 'o'},
+        { "l1bhdf",   required_argument, NULL, 's'},
         { "extended", no_argument,       NULL, 'e'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "i:o:s:e", longopts, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "i:h:o:s:e", longopts, NULL)) != -1) {
         switch (opt) {
             case 'i': 
-                config->input_file = optarg;
+                config->l2b_file = optarg;
+                break;
+            case 'h': 
+                config->l2bhdf_file = optarg;
                 break;
             case 'o':
-                config->output_file = optarg;
+                config->l2bc_file = optarg;
                 break;
             case 's':
-                config->l1b_hdf_source_file = optarg;
+                config->l1bhdf_file = optarg;
                 break;
             case 'e':
                 config->extended = 1;
@@ -1145,8 +1164,8 @@ int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
 
     }
 
-    if (config->input_file == NULL || config->output_file == NULL 
-            || config->l1b_hdf_source_file == NULL) {
+    if (config->l2b_file == NULL || config->l2bc_file == NULL 
+            || config->l1bhdf_file == NULL || config->l2bhdf_file == NULL) {
 
         fprintf(stderr, "%s: %s\n", config->command, usage_array);
         return -1;
@@ -1155,3 +1174,86 @@ int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
     return 0;
 }
 
+int copy_l2bhdf_attributes(int ncid, int hdfid) {
+
+    unsigned int i;
+    int vdata_ref, vdata_id;
+    int attr_size;
+    const char attr_fname[] = "VALUES";
+    char *attr_value, *token;
+
+    int ival;
+    float fval;
+    
+    const char *hdf_attributes[] = {
+        "LongName", "ShortName", "producer_agency", "producer_institution",
+        "PlatformType", "InstrumentShortName", "PlatformLongName",
+        "PlatformShortName", "project_id", "data_format_type",
+        "QAPercentOutOfBoundsData", "QAPercentMissingData", "build_id",
+        "ProductionDateTime", "sis_id", "OrbitParametersPointer",
+        "HDF_version_id", "OperationMode", "StartOrbitNumber",
+        "StopOrbitNumber", "EquatorCrossingLongitude", "EquatorCrossingTime",
+        "EquatorCrossingDate", "rev_orbit_period", "orbit_inclination",
+        "orbit_semi_major_axis", "orbit_eccentricity", "rev_number",
+        "RangeBeginningDate", "RangeEndingDate", "RangeBeginningTime",
+        "RangeEndingTime", "ephemeris_type", "sigma0_granularity",
+        "median_filter_method", "sigma0_attenuation_method", "nudging_method",
+        "ParameterName", "l2b_algorithm_descriptor", "InputPointer",
+        "ancillary_data_descriptors", "QAGranulePointer", "GranulePointer"
+    };
+
+    HDFERR(Vstart(hdfid) == FAIL);
+
+    for (i = 0; i < (sizeof hdf_attributes)/(sizeof *hdf_attributes); i++) {
+        HDFERR((vdata_ref = VSfind(hdfid, hdf_attributes[i])) == 0);
+        HDFERR((vdata_id  = VSattach(hdfid, vdata_ref, "r")) == FAIL);
+        HDFERR((attr_size = VSsizeof(vdata_id, (char *)attr_fname)) == FAIL);
+
+        ERR((attr_value = 
+                    (typeof attr_value)calloc(attr_size + 1, 1)) == NULL);
+
+        HDFERR(VSsetfields(vdata_id, attr_fname) == FAIL);
+        HDFERR(VSread(vdata_id, (uint8 *)attr_value, 1, FULL_INTERLACE) == FAIL);
+
+        ERR((token = strtok(attr_value, "\n")) == NULL);
+
+        if (strcmp(token, "char") == 0) {
+            ERR((token = strtok(NULL, "\n")) == NULL);
+            ERR((token = strtok(NULL, "")) == NULL);
+
+            // Wipe final newline
+            if (token[strlen(token) - 1] == '\n') {
+                token[strlen(token) - 1] = '\0';
+            }
+
+            NCERR(nc_put_att_text(ncid, NC_GLOBAL, hdf_attributes[i],
+                    strlen(token), token));
+        } else if (strcmp(token, "float") == 0) {
+            ERR((token = strtok(NULL, "\n")) == NULL);
+            ERR((token = strtok(NULL, "\n")) == NULL);
+
+            ival = atoi(token);
+            NCERR(nc_put_att_int(ncid, NC_GLOBAL, hdf_attributes[i],
+                    NC_INT, (size_t)(1), &ival));
+            
+        } else if (strcmp(token, "int") == 0) {
+            ERR((token = strtok(NULL, "\n")) == NULL);
+            ERR((token = strtok(NULL, "\n")) == NULL);
+
+            fval = strtof(token, NULL);
+            NCERR(nc_put_att_float(ncid, NC_GLOBAL, hdf_attributes[i],
+                    NC_FLOAT, (size_t)(1), &fval));
+        } else {
+            fprintf(stderr, "Unknown attribute type [%s] = %s\n", 
+                    hdf_attributes[i], token);
+            return -1;
+        }
+
+        free(attr_value);
+        HDFERR(VSdetach(vdata_id) == FAIL);
+    }
+
+    HDFERR(Vend(hdfid) == FAIL);
+
+    return 0;
+}
