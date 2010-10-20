@@ -407,6 +407,13 @@ static const char rcs_id_configsimdefs_h[] =
 
 #define KPM_FIELD_FILE_KEYWORD  "KPM_FIELD_FILE"
 
+//----------//
+// AttenMap //
+//----------//
+
+#define ATTEN_MAP_FILE_KEYWORD  "ATTEN_MAP_FILE"
+#define USE_ATTEN_MAP_KEYWORD   "USE_ATTEN_MAP"
+
 //------//
 // Grid //
 //------//

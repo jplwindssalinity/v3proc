@@ -153,7 +153,8 @@ OBJS = \
 	ENOFTable.o \
 	Options.o \
 	Utils.o \
-	AscatL1bReader.o
+	AscatL1bReader.o \
+	AttenMap.o
 
 
 INCS = \
