@@ -195,7 +195,10 @@ ETime::FromCodeB(
 		mday -= d_in_m[m_i];
 		
 	tm_time.tm_mday = mday;
-	tm_time.tm_mon = m_i + 1;
+	
+	// Changed m_i + 1 to m_i since tm class wants the integer part of the
+	// number of months since January, not the current month number. AGF 10-20-2010
+	tm_time.tm_mon = m_i;
 
 //	printf("ts %s; %s\n", time_string, CODE_B_STRPTIME_FORMAT);
 //	printf("year: %d, month: %d, day: %d, hour: %d, min: %d, sec: %d\n",
