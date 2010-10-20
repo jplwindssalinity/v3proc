@@ -54,7 +54,7 @@ polint(
 	static double* d = NULL;
 	static int last_n = 0;
 
-	if (n != last_n)
+	if (n > last_n)
 	{
 		free(c);
 		c = (double *)malloc(n * sizeof(double));

@@ -6,6 +6,11 @@
 //
 // CM Log
 // $Log$
+// Revision 1.10  2006/10/13 21:38:28  cvsuser
+// Change long int* to int32* for matching type.
+//
+// Sam
+//
 // Revision 1.9  1999/09/30 23:01:39  sally
 // update 9/30/99
 //
@@ -67,6 +72,7 @@ static const char HdfFile_c_rcs_id[] =
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "netcdf.h"
 #include "HdfFile.h"
 
 //=========

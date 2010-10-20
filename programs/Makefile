@@ -7,8 +7,10 @@ SHELL =			/bin/csh
 INCDIR =		../../include
 ifneq '$(shell uname -s)' 'Linux'
     HDFINCDIR =		/sw/include
+    NCDFINCDIR :=
 else
     HDFINCDIR = /usr/include/hdf
+    NCDFINCDIR := -I/usr/include
 endif
 
 EALIBS =		../../lib/libEAData.a 
@@ -16,17 +18,17 @@ ifneq '$(shell uname -s)' 'Linux'
     EALIBS += /sw/lib/libtiff.a
 endif
 HDFLIBS =		-L/sw/lib -lmfhdf -ldf -ljpeg -lz
-NETCDFLIBS :=   -lnetcdf -lhdf5_hl -lhdf5 -lz -lm
+NETCDFLIBS :=   -lnetcdf -lz -lm
 LIBS =			../../lib/libSim.a
 #OMITTED_LIBS = -lnsl -lsocket -lstdc++
 # using g++ should account for this
-LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm
+LDLIBS =		-L/usr/local/lib $(LIBS) $(EALIBS) $(HDFLIBS) -lm
 PURE =
 
 CCC =			$(PURE) g++
 DEBUGFLAGS =	-ggdb2 --save-temps -O0 -g
 #DEBUGFLAGS = -O2
-CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -DNOPM
+CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) $(NCDFINCDIR) -DNOPM
 
 INSTALLDIR =	../../bin
 

@@ -15,7 +15,7 @@ else
 endif
 
 MALLOC_DIR =    /usr/include/malloc
-DEBUGFLAGS =    -ggdb2 --save-temps 
+DEBUGFLAGS =    -ggdb2 --save-temps -O2 -g
 #DEBUGFLAGS =    -O2
 INCFLAGS =      -I$(INCDIR) -I$(HDFINCDIR) -I$(MALLOC_DIR) -I.
 

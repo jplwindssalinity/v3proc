@@ -7,7 +7,7 @@ SHELL =       /bin/csh
 .SUFFIXES: .C .o
 
 CC =          g++
-CDEBUGFLAGS = -O2
+CDEBUGFLAGS = -O2 -g
 DEBUG =       NODEBUG
 
 INCDIR =      ../../include

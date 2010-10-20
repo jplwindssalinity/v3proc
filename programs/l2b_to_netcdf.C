@@ -32,7 +32,7 @@ static const char rcs_id[] =
 // INCLUDES //
 //----------//
 
-#include </usr/include/netcdf.h>
+#include "netcdf.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -154,7 +154,7 @@ typedef struct {
 
 typedef struct {
     const char *name;
-    int type;
+    nc_type type;
     union {
         float f;
         int i;
@@ -165,7 +165,7 @@ typedef struct {
 
 typedef struct {
     const char *name;
-    int type;
+    nc_type type;
     int ndims;
     int *dims;
     int id;
@@ -190,8 +190,10 @@ int main(int argc, char **argv) {
 
     /* Net CDF dimension information */
     int max_ambiguities;
-    int cross_track_dim_id, along_track_dim_id, ambiguities_dim_id;
+    int cross_track_dim_id, along_track_dim_id, ambiguities_dim_id, time_strlen_dim_id;
     int dimensions[3];
+    int time_dimensions[2];
+    size_t time_vara_length[2] = {1, 0};
 
     /* For extracting times from L2B HDF file */
     const char time_vdata_name[] = "wvc_row_time";
@@ -201,11 +203,12 @@ int main(int argc, char **argv) {
     char *buffer;
 
     /* For populating Net CDF file */
-    size_t idx[3];
+    size_t idx[3], time_idx[2] = {0, 0};
     WVC *wvc;
     unsigned char flags;
     const float zerof = 0.0f;
     float conversion;
+    char time_format[] = "YYYYDDDTHH:MM:SS.SSS";
 
     // parse the command line
     if (parse_commandline(argc, argv, &config) != 0) {
@@ -235,8 +238,7 @@ int main(int argc, char **argv) {
     max_ambiguities = l2b.frame.swath.GetMaxAmbiguityCount();
 
     // Initialize the NetCDF DB
-    NCERR(nc_create(config.l2bc_file, (NC_NETCDF4 | NC_NOFILL) & 
-                ~NC_CLASSIC_MODEL, &ncid));
+    NCERR(nc_create(config.l2bc_file, NC_WRITE, &ncid));
 
     ERR(copy_l2bhdf_attributes(ncid, l2bhdf_fid) != 0);
 
@@ -247,6 +249,9 @@ int main(int argc, char **argv) {
     NCERR(nc_def_dim(ncid, "cross_track", 
                 (size_t)l2b.frame.swath.GetCrossTrackBins(), 
                 &cross_track_dim_id));
+    NCERR(nc_def_dim(ncid, "time_strlength", 
+                (size_t)strlen(time_format), 
+                &time_strlen_dim_id));
     if (config.extended) {
         NCERR(nc_def_dim(ncid, "ambiguities",
                 (size_t)max_ambiguities, &ambiguities_dim_id));
@@ -265,6 +270,9 @@ int main(int argc, char **argv) {
     dimensions[0] = along_track_dim_id;
     dimensions[1] = cross_track_dim_id;
     dimensions[2] = ambiguities_dim_id;
+
+    time_dimensions[0] = along_track_dim_id;
+    time_dimensions[1] = time_strlen_dim_id;
 
     netcdf_variable varlist[num_variables];
    
@@ -547,29 +555,29 @@ int main(int argc, char **argv) {
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
     
     varlist[TIME].name = "time";
-    varlist[TIME].type = NC_STRING;
-    varlist[TIME].ndims = 1;
-    varlist[TIME].dims = dimensions;
+    varlist[TIME].type = NC_CHAR;
+    varlist[TIME].ndims = 2;
+    varlist[TIME].dims = time_dimensions;
     varlist[TIME].nattrs = num_standard_attrs + 1;
     ERR((varlist[TIME].attrs = (typeof varlist[TIME].attrs)
                 malloc(varlist[TIME].nattrs * 
                     (sizeof *varlist[TIME].attrs))) == NULL);
 
     varlist[TIME].attrs[FILL_VALUE].name = "FillValue";
-    varlist[TIME].attrs[FILL_VALUE].type = NC_CHAR;
+    varlist[TIME].attrs[FILL_VALUE].type = varlist[TIME].type;
     varlist[TIME].attrs[FILL_VALUE].value.s = "";
     varlist[TIME].attrs[VALID_MIN].name = "valid_min";
-    varlist[TIME].attrs[VALID_MIN].type = NC_CHAR;
+    varlist[TIME].attrs[VALID_MIN].type = varlist[TIME].type;
     varlist[TIME].attrs[VALID_MIN].value.s = "";
     varlist[TIME].attrs[VALID_MAX].name = "valid_max";
-    varlist[TIME].attrs[VALID_MAX].type = NC_CHAR;
+    varlist[TIME].attrs[VALID_MAX].type = varlist[TIME].type;
     varlist[TIME].attrs[VALID_MAX].value.s = "";
     varlist[TIME].attrs[LONG_NAME].name = "long_name";
-    varlist[TIME].attrs[LONG_NAME].type = NC_CHAR;
+    varlist[TIME].attrs[LONG_NAME].type = varlist[TIME].type;
     varlist[TIME].attrs[LONG_NAME].value.s = "time";
     varlist[TIME].attrs[num_standard_attrs].name = "units";
-    varlist[TIME].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[TIME].attrs[num_standard_attrs].value.s = "YYYYDDDTHH:MM:SS.SSS";
+    varlist[TIME].attrs[num_standard_attrs].type = varlist[TIME].type;
+    varlist[TIME].attrs[num_standard_attrs].value.s = time_format;
 
     varlist[FLAGS].name  = "flags";
     varlist[FLAGS].type  = NC_BYTE;
@@ -909,7 +917,7 @@ int main(int argc, char **argv) {
                                 attr->type, (size_t)(1), &(attr->value.f)));
                     break;
                 case NC_BYTE:
-                    NCERR(nc_put_att_ubyte(ncid, varlist[i].id, attr->name, 
+                    NCERR(nc_put_att_uchar(ncid, varlist[i].id, attr->name, 
                                 attr->type, (size_t)(1), &(attr->value.c)));
                     break;
                 default:
@@ -948,13 +956,15 @@ int main(int argc, char **argv) {
                     (char *)time_vdata_fname)) == FAIL);
     ERR((buffer = (char *)calloc(time_vdata_fsize + 1, 1)) == NULL);
 
-
-
+    time_vara_length[1] = strlen(time_format);
     /* Same sneakiness with idx as described above with dimensions */
     for (idx[0] = 0; (int)idx[0] < l2b.frame.swath.GetAlongTrackBins(); idx[0]++) {
 
+        time_idx[0] = idx[0];
+
         HDFERR(VSread(time_vdata_id, (uint8 *)buffer, 1, FULL_INTERLACE) == FAIL);
-        NCERR(nc_put_var1_string(ncid, varlist[TIME].id, idx, (const char**)&buffer));
+        NCERR(nc_put_vara_text(ncid, varlist[TIME].id, time_idx, time_vara_length, buffer));
+        //NCERR(nc_put_var1_string(ncid, varlist[TIME].id, idx, (const char**)&buffer));
 
         for (idx[1] = 0; (int)idx[1] < l2b.frame.swath.GetCrossTrackBins(); idx[1]++) {
 
@@ -996,7 +1006,7 @@ int main(int argc, char **argv) {
                             &conversion));
                 NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
                             &wvc->rainImpact));
-                NCERR(nc_put_var1_ubyte(ncid, varlist[FLAGS].id, idx, 
+                NCERR(nc_put_var1_uchar(ncid, varlist[FLAGS].id, idx, 
                         &flags));
 
                 /* Extended variables */
@@ -1017,13 +1027,13 @@ int main(int argc, char **argv) {
                     NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
                                 &conversion));
     
-                    NCERR(nc_put_var1_ubyte(ncid, varlist[N_IN_FORE].id, idx, 
+                    NCERR(nc_put_var1_uchar(ncid, varlist[N_IN_FORE].id, idx, 
                                 &wvc->numInFore));
-                    NCERR(nc_put_var1_ubyte(ncid, varlist[N_IN_AFT].id, idx, 
+                    NCERR(nc_put_var1_uchar(ncid, varlist[N_IN_AFT].id, idx, 
                                 &wvc->numInAft));
-                    NCERR(nc_put_var1_ubyte(ncid, varlist[N_OUT_FORE].id, idx, 
+                    NCERR(nc_put_var1_uchar(ncid, varlist[N_OUT_FORE].id, idx, 
                                 &wvc->numOutFore));
-                    NCERR(nc_put_var1_ubyte(ncid, varlist[N_OUT_AFT].id, idx, 
+                    NCERR(nc_put_var1_uchar(ncid, varlist[N_OUT_AFT].id, idx, 
                                 &wvc->numOutAft));
         
     
@@ -1069,7 +1079,7 @@ int main(int argc, char **argv) {
                             &varlist[SEL_DIRECTION].attrs[FILL_VALUE].value.f));
                 NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
                             &varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f));
-                NCERR(nc_put_var1_ubyte(ncid, varlist[FLAGS].id, idx, 
+                NCERR(nc_put_var1_uchar(ncid, varlist[FLAGS].id, idx, 
                             &varlist[FLAGS].attrs[FILL_VALUE].value.c));
 
                 /* Extended variables */
@@ -1080,13 +1090,13 @@ int main(int argc, char **argv) {
                                 &varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f));
                     NCERR(nc_put_var1_float(ncid, varlist[SEL_OBJ].id, idx, 
                                 &varlist[SEL_OBJ].attrs[FILL_VALUE].value.f));
-                    NCERR(nc_put_var1_ubyte(ncid, varlist[N_IN_FORE].id, idx, 
+                    NCERR(nc_put_var1_uchar(ncid, varlist[N_IN_FORE].id, idx, 
                                 &varlist[N_IN_FORE].attrs[FILL_VALUE].value.c));
-                    NCERR(nc_put_var1_ubyte(ncid, varlist[N_IN_AFT].id, idx, 
+                    NCERR(nc_put_var1_uchar(ncid, varlist[N_IN_AFT].id, idx, 
                                 &varlist[N_IN_AFT].attrs[FILL_VALUE].value.c));
-                    NCERR(nc_put_var1_ubyte(ncid, varlist[N_OUT_FORE].id, idx, 
+                    NCERR(nc_put_var1_uchar(ncid, varlist[N_OUT_FORE].id, idx, 
                                 &varlist[N_OUT_FORE].attrs[FILL_VALUE].value.c));
-                    NCERR(nc_put_var1_ubyte(ncid, varlist[N_OUT_AFT].id, idx, 
+                    NCERR(nc_put_var1_uchar(ncid, varlist[N_OUT_AFT].id, idx, 
                                 &varlist[N_OUT_AFT].attrs[FILL_VALUE].value.c));
         
                     for (idx[2] = 0; (int)idx[2] < max_ambiguities; idx[2]++) {
