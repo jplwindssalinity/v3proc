@@ -40,7 +40,7 @@ int AttenMap::_Deallocate() {
 int AttenMap::ReadWentzAttenMap(const char* filename) {
 
   if( !_Allocate() ) {
-    fprintf(stderr,"Error allocating attenuation map!\n");
+    fprintf(stderr,"AttenMap::ReadWentzAttenMap, Error allocating attenuation map!\n");
     return(0);
   }
 
