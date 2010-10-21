@@ -16,12 +16,13 @@ static const char rcs_id_attenmap_c[] =
 #include "AttenMap.h"
 #include "ETime.h"
 
-AttenMap::AttenMap() {
+AttenMap::AttenMap() : _map(NULL) {
   return;
 }
 
 AttenMap::~AttenMap() {
   _Deallocate();
+  _map = NULL;
   return;
 }
 
@@ -70,6 +71,11 @@ int AttenMap::ReadWentzAttenMap(const char* filename) {
 // sec_year is seconds since the start of the current year.
 float AttenMap::GetNadirAtten( double longitude, double latitude, double sec_year )
 {
+  if( _map == NULL ) {
+    fprintf(stderr,"AttenMap::GetNadirAtten: Error, atten map not loaded!\n");
+    return(0.0);
+  }
+
   double lon_deg = longitude * rtd;
   double lat_deg = latitude  * rtd; 
   
