@@ -14,7 +14,6 @@ static const char rcs_id_attenmap_c[] =
 #include "Array.h"
 #include "Constants.h"
 #include "AttenMap.h"
-#include "ETime.h"
 
 AttenMap::AttenMap() : _map(NULL) {
   return;
