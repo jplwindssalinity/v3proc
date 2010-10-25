@@ -887,7 +887,8 @@ Grid::Add(
 #define MAX_MEAS_PER_BIN 20000
 int
 Grid::ShiftForward(
-    int  do_composite)
+    int  do_composite,
+    int  forget_position )
 {
     static int headerWritten = 0;
 
@@ -901,7 +902,12 @@ Grid::ShiftForward(
         return(0);
 
     MeasList spot_measList;
-
+    
+    char* buffer = NULL;
+    
+    if( !do_composite )
+      buffer=(char*)malloc(sizeof(char)*MAX_MEAS_PER_BIN*meas_length);
+      
     //----------------------------------------------
     // Write out the earliest row of measurement lists.
     //----------------------------------------------
@@ -971,7 +977,7 @@ Grid::ShiftForward(
             OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
             if (offsetlist != NULL)
             {
-	        char* buffer=(char*)malloc(sizeof(char)*MAX_MEAS_PER_BIN*meas_length);
+	        //char* buffer=(char*)malloc(sizeof(char)*MAX_MEAS_PER_BIN*meas_length);
 
  		int dd = 0;
                 if (offsetlist->NodeCount()>MAX_MEAS_PER_BIN) {
@@ -1015,7 +1021,7 @@ Grid::ShiftForward(
 
                 fwrite((void *)&nm, sizeof(int), 1, l2a.GetOutputFp()); 
                 fwrite(buffer, sizeof(char), nm*meas_length, l2a.GetOutputFp());
-		free(buffer);
+		//free(buffer);
 	    } // end if offsetlist != NULL
 	    
         } // end case composite == 0
@@ -1027,7 +1033,9 @@ Grid::ShiftForward(
 
       _grid[i][_ati_start].FreeContents();
     } // end cross track bin loop
-
+    
+    if( buffer != NULL ) free(buffer);
+    
     // Update buffer indices.
     _ati_start = (_ati_start + 1) % _alongtrack_bins;
     _ati_offset++;
@@ -1035,8 +1043,8 @@ Grid::ShiftForward(
     //----------------------//
     // restore L1B location //
     //----------------------//
-
-    if (fseeko(fp, offset, SEEK_SET) == -1)
+    if( !forget_position )
+      if (fseeko(fp, offset, SEEK_SET) == -1)
         return(0);
 
     return(1);
@@ -1053,7 +1061,7 @@ Grid::Flush(
 {
     for (int i = 0; i < _alongtrack_bins; i++)
     {
-      if(!ShiftForward(do_composite)) return(0);
+      if(!ShiftForward(do_composite,1)) return(0);
     }
 
     return(1);
