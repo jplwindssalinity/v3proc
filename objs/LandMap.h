@@ -9,8 +9,8 @@
 static const char rcs_id_landmap_h[] =
     "@(#) $Id$";
 
-#include "LonLat.h"
 #include <stdlib.h>
+#include "LonLat.h"
 
 //======================================================================
 // CLASSES
@@ -127,5 +127,66 @@ protected:
     float   _lonResolution;
     float   _latResolution;
 };
+
+//======================================================================
+// CLASS
+//    QSLandMap
+//
+// DESCRIPTION
+//    The QSLandMap object contains a map of land and near-land
+//    locations.  LandMap from offical QS processing stream.
+//======================================================================
+
+class QSLandMap 
+{
+public:
+	QSLandMap();
+	~QSLandMap();
+	
+	int Read( const char* filename );
+	int IsLand( float lon, float lat, int flagging_mode );
+
+protected:
+
+    int  _Allocate();
+    int  _Deallocate();
+
+    //-----------//
+    // variables //
+    //-----------//
+    
+    unsigned char** _map;
+};
+
+//======================================================================
+// CLASS
+//    QSIceMap
+//
+// DESCRIPTION
+//    The QSIceMap object contains a map of ice 
+//    locations.  Ice maps are from offical QS processing stream.
+//======================================================================
+
+class QSIceMap 
+{
+public:
+	QSIceMap();
+	~QSIceMap();
+	
+	int Read( const char* filename );
+	int IsIce( float lon, float lat, int beam_idx );
+
+protected:
+
+    int  _Allocate();
+    int  _Deallocate();
+
+    //-----------//
+    // variables //
+    //-----------//
+    
+    unsigned char** _map;
+};
+
 
 #endif

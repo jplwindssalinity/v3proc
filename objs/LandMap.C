@@ -643,3 +643,258 @@ SimpleLandMap::_Deallocate()
     free_array((void*)_map, 2, _lonSamples, _latSamples);
     return(1);
 }
+
+//----------------------------//
+//  QSLandMap::QSLandMap()    //
+//----------------------------//
+
+ QSLandMap::QSLandMap() : _map(NULL) {
+   return;
+}
+
+//-----------------------------//
+//  QSLandMap::~QSLandMap()    //
+//-----------------------------//
+
+QSLandMap::~QSLandMap() {
+  if( _map )
+    _Deallocate();
+  _map = NULL;
+  return;
+}
+
+//-----------------------------//
+//  QSLandMap::_Allocate()     //
+//-----------------------------//
+
+int QSLandMap::_Allocate() {
+  _map = (unsigned char**)make_array(sizeof(char), 2, 5400, 10800 );
+  if( _map == NULL ) 
+    return(0);
+  return(1);
+}
+
+//------------------------------//
+//  QSLandMap::_Deallocate()    //
+//------------------------------//
+
+int QSLandMap::_Deallocate() {
+  free_array( (void*)_map, 2, 5400, 10800 );
+  return(1);
+}
+
+//-----------------------//
+//  QSLandMap::Read()    //
+//-----------------------//
+
+int QSLandMap::Read( const char* filename) {
+  if( !_Allocate() ) {
+    fprintf(stderr,"QSLandMap::Read, Error allocating land map!\n");
+    return(0);
+  }
+
+  FILE* ifp = fopen(filename, "r");
+  if (ifp == NULL)
+    return(0);
+  
+  char num_bytes_be[4], num_bytes_le[4];
+  int  num_bytes;
+  
+  fread( &num_bytes_be, sizeof(char), 4, ifp );
+  for( int ii = 0; ii < 4; ++ii ) num_bytes_le[ii] = num_bytes_be[3-ii];
+  
+  memcpy( &num_bytes, &num_bytes_le[0], 4 );
+  
+  if( num_bytes != 5400 * 10800 ) {
+    fprintf(stderr,"In QSLandMap::Read: Error, unexpected size of land map %d\n",num_bytes);
+    fclose(ifp);
+    return(0);
+  }
+  
+  for( int i_lat = 0; i_lat < 5400; ++i_lat ) {
+    if( fread((void*)*(_map+i_lat), sizeof(char), 10800, ifp ) != 10800 ) {
+      fclose(ifp);
+      return(0);
+    }
+  }
+  fclose(ifp);
+  return(1);
+}
+
+//-------------------------//
+//  QSLandMap::IsLand()    //
+//-------------------------//
+
+int QSLandMap::IsLand( float lon,      // radians
+                       float lat,      // radians
+                       int   flagging_mode ) {  
+
+  // Check that _map is allocated
+  if( _map == NULL )
+    return(0);
+  
+  // Convert to degrees
+  float lon_deg = lon * rtd;
+  float lat_deg = lat * rtd;
+  
+  // Check that inputs are in range
+  if( lon_deg       <   0 || lon_deg       >= 360 ||
+      lat_deg       < -90 || lat_deg       >   90 ||
+      flagging_mode <   0 || flagging_mode >    1 ) {
+    fprintf(stderr,"In QSLandMap::IsLand: Error inputs out of range!\n");
+    return(0);
+  }
+  
+  // indexing logic from offical processor
+  int i_lat = floor( (90+lat_deg)*30  ); // 90 + lat_deg always >= 0 
+  int i_lon = floor(     lon_deg *30  );
+  
+  // Wrap lon index.
+  if( i_lon == 10800 ) i_lon = 0;
+  // keep i_lat in range
+  if( i_lat == 5400  ) i_lat = 5400-1;
+  
+  
+  unsigned char bits;  
+  if( flagging_mode == 0 )       // bit 6 used in L2B 25 km product
+    bits = (unsigned char)0x40;
+  else if ( flagging_mode == 1 ) // bit 4 used in L2B 12.5 km product
+    bits = (unsigned char)0x10;
+  else {
+    fprintf(stderr,"In QSLandMap::IsLand: Unknown value of flagging_mode: %d\n",
+           flagging_mode);
+    return(0);
+  }
+  
+  if( _map[i_lat][i_lon] && bits ) 
+    return(1);
+  else
+    return(0);
+}
+
+//--------------------------//
+//  QSIceMap::QSIceMap()    //
+//--------------------------//
+
+QSIceMap::QSIceMap() : _map(NULL) {
+   return;
+} 
+
+//---------------------------//
+//  QSIceMap::~QSIceMap()    //
+//---------------------------//
+
+QSIceMap::~QSIceMap() {
+  if( _map )
+    _Deallocate();
+  _map = NULL;
+  return;
+}
+
+//-----------------------------//
+//  QSIceMap::_Allocate()     //
+//-----------------------------//
+
+int QSIceMap::_Allocate() {
+  _map = (unsigned char**)make_array(sizeof(char), 2, 360, 720 );
+  if( _map == NULL ) 
+    return(0);
+  return(1);
+}
+
+//------------------------------//
+//  QSIceMap::_Deallocate()     //
+//------------------------------//
+
+int QSIceMap::_Deallocate() {
+  free_array( (void*)_map, 2, 360, 720 );
+  return(1);
+}
+
+//-----------------------//
+//  QSIceMap::Read()     //
+//-----------------------//
+
+int QSIceMap::Read( const char* filename) {
+  if( !_Allocate() ) {
+    fprintf(stderr,"QSIceMap::Read, Error allocating ice map!\n");
+    return(0);
+  }
+
+  FILE* ifp = fopen(filename, "r");
+  if (ifp == NULL)
+    return(0);
+  
+  char num_bytes_be[4], num_bytes_le[4];
+  int  num_bytes;
+  
+  fread( &num_bytes_be, sizeof(char), 4, ifp );
+  for( int ii = 0; ii < 4; ++ii ) num_bytes_le[ii] = num_bytes_be[3-ii];
+  
+  memcpy( &num_bytes, &num_bytes_le[0], 4 );
+  
+  if( num_bytes != 360 * 720 ) {
+    fprintf(stderr,"In QSIceMap::Read: Error, unexpected size of ice map %d\n",num_bytes);
+    fclose(ifp);
+    return(0);
+  }
+  
+  for( int i_lat = 0; i_lat < 360; ++i_lat ) {
+    if( fread((void*)*(_map+i_lat), sizeof(char), 720, ifp ) != 720 ) {
+      fclose(ifp);
+      return(0);
+    }
+  }
+  fclose(ifp);
+  return(1);
+}
+
+
+//-------------------------//
+//  QSIceMap::IsIce()      //
+//-------------------------//
+
+int QSIceMap::IsIce( float lon,          // radians
+                     float lat,          // radians
+                     int   beam_idx ) {  // meas->beamIdx
+  // Check that _map is allocated
+  if( _map == NULL )
+    return(0);
+  
+  // Convert to degrees
+  float lon_deg = lon * rtd;
+  float lat_deg = lat * rtd;
+  
+  // Check that inputs are in range
+  if( lon_deg       <   0 || lon_deg       >= 360 ||
+      lat_deg       < -90 || lat_deg       >   90 ||
+      beam_idx      <   0 || beam_idx      >    1  ) {
+    fprintf(stderr,"In QSLandMap::IsLand: Error inputs out of range!\n");
+    return(0);
+  }
+  
+  // indexing logic from offical processor
+  int i_lat = floor( (90+lat_deg)*2  ); // 90 + lat_deg always >= 0 
+  int i_lon = floor(     lon_deg *2  );
+  
+  // Wrap lon index.
+  if( i_lon == 720 ) i_lon = 0;
+  // keep i_lat in range
+  if( i_lat == 360  ) i_lat = 360-1;
+  
+  unsigned char bits;
+  if( beam_idx = 0 ) 
+    bits = (unsigned char)0x1; // bit 0
+  else if( beam_idx = 1 )
+    bits = (unsigned char)0x2; // bit 1
+  else {
+    fprintf(stderr,"In QSIceMap::IsIce: Shouldn't be here!\n");
+    exit(1);
+  }
+    
+  if( _map[i_lat][i_lon] & bits )
+    return(1);
+  else
+    return(0);
+}
+
