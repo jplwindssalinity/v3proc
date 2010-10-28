@@ -766,7 +766,7 @@ int QSLandMap::IsLand( float lon,      // radians
     return(0);
   }
   
-  if( _map[i_lat][i_lon] && bits ) 
+  if( _map[i_lat][i_lon] & bits ) 
     return(1);
   else
     return(0);
