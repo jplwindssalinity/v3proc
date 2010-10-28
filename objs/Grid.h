@@ -57,7 +57,7 @@ public:
 	// input/output //
 	//--------------//
 
-	int		ShiftForward(int do_composite, int forget_position = 0 );
+	int		ShiftForward(int do_composite, int forget_position );
 	int		Flush(int do_composite);
         void            CreateIndicesFile(char* filename);
         void            SetPlotMode();

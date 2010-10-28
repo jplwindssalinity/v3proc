@@ -794,7 +794,7 @@ Grid::Add(
        while (vati - _ati_offset >= _alongtrack_bins)
 	 {
 	   // vati is beyond latest row, so need to shift the grid buffer
-	   if(!ShiftForward(do_composite)) return(0);
+	   if(!ShiftForward(do_composite,0)) return(0);
 	 }
        
        //
