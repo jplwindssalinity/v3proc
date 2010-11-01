@@ -400,6 +400,7 @@ static const char rcs_id_configsimdefs_h[] =
 //------//
 
 #define KPRS_FILE_KEYWORD  "KPRS_FILE"
+#define QS_KPR_FILE_KEYWORD  "QS_KPR_FILE"
 
 //----------//
 // KpmField //
