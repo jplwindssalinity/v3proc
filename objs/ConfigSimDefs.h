@@ -174,11 +174,6 @@ static const char rcs_id_configsimdefs_h[] =
 // this sort of doesn't belong here...
 #define SIMPLE_LANDMAP_FILE_KEYWORD     "SIMPLE_LANDMAP_FILE"
 
-#define QS_LANDMAP_FILE_KEYWORD 		"QS_LANDMAP_FILE"
-#define QS_ICEMAP_FILE_KEYWORD	 		"QS_ICEMAP_FILE"
-#define USE_QS_LANDMAP_KEYWORD			"USE_QS_LANDMAP"
-#define USE_QS_ICEMAP_KEYWORD			"USE_QS_ICEMAP"
-
 //---------------//
 // InstrumentSim //
 //---------------//
