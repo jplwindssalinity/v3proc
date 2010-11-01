@@ -15,6 +15,158 @@ static const char rcs_id_kpr_c[] =
 #include "GenericGeom.h"
 #include "CoordinateSwitch.h"
 
+
+//-------//
+// QSKpr //
+//-------// 
+
+QSKpr::QSKpr() 
+: _instr_kpr(0.07151931), _gatewidth(3), _att_kpr_table(NULL)
+{
+  return;
+}
+
+QSKpr::~QSKpr() {
+  if( _att_kpr_table )
+    _Deallocate();
+  _att_kpr_table = NULL;
+  return;
+}
+
+int QSKpr::SetGatewidth( int gatewidth ) {
+  if( gatewidth < 0 || gatewidth > 7 )
+    return(0);
+  _gatewidth = gatewidth;
+  return(1);
+}
+
+int QSKpr::SetInstKPR( float inst_kpr ) {
+  if( inst_kpr < 0 )
+    return(0);
+  _instr_kpr = inst_kpr;
+  return(1);
+}
+
+int QSKpr::_Allocate() {
+  _att_kpr_table = (float*)calloc(sizeof(float),8*50*2*10*10);
+  if( _att_kpr_table == NULL )
+    return(0);
+  return(1);
+}
+
+int QSKpr::_Deallocate() {
+  free( _att_kpr_table );
+  return(1);
+}
+
+int QSKpr::Read( const char* filename ) {
+  char  buffer[8*50*2*10*10*4];
+  char  buffer_swapped[8*50*2*10*10*4];
+  char  num_bytes_be[4], num_bytes_le[4];
+  int   num_bytes;  
+  
+  if( _att_kpr_table == NULL )
+    _Allocate();
+  
+  FILE* fid = fopen( filename, "r" );
+  if( fid == NULL ) {
+    fprintf(stderr,"In QSKpr::Read: Error opening file %s!\n",filename);
+    return(0);
+  }
+  
+  // Read record size from file
+  fread( &num_bytes_be, sizeof(char), 4 , fid );
+  
+  // Byte-swap record size
+  for( int ii = 0; ii < 4; ++ii ) 
+    num_bytes_le[ii] = num_bytes_be[3-ii];
+
+  memcpy( &num_bytes, &num_bytes_le[0], 4 );
+
+  // Compare to expected size of record; Quit if not what expected.
+  if( num_bytes != 8*50*2*10*10*4 ) {
+    fprintf(stderr,"In read_kpr_table: Error unexpected size of KPR table: %d\n",num_bytes);
+    fclose(fid);
+    exit(1);
+  }
+  
+  // Read KPR table
+  fread( &buffer[0], sizeof(char), 8*50*2*10*10*4, fid );
+  fclose( fid );
+  
+  // Byte-swap KPR table.
+  for ( int ii = 0; ii < 8*50*2*10*10; ++ii )
+    for( int jj = 0; jj < 4; ++jj )
+      buffer_swapped[4*ii+jj] = buffer[4*ii+3-jj];
+
+  // Copy byte-swapped table into output pointer.    
+  memcpy( _att_kpr_table, &buffer_swapped[0], sizeof(char)*8*50*2*10*10*4 );
+
+  //for (int ii = 0; ii < 10; ++ii ) {
+  //  printf( "kpr_table[%6d]: %g\n", ii, *(kpr_table+ii) );
+  //}
+  return(1);
+}
+
+int QSKpr::GetKpr( int   start_slice, // in range 0 - 9
+                   int   num_slices,  // in range 1 - 8
+                   int   i_beam,      // 0 (HH), 1 (VV)
+                   float azimuth,     // in radians
+                   float *value ) {   // return KPR (attitude + instrument)
+
+  azimuth *= rtd; // convert to degrees
+  
+  // wrap once to interval [0,360]
+  if( azimuth < 0    ) azimuth += 360;
+  if( azimuth >= 360 ) azimuth -= 360;
+  
+  // compute interpolation indcies
+  int i_azi_low  = floor( azimuth / 7.2 );
+  int i_azi_high = i_azi_low + 1;
+  if( i_azi_high == 50 ) i_azi_high = 0;
+  
+  int i_n_slices = num_slices - 1; // index for num_slices dimension.
+  
+  // Check bounds of indicies into KPR table
+  if( _gatewidth  < 0  || _gatewidth  > 7  ||
+      i_azi_low   < 0  || i_azi_high  > 49 ||
+      i_beam      < 0  || i_beam      > 1  ||
+      i_n_slices  < 0  || i_n_slices  > 7  || // only best 8 in L1B, so can't have more
+      start_slice < 0  || start_slice > 9  ) {
+    fprintf(stderr, "QSKpr::GetKpr: Error: inputs out of range in get_kpr: %d %d %d %f %d\n",
+                    start_slice, i_n_slices, i_beam, azimuth, _gatewidth );
+    *value = 0.0;
+    return(0);
+  }
+  
+  // Linear interpolation in azimuth dimension of table.
+  int ii_0 = _gatewidth  * 10 * 10 * 2 * 50 +
+              i_azi_low  * 10 * 10 * 2      +
+              i_beam     * 10 * 10          +
+              i_n_slices * 10               +
+              start_slice;
+
+  int ii_1 = _gatewidth  * 10 * 10 * 2 * 50 +
+              i_azi_high * 10 * 10 * 2      +
+              i_beam     * 10 * 10          +
+              i_n_slices * 10               +
+              start_slice;
+  
+  double a_1 = (azimuth-7.2*i_azi_low)/7.2;
+  
+  if( a_1 < 0 || a_1 > 1 ) {
+    fprintf(stderr,"In QSKpr::GetKpr, Error, interpolation coef out of range.\n");
+    exit(1);
+  }
+  
+  float att_kpr =  ( 1 - a_1 ) * _att_kpr_table[ii_0] 
+                +        a_1   * _att_kpr_table[ii_1];
+  
+  *value = sqrt( pow(att_kpr,2) + pow(_instr_kpr,2) );
+  return(1);
+}
+
+
 //======//
 // Kpri //
 //======//

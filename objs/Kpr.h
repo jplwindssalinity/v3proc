@@ -15,8 +15,45 @@ static const char rcs_id_kpr_h[] =
 
 //======================================================================
 // CLASSES
-//		Kpri, Kprs
+//		Kpri, Kprs, QSKpr
 //======================================================================
+
+
+//======================================================================
+// CLASS
+//		QSKpr
+//
+// DESCRIPTION
+//		The QSKpr class is used for handling the offical QS KPR table. //======================================================================
+
+class QSKpr
+{
+public:
+
+	//--------------//
+	// construction //
+	//--------------//
+
+	QSKpr();
+	~QSKpr();
+	
+	int Read( const char* filename );
+	int GetKpr( int start_slice, int num_slices, int i_beam, float azimuth, float *value );
+	
+	int SetGatewidth( int gatewidth );
+	int SetInstKPR( float inst_kpr );
+	
+private:
+
+	int _Allocate();
+	int _Deallocate();
+	
+	float  _instr_kpr;
+	int    _gatewidth;
+	float* _att_kpr_table;
+};
+	
+
 
 //======================================================================
 // CLASS
