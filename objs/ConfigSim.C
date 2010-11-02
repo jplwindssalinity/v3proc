@@ -2076,7 +2076,7 @@ ConfigKp(
     config_list->GetInt(RETRIEVE_USING_KPRS_FLAG_KEYWORD,
         &retrieve_using_kprs);
 
-    if (kprs_filename == NULL || strcasecmp(kprs_filename, "NONE") != 0)
+    if (kprs_filename == NULL || strcasecmp(kprs_filename, "NONE") == 0)
     {
         // No file specified (keyword missing or set to "none")
         // See if we care. No, really. See!
