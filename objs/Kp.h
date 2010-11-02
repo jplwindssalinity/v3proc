@@ -11,6 +11,7 @@ static const char rcs_id_kp_h[] =
 
 #include "Kpm.h"
 #include "Kpr.h"
+#include "AttenMap.h"
 
 
 //======================================================================
@@ -64,14 +65,16 @@ public:
     // variables //
     //-----------//
 
-    Kpm    kpm;
-    Kpri   kpri;
-    Kprs   kprs;
-    float  kpc2Constant;
-    float  kpm2Constant;
-    float  kpri2Constant;
-    float  kprs2Constant;
-    int    useConstantValues;
+    Kpm       kpm;
+    Kpri      kpri;
+    Kprs      kprs;
+    AttenMap  attenmap;
+    float     kpc2Constant;
+    float     kpm2Constant;
+    float     kpri2Constant;
+    float     kprs2Constant;
+    int       useConstantValues;
+    int       useAttenMap;
 };
 
 #endif

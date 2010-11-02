@@ -2107,7 +2107,37 @@ ConfigKp(
         }
     }
     config_list->RestoreLogFlag();
-
+    
+    //--------------------//
+    // configure AttenMap //
+    //--------------------//
+    
+    config_list->MemorizeLogFlag();
+    config_list->DoNothingForMissingKeywords();
+    
+    char* attenmap_filename = config_list->Get( ATTEN_MAP_FILE_KEYWORD );
+    int   use_attenmap      =  0;
+    float sec_year          = -1;
+    
+    config_list->GetInt(USE_ATTEN_MAP_KEYWORD, &use_attenmap );
+    config_list->GetFloat(ATTEN_MAP_SEC_YEAR_KEYWORD, &sec_year );
+    
+    kp->useAttenMap = use_attenmap; // set use atten map flag
+    if( use_attenmap ) {
+      if( attenmap_filename == NULL ) {
+        fprintf(stderr,"ConfigKp: Error; must set attenmap filename if USE_ATTENMAP == 1\n");
+        exit(1);
+      }
+      if( !kp->attenmap.ReadWentzAttenMap( attenmap_filename ) ) {
+        fprintf(stderr,"ConfigKp: Error reading Attenmap from file: %s\n", attenmap_filename );
+        exit(1);
+      }
+      if( !kp->attenmap.SetSecYear( sec_year ) ) {
+        fprintf(stderr,"ConfigKp: Error setting Attenmap sec_year: %f\n",sec_year);
+        exit(1);
+      }
+    }
+    config_list->RestoreLogFlag();
     return(1);
 }
 

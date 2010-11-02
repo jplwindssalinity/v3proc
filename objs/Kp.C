@@ -15,7 +15,7 @@ static const char rcs_id_kp_c[] =
 
 Kp::Kp()
 :   kpc2Constant(0.0), kpm2Constant(0.0), kpri2Constant(0.0),
-    kprs2Constant(0.0), useConstantValues(0)
+    kprs2Constant(0.0), useConstantValues(0), useAttenMap(0)
 {
     return;
 }
