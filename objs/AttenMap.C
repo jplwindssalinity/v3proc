@@ -15,7 +15,7 @@ static const char rcs_id_attenmap_c[] =
 #include "Constants.h"
 #include "AttenMap.h"
 
-AttenMap::AttenMap() : _map(NULL) {
+AttenMap::AttenMap() : _sec_year(-1), _map(NULL) {
   return;
 }
 
@@ -60,14 +60,26 @@ int AttenMap::ReadWentzAttenMap(const char* filename) {
   return(1);
 }
 
+int AttenMap::SetSecYear( double sec_year ) { 
+  if( sec_year < 0 || sec_year > 366 * 86400 ) {
+    fprintf(stderr,"AttenMap::SetSecYear(); inputs out of range\n");
+    return(0);
+   }
+  _sec_year = sec_year;
+  return(1);
+}
+
 // returns the nadir attenuation in dB; must divide by the cosine of the 
 // incidence angle to get approximate path-length attenuation in dB.
 // Verified by getting slice_lon, slice_lat, atten_from_map in L2A and
 // comparing to what this method returns. Rms difference is 0.003 dB, and 
 // the atten_from_map table is quantized at 0.01 dB.
-
 // longitude, latitude in radians
 // sec_year is seconds since the start of the current year.
+float AttenMap::GetNadirAtten( double longitude, double latitude )  {
+  return( GetNadirAtten( longitude, latitude, _sec_year ) );
+}
+
 float AttenMap::GetNadirAtten( double longitude, double latitude, double sec_year )
 {
   if( _map == NULL ) {

@@ -47,8 +47,11 @@ public:
 	//--------//
 	// access //
 	//--------//
-
+    
     float GetNadirAtten(double longitude, double latitude, double sec_year );
+    // overloaded; will use _sec_year as 3rd argument to GetNadirAtten
+    float GetNadirAtten(double longitude, double latitude );
+    int   SetSecYear( double sec_year );
     
 protected:
 
@@ -63,6 +66,7 @@ protected:
     // variables //
     //-----------//
     
+    float            _sec_year;
     unsigned char*** _map;
 };
 
