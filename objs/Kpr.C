@@ -418,7 +418,6 @@ float Kprs::Interpolate(
   //=============================================//
   // Get Absolute Slice Index                    //
   //=============================================//
-
   int start_slice_abs_idx;
   if(!rel_to_abs_idx(start_slice_rel_idx,_numSlices,&start_slice_abs_idx)){
     fprintf(stderr,"Error Kprs::Interpolate: rel_to_abs_idx failed.\n");
@@ -426,7 +425,7 @@ float Kprs::Interpolate(
   }  
 
   if(start_slice_abs_idx < 0 || start_slice_abs_idx >= _numScienceSlices){
-    fprintf(stderr,"Error Kprs::Interpolate: Bad slice number\n");
+    fprintf(stderr,"Error Kprs::Interpolate: Bad slice number: %d %d\n", start_slice_abs_idx, _numScienceSlices);
     exit(1);
   }
 
@@ -437,6 +436,7 @@ float Kprs::Interpolate(
 
   kpr=(1-w)*_value[beam_number][num_slices_in_comp-1][start_slice_abs_idx][az1]
          + w*_value[beam_number][num_slices_in_comp-1][start_slice_abs_idx][az2];
+  //printf("%d %d %d %f %f\n", beam_number, num_slices_in_comp, start_slice_abs_idx, azimuth,kpr );       
   return(kpr);
 }
 
@@ -596,6 +596,7 @@ Kprs::_ReadHeader(FILE* ifp)
   if (fread((void*)&_numAzimuths, sizeof(int),1,ifp)!=1) return(0);
 
   _numScienceSlices=2*_numGuardSlicesEachSide + _numScienceSlices;
+  _numSlices = _numScienceSlices;
   return(1);     
 }
 
