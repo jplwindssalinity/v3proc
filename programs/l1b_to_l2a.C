@@ -376,7 +376,8 @@ main(
         Meas* meas = new Meas;
 
         long counter = 0;
-
+        long spot_counter = 0;
+        
         for (;;) {
           
           counter++;
@@ -390,6 +391,7 @@ main(
           //cout << "num of spots: " << nSpot << endl;
 
           for (long ss=0; ss<nSpot; ss++) {
+            spot_counter++; // unique (in this l1b file) integer for this spot.
             if (fread(&spotTime, sizeof(double), 1, grid.l1b.GetInputFp()) != 1) break; // find spot time
             if (fseeko(grid.l1b.GetInputFp(), spotSize-timeSize, SEEK_CUR) == -1) break;
             if (fread(&nm, sizeof(int), 1, grid.l1b.GetInputFp()) != 1) break; // find number of meas
@@ -412,7 +414,7 @@ main(
                 cerr << "      Value = " << meas->value << " azim width = " << meas->azimuth_width << "range width = " << meas->range_width << endl;
                 cerr << "      Lat = " << mlat << "  Long = " << mlon << endl;
 	      }
-              else if (grid.Add(meas, spotTime, ss, use_compositing) != 1) {
+              else if (grid.Add(meas, spotTime, spot_counter, use_compositing) != 1) {
                 fprintf(stderr, "Error in Add of Grid!\n");
                 // BWS bug fix 7-30-2010
                 // Breaking out of the read meas loop 
