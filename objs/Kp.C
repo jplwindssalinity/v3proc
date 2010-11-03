@@ -162,6 +162,10 @@ Kp::GetKprs2(
     int beam_number = meas->beamIdx;
     int start_slice_rel_idx = meas->startSliceIdx;
     int num_slices_per_comp = meas->numSlices;
+    // numSlices == -1 means non-composted single slices;
+    // should use num_slices == 1 for this interpolation index. AGF
+    if( num_slices_per_comp == -1 ) num_slices_per_comp = 1;
+    
     float azimuth = meas->scanAngle;
     *kprs2 = kprs.Interpolate(beam_number,num_slices_per_comp,
                 start_slice_rel_idx,azimuth);
