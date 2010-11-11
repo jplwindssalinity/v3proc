@@ -2010,9 +2010,23 @@ ConfigGMF(
             return(0);
     }
     gmf->minimumAzimuthDiversity = tmp_float*dtr;
-
+ 
     // Otherwise it uses the default value initialized by the constructor
-
+    
+    // Get objective function scale factor keywords AGF 11/11/2010
+    config_list->DoNothingForMissingKeywords();
+    if ( config_list->GetInt(OBJ_FUNC_USE_SCALE_FACTOR_KEYWORD, &tmp_int))
+        gmf->useObjectiveFunctionScaleFactor = tmp_int;
+    else
+        gmf->useObjectiveFunctionScaleFactor = 0;
+    
+    if( gmf->useObjectiveFunctionScaleFactor &&     
+       !config_list->GetFloat(OBJ_FUNC_SCALE_FACTOR_KEYWORD, &tmp_float))
+     return(0);
+     
+    gmf->objectiveFunctionScaleFactor = tmp_float;
+    config_list->ExitForMissingKeywords();
+    
     //------------------------//
     // configure nudging flag //
     //------------------------//

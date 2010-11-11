@@ -40,7 +40,8 @@ static const char rcs_id_gmf_c[] =
 GMF::GMF()
 :   retrieveUsingKpcFlag(1), retrieveUsingKpmFlag(1), retrieveUsingKpriFlag(1),
     retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), retrieveOverIce(0),
-    smartNudgeFlag(0), retrieveUsingCriteriaFlag(1), minimumAzimuthDiversity(20.0*dtr), cBandWeight(1.0), kuBandWeight(1.0),objectiveFunctionMethod(0),
+    smartNudgeFlag(0), retrieveUsingCriteriaFlag(1), minimumAzimuthDiversity(20.0*dtr), cBandWeight(1.0), kuBandWeight(1.0),objectiveFunctionMethod(0), 
+    useObjectiveFunctionScaleFactor(0), objectiveFunctionScaleFactor(9.66), 
     _phiCount(0), _phiStepSize(0.0), _spdTol(DEFAULT_SPD_TOL), _sepAngle(DEFAULT_SEP_ANGLE),
     _smoothAngle(DEFAULT_SMOOTH_ANGLE), _maxSolutions(DEFAULT_MAX_SOLUTIONS),
     _bestSpd(NULL), _bestObj(NULL), _copyObj(NULL), _speed_buffer(NULL),
@@ -2080,6 +2081,11 @@ GMF::_ObjectiveFunction(
             fv = _ObjectiveFunctionOld(meas_list, spd, phi, kp);
             break;       
     }
+
+    // Optionally scale objective function values in log-space.
+    if( useObjectiveFunctionScaleFactor )
+      fv *= objectiveFunctionScaleFactor / float( meas_list->NodeCount() );
+
     return(fv);
 }
 

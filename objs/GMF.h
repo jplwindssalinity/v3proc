@@ -191,7 +191,9 @@ public:
     float kuBandWeight;
 
     int  objectiveFunctionMethod;
-
+    int  useObjectiveFunctionScaleFactor;
+    float objectiveFunctionScaleFactor;
+    
     //protected:
 
     //----------------//
