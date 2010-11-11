@@ -21,6 +21,7 @@ static const char rcs_id_measurement_c[] =
 #include "Parameter.h"
 #include "ETime.h"
 #include "Array.h"
+#include "Misc.h"
 
 #ifndef IS_EVEN
 #define IS_EVEN(x) (x % 2 == 0 ? 1 : 0)
@@ -68,16 +69,19 @@ Meas::Composite(
     MeasList*  meas_list,
     int        n)
 {
-    float sum_Ps = 0.0;
-    float sum_XK = 0.0;
-    float sum_EnSlice = 0.0;
-    float sum_bandwidth = 0.0;
+    double sum_Ps = 0.0;
+    double sum_XK = 0.0;
+    double sum_EnSlice = 0.0;
+    double sum_bandwidth = 0.0;
     Vector3 sum_centroid(0.0,0.0,0.0);
-    float sum_incidenceAngle = 0.0;
+    double sum_incidenceAngle = 0.0;
 //  float sum_X2 = 0.0;
-    float sum_xk2a = 0.0;
-    float sum_xkbwb = 0.0;
-    float sum_bw2c = 0.0;
+    double sum_xk2a = 0.0;
+    double sum_xkbwb = 0.0;
+    double sum_bw2c = 0.0;
+    double sum_cos_azi_X = 0.0;
+    double sum_sin_azi_X = 0.0;
+    
     int N = 0;
 
     //
@@ -99,8 +103,27 @@ Meas::Composite(
 
     int min_slice_idx = meas_start->startSliceIdx;
     landFlag = 0;
+    
+    int prev_slice_idx = -9999;
     for (meas = meas_start; meas; meas = meas_list->GetNext())
     {
+        //-------------------------------------------------//
+        // Ensure we do not composite over missing slices. // AGF 11/1/2010
+        //-------------------------------------------------// Assumes slice-ordered L1B file....
+        if( meas != meas_start && meas->startSliceIdx != prev_slice_idx + 1 ) {
+          fprintf(stderr,
+                  "Meas::Composite: Non-consecutive slices (start, prev, curr): %d %d %d\n",
+                  min_slice_idx, prev_slice_idx, meas->startSliceIdx );
+          return(0);
+        }
+        // Stupid HACK----------------------------------------------------------
+        // This assumes that there are an even number of slices, thus none of
+        // then have a relative slice index of zero.
+        // Either this or abandon the relative slice indexing throughout.
+        prev_slice_idx = meas->startSliceIdx;
+        if( prev_slice_idx == -1 ) prev_slice_idx = 0;
+        // End Stupid HACK------------------------------------------------------
+        
         //-------------------------------------------//
         // Don't composite HHVH or VVHV measurements //
         //-------------------------------------------//
@@ -118,27 +141,37 @@ Meas::Composite(
 
         if (n != 0 && N >= n)
             break;
-
-        if (meas->landFlag!=0)
-            landFlag=1;
-
-        sum_Ps += meas->value * meas->XK;
-        sum_XK += meas->XK;
-        sum_EnSlice += meas->EnSlice;
-        sum_bandwidth += meas->bandwidth;
-        sum_centroid += meas->centroid * meas->XK;
-        sum_incidenceAngle += meas->XK * meas->incidenceAngle;
-        sum_xk2a += meas->XK * meas->XK * meas->A;
-        sum_xkbwb += meas->XK * meas->bandwidth * meas->B;
-        sum_bw2c += meas->bandwidth * meas->bandwidth * meas->C;
+        
+        // Check for land--tourtured logic required since landFlag is signed!
+        if( meas->landFlag == 1 || meas->landFlag == 3 )
+          if( landFlag == 0 || landFlag == 2 )
+            landFlag += 1;
+        // Check for ice        
+        if( meas->landFlag == 2 || meas->landFlag == 3 )
+          if( landFlag == 0 || landFlag == 1 )
+            landFlag += 2;
+        
+        
+        sum_Ps += (double)meas->value * (double)meas->XK;
+        sum_XK += (double)meas->XK;
+        sum_EnSlice += (double)meas->EnSlice;
+        sum_bandwidth += (double)meas->bandwidth;
+        //sum_centroid += meas->centroid * (double)meas->XK;
+        sum_centroid += meas->centroid;
+        sum_incidenceAngle += (double)meas->XK * (double)meas->incidenceAngle;
+        sum_xk2a += (double)meas->XK * (double)meas->XK * (double)meas->A;
+//      sum_xkbwb += meas->XK * meas->bandwidth * meas->B;
+//      sum_bw2c += meas->bandwidth * meas->bandwidth * meas->C;
 //      sum_X2 += meas->XK*meas->XK;
+        sum_sin_azi_X += (double)meas->XK * (double)sin( meas->eastAzimuth );
+        sum_cos_azi_X += (double)meas->XK * (double)cos( meas->eastAzimuth );
         N++;
     }
 
     meas = meas_list->GetHead();
 
-
-    //---------------------------------------------------------------------         // Form the composite measurement from appropriate combinations of the
+    //---------------------------------------------------------------------         
+    // Form the composite measurement from appropriate combinations of the
     // elements of each slice measurement in this composite cell.
     //---------------------------------------------------------------------
 
@@ -150,18 +183,21 @@ Meas::Composite(
     txPulseWidth = meas->txPulseWidth;
     outline.FreeContents();    // merged outlines not done yet
     // Weighted average of centroids (weighted by XK)
-    centroid = sum_centroid / sum_XK;
+    //centroid = sum_centroid / sum_XK;
+    centroid = sum_centroid / double(N); //offical does not weight by X AGF 11/11/2010
     // put centroid on surface
     double alt, lon, lat;
     centroid.GetAltLonGDLat(&alt, &lon, &lat);
     centroid.SetAltLonGDLat(0.0, lon, lat);
     measType = meas->measType;    // same for all slices
-    eastAzimuth = meas->eastAzimuth;    // same for all slices
+    eastAzimuth  = atan2( sum_sin_azi_X / sum_XK , sum_cos_azi_X / sum_XK );
+    if( eastAzimuth < 0 ) eastAzimuth += two_pi;
+    
     // Weighted average of incidence angles (weighted by XK)
     incidenceAngle = sum_incidenceAngle / sum_XK;
     beamIdx = meas->beamIdx;    // same for all slices
     startSliceIdx = min_slice_idx;
-    scanAngle = meas->scanAngle;        // same for all slices
+    scanAngle = meas->scanAngle;        // same for all slices (from same pulse)
     numSlices = N;
 
     //----------------------------//
@@ -172,15 +208,10 @@ Meas::Composite(
     // bandwidths for each slice are identical.
 
     A = sum_xk2a / (sum_XK * sum_XK);
-    B = sum_xkbwb / (bandwidth * sum_XK);
-    C = sum_bw2c / (bandwidth * bandwidth);
-
-/*
-    A = meas->A * sum_X2 / (sum_XK * sum_XK);
-    B = meas->B / N;
-    C = meas->C / N;
-*/
-
+    B = meas->B  / N;
+    C = meas->C  / N;
+//    B = sum_xkbwb / (bandwidth * sum_XK);
+//    C = sum_bw2c / (bandwidth * bandwidth);
     return(1);
 }
 
