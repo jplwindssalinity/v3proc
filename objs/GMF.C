@@ -6024,7 +6024,7 @@ GMF::BuildDirectionRangesByMSE(
 }
 
 
-#define INTERP_RATIO 8
+#define INTERP_RATIO 4
 #define MERGE_BORDERS 0
 int
 GMF::BuildDirectionRanges(

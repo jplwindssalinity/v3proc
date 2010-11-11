@@ -22,7 +22,7 @@ static const char rcs_id_gs_parameters_h[] =
 #define WIND_SPEED_BAND        4
 #define WIND_SPEED_INTV_INIT   0.2
 #define WIND_SPEED_INTV_OPTI   0.1
-#define WIND_DIR_INTV_INIT     8.0
+#define WIND_DIR_INTV_INIT     4.0
 #define WIND_DIR_INTV_OPTI     1.0
 #define WIND_VARIANCE_LIMIT    1.0e-9
 #define MAX_DIR_SAMPLES        800
