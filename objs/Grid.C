@@ -259,9 +259,13 @@ Grid::Add(
       cti0  = ijbin_cti - 1;
       vati0 = ijbin_ati - 1;
       
+      // For debugging output
       //printf("at_lon, ct_lat, r_ati, vati0, r_cti, cti0: %12.6f %12.6f %12.6f %6d %12.6f %6d\n",
       //        ijbin_atlon, ijbin_ctlat, ijbin_r_ati, vati0, ijbin_r_cti, cti0);
-      
+      //double alt, lon, lat;
+      //meas->centroid.GetAltLonGDLat( &alt, &lon, &lat );
+      //printf("%12.6f %12.6f %6d %6d %12.6f %12.6f\n", 
+      //      lat*rtd, lon*rtd, ijbin_ati, ijbin_cti, ijbin_atlon, ijbin_ctlat );
 	}
 	else if( algorithm == SUBTRACK )
 	{  
@@ -923,30 +927,32 @@ Grid::ShiftForward(
 
         if (do_composite == 1)
         {
-	  cerr << "Error:Compositing is broken at the moment!" << endl;
-          exit(1);
             l2a.frame.measList.FreeContents();
+            spot_measList.FreeContents();
 
             for (OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
-                offsetlist; offsetlist = _grid[i][_ati_start].GetNext())
+                 offsetlist; offsetlist = _grid[i][_ati_start].GetNext())
             {
                 // each sublist is composited before output
                 offsetlist->MakeMeasList(fp, &spot_measList);
                 Meas* meas = new Meas;
                 if (! meas->Composite(&spot_measList))
                 {
-                    fprintf(stderr, "Grid::ShiftForward: Error compositing\n");
+                    //fprintf(stderr, "Grid::ShiftForward: Error compositing\n");
                     delete meas;
-                    return(0);
+                    //return(0);
                 }
-                spot_measList.FreeContents();
-                if (! l2a.frame.measList.Append(meas))
+                else
                 {
-                    fprintf(stderr,
-                        "Grid::ShiftForward: Error forming list for output\n");
-                    delete meas;
-                    return(0);
-                }
+                  if (! l2a.frame.measList.Append(meas))
+                  {
+                      fprintf(stderr,
+                          "Grid::ShiftForward: Error forming list for output\n");
+                      delete meas;
+                      return(0);
+                  }
+              }
+              spot_measList.FreeContents();
             }
 
             //----------------------------------//
