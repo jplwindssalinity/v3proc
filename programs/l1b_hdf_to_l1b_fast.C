@@ -39,7 +39,8 @@
 // AUTHOR
 //        Alex Fore (alexander.fore@jpl.nasa.gov)
 //----------------------------------------------------------------------
-//#define EXTEND_EPHEM
+
+
 //-----------------------//
 // Configuration Control //
 //-----------------------//
@@ -47,8 +48,11 @@
 static const char rcs_id[] =
     "@(#) $Id$";
 
-#define START_SLICE_INDEX    -4
 #define EXTEND_EPHEM
+#define START_SLICE_INDEX    -4
+
+#define QS_LANDMAP_FILE_KEYWORD 		"QS_LANDMAP_FILE"
+#define QS_ICEMAP_FILE_KEYWORD	 		"QS_ICEMAP_FILE"
 
 
 //----------//
@@ -73,7 +77,7 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "BufferedList.C"
 #include "SeaPac.h"
-
+#include "AttenMap.h"
 
 using std::list;
 using std::map;
@@ -104,20 +108,6 @@ template class std::map<string,string,Options::ltstr>;
 //-----------//
 
 const char* usage_array[] = { "config_file", 0 };
-
-//-----------------------//
-// FUNCTION DECLARATIONS //
-//-----------------------//
-void landFlagL1BFrame(L1BFrame* f, LandMap* l){
-  MeasSpotList* msl= &(f->spotList);
-  for(MeasSpot* spot=msl->GetHead();spot;spot=msl->GetNext()){
-    for(Meas* meas=spot->GetHead();meas;meas=spot->GetNext()){
-      double alt,gdlat,lon;
-      meas->centroid.GetAltLonGDLat(&alt,&lon,&gdlat);
-      meas->landFlag=l->IsLand(lon,gdlat);
-    }
-  }
-}
 
 int return_num_l1b_frames( int32 sd_id )
 {
@@ -430,6 +420,53 @@ void ExtendEphemerisEnds(char* infile, char* outfile, float timestep,
 #endif
 
 
+// reads KPC B and C from the HDF attributes.
+// They are indexed by the sigma0 mode flags that give the 
+// gatewidth and by the beam index.
+int read_kp_BC_from_attr( int32 sd_id, double* kp_B, double* kp_C ) 
+{
+  char kpc_B_attr_string[1024];
+  char kpc_C_attr_string[1024];
+  
+  // Read KPC B and KPC C
+  if( !init_string( kpc_B_attr_string,1024)                   || 
+      !init_string( kpc_C_attr_string,1024)                   ||
+      !read_attr(   sd_id, "slice_kpc_b", kpc_B_attr_string ) ||
+      !read_attr(   sd_id, "slice_kpc_c", kpc_C_attr_string ) ) {
+    fprintf(stderr,"In read_kp_BC_from_attr, Error reading HDF attributes!\n");
+    exit(1);
+  }
+  //printf("kpc_B_attr_string:\n%s\n",kpc_B_attr_string);
+  //printf("kpc_C_attr_string:\n%s\n",kpc_C_attr_string);
+  
+  char* kpc_B_pos_start = strtok( kpc_B_attr_string, "\n" );
+  
+  int size_1 = atoi( strtok( NULL, ","  ) );
+  int size_2 = atoi( strtok( NULL, "\n" ) );
+  
+  //printf("size_1, size_2: %d %d\n", size_1, size_2 );
+  for ( int ii = 0; ii < size_1; ++ii ) {
+    for ( int jj = 0; jj < size_2; ++jj ) {
+      kp_B[ii*2+jj] = atof( strtok( NULL, "\n" ) );
+      //printf( "kpc_B[%d*2+%d] = %g\n", ii, jj, kp_B[ii*2+jj] );
+    }
+  }
+  
+  char* kpc_C_pos_start = strtok( kpc_C_attr_string, "\n" );
+  
+  size_1 = atoi( strtok( NULL, "," ) );
+  size_2 = atoi( strtok( NULL, "\n" ) );
+
+  //printf("size_1, size_2: %d %d\n", size_1, size_2 );
+  for ( int ii = 0; ii < size_1; ++ii ) {
+    for ( int jj = 0; jj < size_2; ++jj ) {
+      kp_C[ii*2+jj] = atof( strtok( NULL, "\n" ) );
+      //printf( "kpc_C[%d*2+%d] = %g\n", ii, jj, kp_C[ii*2+jj] );
+    }
+  }
+  return(1);
+}
+
 //--------------//
 // MAIN PROGRAM //
 //--------------//
@@ -442,17 +479,22 @@ main(
     //-----------//
     // variables //
     //-----------//
-    const char*  command        = NULL;
-    char*        l1b_hdf_file   = NULL;
-    char*        output_file    = NULL;
-    char*        ephemeris_file = NULL;
-    char*        landmapfile    = NULL;
-    char*        config_file    = NULL;
+    const char*  command         = NULL;
+    char*        l1b_hdf_file    = NULL;
+    char*        output_file     = NULL;
+    char*        ephemeris_file  = NULL;
+    char*        config_file     = NULL;
+    char*        kprtable_file   = NULL;
+    char*        attenmap_file   = NULL;
+    char*        qslandmap_file  = NULL;
+    char*        qsicemap_file   = NULL;
     
     ConfigList   config_list;
-    LandMap      landmap;
-    
-    landmap.Initialize(NULL,0);
+    AttenMap     attenmap;
+    QSLandMap    qs_landmap;
+    QSIceMap     qs_icemap;
+    Kp           kp;
+    //QSKpr        qs_kpr;
 
     //------------------------//
     // parse the command line //
@@ -460,65 +502,101 @@ main(
 
     command = no_path(argv[0]);
 
-    if (argc != 2)
+    if( !( argc == 2) )
         usage(command, usage_array, 1);
         
     config_file = argv[1];
-    if (! config_list.Read(config_file))
-    {
+    
+    if (! config_list.Read(config_file)) {
         fprintf(stderr, "%s: error reading config file %s\n",
             command, config_file);
         exit(1);
     }
-
-    //---------------------//
+    
+    //----------------------------------//
     // check for config file parameters //
-    //---------------------//
-
+    //----------------------------------//
     config_list.DoNothingForMissingKeywords();
+        
+    if (! ConfigKp(&kp, &config_list)) {
+      fprintf(stderr, "%s: error configuring Kp\n", command);
+      exit(1);
+    }
+    
+    // Check for QS_LANDMAP and QS_ICEMAP keywords
+    qslandmap_file = config_list.Get(QS_LANDMAP_FILE_KEYWORD);
+    qsicemap_file  = config_list.Get(QS_ICEMAP_FILE_KEYWORD);
+    
+    if( qslandmap_file == NULL || qsicemap_file == NULL ) {
+      fprintf(stderr,"%s: Must specify QS_LANDMAP_FILE and QS_ICEMAP_FILE in config!\n",command);
+      exit(1);
+    }
 
+    fprintf(stdout,"%s: Using QS LANDMAP %s\n",command,qslandmap_file);
+    fprintf(stdout,"%s: Using QS ICEMAP %s\n",command,qsicemap_file);
+    qs_landmap.Read( qslandmap_file );
+    qs_icemap.Read( qsicemap_file );      
+    
+    // Check for ( ATTEN_MAP_FILE, USE_ATTEN_MAP ) keywords
+    int use_atten_map = 0;
+    attenmap_file = config_list.Get(ATTEN_MAP_FILE_KEYWORD);
+    
+    if( !config_list.GetInt(USE_ATTEN_MAP_KEYWORD,&use_atten_map) ) {
+      fprintf(stderr,"%s: Error reading from config file\n",command);
+      exit(1);
+    }
+
+    if( use_atten_map ) {
+      if( attenmap_file == NULL ) {
+        fprintf(stderr,"%s: Specify attenuation filename!\n",command);
+        exit(1);
+      }
+      fprintf(stdout,"%s: Using attenuation map: %s\n",command,attenmap_file);
+      attenmap.ReadWentzAttenMap( attenmap_file );
+    }
+ 
+    // Check for L1B_HDF_FILE keyword
     l1b_hdf_file = config_list.Get(L1B_HDF_FILE_KEYWORD);
     if (l1b_hdf_file == NULL) {
         fprintf(stderr, "%s: config file must specify L1B_HDF_FILE\n", command);
         exit(1);
-    } else {
-       printf("Using l1b HDF file: %s\n", l1b_hdf_file);
     }
+    printf("%s: Using l1b HDF file: %s\n", command, l1b_hdf_file);
     
+    // Check for L1B_FILE keyword
     output_file = config_list.Get(L1B_FILE_KEYWORD);
     if (output_file == NULL) {
         fprintf(stderr, "%s: config file must specify L1B_FILE\n", command);
         exit(1);
-    } else {
-       printf("Using l1b file: %s\n", output_file);
     }
+    printf("%s: Using l1b file: %s\n", command, output_file);
     
-    landmapfile = config_list.Get(LANDMAP_FILE_KEYWORD);
-    if (landmapfile != NULL) {
-       landmap.Initialize(landmapfile,1);
-       printf("Using landmap file: %s\n", landmapfile);
-    }
-
+    // Check for EPHEMERIS_FILE keyword
     ephemeris_file = config_list.Get(EPHEMERIS_FILE_KEYWORD);
-    if (ephemeris_file != NULL) {
-        printf("Using ephemeris file: %s\n", ephemeris_file);
+    if( ephemeris_file == NULL ) {
+        fprintf(stderr, "%s: config file must specify EPHEMERIS_FILE\n", command);
+        exit(1);
+    }    
+    printf("%s: Using ephemeris file: %s\n", command, ephemeris_file);
+    
+    
+    int do_composite = 0;
+    if( !config_list.GetInt("USE_COMPOSITING",&do_composite) ) {
+      fprintf(stderr,"%s: Error reading from config file\n",command);
+      exit(1);
     }
-    
-    L1B l1b;
-    
+    printf("%s: Use compositing flag: %d\n", command, do_composite);
+
+    //
+    //------Done reading from config file.-------------------------------------
+    //
+
+    L1B l1b;    
     // Prepare to write
     if (l1b.OpenForWriting(output_file) == 0) {
-        fprintf(stderr, "%s: cannot open l1b file %s for output\n",
-                            argv[0], output_file);
+        fprintf(stderr, "%s: cannot open l1b file %s for output\n", command, output_file);
         exit(1);
     }
-
-	if (ephemeris_file == NULL)
-	{
-	  fprintf(stderr, "%s: ERROR getting ephemeris filename from config file.\n",
-              command);
-      exit(1);
-	}
 	
 	// open ephem file for writing.
 	#ifdef EXTEND_EPHEM
@@ -526,8 +604,7 @@ main(
 	#else
 	FILE* eph_fp = fopen(ephemeris_file, "w");
 	#endif
-	if (eph_fp == NULL)
-	{
+	if (eph_fp == NULL) {
 	  fprintf(stderr, "%s: ERROR opening ephemeris file %s\n", command,
               ephemeris_file);
 	  exit(1);
@@ -541,8 +618,7 @@ main(
     
     sd_id = SDstart(l1b_hdf_file,DFACC_READ);    
     
-    if( sd_id < 0 )
-    {
+    if( sd_id < 0 ) {
       fprintf(stderr,"ERROR opening hdf file %s.\n",l1b_hdf_file);
       exit(1);
     }
@@ -550,8 +626,7 @@ main(
     int num_l1b_frames = return_num_l1b_frames( sd_id );
     printf("num_l1b_frames: %d\n",num_l1b_frames);
     
-    if( num_l1b_frames <= 0 )
-    {
+    if( num_l1b_frames <= 0 ) {
       fprintf(stderr,"Error obtaining # of L1B Frames from HDF file!\n");
       exit(1);
     }
@@ -579,9 +654,12 @@ main(
     uint16* slice_azimuth  = (uint16*)calloc(sizeof(uint16),num_l1b_frames*100*8);
     int16* slice_incidence = (int16*)calloc(sizeof(int16),num_l1b_frames*100*8);
     int16* slice_snr       = (int16*)calloc(sizeof(int16),num_l1b_frames*100*8);
+    int16* slice_kpc_a     = (int16*)calloc(sizeof(int16),num_l1b_frames*100*8);
     
-    unsigned int* slice_qual_flag = (unsigned int*)calloc(sizeof(unsigned int),num_l1b_frames*100);   
-        
+    uint16* sigma0_mode_flag      = (uint16*)calloc(sizeof(uint16),num_l1b_frames*100);
+    uint16* sigma0_qual_flag      = (uint16*)calloc(sizeof(uint16),num_l1b_frames*100);
+    unsigned int* slice_qual_flag = (unsigned int*)calloc(sizeof(unsigned int),num_l1b_frames*100);
+    
     char         frame_time_str[64];
 
     if( !read_SDS( sd_id, "x_pos", &x_pos[0] ) || 
@@ -611,6 +689,7 @@ main(
         !read_SDS( sd_id, "slice_azimuth",    &slice_azimuth[0]   )  ||
         !read_SDS( sd_id, "slice_incidence",  &slice_incidence[0] )  ||
         !read_SDS( sd_id, "slice_snr",        &slice_snr[0]       )  ||
+        !read_SDS( sd_id, "slice_kpc_a",      &slice_kpc_a[0]     )  ||
         !read_SDS( sd_id, "slice_lat",        &slice_lat[0]       )  || // uint16
         !read_SDS( sd_id, "slice_lon",        &slice_lon[0]       )  || // uint16        
         !read_SDS( sd_id, "slice_qual_flag",  &slice_qual_flag[0] ) )
@@ -619,15 +698,27 @@ main(
       exit(1);
     }  
     
-    for( int i_frame = 0; i_frame < num_l1b_frames; ++i_frame )
+    if( !read_SDS( sd_id, "sigma0_mode_flag", &sigma0_mode_flag[0] ) ||
+        !read_SDS( sd_id, "sigma0_qual_flag", &sigma0_qual_flag[0] ) )
     {
+      fprintf(stderr,"Error reading egg sigma0 flags from HDF file!\n");
+      exit(1);
+    }  
+
+    // read kpB kpC from HDF attributes
+    double kp_B[8*2], kp_C[8*2];
+    if( !read_kp_BC_from_attr( sd_id, &kp_B[0], &kp_C[0] ) ) {
+      fprintf(stderr,"Error readng KpB, kpC from HDF file!\n");
+      exit(1);
+    }
+        
+    for( int i_frame = 0; i_frame < num_l1b_frames; ++i_frame ) {
       // Read Frame times (put null in all chars since VSread won't null terminate
       // the chars that it reads).
       for ( int ii=0;ii<64;++ii)
         frame_time_str[ii] = NULL;
       
-      if(!read_frame_time( h_id, i_frame, &frame_time_str[0] ))
-      {
+      if(!read_frame_time( h_id, i_frame, &frame_time_str[0] )) {
         fprintf(stderr,"error reading frame time at frame %d\n",i_frame);
         exit(1);
       }
@@ -640,8 +731,7 @@ main(
       etime.FromCodeB("1970-001T00:00:00.000");
       double time_base = (double)etime.GetSec() + (double)etime.GetMs()/1000;
       
-      if(!etime.FromCodeB(frame_time_str)) 
-      {
+      if(!etime.FromCodeB(frame_time_str)) {
         fprintf(stderr, "l1b_hdf_to_l1b: Error: could not parse time string: %s\n",
     	        frame_time_str);
     	exit(1);
@@ -649,11 +739,22 @@ main(
       
       double frame_time = (double)etime.GetSec() + (double)etime.GetMs()/1000 
                         - time_base;
-      
+
       //printf("i_frame: %6d; frame_time: %s \n",i_frame,frame_time_str);
       
-      for( int i_pulse = 0; i_pulse < 100; ++i_pulse )
-      {
+      // Get seconds of year for attenuation map.  Note that strtok replaces the 
+      // tokens with NULL; frame_time_str is basically unusable after this point.
+      int year      = atoi( strtok( &frame_time_str[0], "-"  ) );
+      int doy       = atoi( strtok( NULL,               "T"  ) );
+      int hour      = atoi( strtok( NULL,               ":"  ) );
+      int minute    = atoi( strtok( NULL,               ":"  ) );
+      float seconds = atof( strtok( NULL,               "\0" ) );
+      
+      double sec_year = seconds+60.0*(float(minute)+60.0*(float(hour)+24.0*float(doy)));
+      
+      //printf("Frame time: %4.4d-%3.3d-%2.2d:%2.2d:%2.6f\n", year, doy, hour, minute, seconds );
+      
+      for( int i_pulse = 0; i_pulse < 100; ++i_pulse ) {
         
         MeasSpot* new_meas_spot = new MeasSpot();
         
@@ -677,9 +778,18 @@ main(
         for( int i_slice = 0; i_slice < 8; ++i_slice )
         {
            // Using 1d arrays 
-           int pulse_ind = i_frame * 100     + i_pulse;
+           int pulse_ind = i_frame * 100     + i_pulse;                   
            int slice_ind = i_frame * 100 * 8 + i_pulse * 8 + i_slice;
+
+           //Check that pulse is a measurement pulse.
+           //(bits 0,1 in state 0,0 => meas pulse)
+           if( sigma0_mode_flag[pulse_ind] & (uint16)0x3 )
+             continue;
            
+           //Check that egg sigma0 is useable.
+           if( sigma0_qual_flag[pulse_ind] & (uint16)0x1 ) // Sigma0 useable bit
+             continue;
+
            // Create unsigned ints for checking slice flags.
            unsigned int peak_gain_flag  = (unsigned int)(1 << (i_slice * 4 + 0) );
            unsigned int neg_sig0_flag   = (unsigned int)(1 << (i_slice * 4 + 1) );
@@ -687,73 +797,152 @@ main(
            unsigned int center_loc_flag = (unsigned int)(1 << (i_slice * 4 + 3) );
         
            // Skip observations with peak_gain_flag or center_loc_flag set.
-           if( slice_qual_flag[pulse_ind] & peak_gain_flag ||
+           if( slice_qual_flag[pulse_ind] & peak_gain_flag  ||
                slice_qual_flag[pulse_ind] & center_loc_flag )
              continue;
            
-           Meas* new_meas = new Meas();
+           // Done checking flags; create memory for this Meas object
+           Meas* new_meas = new Meas();           
            
-           // Set sigma0
-           new_meas->value   = pow(10.0,0.01*double(slice_sigma0[slice_ind])/10.0);
-
-           // Check for negative sigma-0
-           if ( slice_qual_flag[pulse_ind] & neg_sig0_flag )  
-             new_meas->value *= -1;
-
            // Set XK, EnSlice
            new_meas->XK      = pow(10.0,0.01*double(x_factor[slice_ind])/10.0);
-           float tmp_snr     = pow(10.0,0.01*double(slice_snr[slice_ind])/10.0);
-           new_meas->EnSlice = new_meas->value * new_meas->XK / tmp_snr;
+           new_meas->EnSlice = pow(10.0,0.01*double(slice_sigma0[slice_ind])/10.0)
+                             * pow(10.0,0.01*double(x_factor[slice_ind])/10.0)
+                             / pow(10.0,0.01*double(slice_snr[slice_ind])/10.0);
         
            // Set lon, lat of observation
            double tmp_lat = 1e-4*dtr*double(slice_lat[slice_ind]);
            double tmp_lon = 1e-4*dtr*double(slice_lon[slice_ind]) 
-                         / cos( cell_lat[pulse_ind]*dtr );
+                          / cos( cell_lat[pulse_ind]*dtr );
            
            tmp_lon += double(cell_lon[pulse_ind])*dtr;
            tmp_lat += double(cell_lat[pulse_ind])*dtr;
+           
+           // make longitude, latitude to be in range.
+           if( tmp_lon < 0       ) tmp_lon += two_pi;
+           if( tmp_lon >= two_pi ) tmp_lon -= two_pi;
+           if( tmp_lat < -pi     ) tmp_lat = -pi;
+           if( tmp_lat >  pi     ) tmp_lat =  pi;
            
            new_meas->centroid.SetAltLonGDLat( 0.0, tmp_lon, tmp_lat );
            
            // Set inc angle
            new_meas->incidenceAngle = 0.01*dtr*double(slice_incidence[slice_ind]);
+
+           // Get attenuation map value
+           float atten_dB = 0;
+           if( use_atten_map )
+             atten_dB = attenmap.GetNadirAtten( tmp_lon, tmp_lat, sec_year )
+                      / cos( new_meas->incidenceAngle );
+
+           float atten_lin = pow(10.0,0.1*atten_dB);
            
            // Set slice azimuth angle & change for QSCATsim convention
            float northAzimuth       = 0.01*dtr*double(slice_azimuth[slice_ind]);
-           new_meas->eastAzimuth    = (450.0*dtr - northAzimuth);           
+           new_meas->eastAzimuth    = (450.0*dtr - northAzimuth);
            if (new_meas->eastAzimuth >= two_pi) new_meas->eastAzimuth -= two_pi;
            
            // Set scanAngle
            new_meas->scanAngle = 0.01*dtr*double(antenna_azimuth[pulse_ind]);
            //if (new_meas->scanAngle < 0) new_meas->scanAngle += two_pi;
-           
-           // Set A,B,C kpc coef
-           double nLooks = 10.0;
-           double s0NE   = new_meas->EnSlice / new_meas->XK;
-           
-           new_meas->A = 1.0+1.0/nLooks;
-           new_meas->B = fabs(2.0*s0NE/nLooks);
-           new_meas->C = fabs(s0NE*s0NE/nLooks);
-           
+
            // Set measurement type depending on inc angle
-           if (new_meas->incidenceAngle < 50*dtr) 
-           {
+           if (new_meas->incidenceAngle < 50*dtr) {
     	     new_meas->beamIdx = 0;
 		     new_meas->measType = Meas::HH_MEAS_TYPE;
-           }
-           else
-           {
+           } 
+           else {
     	     new_meas->beamIdx = 1;
     	     new_meas->measType = Meas::VV_MEAS_TYPE;
-    	   }
+    	   }           
+
+           // Get sigma-0 Mode from flags
+           // Sigma0 mode is index into kpr table
+           // gate width flags are bits (6,7,8).
+           uint16 gatewidth = (sigma0_mode_flag[pulse_ind] & (uint16)0x1C0 ) >> 6;
            
-           // Set startslice, numslices
-           new_meas->numSlices     = -1; // as per BWS discussion.
-           new_meas->startSliceIdx = START_SLICE_INDEX + i_slice;
+           if( gatewidth != (uint16)3) {
+             fprintf(stderr,"%s: Gatewidth not equal to 3!\n",command);
+             exit(1);
+           }
            
-           // startSliceIdx == [-4, -3, -2, -1, 1, 2, 3, 4] (no zero).
-           // as per discussion with BWS.  Thus add one if(i_slice >= 0).
+           // Set sigma0 + correct for attenuation if !do_composote
+           if( do_composite )
+             new_meas->value   = pow(10.0,0.01*double(slice_sigma0[slice_ind])/10.0);
+           else
+             new_meas->value   = pow(10.0,(atten_dB+0.01*double(slice_sigma0[slice_ind]))/10.0);
+
+           // Check for negative sigma-0
+           if ( slice_qual_flag[pulse_ind] & neg_sig0_flag )  
+             new_meas->value *= -1;
+                      
+           // Set starting slice number of best 8 slices based on quality flags.
+           uint16 slice_shift_bits = (sigma0_qual_flag[pulse_ind] & (uint16)0xC00) >> 10;
+           if( slice_shift_bits == 0 )      // slices 0-7 of 0-9 used
+             new_meas->startSliceIdx = i_slice;   
+           else if( slice_shift_bits == 1 ) // slices 1-8 of 0-9 used
+             new_meas->startSliceIdx = i_slice + 1; 
+           else if( slice_shift_bits == 2 ) // slices 2-9 of 0-9 used
+             new_meas->startSliceIdx = i_slice + 2; 
+           else {
+             fprintf(stderr,"Unexpected value of slice shift flags!\n");
+             exit(1);
+           }
+           //printf("pulse_ind, slice_shift_bits: %d %x\n", pulse_ind, slice_shift_bits );
+           
+           new_meas->startSliceIdx -= 5;
            if( new_meas->startSliceIdx >= 0 ) new_meas->startSliceIdx += 1;
+           
+           // Get Land map value
+           new_meas->landFlag = 0;
+           if( qs_landmap.IsLand(tmp_lon,tmp_lat,1) )
+             new_meas->landFlag += 1; // bit 0 for land
+           
+           // Get Ice map value
+           if( qs_icemap.IsIce(tmp_lon,tmp_lat,new_meas->beamIdx) )
+             new_meas->landFlag += 2; // bit 1 for ice
+           
+           // Set numSlices, A, B, and C terms depending on if USE_COMPOSITING is set or not
+           if( do_composite == 0 ) {
+             // Set numslices == -1 to indicate software to 
+             // treat A,B,C as kp_alpha, kp_beta, kp_gamma.
+             new_meas->numSlices = -1;
+             double kprs2 = 0.0;
+             if (! kp.GetKprs2(new_meas, &kprs2)) {
+               fprintf(stderr, "%s: Error computing Kprs2\n",command);
+               exit(1);
+             }
+             
+             double kpri2 = 0.0;
+             if( !kp.GetKpri2( &kpri2) ) {
+               fprintf(stderr,"%s: Error computing Kpri2\n",command);
+               exit(1);
+             }
+
+             // compute sigma-0 over SNR ratio.
+             double sos = 0.01*double(slice_sigma0[slice_ind])
+                        - 0.01*double(slice_snr[slice_ind]);
+             sos        = pow( 10.0, sos/10.0 ); 
+             
+             double kpr2      = 1 + kprs2 + kpri2;
+             double kp_alpha  = (1+double(1e-4*slice_kpc_a[slice_ind])) * kpr2;
+             double kp_beta   = kp_B[gatewidth*2+new_meas->beamIdx]     * kpr2 * sos;
+             double kp_gamma  = kp_C[gatewidth*2+new_meas->beamIdx]     * kpr2 * sos * sos;
+              
+             // Set kp alpha, beta, gamma and correct for attenuation
+             new_meas->A = 1 + ( kp_alpha - 1 ) * atten_lin * atten_lin;
+             new_meas->B = kp_beta              * atten_lin * atten_lin;
+             new_meas->C = kp_gamma             * atten_lin * atten_lin;           
+           }
+           else {
+             // Set numslices == 1 to indicate software to treat A,B,C as kp_a, kp_b, kp_c.
+             new_meas->numSlices = 1; 
+           
+             // Set A, B, C for later compositing.
+             new_meas->A = double(1e-4*slice_kpc_a[slice_ind]);
+             new_meas->B = kp_B[gatewidth*2+new_meas->beamIdx];
+             new_meas->C = kp_C[gatewidth*2+new_meas->beamIdx];
+           }
            
            // Stick this meas in the measSpot
            new_meas_spot->Append(new_meas);
@@ -776,19 +965,14 @@ main(
       l1b.frame.num_pulses_per_frame = 100;
       l1b.frame.num_slices_per_pulse = 8;
       
-      // Put in the land flag.
-      landFlagL1BFrame(&(l1b.frame),&landmap);
-
       // Write this L1BFrame
-      if( ! l1b.WriteDataRec() )
-      {
+      if( ! l1b.WriteDataRec() ) {
         fprintf(stderr, "%s: writing to %s failed.\n", command, ephemeris_file );
         return (1);
       }
       
-      if( i_frame % 100 == 0 )
+      if( i_frame % 1024 == 0 )
         printf("Wrote %d frames of %d\n", i_frame, num_l1b_frames);
-      
     }
     
     fclose(eph_fp);
@@ -813,6 +997,9 @@ main(
     free(slice_azimuth);
     free(slice_incidence);
     free(slice_snr);
+    free(slice_kpc_a);
+    free(sigma0_mode_flag);
+    free(sigma0_qual_flag);
     
     #ifdef EXTEND_EPHEM
     float extension_step=1; // units are seconds
