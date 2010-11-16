@@ -42,6 +42,7 @@ GMF::GMF()
     retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), retrieveOverIce(0),
     smartNudgeFlag(0), retrieveUsingCriteriaFlag(1), minimumAzimuthDiversity(20.0*dtr), cBandWeight(1.0), kuBandWeight(1.0),objectiveFunctionMethod(0), 
     useObjectiveFunctionScaleFactor(0), objectiveFunctionScaleFactor(9.66), 
+    S3ProbabilityThreshold(0.8),
     _phiCount(0), _phiStepSize(0.0), _spdTol(DEFAULT_SPD_TOL), _sepAngle(DEFAULT_SEP_ANGLE),
     _smoothAngle(DEFAULT_SMOOTH_ANGLE), _maxSolutions(DEFAULT_MAX_SOLUTIONS),
     _bestSpd(NULL), _bestObj(NULL), _copyObj(NULL), _speed_buffer(NULL),
@@ -5881,7 +5882,6 @@ GMF::RetrieveWinds_CoastSpecial(
 // GMF::RetrieveWinds_S3 //
 //-----------------------//
 
-#define S3_PROB_THRESHOLD  0.8
 #define S3_MSE_THRESHOLD   100.0*dtr*dtr
 
 int
@@ -5961,7 +5961,7 @@ GMF::RetrieveWinds_S3(
     //-------------------------------------------//
 
     if (! s4_flag) {
-        if (! BuildDirectionRanges(wvc, S3_PROB_THRESHOLD))
+        if (! BuildDirectionRanges(wvc, S3ProbabilityThreshold))
             return(0);
     }
 

@@ -193,6 +193,7 @@ public:
     int  objectiveFunctionMethod;
     int  useObjectiveFunctionScaleFactor;
     float objectiveFunctionScaleFactor;
+    float S3ProbabilityThreshold;
     
     //protected:
 

@@ -2027,6 +2027,13 @@ ConfigGMF(
     gmf->objectiveFunctionScaleFactor = tmp_float;
     config_list->ExitForMissingKeywords();
     
+    
+    // Config S3 probability threshold value -- AGF 11/16/2010
+    if( !config_list->GetFloat(S3_PROBABILITY_THRESHOLD_KEYWORD, &tmp_float)) {
+      return(0);
+    }
+    gmf->S3ProbabilityThreshold = tmp_float;
+    
     //------------------------//
     // configure nudging flag //
     //------------------------//
