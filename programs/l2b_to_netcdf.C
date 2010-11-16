@@ -47,6 +47,7 @@ static const char rcs_id[] =
 #include "BufferedList.C"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "Constants.h"
 
 
 //--------//
@@ -54,6 +55,9 @@ static const char rcs_id[] =
 //--------//
 #define STRINGIFY(x) #x
 #define S(x) STRINGIFY(x)
+
+#define RAD_TO_DEG(x) ((x)*180.0f/M_PI)
+#define DEG_TO_RAD(x) ((x)*M_PI/180.0f)
 
 #ifdef ZERO_FILL
     #define FILL(x, y) (x)
@@ -173,8 +177,20 @@ typedef struct {
     attribute *attrs;
 } netcdf_variable;
 
-int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config);
+typedef struct {
+    float lambda_0;
+    float inclination;
+    float rev_period;
+    int xt_steps;
+    double at_res;
+    double xt_res;
+} latlon_config;
+
+int parse_commandline(int argc, char **argv, 
+        l2b_to_netcdf_config *config);
 int copy_l2bhdf_attributes(int ncid, int hdfid);
+void bin_to_latlon(int at_ind, int ct_ind, 
+        const latlon_config *config, float *lat, float *lon);
 
 //--------------//
 // MAIN PROGRAM //
@@ -182,7 +198,7 @@ int copy_l2bhdf_attributes(int ncid, int hdfid);
 
 int main(int argc, char **argv) {
 
-    l2b_to_netcdf_config config;
+    l2b_to_netcdf_config run_config;
     L2B l2b;
 
     /* File IDs */
@@ -211,13 +227,13 @@ int main(int argc, char **argv) {
     char time_format[] = "YYYYDDDTHH:MM:SS.SSS";
 
     // parse the command line
-    if (parse_commandline(argc, argv, &config) != 0) {
+    if (parse_commandline(argc, argv, &run_config) != 0) {
         return -1;
     }
 
     // open the input files
-    ERR(l2b.OpenForReading(config.l2b_file) == 0);
-    HDFERR((l2bhdf_fid = Hopen(config.l2bhdf_file, DFACC_READ, 0)) == FAIL);
+    ERR(l2b.OpenForReading(run_config.l2b_file) == 0);
+    HDFERR((l2bhdf_fid = Hopen(run_config.l2bhdf_file, DFACC_READ, 0)) == FAIL);
 
     ERR(l2b.ReadHeader() == 0); 
     ERR(l2b.ReadDataRec() == 0);
@@ -238,7 +254,7 @@ int main(int argc, char **argv) {
     max_ambiguities = l2b.frame.swath.GetMaxAmbiguityCount();
 
     // Initialize the NetCDF DB
-    NCERR(nc_create(config.l2bc_file, NC_WRITE, &ncid));
+    NCERR(nc_create(run_config.l2bc_file, NC_WRITE, &ncid));
 
     ERR(copy_l2bhdf_attributes(ncid, l2bhdf_fid) != 0);
 
@@ -252,7 +268,7 @@ int main(int argc, char **argv) {
     NCERR(nc_def_dim(ncid, "time_strlength", 
                 (size_t)strlen(time_format), 
                 &time_strlen_dim_id));
-    if (config.extended) {
+    if (run_config.extended) {
         NCERR(nc_def_dim(ncid, "ambiguities",
                 (size_t)max_ambiguities, &ambiguities_dim_id));
     }
@@ -621,7 +637,7 @@ int main(int argc, char **argv) {
     varlist[FLAGS].attrs[num_standard_attrs + 5].value.c = VALID_MASK; 
 
     
-    if (config.extended) { 
+    if (run_config.extended) { 
         varlist[NUDGE_SPEED].name  = "nudge_speed";
         varlist[NUDGE_SPEED].type  = NC_FLOAT;
         varlist[NUDGE_SPEED].ndims = 2;
@@ -896,7 +912,7 @@ int main(int argc, char **argv) {
 
 
 
-    for (int i = 0; i < (config.extended ? num_variables : 
+    for (int i = 0; i < (run_config.extended ? num_variables : 
                 first_extended_variable); i++) {
         NCERR(nc_def_var(ncid, varlist[i].name, varlist[i].type,
                    varlist[i].ndims, varlist[i].dims, &varlist[i].id));
@@ -940,10 +956,17 @@ int main(int argc, char **argv) {
     NCERR(nc_put_att_int  (ncid, NC_GLOBAL, "version_id_minor", 
                 NC_INT,   (size_t)(1), &l2b.header.version_id_minor));
     NCERR(nc_put_att_text (ncid, NC_GLOBAL, "source_file",
-                strlen(config.l1bhdf_file), config.l1bhdf_file));
+                strlen(run_config.l1bhdf_file), run_config.l1bhdf_file));
 
     NCERR(nc_enddef(ncid));
 
+    latlon_config orbit_config;
+    NCERR(nc_get_att_float(ncid, NC_GLOBAL, "EquatorCrossingLongitude", &orbit_config.lambda_0));
+    NCERR(nc_get_att_float(ncid, NC_GLOBAL, "orbit_inclination", &orbit_config.inclination));
+    NCERR(nc_get_att_float(ncid, NC_GLOBAL, "rev_orbit_period", &orbit_config.rev_period));
+    orbit_config.xt_steps = 2*l2b.header.zeroIndex;
+    orbit_config.at_res = l2b.header.alongTrackResolution;
+    orbit_config.xt_res = l2b.header.crossTrackResolution;
 
     /* Set up for grabbing timestamp data later */
     HDFERR(Vstart(l2bhdf_fid) == FAIL);
@@ -981,13 +1004,11 @@ int main(int argc, char **argv) {
             NCERR(nc_put_var1_float(ncid, varlist[STRESS_CURL].id, idx, 
                         &varlist[STRESS_CURL].attrs[FILL_VALUE].value.f));
     
-
             /* && wvc->selected != NULL */
             if (wvc != NULL && wvc->selected != NULL) {
                 flags = VALID_MASK;
                 flags |= wvc->rainFlagBits    << 0;
                 flags |= wvc->landiceFlagBits << 4;
-
 
                 NCERR(nc_put_var1_float(ncid, varlist[LATITUDE].id, idx, 
                             &wvc->lonLat.latitude));
@@ -1010,7 +1031,7 @@ int main(int argc, char **argv) {
                         &flags));
 
                 /* Extended variables */
-                if (config.extended) {
+                if (run_config.extended) {
                     NCERR(nc_put_var1_float(ncid, varlist[SEL_OBJ].id, idx,
                                 &wvc->selected->obj));
 
@@ -1069,10 +1090,13 @@ int main(int argc, char **argv) {
                 }    
             } else {
             
-                NCERR(nc_put_var1_float(ncid, varlist[LATITUDE].id, idx, 
-                            &varlist[LATITUDE].attrs[FILL_VALUE].value.f));
-                NCERR(nc_put_var1_float(ncid, varlist[LONGITUDE].id, idx, 
-                            &varlist[LONGITUDE].attrs[FILL_VALUE].value.f));
+                float new_lat, new_lon;
+            
+                bin_to_latlon(idx[0], idx[1], &orbit_config, &new_lat, &new_lon);
+
+                NCERR(nc_put_var1_float(ncid, varlist[LATITUDE].id, idx, &new_lat));
+                NCERR(nc_put_var1_float(ncid, varlist[LONGITUDE].id, idx, &new_lon));
+
                 NCERR(nc_put_var1_float(ncid, varlist[SEL_SPEED].id, idx, 
                             &varlist[SEL_SPEED].attrs[FILL_VALUE].value.f));
                 NCERR(nc_put_var1_float(ncid, varlist[SEL_DIRECTION].id, idx, 
@@ -1083,7 +1107,7 @@ int main(int argc, char **argv) {
                             &varlist[FLAGS].attrs[FILL_VALUE].value.c));
 
                 /* Extended variables */
-                if (config.extended) {
+                if (run_config.extended) {
                     NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
                                 &varlist[NUDGE_SPEED].attrs[FILL_VALUE].value.f));
                     NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
@@ -1238,7 +1262,7 @@ int copy_l2bhdf_attributes(int ncid, int hdfid) {
 
             NCERR(nc_put_att_text(ncid, NC_GLOBAL, hdf_attributes[i],
                     strlen(token), token));
-        } else if (strcmp(token, "float") == 0) {
+        } else if (strcmp(token, "int") == 0) {
             ERR((token = strtok(NULL, "\n")) == NULL);
             ERR((token = strtok(NULL, "\n")) == NULL);
 
@@ -1246,7 +1270,7 @@ int copy_l2bhdf_attributes(int ncid, int hdfid) {
             NCERR(nc_put_att_int(ncid, NC_GLOBAL, hdf_attributes[i],
                     NC_INT, (size_t)(1), &ival));
             
-        } else if (strcmp(token, "int") == 0) {
+        } else if (strcmp(token, "float") == 0) {
             ERR((token = strtok(NULL, "\n")) == NULL);
             ERR((token = strtok(NULL, "\n")) == NULL);
 
@@ -1266,4 +1290,64 @@ int copy_l2bhdf_attributes(int ncid, int hdfid) {
     HDFERR(Vend(hdfid) == FAIL);
 
     return 0;
+}
+
+void bin_to_latlon(int at_ind, int ct_ind,
+        const latlon_config *config, float *lat, float *lon) {
+
+    /* Utilizes e2, r1_earth from Constants.h */
+    const static double P1 = 60*1440.0f;
+
+    const static double P2 = config->rev_period;
+    const double inc = DEG_TO_RAD(config->inclination);
+    const int    r_n_xt_bins = config->xt_steps;
+    const double at_res = config->at_res;
+    const double xt_res = config->xt_res;
+
+    const double lambda_0 = DEG_TO_RAD(config->lambda_0);
+
+    const double r_n_at_bins = 1624.0 * 25.0 / at_res;
+    const double atrack_bin_const = two_pi/r_n_at_bins;
+    const double xtrack_bin_const = xt_res/r1_earth;
+
+    double lambda, lambda_t, lambda_pp;
+    double phi, phi_pp;
+    double Q, U, V, V1, V2;
+
+    double sin_phi_pp, sin_lambda_pp;
+    double sin_phi_pp2, sin_lambda_pp2;
+    double sini, cosi;
+
+    sini = sinf(inc);
+    cosi = cosf(inc);
+
+    lambda_pp = (at_ind + 0.5)*atrack_bin_const - pi_over_two;
+    phi_pp = -(ct_ind - (r_n_xt_bins/2 - 0.5))*xtrack_bin_const;
+
+    sin_phi_pp = sinf(phi_pp);
+    sin_phi_pp2 = sin_phi_pp*sin_phi_pp;
+    sin_lambda_pp = sinf(lambda_pp);
+    sin_lambda_pp2 = sin_lambda_pp*sin_lambda_pp;
+    
+    Q = e2*sini*sini/(1 - e2);
+    U = e2*cosi*cosi/(1 - e2);
+
+    V1 = (1 - sin_phi_pp2/(1 - e2))*cosi*sin_lambda_pp;
+    V2 = (sini*sin_phi_pp*sqrtf((1 + Q*sin_lambda_pp2)*(1 - 
+                    sin_phi_pp2) - U*sin_phi_pp2));
+
+    V = (V1 - V2)/(1 - sin_phi_pp2*(1 + U));
+
+    lambda_t = atan2f(V, cosf(lambda_pp));
+    lambda = lambda_t - (P2/P1)*lambda_pp + lambda_0;
+
+    lambda += (lambda < 0)       ?  two_pi : 
+              (lambda >= two_pi) ? -two_pi :
+                                    0.0f;
+    phi = atanf((tanf(lambda_pp)*cosf(lambda_t) - 
+                cosf(inc)*sinf(lambda_t))/((1 - e2)*
+                sinf(inc)));
+
+    *lon = lambda;
+    *lat = phi;
 }
