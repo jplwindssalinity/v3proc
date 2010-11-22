@@ -368,7 +368,7 @@ int main(int argc, char **argv) {
     varlist[SEL_SPEED].attrs[VALID_MAX].value.f = 100.0f;
     varlist[SEL_SPEED].attrs[LONG_NAME].name = "long_name";
     varlist[SEL_SPEED].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[SEL_SPEED].attrs[LONG_NAME].value.s = "wind_speed";
+    varlist[SEL_SPEED].attrs[LONG_NAME].value.s = "equivalent neutral wind-speed at 10 m";
     varlist[SEL_SPEED].attrs[num_standard_attrs].name = "units";
     varlist[SEL_SPEED].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[SEL_SPEED].attrs[num_standard_attrs].value.s = "m s-1";
@@ -396,7 +396,7 @@ int main(int argc, char **argv) {
     varlist[SEL_DIRECTION].attrs[VALID_MAX].value.f = 360.0f;
     varlist[SEL_DIRECTION].attrs[LONG_NAME].name = "long_name";
     varlist[SEL_DIRECTION].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[SEL_DIRECTION].attrs[LONG_NAME].value.s = "wind_to_direction";
+    varlist[SEL_DIRECTION].attrs[LONG_NAME].value.s = "equivalent neutral wind direction at 10 m";
     varlist[SEL_DIRECTION].attrs[num_standard_attrs].name = "units";
     varlist[SEL_DIRECTION].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[SEL_DIRECTION].attrs[num_standard_attrs].value.s = "degrees";
@@ -424,7 +424,7 @@ int main(int argc, char **argv) {
     varlist[RAIN_IMPACT].attrs[VALID_MAX].value.f = HUGE_VALF;
     varlist[RAIN_IMPACT].attrs[LONG_NAME].name = "long_name";
     varlist[RAIN_IMPACT].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[RAIN_IMPACT].attrs[LONG_NAME].value.s = "rain_impact";
+    varlist[RAIN_IMPACT].attrs[LONG_NAME].value.s = "rain-impact";
     varlist[RAIN_IMPACT].attrs[num_standard_attrs].name = "units";
     varlist[RAIN_IMPACT].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[RAIN_IMPACT].attrs[num_standard_attrs].value.s = "1";
@@ -449,7 +449,7 @@ int main(int argc, char **argv) {
     varlist[WIND_DIVERGENCE].attrs[VALID_MAX].value.f = 1.0f;
     varlist[WIND_DIVERGENCE].attrs[LONG_NAME].name = "long_name";
     varlist[WIND_DIVERGENCE].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[WIND_DIVERGENCE].attrs[LONG_NAME].value.s = "wind_divergence";
+    varlist[WIND_DIVERGENCE].attrs[LONG_NAME].value.s = "equivalent neutral wind-divergence at 10 m";
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].name = "units";
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].value.s = "s-1";
@@ -477,7 +477,7 @@ int main(int argc, char **argv) {
     varlist[WIND_CURL].attrs[VALID_MAX].value.f = 1.0f;
     varlist[WIND_CURL].attrs[LONG_NAME].name = "long_name";
     varlist[WIND_CURL].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[WIND_CURL].attrs[LONG_NAME].value.s = "wind_curl";
+    varlist[WIND_CURL].attrs[LONG_NAME].value.s = "equivalent neutral wind-curl at 10 m";
     varlist[WIND_CURL].attrs[num_standard_attrs].name = "units";
     varlist[WIND_CURL].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[WIND_CURL].attrs[num_standard_attrs].value.s = "s-1";
@@ -505,7 +505,7 @@ int main(int argc, char **argv) {
     varlist[WIND_STRESS].attrs[VALID_MAX].value.f = HUGE_VALF;
     varlist[WIND_STRESS].attrs[LONG_NAME].name = "long_name";
     varlist[WIND_STRESS].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[WIND_STRESS].attrs[LONG_NAME].value.s = "wind_stress";
+    varlist[WIND_STRESS].attrs[LONG_NAME].value.s = "equivalent neutral wind-stress";
     varlist[WIND_STRESS].attrs[num_standard_attrs].name = "units";
     varlist[WIND_STRESS].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[WIND_STRESS].attrs[num_standard_attrs].value.s = "s-1";
@@ -534,7 +534,7 @@ int main(int argc, char **argv) {
     varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].value.f = HUGE_VALF;
     varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].name = "long_name";
     varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].value.s = "stress_divergence";
+    varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].value.s = "equivalent neutral wind-stress-divergence";
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].name = "units";
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].value.s = "s-1";
@@ -562,7 +562,7 @@ int main(int argc, char **argv) {
     varlist[STRESS_CURL].attrs[VALID_MAX].value.f = HUGE_VALF;
     varlist[STRESS_CURL].attrs[LONG_NAME].name = "long_name";
     varlist[STRESS_CURL].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[STRESS_CURL].attrs[LONG_NAME].value.s = "stress_curl";
+    varlist[STRESS_CURL].attrs[LONG_NAME].value.s = "equivalent neutral wind-stress-curl";
     varlist[STRESS_CURL].attrs[num_standard_attrs].name = "units";
     varlist[STRESS_CURL].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[STRESS_CURL].attrs[num_standard_attrs].value.s = "s-1";
@@ -579,18 +579,18 @@ int main(int argc, char **argv) {
                 malloc(varlist[TIME].nattrs * 
                     (sizeof *varlist[TIME].attrs))) == NULL);
 
-    varlist[TIME].attrs[FILL_VALUE].name = "FillValue";
+    varlist[TIME].attrs[FILL_VALUE].name = NULL;
     varlist[TIME].attrs[FILL_VALUE].type = varlist[TIME].type;
-    varlist[TIME].attrs[FILL_VALUE].value.s = "";
-    varlist[TIME].attrs[VALID_MIN].name = "valid_min";
+    varlist[TIME].attrs[FILL_VALUE].value.s = NULL;
+    varlist[TIME].attrs[VALID_MIN].name = NULL;
     varlist[TIME].attrs[VALID_MIN].type = varlist[TIME].type;
-    varlist[TIME].attrs[VALID_MIN].value.s = "";
-    varlist[TIME].attrs[VALID_MAX].name = "valid_max";
+    varlist[TIME].attrs[VALID_MIN].value.s = NULL;
+    varlist[TIME].attrs[VALID_MAX].name = NULL;
     varlist[TIME].attrs[VALID_MAX].type = varlist[TIME].type;
-    varlist[TIME].attrs[VALID_MAX].value.s = "";
+    varlist[TIME].attrs[VALID_MAX].value.s = NULL;
     varlist[TIME].attrs[LONG_NAME].name = "long_name";
     varlist[TIME].attrs[LONG_NAME].type = varlist[TIME].type;
-    varlist[TIME].attrs[LONG_NAME].value.s = "time";
+    varlist[TIME].attrs[LONG_NAME].value.s = "date and time";
     varlist[TIME].attrs[num_standard_attrs].name = "units";
     varlist[TIME].attrs[num_standard_attrs].type = varlist[TIME].type;
     varlist[TIME].attrs[num_standard_attrs].value.s = time_format;
@@ -919,27 +919,29 @@ int main(int argc, char **argv) {
 
         for (int j = 0; j < varlist[i].nattrs; j++) {
             attribute *attr = &varlist[i].attrs[j];
-            switch (attr->type) {
-                case NC_CHAR:
-                    NCERR(nc_put_att_text(ncid, varlist[i].id, attr->name,
-                                strlen(attr->value.s), (attr->value.s)));
-                    break;
-                case NC_INT:
-                    NCERR(nc_put_att_int(ncid, varlist[i].id, attr->name, 
-                                attr->type, (size_t)(1), &(attr->value.i)));
-                    break;
-                case NC_FLOAT:
-                    NCERR(nc_put_att_float(ncid, varlist[i].id, attr->name, 
-                                attr->type, (size_t)(1), &(attr->value.f)));
-                    break;
-                case NC_BYTE:
-                    NCERR(nc_put_att_uchar(ncid, varlist[i].id, attr->name, 
-                                attr->type, (size_t)(1), &(attr->value.c)));
-                    break;
-                default:
-                    fprintf(stderr, "Incorrect attribute type: %d\n", 
-                            attr->type);
-                    exit(EXIT_FAILURE);
+            if (attr->name != NULL) {
+                switch (attr->type) {
+                    case NC_CHAR:
+                        NCERR(nc_put_att_text(ncid, varlist[i].id, attr->name,
+                                    strlen(attr->value.s), (attr->value.s)));
+                        break;
+                    case NC_INT:
+                        NCERR(nc_put_att_int(ncid, varlist[i].id, attr->name, 
+                                    attr->type, (size_t)(1), &(attr->value.i)));
+                        break;
+                    case NC_FLOAT:
+                        NCERR(nc_put_att_float(ncid, varlist[i].id, attr->name, 
+                                    attr->type, (size_t)(1), &(attr->value.f)));
+                        break;
+                    case NC_BYTE:
+                        NCERR(nc_put_att_uchar(ncid, varlist[i].id, attr->name, 
+                                    attr->type, (size_t)(1), &(attr->value.c)));
+                        break;
+                    default:
+                        fprintf(stderr, "Incorrect attribute type: %d\n", 
+                                attr->type);
+                        exit(EXIT_FAILURE);
+                }
             }
         }
     }
@@ -1220,9 +1222,9 @@ int copy_l2bhdf_attributes(int ncid, int hdfid) {
     float fval;
     
     const char *hdf_attributes[] = {
-        "LongName", "ShortName", "producer_agency", "producer_institution",
+        "producer_agency", "producer_institution",
         "PlatformType", "InstrumentShortName", "PlatformLongName",
-        "PlatformShortName", "project_id", "data_format_type",
+        "PlatformShortName", "project_id",
         "QAPercentOutOfBoundsData", "QAPercentMissingData", "build_id",
         "ProductionDateTime", "sis_id", "OrbitParametersPointer",
         "HDF_version_id", "OperationMode", "StartOrbitNumber",
@@ -1235,6 +1237,20 @@ int copy_l2bhdf_attributes(int ncid, int hdfid) {
         "ParameterName", "l2b_algorithm_descriptor", "InputPointer",
         "ancillary_data_descriptors", "QAGranulePointer", "GranulePointer"
     };
+
+    const char *local_attributes[][2] = {
+        {"LongName", "QuikSCAT Level 2B Ocean Wind and Stress Vectors in 12.5km Slice Composites"},
+        {"ShortName", "QSCAT_LEVEL_2B_OWSV_COMP_12"},
+        {"data_format_type", "NetCDF Classic"},
+        {"Conventions", "CF 1.4"}
+    };
+
+    for (i = 0; i < (sizeof local_attributes)/(sizeof *local_attributes); i++) {
+            NCERR(nc_put_att_text(ncid, NC_GLOBAL, 
+                        local_attributes[i][0], 
+                        strlen(local_attributes[i][1]),
+                        local_attributes[i][1]));
+    }
 
     HDFERR(Vstart(hdfid) == FAIL);
 
