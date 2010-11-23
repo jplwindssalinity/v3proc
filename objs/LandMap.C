@@ -8,6 +8,7 @@ static const char rcs_id_landmap_c[] =
 
 #include <math.h>
 #include <strings.h>
+#include <string.h>
 #include "Array.h"
 #include "Constants.h"
 #include "LandMap.h"
