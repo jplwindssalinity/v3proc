@@ -45,19 +45,20 @@ L2AToL2B::~L2AToL2B()
     return;
 }
 
+
 // this is fragile. It assumes the L2A file and the ECMWF (E2B) array file 
-// are both the proper ISRO 50 km size
+// are both the proper QS 12.5 km size
 int
-L2AToL2B::ReadISROECMWFNudgeArray(char* filename){
+L2AToL2B::ReadQSCP12ECMWFNudgeArray(char* filename){
   FILE * ifp=fopen(filename,"r");
   if(ifp==NULL){
-    fprintf(stderr,"L2AToL2B::ReadNudgeArray cannot open file %s\n",filename);
+    fprintf(stderr,"L2AToL2B::ReadQSCP12ECMWFNudgeArray cannot open file %s\n",filename);
     exit(1);
   }
-  arrayNudgeNcti=36;
-  arrayNudgeNati=860;
+  arrayNudgeNcti=152;
+  arrayNudgeNati=3248;
   if(arrayNudgeSpd!=NULL){
-    fprintf(stderr,"L2AToL2B::ReadNudgeArray ran twice!\n");
+    fprintf(stderr,"L2AToL2B::ReadNudgeArray or a variant ran twice!\n");
     exit(1);
   }
   arrayNudgeSpd=(float**) make_array(sizeof(float),2,arrayNudgeNati,arrayNudgeNcti);
@@ -75,7 +76,7 @@ L2AToL2B::ReadISROECMWFNudgeArray(char* filename){
   if( ! read_array(ifp,&arrayNudgeSpd[0],sizeof(float),2,nati,ncti) ||
       ! read_array(ifp,&arrayNudgeDir[0],sizeof(float),2,nati,ncti)){
 
-    fprintf(stderr,"L2AToL2B::ReadNudgeArray error reading arrays from file %s\n",filename);
+    fprintf(stderr,"L2AToL2B::ReadQSCP12ECMWFNudgeArray error reading arrays from file %s\n",filename);
     exit(1);
  
   }
@@ -83,7 +84,64 @@ L2AToL2B::ReadISROECMWFNudgeArray(char* filename){
   if( ! read_array(ifp,&arrayNudgeSpd[0],sizeof(float),2,nati,ncti) ||
       ! read_array(ifp,&arrayNudgeDir[0],sizeof(float),2,nati,ncti)){
 
-    fprintf(stderr,"L2AToL2B::ReadNudgeArray error reading arrays from file %s\n",filename);
+    fprintf(stderr,"L2AToL2B::ReadQSCP12ECMWFNudgeArray error reading arrays from file %s\n",filename);
+    exit(1);
+ 
+  }
+
+  for(int a=0;a<arrayNudgeNati;a++){
+    for(int c=0;c<arrayNudgeNcti;c++){
+      if(arrayNudgeDir[a][c]!=0 || arrayNudgeSpd[a][c]!=0){ 
+	arrayNudgeDir[a][c]=450-arrayNudgeDir[a][c];
+	if(arrayNudgeDir[a][c]>360) arrayNudgeDir[a][c]=arrayNudgeDir[a][c]-360;
+	arrayNudgeDir[a][c]*=dtr;
+      }
+    }
+  }
+  return(1);
+}
+
+
+
+// this is fragile. It assumes the L2A file and the ECMWF (E2B) array file 
+// are both the proper ISRO 50 km size
+int
+L2AToL2B::ReadISROECMWFNudgeArray(char* filename){
+  FILE * ifp=fopen(filename,"r");
+  if(ifp==NULL){
+    fprintf(stderr,"L2AToL2B::ReadISROECMWFNudgeArray cannot open file %s\n",filename);
+    exit(1);
+  }
+  arrayNudgeNcti=36;
+  arrayNudgeNati=860;
+  if(arrayNudgeSpd!=NULL){
+    fprintf(stderr,"L2AToL2B::ReadNudgeArray or a variant ran twice!\n");
+    exit(1);
+  }
+  arrayNudgeSpd=(float**) make_array(sizeof(float),2,arrayNudgeNati,arrayNudgeNcti);
+  arrayNudgeDir=(float**) make_array(sizeof(float),2,arrayNudgeNati,arrayNudgeNcti);
+  
+  for(int a=0;a<arrayNudgeNati;a++){
+    for(int c=0;c<arrayNudgeNcti;c++){
+      arrayNudgeSpd[a][c]=-1;
+      arrayNudgeDir[a][c]=0;
+    }
+  }
+  int nati=arrayNudgeNati;
+  int ncti=arrayNudgeNcti;
+  // skip over lat and lon arrays
+  if( ! read_array(ifp,&arrayNudgeSpd[0],sizeof(float),2,nati,ncti) ||
+      ! read_array(ifp,&arrayNudgeDir[0],sizeof(float),2,nati,ncti)){
+
+    fprintf(stderr,"L2AToL2B::ReadISROECMWFNudgeArray error reading arrays from file %s\n",filename);
+    exit(1);
+ 
+  }
+  // read speed and direction arrays
+  if( ! read_array(ifp,&arrayNudgeSpd[0],sizeof(float),2,nati,ncti) ||
+      ! read_array(ifp,&arrayNudgeDir[0],sizeof(float),2,nati,ncti)){
+
+    fprintf(stderr,"L2AToL2B::ReadISROECMWFNudgeArray error reading arrays from file %s\n",filename);
     exit(1);
  
   }

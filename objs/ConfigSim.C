@@ -1488,6 +1488,9 @@ ConfigL2AToL2B(
       if (! config_list->GetInt("ISRO_ECMWF_ARRAY_NUDGING", &tmp_int))
 	tmp_int=0;
       int isroecmwfarray=tmp_int;
+      if (! config_list->GetInt("QSCP12_ECMWF_ARRAY_NUDGING", &tmp_int))
+	tmp_int=0;
+      int qscp12ecmwfarray=tmp_int;      
       l2a_to_l2b->arrayNudgeFlag = l2a_to_l2b->arrayNudgeFlag || tmp_int;
  
       
@@ -1564,7 +1567,10 @@ ConfigL2AToL2B(
 	if(isroecmwfarray){
 	  l2a_to_l2b->ReadISROECMWFNudgeArray(nudge_windfield);
 	}
-        else{
+	else if(qscp12ecmwfarray){
+	  l2a_to_l2b->ReadQSCP12ECMWFNudgeArray(nudge_windfield);
+	}
+	else{
 	  l2a_to_l2b->ReadNudgeArray(nudge_windfield);
 	}
       }

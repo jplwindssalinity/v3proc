@@ -70,6 +70,7 @@ public:
     //------------//
     int ReadNudgeArray(char* filename);
     int ReadISROECMWFNudgeArray(char* filename);
+    int ReadQSCP12ECMWFNudgeArray(char* filename);
     // float  NeuralNetRetrieve(L2A* l2a, L2B* l2b, MLPDataArray* spdnet, MLPDataArray* dirnet, GMF* gmf, Kp* kp, int need_all_looks); // Obsolete routine
 
 
