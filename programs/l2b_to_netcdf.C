@@ -89,12 +89,16 @@ static const char rcs_id[] =
     }
 
 enum {
-    USABLE_MASK = 0x01,
-    RAIN_MASK   = 0x02,
-    BEAM_MASK   = 0x04,
-    LAND_MASK   = 0x10,
-    ICE_MASK    = 0x20,
-    VALID_MASK  = 0x40
+    SIGMA0_MASK               = 0x00000001,
+    AZIMUTH_DIV_MASK          = 0x00000002,
+    COASTAL_MASK              = 0x00000080,
+    ICE_EDGE_MASK             = 0x00000100,
+    WIND_RETRIEVAL_MASK       = 0x00000200,
+    HIGH_WIND_MASK            = 0x00000400,
+    LOW_WIND_MASK             = 0x00000800,
+    RAIN_IMPACT_UNUSABLE_MASK = 0x00001000,
+    RAIN_IMPACT_MASK          = 0x00002000,
+    AVAILABLE_DATA_MASK       = 0x00004000
 };
 
 //-----------//
@@ -215,13 +219,12 @@ int main(int argc, char **argv) {
     const char time_vdata_name[] = "wvc_row_time";
     const char time_vdata_fname[] = "wvc_row_time";
     int time_vdata_ref, time_vdata_id, time_vdata_fsize;
-    int n_elem;
     char *buffer;
 
     /* For populating Net CDF file */
     size_t idx[3], time_idx[2] = {0, 0};
     WVC *wvc;
-    unsigned char flags;
+    int flags;
     const float zerof = 0.0f;
     float conversion;
     char time_format[] = "YYYYDDDTHH:MM:SS.SSS";
@@ -233,7 +236,8 @@ int main(int argc, char **argv) {
 
     // open the input files
     ERR(l2b.OpenForReading(run_config.l2b_file) == 0);
-    HDFERR((l2bhdf_fid = Hopen(run_config.l2bhdf_file, DFACC_READ, 0)) == FAIL);
+    HDFERR((l2bhdf_fid = Hopen(run_config.l2bhdf_file, 
+                    DFACC_READ, 0)) == FAIL);
 
     ERR(l2b.ReadHeader() == 0); 
     ERR(l2b.ReadDataRec() == 0);
@@ -303,7 +307,7 @@ int main(int argc, char **argv) {
 
     varlist[LATITUDE].attrs[FILL_VALUE].name = "FillValue";
     varlist[LATITUDE].attrs[FILL_VALUE].type = varlist[LATITUDE].type;
-    varlist[LATITUDE].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+    varlist[LATITUDE].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[LATITUDE].attrs[VALID_MIN].name = "valid_min";
     varlist[LATITUDE].attrs[VALID_MIN].type = varlist[LATITUDE].type;
     varlist[LATITUDE].attrs[VALID_MIN].value.f = -90.0f;
@@ -331,7 +335,7 @@ int main(int argc, char **argv) {
 
     varlist[LONGITUDE].attrs[FILL_VALUE].name = "FillValue";
     varlist[LONGITUDE].attrs[FILL_VALUE].type = varlist[LONGITUDE].type;
-    varlist[LONGITUDE].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+    varlist[LONGITUDE].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[LONGITUDE].attrs[VALID_MIN].name = "valid_min";
     varlist[LONGITUDE].attrs[VALID_MIN].type = varlist[LONGITUDE].type;
     varlist[LONGITUDE].attrs[VALID_MIN].value.f = 0.0f;
@@ -359,7 +363,7 @@ int main(int argc, char **argv) {
 
     varlist[SEL_SPEED].attrs[FILL_VALUE].name = "FillValue";
     varlist[SEL_SPEED].attrs[FILL_VALUE].type = varlist[SEL_SPEED].type;
-    varlist[SEL_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+    varlist[SEL_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[SEL_SPEED].attrs[VALID_MIN].name = "valid_min";
     varlist[SEL_SPEED].attrs[VALID_MIN].type = varlist[SEL_SPEED].type;
     varlist[SEL_SPEED].attrs[VALID_MIN].value.f = 0.0f;
@@ -387,7 +391,7 @@ int main(int argc, char **argv) {
 
     varlist[SEL_DIRECTION].attrs[FILL_VALUE].name = "FillValue";
     varlist[SEL_DIRECTION].attrs[FILL_VALUE].type = varlist[SEL_DIRECTION].type;
-    varlist[SEL_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+    varlist[SEL_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[SEL_DIRECTION].attrs[VALID_MIN].name = "valid_min";
     varlist[SEL_DIRECTION].attrs[VALID_MIN].type = varlist[SEL_DIRECTION].type;
     varlist[SEL_DIRECTION].attrs[VALID_MIN].value.f = 0.0f;
@@ -415,13 +419,13 @@ int main(int argc, char **argv) {
 
     varlist[RAIN_IMPACT].attrs[FILL_VALUE].name = "FillValue";
     varlist[RAIN_IMPACT].attrs[FILL_VALUE].type = varlist[RAIN_IMPACT].type;
-    varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+    varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[RAIN_IMPACT].attrs[VALID_MIN].name = "valid_min";
     varlist[RAIN_IMPACT].attrs[VALID_MIN].type = varlist[RAIN_IMPACT].type;
     varlist[RAIN_IMPACT].attrs[VALID_MIN].value.f = 0.0f;
     varlist[RAIN_IMPACT].attrs[VALID_MAX].name = "valid_max";
     varlist[RAIN_IMPACT].attrs[VALID_MAX].type = varlist[RAIN_IMPACT].type;
-    varlist[RAIN_IMPACT].attrs[VALID_MAX].value.f = HUGE_VALF;
+    varlist[RAIN_IMPACT].attrs[VALID_MAX].value.f = 9999.0;
     varlist[RAIN_IMPACT].attrs[LONG_NAME].name = "long_name";
     varlist[RAIN_IMPACT].attrs[LONG_NAME].type = NC_CHAR;
     varlist[RAIN_IMPACT].attrs[LONG_NAME].value.s = "rain-impact";
@@ -440,7 +444,7 @@ int main(int argc, char **argv) {
 
     varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].name = "FillValue";
     varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].type = varlist[WIND_DIVERGENCE].type;
-    varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+    varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[WIND_DIVERGENCE].attrs[VALID_MIN].name = "valid_min";
     varlist[WIND_DIVERGENCE].attrs[VALID_MIN].type = varlist[WIND_DIVERGENCE].type;
     varlist[WIND_DIVERGENCE].attrs[VALID_MIN].value.f = -1.0f;
@@ -468,7 +472,7 @@ int main(int argc, char **argv) {
 
     varlist[WIND_CURL].attrs[FILL_VALUE].name = "FillValue";
     varlist[WIND_CURL].attrs[FILL_VALUE].type = varlist[WIND_CURL].type;
-    varlist[WIND_CURL].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+    varlist[WIND_CURL].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[WIND_CURL].attrs[VALID_MIN].name = "valid_min";
     varlist[WIND_CURL].attrs[VALID_MIN].type = varlist[WIND_CURL].type;
     varlist[WIND_CURL].attrs[VALID_MIN].value.f = -1.0f;
@@ -496,13 +500,13 @@ int main(int argc, char **argv) {
 
     varlist[WIND_STRESS].attrs[FILL_VALUE].name = "FillValue";
     varlist[WIND_STRESS].attrs[FILL_VALUE].type = varlist[WIND_STRESS].type;
-    varlist[WIND_STRESS].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+    varlist[WIND_STRESS].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[WIND_STRESS].attrs[VALID_MIN].name = "valid_min";
     varlist[WIND_STRESS].attrs[VALID_MIN].type = varlist[WIND_STRESS].type;
-    varlist[WIND_STRESS].attrs[VALID_MIN].value.f = -HUGE_VALF;
+    varlist[WIND_STRESS].attrs[VALID_MIN].value.f = -9999.0;
     varlist[WIND_STRESS].attrs[VALID_MAX].name = "valid_max";
     varlist[WIND_STRESS].attrs[VALID_MAX].type = varlist[WIND_STRESS].type;
-    varlist[WIND_STRESS].attrs[VALID_MAX].value.f = HUGE_VALF;
+    varlist[WIND_STRESS].attrs[VALID_MAX].value.f = 9999.0;
     varlist[WIND_STRESS].attrs[LONG_NAME].name = "long_name";
     varlist[WIND_STRESS].attrs[LONG_NAME].type = NC_CHAR;
     varlist[WIND_STRESS].attrs[LONG_NAME].value.s = "equivalent neutral wind-stress";
@@ -525,13 +529,13 @@ int main(int argc, char **argv) {
 
     varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].name = "FillValue";
     varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].type = varlist[STRESS_DIVERGENCE].type;
-    varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+    varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].name = "valid_min";
     varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].type = varlist[STRESS_DIVERGENCE].type;
-    varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].value.f = -HUGE_VALF;
+    varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].value.f = -9999.0;
     varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].name = "valid_max";
     varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].type = varlist[STRESS_DIVERGENCE].type;
-    varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].value.f = HUGE_VALF;
+    varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].value.f = 9999.0;
     varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].name = "long_name";
     varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].type = NC_CHAR;
     varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].value.s = "equivalent neutral wind-stress-divergence";
@@ -553,13 +557,13 @@ int main(int argc, char **argv) {
 
     varlist[STRESS_CURL].attrs[FILL_VALUE].name = "FillValue";
     varlist[STRESS_CURL].attrs[FILL_VALUE].type = varlist[STRESS_CURL].type;
-    varlist[STRESS_CURL].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+    varlist[STRESS_CURL].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[STRESS_CURL].attrs[VALID_MIN].name = "valid_min";
     varlist[STRESS_CURL].attrs[VALID_MIN].type = varlist[STRESS_CURL].type;
-    varlist[STRESS_CURL].attrs[VALID_MIN].value.f = -HUGE_VALF;
+    varlist[STRESS_CURL].attrs[VALID_MIN].value.f = -9999.0;
     varlist[STRESS_CURL].attrs[VALID_MAX].name = "valid_max";
     varlist[STRESS_CURL].attrs[VALID_MAX].type = varlist[STRESS_CURL].type;
-    varlist[STRESS_CURL].attrs[VALID_MAX].value.f = HUGE_VALF;
+    varlist[STRESS_CURL].attrs[VALID_MAX].value.f = 9999.0;
     varlist[STRESS_CURL].attrs[LONG_NAME].name = "long_name";
     varlist[STRESS_CURL].attrs[LONG_NAME].type = NC_CHAR;
     varlist[STRESS_CURL].attrs[LONG_NAME].value.s = "equivalent neutral wind-stress-curl";
@@ -568,7 +572,7 @@ int main(int argc, char **argv) {
     varlist[STRESS_CURL].attrs[num_standard_attrs].value.s = "s-1";
     varlist[STRESS_CURL].attrs[num_standard_attrs + 1].name = "scale_factor";
     varlist[STRESS_CURL].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-    varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
+    varlist[STRESS_CURL].attrs[num_standard_attrs + 1].value.f = 1.0f;
     
     varlist[TIME].name = "time";
     varlist[TIME].type = NC_CHAR;
@@ -596,48 +600,60 @@ int main(int argc, char **argv) {
     varlist[TIME].attrs[num_standard_attrs].value.s = time_format;
 
     varlist[FLAGS].name  = "flags";
-    varlist[FLAGS].type  = NC_BYTE;
+    varlist[FLAGS].type  = NC_INT;
     varlist[FLAGS].ndims = 2;
     varlist[FLAGS].dims = dimensions; 
     varlist[FLAGS].nattrs = 0;
-    varlist[FLAGS].nattrs = num_standard_attrs + 6;
+    varlist[FLAGS].nattrs = num_standard_attrs + 10;
     ERR((varlist[FLAGS].attrs = (typeof varlist[FLAGS].attrs)
                 malloc(varlist[FLAGS].nattrs * 
                     (sizeof *varlist[FLAGS].attrs))) == NULL);
 
     varlist[FLAGS].attrs[FILL_VALUE].name = "FillValue";
     varlist[FLAGS].attrs[FILL_VALUE].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[FILL_VALUE].value.c = 0;
+    varlist[FLAGS].attrs[FILL_VALUE].value.i = 0;
     varlist[FLAGS].attrs[VALID_MIN].name = "valid_min";
     varlist[FLAGS].attrs[VALID_MIN].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[VALID_MIN].value.c = 0;
+    varlist[FLAGS].attrs[VALID_MIN].value.i = 0;
     varlist[FLAGS].attrs[VALID_MAX].name = "valid_max";
     varlist[FLAGS].attrs[VALID_MAX].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[VALID_MAX].value.c = 0x7f;
+    varlist[FLAGS].attrs[VALID_MAX].value.i = 0xFfffFfff;
     varlist[FLAGS].attrs[LONG_NAME].name = "long_name";
     varlist[FLAGS].attrs[LONG_NAME].type = NC_CHAR;
     varlist[FLAGS].attrs[LONG_NAME].value.s = "flags";
-    varlist[FLAGS].attrs[num_standard_attrs].name = "usable_mask";
-    varlist[FLAGS].attrs[num_standard_attrs].type = NC_BYTE;
-    varlist[FLAGS].attrs[num_standard_attrs].value.c = USABLE_MASK;
-    varlist[FLAGS].attrs[num_standard_attrs + 1].name = "rain_mask";
-    varlist[FLAGS].attrs[num_standard_attrs + 1].type = NC_BYTE;
-    varlist[FLAGS].attrs[num_standard_attrs + 1].value.c = RAIN_MASK; 
-    varlist[FLAGS].attrs[num_standard_attrs + 2].name = "beam_mask";
-    varlist[FLAGS].attrs[num_standard_attrs + 2].type = NC_BYTE;
-    varlist[FLAGS].attrs[num_standard_attrs + 2].value.c = BEAM_MASK; 
-    varlist[FLAGS].attrs[num_standard_attrs + 3].name = "land_mask";
-    varlist[FLAGS].attrs[num_standard_attrs + 3].type = NC_BYTE;
-    varlist[FLAGS].attrs[num_standard_attrs + 3].value.c = LAND_MASK; 
-    varlist[FLAGS].attrs[num_standard_attrs + 4].name = "ice_mask";
-    varlist[FLAGS].attrs[num_standard_attrs + 4].type = NC_BYTE;
-    varlist[FLAGS].attrs[num_standard_attrs + 4].value.c = ICE_MASK; 
-    varlist[FLAGS].attrs[num_standard_attrs + 5].name = "point_valid_mask";
-    varlist[FLAGS].attrs[num_standard_attrs + 5].type = NC_BYTE;
-    varlist[FLAGS].attrs[num_standard_attrs + 5].value.c = VALID_MASK; 
+    varlist[FLAGS].attrs[num_standard_attrs].name = "adequate_sigma0_flag";
+    varlist[FLAGS].attrs[num_standard_attrs].type = NC_INT;
+    varlist[FLAGS].attrs[num_standard_attrs].value.i = SIGMA0_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 1].name = "adequate_azimuth_diversity_flag";
+    varlist[FLAGS].attrs[num_standard_attrs + 1].type = NC_INT;
+    varlist[FLAGS].attrs[num_standard_attrs + 1].value.i = AZIMUTH_DIV_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 2].name = "coastal_flag";
+    varlist[FLAGS].attrs[num_standard_attrs + 2].type = NC_INT;
+    varlist[FLAGS].attrs[num_standard_attrs + 2].value.i = COASTAL_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 3].name = "ice_edge_flag";
+    varlist[FLAGS].attrs[num_standard_attrs + 3].type = NC_INT;
+    varlist[FLAGS].attrs[num_standard_attrs + 3].value.i = ICE_EDGE_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 4].name = "wind_retrieval_flag";
+    varlist[FLAGS].attrs[num_standard_attrs + 4].type = NC_INT;
+    varlist[FLAGS].attrs[num_standard_attrs + 4].value.i = WIND_RETRIEVAL_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 5].name = "high_wind_speed_flag";
+    varlist[FLAGS].attrs[num_standard_attrs + 5].type = NC_INT;
+    varlist[FLAGS].attrs[num_standard_attrs + 5].value.i = HIGH_WIND_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 6].name = "low_wind_speed_flag";
+    varlist[FLAGS].attrs[num_standard_attrs + 6].type = NC_INT;
+    varlist[FLAGS].attrs[num_standard_attrs + 6].value.i = LOW_WIND_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 7].name = "rain_impact_flag_usable";
+    varlist[FLAGS].attrs[num_standard_attrs + 7].type = NC_INT;
+    varlist[FLAGS].attrs[num_standard_attrs + 7].value.i = RAIN_IMPACT_UNUSABLE_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 8].name = "rain_impact_flag";
+    varlist[FLAGS].attrs[num_standard_attrs + 8].type = NC_INT;
+    varlist[FLAGS].attrs[num_standard_attrs + 8].value.i = RAIN_IMPACT_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 9].name = "available_data_flag";
+    varlist[FLAGS].attrs[num_standard_attrs + 9].type = NC_INT;
+    varlist[FLAGS].attrs[num_standard_attrs + 9].value.i = AVAILABLE_DATA_MASK;
 
-    
     if (run_config.extended) { 
+        /* Change name to ecmwf_model_speed? */
         varlist[NUDGE_SPEED].name  = "nudge_speed";
         varlist[NUDGE_SPEED].type  = NC_FLOAT;
         varlist[NUDGE_SPEED].ndims = 2;
@@ -649,7 +665,7 @@ int main(int argc, char **argv) {
     
         varlist[NUDGE_SPEED].attrs[FILL_VALUE].name = "FillValue";
         varlist[NUDGE_SPEED].attrs[FILL_VALUE].type = varlist[NUDGE_SPEED].type;
-        varlist[NUDGE_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+        varlist[NUDGE_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
         varlist[NUDGE_SPEED].attrs[VALID_MIN].name = "valid_min";
         varlist[NUDGE_SPEED].attrs[VALID_MIN].type = varlist[NUDGE_SPEED].type;
         varlist[NUDGE_SPEED].attrs[VALID_MIN].value.f = 0.0f;
@@ -677,7 +693,7 @@ int main(int argc, char **argv) {
     
         varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].name = "FillValue";
         varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].type = varlist[NUDGE_DIRECTION].type;
-        varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+        varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
         varlist[NUDGE_DIRECTION].attrs[VALID_MIN].name = "valid_min";
         varlist[NUDGE_DIRECTION].attrs[VALID_MIN].type = varlist[NUDGE_DIRECTION].type;
         varlist[NUDGE_DIRECTION].attrs[VALID_MIN].value.f = 0.0f;
@@ -706,7 +722,7 @@ int main(int argc, char **argv) {
     
         varlist[SEL_OBJ].attrs[FILL_VALUE].name = "FillValue";
         varlist[SEL_OBJ].attrs[FILL_VALUE].type = varlist[SEL_OBJ].type;
-        varlist[SEL_OBJ].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+        varlist[SEL_OBJ].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
         varlist[SEL_OBJ].attrs[VALID_MIN].name = "valid_min";
         varlist[SEL_OBJ].attrs[VALID_MIN].type = varlist[SEL_OBJ].type;
         varlist[SEL_OBJ].attrs[VALID_MIN].value.f = 0.0f;
@@ -735,7 +751,7 @@ int main(int argc, char **argv) {
     
         varlist[AMBIG_SPEED].attrs[FILL_VALUE].name = "FillValue";
         varlist[AMBIG_SPEED].attrs[FILL_VALUE].type = varlist[AMBIG_SPEED].type;
-        varlist[AMBIG_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+        varlist[AMBIG_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
         varlist[AMBIG_SPEED].attrs[VALID_MIN].name = "valid_min";
         varlist[AMBIG_SPEED].attrs[VALID_MIN].type = varlist[AMBIG_SPEED].type;
         varlist[AMBIG_SPEED].attrs[VALID_MIN].value.f = 0.0f;
@@ -763,7 +779,7 @@ int main(int argc, char **argv) {
     
         varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].name = "FillValue";
         varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].type = varlist[AMBIG_DIRECTION].type;
-        varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+        varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
         varlist[AMBIG_DIRECTION].attrs[VALID_MIN].name = "valid_min";
         varlist[AMBIG_DIRECTION].attrs[VALID_MIN].type = varlist[AMBIG_DIRECTION].type;
         varlist[AMBIG_DIRECTION].attrs[VALID_MIN].value.f = 0.0f;
@@ -791,7 +807,7 @@ int main(int argc, char **argv) {
     
         varlist[AMBIG_OBJ].attrs[FILL_VALUE].name = "FillValue";
         varlist[AMBIG_OBJ].attrs[FILL_VALUE].type = varlist[AMBIG_OBJ].type;
-        varlist[AMBIG_OBJ].attrs[FILL_VALUE].value.f = FILL(0.0f, -HUGE_VALF);
+        varlist[AMBIG_OBJ].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
         varlist[AMBIG_OBJ].attrs[VALID_MIN].name = "valid_min";
         varlist[AMBIG_OBJ].attrs[VALID_MIN].type = varlist[AMBIG_OBJ].type;
         varlist[AMBIG_OBJ].attrs[VALID_MIN].value.f = 0.0f;
@@ -910,8 +926,6 @@ int main(int argc, char **argv) {
         varlist[N_OUT_AFT].attrs[num_standard_attrs].value.s = "1";
     }
 
-
-
     for (int i = 0; i < (run_config.extended ? num_variables : 
                 first_extended_variable); i++) {
         NCERR(nc_def_var(ncid, varlist[i].name, varlist[i].type,
@@ -972,10 +986,10 @@ int main(int argc, char **argv) {
 
     /* Set up for grabbing timestamp data later */
     HDFERR(Vstart(l2bhdf_fid) == FAIL);
+
     HDFERR((time_vdata_ref = VSfind(l2bhdf_fid, time_vdata_name)) == 0);
     HDFERR((time_vdata_id  = VSattach(l2bhdf_fid, time_vdata_ref, "r")) == FAIL);
     HDFERR(VSsetfields(time_vdata_id, time_vdata_fname) == FAIL);
-    HDFERR((n_elem = VSelts(time_vdata_id)) == FAIL);
     
     HDFERR((time_vdata_fsize = VSsizeof(time_vdata_id, 
                     (char *)time_vdata_fname)) == FAIL);
@@ -1005,12 +1019,18 @@ int main(int argc, char **argv) {
                         &varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].value.f));
             NCERR(nc_put_var1_float(ncid, varlist[STRESS_CURL].id, idx, 
                         &varlist[STRESS_CURL].attrs[FILL_VALUE].value.f));
-    
-            /* && wvc->selected != NULL */
+
             if (wvc != NULL && wvc->selected != NULL) {
-                flags = VALID_MASK;
-                flags |= wvc->rainFlagBits    << 0;
-                flags |= wvc->landiceFlagBits << 4;
+                flags = 0;
+
+                flags |= ((wvc->landiceFlagBits & LAND_ICE_FLAG_COAST) != 0) * COASTAL_MASK;
+                flags |= ((wvc->landiceFlagBits & LAND_ICE_FLAG_ICE) != 0) * ICE_EDGE_MASK;
+
+                flags |= ((wvc->rainFlagBits & RAIN_FLAG_UNUSABLE) != 0) * RAIN_IMPACT_UNUSABLE_MASK;
+                flags |= ((wvc->rainFlagBits & RAIN_FLAG_RAIN) != 0) * RAIN_IMPACT_MASK;
+
+                flags |= ((wvc->selected->spd > 30) != 0) * HIGH_WIND_MASK;
+                flags |= ((wvc->selected->spd < 3) != 0) * LOW_WIND_MASK;
 
                 NCERR(nc_put_var1_float(ncid, varlist[LATITUDE].id, idx, 
                             &wvc->lonLat.latitude));
@@ -1029,8 +1049,7 @@ int main(int argc, char **argv) {
                             &conversion));
                 NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
                             &wvc->rainImpact));
-                NCERR(nc_put_var1_uchar(ncid, varlist[FLAGS].id, idx, 
-                        &flags));
+                NCERR(nc_put_var1_int(ncid, varlist[FLAGS].id, idx, &flags));
 
                 /* Extended variables */
                 if (run_config.extended) {
@@ -1093,6 +1112,8 @@ int main(int argc, char **argv) {
             } else {
             
                 float new_lat, new_lon;
+
+                flags = WIND_RETRIEVAL_MASK;
             
                 bin_to_latlon(idx[0], idx[1], &orbit_config, &new_lat, &new_lon);
 
@@ -1105,8 +1126,7 @@ int main(int argc, char **argv) {
                             &varlist[SEL_DIRECTION].attrs[FILL_VALUE].value.f));
                 NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
                             &varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f));
-                NCERR(nc_put_var1_uchar(ncid, varlist[FLAGS].id, idx, 
-                            &varlist[FLAGS].attrs[FILL_VALUE].value.c));
+                NCERR(nc_put_var1_int(ncid, varlist[FLAGS].id, idx, &flags));
 
                 /* Extended variables */
                 if (run_config.extended) {
