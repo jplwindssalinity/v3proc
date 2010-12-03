@@ -281,8 +281,8 @@ main(
     float ** lat=(float**)make_array(sizeof(float),2,nati,ncti);
     float ** lon=(float**)make_array(sizeof(float),2,nati,ncti);
 
-    char ** flg=(char**)make_array(sizeof(char),2,nati,ncti);
-    
+    int ** flg=(int**)make_array(sizeof(int),2,nati,ncti);
+    float ** impact=(float**)make_array(sizeof(float),2,nati,ncti);    
 
     int found_valid=0;
     int first_valid_ati=0, nvalid_ati=0;
@@ -344,7 +344,8 @@ main(
 		dir[a][c]=wvp->dir;
 		lat[a][c]=wvc->lonLat.latitude;
 		lon[a][c]=wvc->lonLat.longitude;
-		flg[a][c]=wvc->rainFlagBits;//find correct object
+		flg[a][c]=wvc->qualFlag;//find correct object
+                impact[a][c]=wvc->rainImpact;
 	      }
 	      else good =false;
 	      nvalid_ati=a+1-first_valid_ati;
@@ -361,6 +362,7 @@ main(
 	      lat[a][c]=0;
 	      lon[a][c]=0;
 	      flg[a][c]=0;
+              impact[a][c]=0;
 	    }
 	    //fprintf(stderr, "here %d %d\n",a,c);
       } // end c loop
@@ -385,7 +387,8 @@ main(
        !write_array(wfp,&dir[f],sizeof(float),2,n,ncti) ||
        !write_array(wfp,&lat[f],sizeof(float),2,n,ncti) ||
        !write_array(wfp,&lon[f],sizeof(float),2,n,ncti) ||
-       !write_array(wfp,&flg[f],sizeof(char),2,n,ncti)){
+       !write_array(wfp,&flg[f],sizeof(int),2,n,ncti)  ||
+       !write_array(wfp,&impact[f],sizeof(float),2,n,ncti)){
       fprintf(stderr,"Error writing to file %s\n",out_file);
       exit(1);
     }
@@ -394,6 +397,7 @@ main(
     free_array(lat,2,nati,ncti);
     free_array(lon,2,nati,ncti);
     free_array(flg,2,nati,ncti);
+    free_array(impact,2,nati,ncti);
     fclose(wfp);
     return (0);
 }
