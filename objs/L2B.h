@@ -154,6 +154,9 @@ public:
     int  ReadHDFDIRTH(const char* filename);
     int  ReadHDF(TlmHdfFile* tlmHdfFile, int unnormalize_mle = 1);
     int  ReadNudgeVectorsFromHdfL2B(const char* filename, int read_wvc_flags_flag = 0 );
+    int  ReadLandIceRainFlagsFromHdfL2B(const char* filename, 
+              int read_land_ice_flags, int read_rain_flags );
+              
 //    int  ReadNudgeVectorsFromHdfL2B(TlmHdfFile* tlmHdfFile);
 
     int  GetArraysForUpdatingDirthHdf(float** spd, float** dir,

@@ -2171,6 +2171,70 @@ L2B::ReadHDF(
     return(1);
 }
 
+//-------------------------------------//
+// L2B::ReadLandIceRainFlagsFromHdfL2B //
+//-------------------------------------//
+int L2B::ReadLandIceRainFlagsFromHdfL2B(
+    const char*  filename,
+    int read_land_ice_flags,
+    int read_rain_flags)
+{
+    L2B n_l2b;
+
+    if (n_l2b.ReadPureHdf(filename,1) == 0)  // Use ReadPureHDF, old one broken.
+    {
+        fprintf(stderr, "ReadLandIceRainFlagsFromHdfL2B: error reading HDF L2B file %s\n",
+                filename);
+        return 0;
+    }
+
+    WindSwath* swath = &(frame.swath);
+
+    int crossTrackBins = n_l2b.frame.swath.GetCrossTrackBins();
+#ifdef HIRES12
+    crossTrackBins = 152;
+#endif
+
+    // check that the number of cross track bins in the thing just read match the
+    // number in the current instance (where we'll be putting the data)
+    if (crossTrackBins != swath->GetCrossTrackBins())
+    {
+        fprintf(stderr, "ReadLandIceRainFlagsFromHdfL2B: crosstrackbins mismatch\n");
+        return(0);
+    }
+
+    int alongTrackBins = n_l2b.frame.swath.GetAlongTrackBins();
+
+    // check the number of along track bins match
+    if (alongTrackBins != swath->GetAlongTrackBins())
+    {
+        fprintf(stderr, "ReadLandIceRainFlagsFromHdfL2B: alongtrackbins mismatch\n");
+        fprintf(stderr, "along track bins allocated: %d; along track bins needed: %d\n",
+            swath->GetAlongTrackBins(), alongTrackBins);
+        return(0);
+    }
+
+    for (int32 ati = 0; ati < alongTrackBins; ati++)
+    {
+        for (int cti = 0; cti < crossTrackBins; cti++)
+        {
+            WVC* n_wvc = n_l2b.frame.swath.GetWVC(cti, ati);
+            WVC* o_wvc = swath->GetWVC(cti, ati);
+            if (!n_wvc || !o_wvc)
+                continue;
+                
+            if( read_rain_flags )
+              o_wvc->rainFlagBits   = n_wvc->rainFlagBits;
+              
+            if( read_land_ice_flags )
+              o_wvc->landiceFlagBits = n_wvc->landiceFlagBits;
+        }
+    }
+
+    return(1);
+}
+
+
 //---------------------------------//
 // L2B::ReadNudgeVectorsFromHdfL2B //
 //---------------------------------//
