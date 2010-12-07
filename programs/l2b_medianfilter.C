@@ -164,6 +164,7 @@ main(
 
     int nudge_HDF_flag       = 0; // 1 if read nudges from HDF file, 0 if not.
     int nudge_l2b_flag       = 0;
+    int read_flags_HDF       = 0;
     
     int ext_file_flag        = 0; // 0 undefined, 1 HDF, 2 retdat
     int ext_source_flag      = 0; // 1 if load data from ext_file, 0 if not
@@ -193,6 +194,12 @@ main(
 	    l2b_hdf_nudge_file = argv[optind];
 	    nudge_HDF_flag = 1;
 	    read_nudge_vectors_RETDAT = 0; // Turn off reading nudge vectors from RETDAT
+	  }
+	else if( sw == "-flagsHDF" )
+	  {
+	    ++optind;
+	    l2b_hdf_nudge_file = argv[optind];
+	    read_flags_HDF = 1;
 	  }
 	else if( sw == "-nudgel2b" )
 	  {
@@ -397,7 +404,15 @@ main(
 	    exit(1);
 	  }
       }
-
+    
+    if( read_flags_HDF ) {
+      if( ! l2b.ReadLandIceRainFlagsFromHdfL2B( l2b_hdf_nudge_file, 1, 1 ) ) {
+        fprintf( stderr, "%s: error reading land/ice/rain flags from HDF L2B file: %s\n",
+          command, l2b_hdf_nudge_file );
+        exit(1);
+      }
+    }
+    
     //------------------------//
     // Just Ambiguity Removal //
     //------------------------//
