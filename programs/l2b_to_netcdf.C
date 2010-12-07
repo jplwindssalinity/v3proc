@@ -229,6 +229,8 @@ int main(int argc, char **argv) {
     float conversion;
     char time_format[] = "YYYYDDDTHH:MM:SS.SSS";
 
+    float lat, lon;
+
     // parse the command line
     if (parse_commandline(argc, argv, &run_config) != 0) {
         return -1;
@@ -1032,10 +1034,13 @@ int main(int argc, char **argv) {
                 flags |= ((wvc->selected->spd > 30) != 0) * HIGH_WIND_MASK;
                 flags |= ((wvc->selected->spd < 3) != 0) * LOW_WIND_MASK;
 
+                lat = RAD_TO_DEG(wvc->lonLat.latitude);
+                lon = RAD_TO_DEG(wvc->lonLat.longitude);
+
                 NCERR(nc_put_var1_float(ncid, varlist[LATITUDE].id, idx, 
-                            &wvc->lonLat.latitude));
+                            &lat));
                 NCERR(nc_put_var1_float(ncid, varlist[LONGITUDE].id, idx, 
-                            &wvc->lonLat.longitude));
+                            &lon));
                 if (wvc->selected->spd <= varlist[SEL_SPEED].attrs[VALID_MAX].value.f) {
                     NCERR(nc_put_var1_float(ncid, varlist[SEL_SPEED].id, idx, 
                             &wvc->selected->spd));
@@ -1111,14 +1116,12 @@ int main(int argc, char **argv) {
                 }    
             } else {
             
-                float new_lat, new_lon;
-
                 flags = WIND_RETRIEVAL_MASK;
             
-                bin_to_latlon(idx[0], idx[1], &orbit_config, &new_lat, &new_lon);
+                bin_to_latlon(idx[0], idx[1], &orbit_config, &lat, &lon);
 
-                NCERR(nc_put_var1_float(ncid, varlist[LATITUDE].id, idx, &new_lat));
-                NCERR(nc_put_var1_float(ncid, varlist[LONGITUDE].id, idx, &new_lon));
+                NCERR(nc_put_var1_float(ncid, varlist[LATITUDE].id, idx, &lat));
+                NCERR(nc_put_var1_float(ncid, varlist[LONGITUDE].id, idx, &lon));
 
                 NCERR(nc_put_var1_float(ncid, varlist[SEL_SPEED].id, idx, 
                             &varlist[SEL_SPEED].attrs[FILL_VALUE].value.f));
@@ -1384,6 +1387,6 @@ void bin_to_latlon(int at_ind, int ct_ind,
                 cosf(inc)*sinf(lambda_t))/((1 - e2)*
                 sinf(inc)));
 
-    *lon = lambda;
-    *lat = phi;
+    *lon = RAD_TO_DEG(lambda);
+    *lat = RAD_TO_DEG(phi);
 }
