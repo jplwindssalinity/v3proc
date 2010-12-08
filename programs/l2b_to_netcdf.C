@@ -127,6 +127,7 @@ typedef enum {
     STRESS_DIVERGENCE,
     STRESS_CURL,
     FLAGS,
+    EFLAGS,
 
     first_extended_variable,
 
@@ -165,9 +166,10 @@ typedef struct {
     nc_type type;
     union {
         float f;
-        int i;
-        const char *s;
-        unsigned char c;
+        int32 i;
+        int16 s;
+        unsigned char b;
+        const char *str;
     } value;
 } attribute;
 
@@ -224,7 +226,7 @@ int main(int argc, char **argv) {
     /* For populating Net CDF file */
     size_t idx[3], time_idx[2] = {0, 0};
     WVC *wvc;
-    int flags;
+    int16 flags, eflags;
     const float zerof = 0.0f;
     float conversion;
     char time_format[] = "YYYYDDDTHH:MM:SS.SSS";
@@ -318,10 +320,10 @@ int main(int argc, char **argv) {
     varlist[LATITUDE].attrs[VALID_MAX].value.f =  90.0f;
     varlist[LATITUDE].attrs[LONG_NAME].name = "long_name";
     varlist[LATITUDE].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[LATITUDE].attrs[LONG_NAME].value.s = "latitude";
+    varlist[LATITUDE].attrs[LONG_NAME].value.str = "latitude";
     varlist[LATITUDE].attrs[num_standard_attrs].name = "units";
     varlist[LATITUDE].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[LATITUDE].attrs[num_standard_attrs].value.s = "degrees_north";
+    varlist[LATITUDE].attrs[num_standard_attrs].value.str = "degrees_north";
     varlist[LATITUDE].attrs[num_standard_attrs + 1].name = "scale_factor";
     varlist[LATITUDE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[LATITUDE].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -346,10 +348,10 @@ int main(int argc, char **argv) {
     varlist[LONGITUDE].attrs[VALID_MAX].value.f = 360.0f;
     varlist[LONGITUDE].attrs[LONG_NAME].name = "long_name";
     varlist[LONGITUDE].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[LONGITUDE].attrs[LONG_NAME].value.s = "longitude";
+    varlist[LONGITUDE].attrs[LONG_NAME].value.str = "longitude";
     varlist[LONGITUDE].attrs[num_standard_attrs].name = "units";
     varlist[LONGITUDE].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[LONGITUDE].attrs[num_standard_attrs].value.s = "degrees_east";
+    varlist[LONGITUDE].attrs[num_standard_attrs].value.str = "degrees_east";
     varlist[LONGITUDE].attrs[num_standard_attrs + 1].name = "scale_factor";
     varlist[LONGITUDE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[LONGITUDE].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -374,10 +376,10 @@ int main(int argc, char **argv) {
     varlist[SEL_SPEED].attrs[VALID_MAX].value.f = 100.0f;
     varlist[SEL_SPEED].attrs[LONG_NAME].name = "long_name";
     varlist[SEL_SPEED].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[SEL_SPEED].attrs[LONG_NAME].value.s = "equivalent neutral wind-speed at 10 m";
+    varlist[SEL_SPEED].attrs[LONG_NAME].value.str = "equivalent neutral wind-speed at 10 m";
     varlist[SEL_SPEED].attrs[num_standard_attrs].name = "units";
     varlist[SEL_SPEED].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[SEL_SPEED].attrs[num_standard_attrs].value.s = "m s-1";
+    varlist[SEL_SPEED].attrs[num_standard_attrs].value.str = "m s-1";
     varlist[SEL_SPEED].attrs[num_standard_attrs + 1].name = "scale_factor";
     varlist[SEL_SPEED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[SEL_SPEED].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -402,10 +404,10 @@ int main(int argc, char **argv) {
     varlist[SEL_DIRECTION].attrs[VALID_MAX].value.f = 360.0f;
     varlist[SEL_DIRECTION].attrs[LONG_NAME].name = "long_name";
     varlist[SEL_DIRECTION].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[SEL_DIRECTION].attrs[LONG_NAME].value.s = "equivalent neutral wind direction at 10 m";
+    varlist[SEL_DIRECTION].attrs[LONG_NAME].value.str = "equivalent neutral wind direction at 10 m";
     varlist[SEL_DIRECTION].attrs[num_standard_attrs].name = "units";
     varlist[SEL_DIRECTION].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[SEL_DIRECTION].attrs[num_standard_attrs].value.s = "degrees";
+    varlist[SEL_DIRECTION].attrs[num_standard_attrs].value.str = "degrees";
     varlist[SEL_DIRECTION].attrs[num_standard_attrs + 1].name = "scale_factor";
     varlist[SEL_DIRECTION].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[SEL_DIRECTION].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -430,10 +432,10 @@ int main(int argc, char **argv) {
     varlist[RAIN_IMPACT].attrs[VALID_MAX].value.f = 9999.0;
     varlist[RAIN_IMPACT].attrs[LONG_NAME].name = "long_name";
     varlist[RAIN_IMPACT].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[RAIN_IMPACT].attrs[LONG_NAME].value.s = "rain-impact";
+    varlist[RAIN_IMPACT].attrs[LONG_NAME].value.str = "rain-impact";
     varlist[RAIN_IMPACT].attrs[num_standard_attrs].name = "units";
     varlist[RAIN_IMPACT].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[RAIN_IMPACT].attrs[num_standard_attrs].value.s = "1";
+    varlist[RAIN_IMPACT].attrs[num_standard_attrs].value.str = "1";
   
     varlist[WIND_DIVERGENCE].name  = "wind_divergence";
     varlist[WIND_DIVERGENCE].type  = NC_FLOAT;
@@ -455,10 +457,10 @@ int main(int argc, char **argv) {
     varlist[WIND_DIVERGENCE].attrs[VALID_MAX].value.f = 1.0f;
     varlist[WIND_DIVERGENCE].attrs[LONG_NAME].name = "long_name";
     varlist[WIND_DIVERGENCE].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[WIND_DIVERGENCE].attrs[LONG_NAME].value.s = "equivalent neutral wind-divergence at 10 m";
+    varlist[WIND_DIVERGENCE].attrs[LONG_NAME].value.str = "equivalent neutral wind-divergence at 10 m";
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].name = "units";
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].value.s = "s-1";
+    varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].value.str = "s-1";
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs + 1].name = "scale_factor";
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -483,10 +485,10 @@ int main(int argc, char **argv) {
     varlist[WIND_CURL].attrs[VALID_MAX].value.f = 1.0f;
     varlist[WIND_CURL].attrs[LONG_NAME].name = "long_name";
     varlist[WIND_CURL].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[WIND_CURL].attrs[LONG_NAME].value.s = "equivalent neutral wind-curl at 10 m";
+    varlist[WIND_CURL].attrs[LONG_NAME].value.str = "equivalent neutral wind-curl at 10 m";
     varlist[WIND_CURL].attrs[num_standard_attrs].name = "units";
     varlist[WIND_CURL].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[WIND_CURL].attrs[num_standard_attrs].value.s = "s-1";
+    varlist[WIND_CURL].attrs[num_standard_attrs].value.str = "s-1";
     varlist[WIND_CURL].attrs[num_standard_attrs + 1].name = "scale_factor";
     varlist[WIND_CURL].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[WIND_CURL].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -511,10 +513,10 @@ int main(int argc, char **argv) {
     varlist[WIND_STRESS].attrs[VALID_MAX].value.f = 9999.0;
     varlist[WIND_STRESS].attrs[LONG_NAME].name = "long_name";
     varlist[WIND_STRESS].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[WIND_STRESS].attrs[LONG_NAME].value.s = "equivalent neutral wind-stress";
+    varlist[WIND_STRESS].attrs[LONG_NAME].value.str = "equivalent neutral wind-stress";
     varlist[WIND_STRESS].attrs[num_standard_attrs].name = "units";
     varlist[WIND_STRESS].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[WIND_STRESS].attrs[num_standard_attrs].value.s = "s-1";
+    varlist[WIND_STRESS].attrs[num_standard_attrs].value.str = "s-1";
     varlist[WIND_STRESS].attrs[num_standard_attrs + 1].name = "scale_factor";
     varlist[WIND_STRESS].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[WIND_STRESS].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -540,10 +542,10 @@ int main(int argc, char **argv) {
     varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].value.f = 9999.0;
     varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].name = "long_name";
     varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].value.s = "equivalent neutral wind-stress-divergence";
+    varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].value.str = "equivalent neutral wind-stress-divergence";
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].name = "units";
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].value.s = "s-1";
+    varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].value.str = "s-1";
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].name = "scale_factor";
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -568,10 +570,10 @@ int main(int argc, char **argv) {
     varlist[STRESS_CURL].attrs[VALID_MAX].value.f = 9999.0;
     varlist[STRESS_CURL].attrs[LONG_NAME].name = "long_name";
     varlist[STRESS_CURL].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[STRESS_CURL].attrs[LONG_NAME].value.s = "equivalent neutral wind-stress-curl";
+    varlist[STRESS_CURL].attrs[LONG_NAME].value.str = "equivalent neutral wind-stress-curl";
     varlist[STRESS_CURL].attrs[num_standard_attrs].name = "units";
     varlist[STRESS_CURL].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[STRESS_CURL].attrs[num_standard_attrs].value.s = "s-1";
+    varlist[STRESS_CURL].attrs[num_standard_attrs].value.str = "s-1";
     varlist[STRESS_CURL].attrs[num_standard_attrs + 1].name = "scale_factor";
     varlist[STRESS_CURL].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[STRESS_CURL].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -587,22 +589,22 @@ int main(int argc, char **argv) {
 
     varlist[TIME].attrs[FILL_VALUE].name = NULL;
     varlist[TIME].attrs[FILL_VALUE].type = varlist[TIME].type;
-    varlist[TIME].attrs[FILL_VALUE].value.s = NULL;
+    varlist[TIME].attrs[FILL_VALUE].value.str = NULL;
     varlist[TIME].attrs[VALID_MIN].name = NULL;
     varlist[TIME].attrs[VALID_MIN].type = varlist[TIME].type;
-    varlist[TIME].attrs[VALID_MIN].value.s = NULL;
+    varlist[TIME].attrs[VALID_MIN].value.str = NULL;
     varlist[TIME].attrs[VALID_MAX].name = NULL;
     varlist[TIME].attrs[VALID_MAX].type = varlist[TIME].type;
-    varlist[TIME].attrs[VALID_MAX].value.s = NULL;
+    varlist[TIME].attrs[VALID_MAX].value.str = NULL;
     varlist[TIME].attrs[LONG_NAME].name = "long_name";
     varlist[TIME].attrs[LONG_NAME].type = varlist[TIME].type;
-    varlist[TIME].attrs[LONG_NAME].value.s = "date and time";
+    varlist[TIME].attrs[LONG_NAME].value.str = "date and time";
     varlist[TIME].attrs[num_standard_attrs].name = "units";
     varlist[TIME].attrs[num_standard_attrs].type = varlist[TIME].type;
-    varlist[TIME].attrs[num_standard_attrs].value.s = time_format;
+    varlist[TIME].attrs[num_standard_attrs].value.str = time_format;
 
     varlist[FLAGS].name  = "flags";
-    varlist[FLAGS].type  = NC_INT;
+    varlist[FLAGS].type  = NC_SHORT;
     varlist[FLAGS].ndims = 2;
     varlist[FLAGS].dims = dimensions; 
     varlist[FLAGS].nattrs = 0;
@@ -613,50 +615,72 @@ int main(int argc, char **argv) {
 
     varlist[FLAGS].attrs[FILL_VALUE].name = "FillValue";
     varlist[FLAGS].attrs[FILL_VALUE].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[FILL_VALUE].value.i = 0;
+    varlist[FLAGS].attrs[FILL_VALUE].value.s = 0;
     varlist[FLAGS].attrs[VALID_MIN].name = "valid_min";
     varlist[FLAGS].attrs[VALID_MIN].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[VALID_MIN].value.i = 0;
+    varlist[FLAGS].attrs[VALID_MIN].value.s = 0;
     varlist[FLAGS].attrs[VALID_MAX].name = "valid_max";
     varlist[FLAGS].attrs[VALID_MAX].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[VALID_MAX].value.i = 0xFfffFfff;
+    varlist[FLAGS].attrs[VALID_MAX].value.s = 0xFfff;
     varlist[FLAGS].attrs[LONG_NAME].name = "long_name";
     varlist[FLAGS].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[FLAGS].attrs[LONG_NAME].value.s = "flags";
-    varlist[FLAGS].attrs[num_standard_attrs].name = "adequate_sigma0_flag";
-    varlist[FLAGS].attrs[num_standard_attrs].type = NC_INT;
-    varlist[FLAGS].attrs[num_standard_attrs].value.i = SIGMA0_MASK;
+    varlist[FLAGS].attrs[LONG_NAME].value.str = "flags";
+    varlist[FLAGS].attrs[num_standard_attrs + 0].name = "adequate_sigma0_flag";
+    varlist[FLAGS].attrs[num_standard_attrs + 0].type = varlist[FLAGS].type;
+    varlist[FLAGS].attrs[num_standard_attrs + 0].value.s = SIGMA0_MASK;
     varlist[FLAGS].attrs[num_standard_attrs + 1].name = "adequate_azimuth_diversity_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 1].type = NC_INT;
-    varlist[FLAGS].attrs[num_standard_attrs + 1].value.i = AZIMUTH_DIV_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 1].type = varlist[FLAGS].type;
+    varlist[FLAGS].attrs[num_standard_attrs + 1].value.s = AZIMUTH_DIV_MASK;
     varlist[FLAGS].attrs[num_standard_attrs + 2].name = "coastal_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 2].type = NC_INT;
-    varlist[FLAGS].attrs[num_standard_attrs + 2].value.i = COASTAL_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 2].type = varlist[FLAGS].type;
+    varlist[FLAGS].attrs[num_standard_attrs + 2].value.s = COASTAL_MASK;
     varlist[FLAGS].attrs[num_standard_attrs + 3].name = "ice_edge_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 3].type = NC_INT;
-    varlist[FLAGS].attrs[num_standard_attrs + 3].value.i = ICE_EDGE_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 3].type = varlist[FLAGS].type;
+    varlist[FLAGS].attrs[num_standard_attrs + 3].value.s = ICE_EDGE_MASK;
     varlist[FLAGS].attrs[num_standard_attrs + 4].name = "wind_retrieval_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 4].type = NC_INT;
-    varlist[FLAGS].attrs[num_standard_attrs + 4].value.i = WIND_RETRIEVAL_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 4].type = varlist[FLAGS].type;
+    varlist[FLAGS].attrs[num_standard_attrs + 4].value.s = WIND_RETRIEVAL_MASK;
     varlist[FLAGS].attrs[num_standard_attrs + 5].name = "high_wind_speed_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 5].type = NC_INT;
-    varlist[FLAGS].attrs[num_standard_attrs + 5].value.i = HIGH_WIND_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 5].type = varlist[FLAGS].type;
+    varlist[FLAGS].attrs[num_standard_attrs + 5].value.s = HIGH_WIND_MASK;
     varlist[FLAGS].attrs[num_standard_attrs + 6].name = "low_wind_speed_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 6].type = NC_INT;
-    varlist[FLAGS].attrs[num_standard_attrs + 6].value.i = LOW_WIND_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 6].type = varlist[FLAGS].type;
+    varlist[FLAGS].attrs[num_standard_attrs + 6].value.s = LOW_WIND_MASK;
     varlist[FLAGS].attrs[num_standard_attrs + 7].name = "rain_impact_flag_usable";
-    varlist[FLAGS].attrs[num_standard_attrs + 7].type = NC_INT;
-    varlist[FLAGS].attrs[num_standard_attrs + 7].value.i = RAIN_IMPACT_UNUSABLE_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 7].type = varlist[FLAGS].type;
+    varlist[FLAGS].attrs[num_standard_attrs + 7].value.s = RAIN_IMPACT_UNUSABLE_MASK;
     varlist[FLAGS].attrs[num_standard_attrs + 8].name = "rain_impact_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 8].type = NC_INT;
-    varlist[FLAGS].attrs[num_standard_attrs + 8].value.i = RAIN_IMPACT_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 8].type = varlist[FLAGS].type;
+    varlist[FLAGS].attrs[num_standard_attrs + 8].value.s = RAIN_IMPACT_MASK;
     varlist[FLAGS].attrs[num_standard_attrs + 9].name = "available_data_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 9].type = NC_INT;
-    varlist[FLAGS].attrs[num_standard_attrs + 9].value.i = AVAILABLE_DATA_MASK;
+    varlist[FLAGS].attrs[num_standard_attrs + 9].type = varlist[FLAGS].type;
+    varlist[FLAGS].attrs[num_standard_attrs + 9].value.s = AVAILABLE_DATA_MASK;
+
+    varlist[EFLAGS].name  = "eflags";
+    varlist[EFLAGS].type  = NC_SHORT;
+    varlist[EFLAGS].ndims = 2;
+    varlist[EFLAGS].dims = dimensions; 
+    varlist[EFLAGS].nattrs = 0;
+    varlist[EFLAGS].nattrs = num_standard_attrs;
+    ERR((varlist[EFLAGS].attrs = (typeof varlist[EFLAGS].attrs)
+                malloc(varlist[EFLAGS].nattrs * 
+                    (sizeof *varlist[EFLAGS].attrs))) == NULL);
+
+    varlist[EFLAGS].attrs[FILL_VALUE].name = "FillValue";
+    varlist[EFLAGS].attrs[FILL_VALUE].type = varlist[EFLAGS].type;
+    varlist[EFLAGS].attrs[FILL_VALUE].value.s = 0;
+    varlist[EFLAGS].attrs[VALID_MIN].name = "valid_min";
+    varlist[EFLAGS].attrs[VALID_MIN].type = varlist[EFLAGS].type;
+    varlist[EFLAGS].attrs[VALID_MIN].value.s = 0;
+    varlist[EFLAGS].attrs[VALID_MAX].name = "valid_max";
+    varlist[EFLAGS].attrs[VALID_MAX].type = varlist[EFLAGS].type;
+    varlist[EFLAGS].attrs[VALID_MAX].value.s = 0xFfff;
+    varlist[EFLAGS].attrs[LONG_NAME].name = "long_name";
+    varlist[EFLAGS].attrs[LONG_NAME].type = NC_CHAR;
+    varlist[EFLAGS].attrs[LONG_NAME].value.str = "extended_flags";
 
     if (run_config.extended) { 
-        /* Change name to ecmwf_model_speed? */
-        varlist[NUDGE_SPEED].name  = "nudge_speed";
+        varlist[NUDGE_SPEED].name  = "ecmwf_wind_speed";
         varlist[NUDGE_SPEED].type  = NC_FLOAT;
         varlist[NUDGE_SPEED].ndims = 2;
         varlist[NUDGE_SPEED].dims = dimensions; 
@@ -676,15 +700,15 @@ int main(int argc, char **argv) {
         varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f = 100.0f;
         varlist[NUDGE_SPEED].attrs[LONG_NAME].name = "long_name";
         varlist[NUDGE_SPEED].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[NUDGE_SPEED].attrs[LONG_NAME].value.s = "nudge_speed";
+        varlist[NUDGE_SPEED].attrs[LONG_NAME].value.str = "ecmwf_wind_speed";
         varlist[NUDGE_SPEED].attrs[num_standard_attrs].name = "units";
         varlist[NUDGE_SPEED].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[NUDGE_SPEED].attrs[num_standard_attrs].value.s = "m s-1";
+        varlist[NUDGE_SPEED].attrs[num_standard_attrs].value.str = "m s-1";
         varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].name = "scale_factor";
         varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].value.f = 1.0f;
                  
-        varlist[NUDGE_DIRECTION].name  = "nudge_to_direction";
+        varlist[NUDGE_DIRECTION].name  = "ecmwf_wind_direction";
         varlist[NUDGE_DIRECTION].type  = NC_FLOAT;
         varlist[NUDGE_DIRECTION].ndims = 2;
         varlist[NUDGE_DIRECTION].dims = dimensions; 
@@ -704,10 +728,10 @@ int main(int argc, char **argv) {
         varlist[NUDGE_DIRECTION].attrs[VALID_MAX].value.f = 360.0f;
         varlist[NUDGE_DIRECTION].attrs[LONG_NAME].name = "long_name";
         varlist[NUDGE_DIRECTION].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[NUDGE_DIRECTION].attrs[LONG_NAME].value.s = "nudge_to_direction";
+        varlist[NUDGE_DIRECTION].attrs[LONG_NAME].value.str = "ecmwf_wind_direction";
         varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].name = "units";
         varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].value.s = "degrees";
+        varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].value.str = "degrees";
         varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].name = "scale_factor";
         varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -733,10 +757,10 @@ int main(int argc, char **argv) {
         varlist[SEL_OBJ].attrs[VALID_MAX].value.f = 360.0f;
         varlist[SEL_OBJ].attrs[LONG_NAME].name = "long_name";
         varlist[SEL_OBJ].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[SEL_OBJ].attrs[LONG_NAME].value.s = "wind_obj";
+        varlist[SEL_OBJ].attrs[LONG_NAME].value.str = "wind_obj";
         varlist[SEL_OBJ].attrs[num_standard_attrs].name = "units";
         varlist[SEL_OBJ].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[SEL_OBJ].attrs[num_standard_attrs].value.s = "1";
+        varlist[SEL_OBJ].attrs[num_standard_attrs].value.str = "1";
         varlist[SEL_OBJ].attrs[num_standard_attrs + 1].name = "scale_factor";
         varlist[SEL_OBJ].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[SEL_OBJ].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -762,10 +786,10 @@ int main(int argc, char **argv) {
         varlist[AMBIG_SPEED].attrs[VALID_MAX].value.f = 100.0f;
         varlist[AMBIG_SPEED].attrs[LONG_NAME].name = "long_name";
         varlist[AMBIG_SPEED].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[AMBIG_SPEED].attrs[LONG_NAME].value.s = "ambig_speed";
+        varlist[AMBIG_SPEED].attrs[LONG_NAME].value.str = "ambig_speed";
         varlist[AMBIG_SPEED].attrs[num_standard_attrs].name = "units";
         varlist[AMBIG_SPEED].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[AMBIG_SPEED].attrs[num_standard_attrs].value.s = "m s-1";
+        varlist[AMBIG_SPEED].attrs[num_standard_attrs].value.str = "m s-1";
         varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].name = "scale_factor";
         varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -790,10 +814,10 @@ int main(int argc, char **argv) {
         varlist[AMBIG_DIRECTION].attrs[VALID_MAX].value.f = 360.0f;
         varlist[AMBIG_DIRECTION].attrs[LONG_NAME].name = "long_name";
         varlist[AMBIG_DIRECTION].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[AMBIG_DIRECTION].attrs[LONG_NAME].value.s = "ambig_to_direction";
+        varlist[AMBIG_DIRECTION].attrs[LONG_NAME].value.str = "ambig_to_direction";
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].name = "units";
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].value.s = "degrees";
+        varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].value.str = "degrees";
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs + 1].name = "scale_factor";
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -818,10 +842,10 @@ int main(int argc, char **argv) {
         varlist[AMBIG_OBJ].attrs[VALID_MAX].value.f = 360.0f;
         varlist[AMBIG_OBJ].attrs[LONG_NAME].name = "long_name";
         varlist[AMBIG_OBJ].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[AMBIG_OBJ].attrs[LONG_NAME].value.s = "ambig_obj";
+        varlist[AMBIG_OBJ].attrs[LONG_NAME].value.str = "ambig_obj";
         varlist[AMBIG_OBJ].attrs[num_standard_attrs].name = "units";
         varlist[AMBIG_OBJ].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[AMBIG_OBJ].attrs[num_standard_attrs].value.s = "1";
+        varlist[AMBIG_OBJ].attrs[num_standard_attrs].value.str = "1";
         varlist[AMBIG_OBJ].attrs[num_standard_attrs + 1].name = "scale_factor";
         varlist[AMBIG_OBJ].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[AMBIG_OBJ].attrs[num_standard_attrs + 1].value.f = 1.0f;
@@ -838,19 +862,19 @@ int main(int argc, char **argv) {
     
         varlist[N_IN_FORE].attrs[FILL_VALUE].name = "FillValue";
         varlist[N_IN_FORE].attrs[FILL_VALUE].type = varlist[N_IN_FORE].type;
-        varlist[N_IN_FORE].attrs[FILL_VALUE].value.c = 0;
+        varlist[N_IN_FORE].attrs[FILL_VALUE].value.b = 0;
         varlist[N_IN_FORE].attrs[VALID_MIN].name = "valid_min";
         varlist[N_IN_FORE].attrs[VALID_MIN].type = varlist[N_IN_FORE].type;
-        varlist[N_IN_FORE].attrs[VALID_MIN].value.c = 0;
+        varlist[N_IN_FORE].attrs[VALID_MIN].value.b = 0;
         varlist[N_IN_FORE].attrs[VALID_MAX].name = "valid_max";
         varlist[N_IN_FORE].attrs[VALID_MAX].type = varlist[N_IN_FORE].type;
-        varlist[N_IN_FORE].attrs[VALID_MAX].value.c = 0x7f;
+        varlist[N_IN_FORE].attrs[VALID_MAX].value.b = 0xFf;
         varlist[N_IN_FORE].attrs[LONG_NAME].name = "long_name";
         varlist[N_IN_FORE].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[N_IN_FORE].attrs[LONG_NAME].value.s = "number_in_fore";
+        varlist[N_IN_FORE].attrs[LONG_NAME].value.str = "number_in_fore";
         varlist[N_IN_FORE].attrs[num_standard_attrs].name = "units";
         varlist[N_IN_FORE].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[N_IN_FORE].attrs[num_standard_attrs].value.s = "1";
+        varlist[N_IN_FORE].attrs[num_standard_attrs].value.str = "1";
             
         varlist[N_IN_AFT].name  = "number_in_aft";
         varlist[N_IN_AFT].type  = NC_BYTE;
@@ -863,19 +887,19 @@ int main(int argc, char **argv) {
     
         varlist[N_IN_AFT].attrs[FILL_VALUE].name = "FillValue";
         varlist[N_IN_AFT].attrs[FILL_VALUE].type = varlist[N_IN_AFT].type;
-        varlist[N_IN_AFT].attrs[FILL_VALUE].value.c = 0;
+        varlist[N_IN_AFT].attrs[FILL_VALUE].value.b = 0;
         varlist[N_IN_AFT].attrs[VALID_MIN].name = "valid_min";
         varlist[N_IN_AFT].attrs[VALID_MIN].type = varlist[N_IN_AFT].type;
-        varlist[N_IN_AFT].attrs[VALID_MIN].value.c = 0;
+        varlist[N_IN_AFT].attrs[VALID_MIN].value.b = 0;
         varlist[N_IN_AFT].attrs[VALID_MAX].name = "valid_max";
         varlist[N_IN_AFT].attrs[VALID_MAX].type = varlist[N_IN_AFT].type;
-        varlist[N_IN_AFT].attrs[VALID_MAX].value.c = 0x7f;
+        varlist[N_IN_AFT].attrs[VALID_MAX].value.b = 0xFf;
         varlist[N_IN_AFT].attrs[LONG_NAME].name = "long_name";
         varlist[N_IN_AFT].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[N_IN_AFT].attrs[LONG_NAME].value.s = "number_in_aft";
+        varlist[N_IN_AFT].attrs[LONG_NAME].value.str = "number_in_aft";
         varlist[N_IN_AFT].attrs[num_standard_attrs].name = "units";
         varlist[N_IN_AFT].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[N_IN_AFT].attrs[num_standard_attrs].value.s = "1";
+        varlist[N_IN_AFT].attrs[num_standard_attrs].value.str = "1";
                
         varlist[N_OUT_FORE].name  = "number_out_fore";
         varlist[N_OUT_FORE].type  = NC_BYTE;
@@ -888,19 +912,19 @@ int main(int argc, char **argv) {
     
         varlist[N_OUT_FORE].attrs[FILL_VALUE].name = "FillValue";
         varlist[N_OUT_FORE].attrs[FILL_VALUE].type = varlist[N_OUT_FORE].type;
-        varlist[N_OUT_FORE].attrs[FILL_VALUE].value.c = 0;
+        varlist[N_OUT_FORE].attrs[FILL_VALUE].value.b = 0;
         varlist[N_OUT_FORE].attrs[VALID_MIN].name = "valid_min";
         varlist[N_OUT_FORE].attrs[VALID_MIN].type = varlist[N_OUT_FORE].type;
-        varlist[N_OUT_FORE].attrs[VALID_MIN].value.c = 0;
+        varlist[N_OUT_FORE].attrs[VALID_MIN].value.b = 0;
         varlist[N_OUT_FORE].attrs[VALID_MAX].name = "valid_max";
         varlist[N_OUT_FORE].attrs[VALID_MAX].type = varlist[N_OUT_FORE].type;
-        varlist[N_OUT_FORE].attrs[VALID_MAX].value.c = 0x7f;
+        varlist[N_OUT_FORE].attrs[VALID_MAX].value.b = 0xFf;
         varlist[N_OUT_FORE].attrs[LONG_NAME].name = "long_name";
         varlist[N_OUT_FORE].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[N_OUT_FORE].attrs[LONG_NAME].value.s = "number_out_fore";
+        varlist[N_OUT_FORE].attrs[LONG_NAME].value.str = "number_out_fore";
         varlist[N_OUT_FORE].attrs[num_standard_attrs].name = "units";
         varlist[N_OUT_FORE].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[N_OUT_FORE].attrs[num_standard_attrs].value.s = "1";
+        varlist[N_OUT_FORE].attrs[num_standard_attrs].value.str = "1";
                
         varlist[N_OUT_AFT].name  = "number_out_aft";
         varlist[N_OUT_AFT].type  = NC_BYTE;
@@ -913,19 +937,19 @@ int main(int argc, char **argv) {
     
         varlist[N_OUT_AFT].attrs[FILL_VALUE].name = "FillValue";
         varlist[N_OUT_AFT].attrs[FILL_VALUE].type = varlist[N_OUT_AFT].type;
-        varlist[N_OUT_AFT].attrs[FILL_VALUE].value.c = 0;
+        varlist[N_OUT_AFT].attrs[FILL_VALUE].value.b = 0;
         varlist[N_OUT_AFT].attrs[VALID_MIN].name = "valid_min";
         varlist[N_OUT_AFT].attrs[VALID_MIN].type = varlist[N_OUT_AFT].type;
-        varlist[N_OUT_AFT].attrs[VALID_MIN].value.c = 0;
+        varlist[N_OUT_AFT].attrs[VALID_MIN].value.b = 0;
         varlist[N_OUT_AFT].attrs[VALID_MAX].name = "valid_max";
         varlist[N_OUT_AFT].attrs[VALID_MAX].type = varlist[N_OUT_AFT].type;
-        varlist[N_OUT_AFT].attrs[VALID_MAX].value.c = 0x7f;
+        varlist[N_OUT_AFT].attrs[VALID_MAX].value.b = 0xFf;
         varlist[N_OUT_AFT].attrs[LONG_NAME].name = "long_name";
         varlist[N_OUT_AFT].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[N_OUT_AFT].attrs[LONG_NAME].value.s = "number_out_aft";
+        varlist[N_OUT_AFT].attrs[LONG_NAME].value.str = "number_out_aft";
         varlist[N_OUT_AFT].attrs[num_standard_attrs].name = "units";
         varlist[N_OUT_AFT].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[N_OUT_AFT].attrs[num_standard_attrs].value.s = "1";
+        varlist[N_OUT_AFT].attrs[num_standard_attrs].value.str = "1";
     }
 
     for (int i = 0; i < (run_config.extended ? num_variables : 
@@ -939,7 +963,11 @@ int main(int argc, char **argv) {
                 switch (attr->type) {
                     case NC_CHAR:
                         NCERR(nc_put_att_text(ncid, varlist[i].id, attr->name,
-                                    strlen(attr->value.s), (attr->value.s)));
+                                    strlen(attr->value.str), (attr->value.str)));
+                        break;
+                    case NC_SHORT:
+                        NCERR(nc_put_att_short(ncid, varlist[i].id, attr->name, 
+                                    attr->type, (size_t)(1), &(attr->value.s)));
                         break;
                     case NC_INT:
                         NCERR(nc_put_att_int(ncid, varlist[i].id, attr->name, 
@@ -951,7 +979,7 @@ int main(int argc, char **argv) {
                         break;
                     case NC_BYTE:
                         NCERR(nc_put_att_uchar(ncid, varlist[i].id, attr->name, 
-                                    attr->type, (size_t)(1), &(attr->value.c)));
+                                    attr->type, (size_t)(1), &(attr->value.b)));
                         break;
                     default:
                         fprintf(stderr, "Incorrect attribute type: %d\n", 
@@ -1024,6 +1052,7 @@ int main(int argc, char **argv) {
 
             if (wvc != NULL && wvc->selected != NULL) {
                 flags = 0;
+                eflags = 0;
 
                 flags |= ((wvc->landiceFlagBits & LAND_ICE_FLAG_COAST) != 0) * COASTAL_MASK;
                 flags |= ((wvc->landiceFlagBits & LAND_ICE_FLAG_ICE) != 0) * ICE_EDGE_MASK;
@@ -1054,7 +1083,8 @@ int main(int argc, char **argv) {
                             &conversion));
                 NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
                             &wvc->rainImpact));
-                NCERR(nc_put_var1_int(ncid, varlist[FLAGS].id, idx, &flags));
+                NCERR(nc_put_var1_short(ncid, varlist[FLAGS].id, idx, &flags));
+                NCERR(nc_put_var1_short(ncid, varlist[EFLAGS].id, idx, &eflags));
 
                 /* Extended variables */
                 if (run_config.extended) {
@@ -1117,6 +1147,7 @@ int main(int argc, char **argv) {
             } else {
             
                 flags = WIND_RETRIEVAL_MASK;
+                eflags = 0;
             
                 bin_to_latlon(idx[0], idx[1], &orbit_config, &lat, &lon);
 
@@ -1129,7 +1160,8 @@ int main(int argc, char **argv) {
                             &varlist[SEL_DIRECTION].attrs[FILL_VALUE].value.f));
                 NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
                             &varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f));
-                NCERR(nc_put_var1_int(ncid, varlist[FLAGS].id, idx, &flags));
+                NCERR(nc_put_var1_short(ncid, varlist[FLAGS].id, idx, &flags));
+                NCERR(nc_put_var1_short(ncid, varlist[EFLAGS].id, idx, &eflags));
 
                 /* Extended variables */
                 if (run_config.extended) {
@@ -1140,13 +1172,13 @@ int main(int argc, char **argv) {
                     NCERR(nc_put_var1_float(ncid, varlist[SEL_OBJ].id, idx, 
                                 &varlist[SEL_OBJ].attrs[FILL_VALUE].value.f));
                     NCERR(nc_put_var1_uchar(ncid, varlist[N_IN_FORE].id, idx, 
-                                &varlist[N_IN_FORE].attrs[FILL_VALUE].value.c));
+                                &varlist[N_IN_FORE].attrs[FILL_VALUE].value.b));
                     NCERR(nc_put_var1_uchar(ncid, varlist[N_IN_AFT].id, idx, 
-                                &varlist[N_IN_AFT].attrs[FILL_VALUE].value.c));
+                                &varlist[N_IN_AFT].attrs[FILL_VALUE].value.b));
                     NCERR(nc_put_var1_uchar(ncid, varlist[N_OUT_FORE].id, idx, 
-                                &varlist[N_OUT_FORE].attrs[FILL_VALUE].value.c));
+                                &varlist[N_OUT_FORE].attrs[FILL_VALUE].value.b));
                     NCERR(nc_put_var1_uchar(ncid, varlist[N_OUT_AFT].id, idx, 
-                                &varlist[N_OUT_AFT].attrs[FILL_VALUE].value.c));
+                                &varlist[N_OUT_AFT].attrs[FILL_VALUE].value.b));
         
                     for (idx[2] = 0; (int)idx[2] < max_ambiguities; idx[2]++) {
         
