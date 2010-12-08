@@ -281,7 +281,7 @@ main(
     float ** lat=(float**)make_array(sizeof(float),2,nati,ncti);
     float ** lon=(float**)make_array(sizeof(float),2,nati,ncti);
 
-    int ** flg=(int**)make_array(sizeof(int),2,nati,ncti);
+    unsigned int ** flg=(unsigned int**)make_array(sizeof(unsigned int),2,nati,ncti);
     float ** impact=(float**)make_array(sizeof(float),2,nati,ncti);    
 
     int found_valid=0;
@@ -387,7 +387,7 @@ main(
        !write_array(wfp,&dir[f],sizeof(float),2,n,ncti) ||
        !write_array(wfp,&lat[f],sizeof(float),2,n,ncti) ||
        !write_array(wfp,&lon[f],sizeof(float),2,n,ncti) ||
-       !write_array(wfp,&flg[f],sizeof(int),2,n,ncti)  ||
+       !write_array(wfp,&flg[f],sizeof(unsigned int),2,n,ncti)  ||
        !write_array(wfp,&impact[f],sizeof(float),2,n,ncti)){
       fprintf(stderr,"Error writing to file %s\n",out_file);
       exit(1);
