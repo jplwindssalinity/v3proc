@@ -88,6 +88,7 @@ static const char rcs_id[] =
         return EXIT_FAILURE; \
     }
 
+const size_t NUM_FLAGS = 10;
 enum {
     SIGMA0_MASK               = 0x00000001,
     AZIMUTH_DIV_MASK          = 0x00000002,
@@ -128,12 +129,12 @@ typedef enum {
     STRESS_CURL,
     FLAGS,
     EFLAGS,
+    NUDGE_SPEED,
+    NUDGE_DIRECTION,
 
     first_extended_variable,
 
     SEL_OBJ = first_extended_variable,
-    NUDGE_SPEED,
-    NUDGE_DIRECTION,
     AMBIG_SPEED,
     AMBIG_DIRECTION,
     AMBIG_OBJ,
@@ -164,11 +165,16 @@ typedef struct {
 typedef struct {
     const char *name;
     nc_type type;
+    size_t size;
     union {
         float f;
+        float *pf;
         int32 i;
+        int32 *pi;
         int16 s;
+        int16 *ps;
         unsigned char b;
+        unsigned char *pb;
         const char *str;
     } value;
 } attribute;
@@ -310,21 +316,27 @@ int main(int argc, char **argv) {
                     (sizeof *varlist[LATITUDE].attrs))) == NULL);
 
     varlist[LATITUDE].attrs[FILL_VALUE].name = "FillValue";
+    varlist[LATITUDE].attrs[FILL_VALUE].size = 1;
     varlist[LATITUDE].attrs[FILL_VALUE].type = varlist[LATITUDE].type;
     varlist[LATITUDE].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[LATITUDE].attrs[VALID_MIN].name = "valid_min";
+    varlist[LATITUDE].attrs[VALID_MIN].size = 1;
     varlist[LATITUDE].attrs[VALID_MIN].type = varlist[LATITUDE].type;
     varlist[LATITUDE].attrs[VALID_MIN].value.f = -90.0f;
     varlist[LATITUDE].attrs[VALID_MAX].name = "valid_max";
+    varlist[LATITUDE].attrs[VALID_MAX].size = 1;
     varlist[LATITUDE].attrs[VALID_MAX].type = varlist[LATITUDE].type;
     varlist[LATITUDE].attrs[VALID_MAX].value.f =  90.0f;
     varlist[LATITUDE].attrs[LONG_NAME].name = "long_name";
+    varlist[LATITUDE].attrs[LONG_NAME].size = 1;
     varlist[LATITUDE].attrs[LONG_NAME].type = NC_CHAR;
     varlist[LATITUDE].attrs[LONG_NAME].value.str = "latitude";
     varlist[LATITUDE].attrs[num_standard_attrs].name = "units";
+    varlist[LATITUDE].attrs[num_standard_attrs].size = 1;
     varlist[LATITUDE].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[LATITUDE].attrs[num_standard_attrs].value.str = "degrees_north";
     varlist[LATITUDE].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[LATITUDE].attrs[num_standard_attrs + 1].size = 1;
     varlist[LATITUDE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[LATITUDE].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
@@ -338,21 +350,27 @@ int main(int argc, char **argv) {
                     (sizeof *varlist[LONGITUDE].attrs))) == NULL);
 
     varlist[LONGITUDE].attrs[FILL_VALUE].name = "FillValue";
+    varlist[LONGITUDE].attrs[FILL_VALUE].size = 1;
     varlist[LONGITUDE].attrs[FILL_VALUE].type = varlist[LONGITUDE].type;
     varlist[LONGITUDE].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[LONGITUDE].attrs[VALID_MIN].name = "valid_min";
+    varlist[LONGITUDE].attrs[VALID_MIN].size = 1;
     varlist[LONGITUDE].attrs[VALID_MIN].type = varlist[LONGITUDE].type;
     varlist[LONGITUDE].attrs[VALID_MIN].value.f = 0.0f;
     varlist[LONGITUDE].attrs[VALID_MAX].name = "valid_max";
+    varlist[LONGITUDE].attrs[VALID_MAX].size = 1;
     varlist[LONGITUDE].attrs[VALID_MAX].type = varlist[LONGITUDE].type;
     varlist[LONGITUDE].attrs[VALID_MAX].value.f = 360.0f;
     varlist[LONGITUDE].attrs[LONG_NAME].name = "long_name";
+    varlist[LONGITUDE].attrs[LONG_NAME].size = 1;
     varlist[LONGITUDE].attrs[LONG_NAME].type = NC_CHAR;
     varlist[LONGITUDE].attrs[LONG_NAME].value.str = "longitude";
     varlist[LONGITUDE].attrs[num_standard_attrs].name = "units";
+    varlist[LONGITUDE].attrs[num_standard_attrs].size = 1;
     varlist[LONGITUDE].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[LONGITUDE].attrs[num_standard_attrs].value.str = "degrees_east";
     varlist[LONGITUDE].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[LONGITUDE].attrs[num_standard_attrs + 1].size = 1;
     varlist[LONGITUDE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[LONGITUDE].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
@@ -366,21 +384,27 @@ int main(int argc, char **argv) {
                     (sizeof *varlist[SEL_SPEED].attrs))) == NULL);
 
     varlist[SEL_SPEED].attrs[FILL_VALUE].name = "FillValue";
+    varlist[SEL_SPEED].attrs[FILL_VALUE].size = 1;
     varlist[SEL_SPEED].attrs[FILL_VALUE].type = varlist[SEL_SPEED].type;
     varlist[SEL_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[SEL_SPEED].attrs[VALID_MIN].name = "valid_min";
+    varlist[SEL_SPEED].attrs[VALID_MIN].size = 1;
     varlist[SEL_SPEED].attrs[VALID_MIN].type = varlist[SEL_SPEED].type;
     varlist[SEL_SPEED].attrs[VALID_MIN].value.f = 0.0f;
     varlist[SEL_SPEED].attrs[VALID_MAX].name = "valid_max";
+    varlist[SEL_SPEED].attrs[VALID_MAX].size = 1;
     varlist[SEL_SPEED].attrs[VALID_MAX].type = varlist[SEL_SPEED].type;
     varlist[SEL_SPEED].attrs[VALID_MAX].value.f = 100.0f;
     varlist[SEL_SPEED].attrs[LONG_NAME].name = "long_name";
+    varlist[SEL_SPEED].attrs[LONG_NAME].size = 1;
     varlist[SEL_SPEED].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[SEL_SPEED].attrs[LONG_NAME].value.str = "equivalent neutral wind-speed at 10 m";
+    varlist[SEL_SPEED].attrs[LONG_NAME].value.str = "equivalent neutral wind speed at 10 m";
     varlist[SEL_SPEED].attrs[num_standard_attrs].name = "units";
+    varlist[SEL_SPEED].attrs[num_standard_attrs].size = 1;
     varlist[SEL_SPEED].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[SEL_SPEED].attrs[num_standard_attrs].value.str = "m s-1";
     varlist[SEL_SPEED].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[SEL_SPEED].attrs[num_standard_attrs + 1].size = 1;
     varlist[SEL_SPEED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[SEL_SPEED].attrs[num_standard_attrs + 1].value.f = 1.0f;
     
@@ -394,21 +418,27 @@ int main(int argc, char **argv) {
                     (sizeof *varlist[SEL_DIRECTION].attrs))) == NULL);
 
     varlist[SEL_DIRECTION].attrs[FILL_VALUE].name = "FillValue";
+    varlist[SEL_DIRECTION].attrs[FILL_VALUE].size = 1;
     varlist[SEL_DIRECTION].attrs[FILL_VALUE].type = varlist[SEL_DIRECTION].type;
     varlist[SEL_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[SEL_DIRECTION].attrs[VALID_MIN].name = "valid_min";
+    varlist[SEL_DIRECTION].attrs[VALID_MIN].size = 1;
     varlist[SEL_DIRECTION].attrs[VALID_MIN].type = varlist[SEL_DIRECTION].type;
     varlist[SEL_DIRECTION].attrs[VALID_MIN].value.f = 0.0f;
     varlist[SEL_DIRECTION].attrs[VALID_MAX].name = "valid_max";
+    varlist[SEL_DIRECTION].attrs[VALID_MAX].size = 1;
     varlist[SEL_DIRECTION].attrs[VALID_MAX].type = varlist[SEL_DIRECTION].type;
     varlist[SEL_DIRECTION].attrs[VALID_MAX].value.f = 360.0f;
     varlist[SEL_DIRECTION].attrs[LONG_NAME].name = "long_name";
+    varlist[SEL_DIRECTION].attrs[LONG_NAME].size = 1;
     varlist[SEL_DIRECTION].attrs[LONG_NAME].type = NC_CHAR;
     varlist[SEL_DIRECTION].attrs[LONG_NAME].value.str = "equivalent neutral wind direction at 10 m";
     varlist[SEL_DIRECTION].attrs[num_standard_attrs].name = "units";
+    varlist[SEL_DIRECTION].attrs[num_standard_attrs].size = 1;
     varlist[SEL_DIRECTION].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[SEL_DIRECTION].attrs[num_standard_attrs].value.str = "degrees";
     varlist[SEL_DIRECTION].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[SEL_DIRECTION].attrs[num_standard_attrs + 1].size = 1;
     varlist[SEL_DIRECTION].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[SEL_DIRECTION].attrs[num_standard_attrs + 1].value.f = 1.0f;
    
@@ -422,18 +452,23 @@ int main(int argc, char **argv) {
                     (sizeof *varlist[RAIN_IMPACT].attrs))) == NULL);
 
     varlist[RAIN_IMPACT].attrs[FILL_VALUE].name = "FillValue";
+    varlist[RAIN_IMPACT].attrs[FILL_VALUE].size = 1;
     varlist[RAIN_IMPACT].attrs[FILL_VALUE].type = varlist[RAIN_IMPACT].type;
     varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[RAIN_IMPACT].attrs[VALID_MIN].name = "valid_min";
+    varlist[RAIN_IMPACT].attrs[VALID_MIN].size = 1;
     varlist[RAIN_IMPACT].attrs[VALID_MIN].type = varlist[RAIN_IMPACT].type;
     varlist[RAIN_IMPACT].attrs[VALID_MIN].value.f = 0.0f;
     varlist[RAIN_IMPACT].attrs[VALID_MAX].name = "valid_max";
+    varlist[RAIN_IMPACT].attrs[VALID_MAX].size = 1;
     varlist[RAIN_IMPACT].attrs[VALID_MAX].type = varlist[RAIN_IMPACT].type;
     varlist[RAIN_IMPACT].attrs[VALID_MAX].value.f = 9999.0;
     varlist[RAIN_IMPACT].attrs[LONG_NAME].name = "long_name";
+    varlist[RAIN_IMPACT].attrs[LONG_NAME].size = 1;
     varlist[RAIN_IMPACT].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[RAIN_IMPACT].attrs[LONG_NAME].value.str = "rain-impact";
+    varlist[RAIN_IMPACT].attrs[LONG_NAME].value.str = "impact of rain upon wind vector retrieval";
     varlist[RAIN_IMPACT].attrs[num_standard_attrs].name = "units";
+    varlist[RAIN_IMPACT].attrs[num_standard_attrs].size = 1;
     varlist[RAIN_IMPACT].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[RAIN_IMPACT].attrs[num_standard_attrs].value.str = "1";
   
@@ -447,21 +482,27 @@ int main(int argc, char **argv) {
                     (sizeof *varlist[WIND_DIVERGENCE].attrs))) == NULL);
 
     varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].name = "FillValue";
+    varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].size = 1;
     varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].type = varlist[WIND_DIVERGENCE].type;
     varlist[WIND_DIVERGENCE].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[WIND_DIVERGENCE].attrs[VALID_MIN].name = "valid_min";
+    varlist[WIND_DIVERGENCE].attrs[VALID_MIN].size = 1;
     varlist[WIND_DIVERGENCE].attrs[VALID_MIN].type = varlist[WIND_DIVERGENCE].type;
     varlist[WIND_DIVERGENCE].attrs[VALID_MIN].value.f = -1.0f;
     varlist[WIND_DIVERGENCE].attrs[VALID_MAX].name = "valid_max";
+    varlist[WIND_DIVERGENCE].attrs[VALID_MAX].size = 1;
     varlist[WIND_DIVERGENCE].attrs[VALID_MAX].type = varlist[WIND_DIVERGENCE].type;
     varlist[WIND_DIVERGENCE].attrs[VALID_MAX].value.f = 1.0f;
     varlist[WIND_DIVERGENCE].attrs[LONG_NAME].name = "long_name";
+    varlist[WIND_DIVERGENCE].attrs[LONG_NAME].size = 1;
     varlist[WIND_DIVERGENCE].attrs[LONG_NAME].type = NC_CHAR;
     varlist[WIND_DIVERGENCE].attrs[LONG_NAME].value.str = "equivalent neutral wind-divergence at 10 m";
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].name = "units";
+    varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].size = 1;
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs].value.str = "s-1";
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[WIND_DIVERGENCE].attrs[num_standard_attrs + 1].size = 1;
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[WIND_DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
  
@@ -475,21 +516,27 @@ int main(int argc, char **argv) {
                     (sizeof *varlist[WIND_CURL].attrs))) == NULL);
 
     varlist[WIND_CURL].attrs[FILL_VALUE].name = "FillValue";
+    varlist[WIND_CURL].attrs[FILL_VALUE].size = 1;
     varlist[WIND_CURL].attrs[FILL_VALUE].type = varlist[WIND_CURL].type;
     varlist[WIND_CURL].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[WIND_CURL].attrs[VALID_MIN].name = "valid_min";
+    varlist[WIND_CURL].attrs[VALID_MIN].size = 1;
     varlist[WIND_CURL].attrs[VALID_MIN].type = varlist[WIND_CURL].type;
     varlist[WIND_CURL].attrs[VALID_MIN].value.f = -1.0f;
     varlist[WIND_CURL].attrs[VALID_MAX].name = "valid_max";
+    varlist[WIND_CURL].attrs[VALID_MAX].size = 1;
     varlist[WIND_CURL].attrs[VALID_MAX].type = varlist[WIND_CURL].type;
     varlist[WIND_CURL].attrs[VALID_MAX].value.f = 1.0f;
     varlist[WIND_CURL].attrs[LONG_NAME].name = "long_name";
+    varlist[WIND_CURL].attrs[LONG_NAME].size = 1;
     varlist[WIND_CURL].attrs[LONG_NAME].type = NC_CHAR;
     varlist[WIND_CURL].attrs[LONG_NAME].value.str = "equivalent neutral wind-curl at 10 m";
     varlist[WIND_CURL].attrs[num_standard_attrs].name = "units";
+    varlist[WIND_CURL].attrs[num_standard_attrs].size = 1;
     varlist[WIND_CURL].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[WIND_CURL].attrs[num_standard_attrs].value.str = "s-1";
     varlist[WIND_CURL].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[WIND_CURL].attrs[num_standard_attrs + 1].size = 1;
     varlist[WIND_CURL].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[WIND_CURL].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
@@ -503,21 +550,27 @@ int main(int argc, char **argv) {
                     (sizeof *varlist[WIND_STRESS].attrs))) == NULL);
 
     varlist[WIND_STRESS].attrs[FILL_VALUE].name = "FillValue";
+    varlist[WIND_STRESS].attrs[FILL_VALUE].size = 1;
     varlist[WIND_STRESS].attrs[FILL_VALUE].type = varlist[WIND_STRESS].type;
     varlist[WIND_STRESS].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[WIND_STRESS].attrs[VALID_MIN].name = "valid_min";
+    varlist[WIND_STRESS].attrs[VALID_MIN].size = 1;
     varlist[WIND_STRESS].attrs[VALID_MIN].type = varlist[WIND_STRESS].type;
     varlist[WIND_STRESS].attrs[VALID_MIN].value.f = -9999.0;
     varlist[WIND_STRESS].attrs[VALID_MAX].name = "valid_max";
+    varlist[WIND_STRESS].attrs[VALID_MAX].size = 1;
     varlist[WIND_STRESS].attrs[VALID_MAX].type = varlist[WIND_STRESS].type;
     varlist[WIND_STRESS].attrs[VALID_MAX].value.f = 9999.0;
     varlist[WIND_STRESS].attrs[LONG_NAME].name = "long_name";
+    varlist[WIND_STRESS].attrs[LONG_NAME].size = 1;
     varlist[WIND_STRESS].attrs[LONG_NAME].type = NC_CHAR;
     varlist[WIND_STRESS].attrs[LONG_NAME].value.str = "equivalent neutral wind-stress";
     varlist[WIND_STRESS].attrs[num_standard_attrs].name = "units";
+    varlist[WIND_STRESS].attrs[num_standard_attrs].size = 1;
     varlist[WIND_STRESS].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[WIND_STRESS].attrs[num_standard_attrs].value.str = "s-1";
     varlist[WIND_STRESS].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[WIND_STRESS].attrs[num_standard_attrs + 1].size = 1;
     varlist[WIND_STRESS].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[WIND_STRESS].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
@@ -532,21 +585,27 @@ int main(int argc, char **argv) {
                     (sizeof *varlist[STRESS_DIVERGENCE].attrs))) == NULL);
 
     varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].name = "FillValue";
+    varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].size = 1;
     varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].type = varlist[STRESS_DIVERGENCE].type;
     varlist[STRESS_DIVERGENCE].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].name = "valid_min";
+    varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].size = 1;
     varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].type = varlist[STRESS_DIVERGENCE].type;
     varlist[STRESS_DIVERGENCE].attrs[VALID_MIN].value.f = -9999.0;
     varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].name = "valid_max";
+    varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].size = 1;
     varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].type = varlist[STRESS_DIVERGENCE].type;
     varlist[STRESS_DIVERGENCE].attrs[VALID_MAX].value.f = 9999.0;
     varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].name = "long_name";
+    varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].size = 1;
     varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].type = NC_CHAR;
     varlist[STRESS_DIVERGENCE].attrs[LONG_NAME].value.str = "equivalent neutral wind-stress-divergence";
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].name = "units";
+    varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].size = 1;
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs].value.str = "s-1";
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].size = 1;
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[STRESS_DIVERGENCE].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
@@ -560,21 +619,27 @@ int main(int argc, char **argv) {
                     (sizeof *varlist[STRESS_CURL].attrs))) == NULL);
 
     varlist[STRESS_CURL].attrs[FILL_VALUE].name = "FillValue";
+    varlist[STRESS_CURL].attrs[FILL_VALUE].size = 1;
     varlist[STRESS_CURL].attrs[FILL_VALUE].type = varlist[STRESS_CURL].type;
     varlist[STRESS_CURL].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
     varlist[STRESS_CURL].attrs[VALID_MIN].name = "valid_min";
+    varlist[STRESS_CURL].attrs[VALID_MIN].size = 1;
     varlist[STRESS_CURL].attrs[VALID_MIN].type = varlist[STRESS_CURL].type;
     varlist[STRESS_CURL].attrs[VALID_MIN].value.f = -9999.0;
     varlist[STRESS_CURL].attrs[VALID_MAX].name = "valid_max";
+    varlist[STRESS_CURL].attrs[VALID_MAX].size = 1;
     varlist[STRESS_CURL].attrs[VALID_MAX].type = varlist[STRESS_CURL].type;
     varlist[STRESS_CURL].attrs[VALID_MAX].value.f = 9999.0;
     varlist[STRESS_CURL].attrs[LONG_NAME].name = "long_name";
+    varlist[STRESS_CURL].attrs[LONG_NAME].size = 1;
     varlist[STRESS_CURL].attrs[LONG_NAME].type = NC_CHAR;
     varlist[STRESS_CURL].attrs[LONG_NAME].value.str = "equivalent neutral wind-stress-curl";
     varlist[STRESS_CURL].attrs[num_standard_attrs].name = "units";
+    varlist[STRESS_CURL].attrs[num_standard_attrs].size = 1;
     varlist[STRESS_CURL].attrs[num_standard_attrs].type = NC_CHAR;
     varlist[STRESS_CURL].attrs[num_standard_attrs].value.str = "s-1";
     varlist[STRESS_CURL].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[STRESS_CURL].attrs[num_standard_attrs + 1].size = 1;
     varlist[STRESS_CURL].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[STRESS_CURL].attrs[num_standard_attrs + 1].value.f = 1.0f;
     
@@ -588,18 +653,23 @@ int main(int argc, char **argv) {
                     (sizeof *varlist[TIME].attrs))) == NULL);
 
     varlist[TIME].attrs[FILL_VALUE].name = NULL;
+    varlist[TIME].attrs[FILL_VALUE].size = 1;
     varlist[TIME].attrs[FILL_VALUE].type = varlist[TIME].type;
     varlist[TIME].attrs[FILL_VALUE].value.str = NULL;
     varlist[TIME].attrs[VALID_MIN].name = NULL;
+    varlist[TIME].attrs[VALID_MIN].size = 1;
     varlist[TIME].attrs[VALID_MIN].type = varlist[TIME].type;
     varlist[TIME].attrs[VALID_MIN].value.str = NULL;
     varlist[TIME].attrs[VALID_MAX].name = NULL;
+    varlist[TIME].attrs[VALID_MAX].size = 1;
     varlist[TIME].attrs[VALID_MAX].type = varlist[TIME].type;
     varlist[TIME].attrs[VALID_MAX].value.str = NULL;
     varlist[TIME].attrs[LONG_NAME].name = "long_name";
+    varlist[TIME].attrs[LONG_NAME].size = 1;
     varlist[TIME].attrs[LONG_NAME].type = varlist[TIME].type;
     varlist[TIME].attrs[LONG_NAME].value.str = "date and time";
     varlist[TIME].attrs[num_standard_attrs].name = "units";
+    varlist[TIME].attrs[num_standard_attrs].size = 1;
     varlist[TIME].attrs[num_standard_attrs].type = varlist[TIME].type;
     varlist[TIME].attrs[num_standard_attrs].value.str = time_format;
 
@@ -607,25 +677,53 @@ int main(int argc, char **argv) {
     varlist[FLAGS].type  = NC_SHORT;
     varlist[FLAGS].ndims = 2;
     varlist[FLAGS].dims = dimensions; 
-    varlist[FLAGS].nattrs = 0;
-    varlist[FLAGS].nattrs = num_standard_attrs + 10;
+    varlist[FLAGS].nattrs = num_standard_attrs + 2;
     ERR((varlist[FLAGS].attrs = (typeof varlist[FLAGS].attrs)
                 malloc(varlist[FLAGS].nattrs * 
                     (sizeof *varlist[FLAGS].attrs))) == NULL);
 
     varlist[FLAGS].attrs[FILL_VALUE].name = "FillValue";
+    varlist[FLAGS].attrs[FILL_VALUE].size = 1;
     varlist[FLAGS].attrs[FILL_VALUE].type = varlist[FLAGS].type;
     varlist[FLAGS].attrs[FILL_VALUE].value.s = 0;
     varlist[FLAGS].attrs[VALID_MIN].name = "valid_min";
+    varlist[FLAGS].attrs[VALID_MIN].size = 1;
     varlist[FLAGS].attrs[VALID_MIN].type = varlist[FLAGS].type;
     varlist[FLAGS].attrs[VALID_MIN].value.s = 0;
     varlist[FLAGS].attrs[VALID_MAX].name = "valid_max";
+    varlist[FLAGS].attrs[VALID_MAX].size = 1;
     varlist[FLAGS].attrs[VALID_MAX].type = varlist[FLAGS].type;
     varlist[FLAGS].attrs[VALID_MAX].value.s = 0xFfff;
     varlist[FLAGS].attrs[LONG_NAME].name = "long_name";
+    varlist[FLAGS].attrs[LONG_NAME].size = 1;
     varlist[FLAGS].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[FLAGS].attrs[LONG_NAME].value.str = "flags";
-    varlist[FLAGS].attrs[num_standard_attrs + 0].name = "adequate_sigma0_flag";
+    varlist[FLAGS].attrs[LONG_NAME].value.str = "wind vector cell quality flags";
+
+    varlist[FLAGS].attrs[num_standard_attrs + 0].name = "flag_meanings";
+    varlist[FLAGS].attrs[num_standard_attrs + 0].size = 1;
+    varlist[FLAGS].attrs[num_standard_attrs + 0].type = NC_CHAR;
+    varlist[FLAGS].attrs[num_standard_attrs + 0].value.str = "adequate_sigma0_flag "
+        "adequate_azimuth_diversity_flag coastal_flag ice_edge_flag wind_retrieval_flag "
+        "high_wind_speed_flag low_wind_speed_flag rain_impact_flag_usable rain_impact_flag "
+        "available_data_flag";
+
+    varlist[FLAGS].attrs[num_standard_attrs + 1].name = "flag_masks";
+    varlist[FLAGS].attrs[num_standard_attrs + 1].size = NUM_FLAGS;
+    varlist[FLAGS].attrs[num_standard_attrs + 1].type = varlist[FLAGS].type;
+    ERR((varlist[FLAGS].attrs[num_standard_attrs + 1].value.ps = (int16 *)
+                malloc(varlist[FLAGS].attrs[num_standard_attrs + 1].size *
+                    sizeof(*varlist[FLAGS].attrs[num_standard_attrs + 1].value.ps)))
+            == NULL);
+    {
+        int16 init_list[NUM_FLAGS] = {SIGMA0_MASK, AZIMUTH_DIV_MASK, COASTAL_MASK, 
+            ICE_EDGE_MASK, WIND_RETRIEVAL_MASK, HIGH_WIND_MASK, LOW_WIND_MASK, 
+            RAIN_IMPACT_UNUSABLE_MASK, RAIN_IMPACT_MASK, AVAILABLE_DATA_MASK};
+
+        ERR(memcpy(varlist[FLAGS].attrs[num_standard_attrs + 1].value.ps, init_list, 
+                    NUM_FLAGS* sizeof init_list[0]) == NULL);
+    }
+
+/*    varlist[FLAGS].attrs[num_standard_attrs + 0].name = "adequate_sigma0_flag";
     varlist[FLAGS].attrs[num_standard_attrs + 0].type = varlist[FLAGS].type;
     varlist[FLAGS].attrs[num_standard_attrs + 0].value.s = SIGMA0_MASK;
     varlist[FLAGS].attrs[num_standard_attrs + 1].name = "adequate_azimuth_diversity_flag";
@@ -655,113 +753,134 @@ int main(int argc, char **argv) {
     varlist[FLAGS].attrs[num_standard_attrs + 9].name = "available_data_flag";
     varlist[FLAGS].attrs[num_standard_attrs + 9].type = varlist[FLAGS].type;
     varlist[FLAGS].attrs[num_standard_attrs + 9].value.s = AVAILABLE_DATA_MASK;
+    */
 
     varlist[EFLAGS].name  = "eflags";
     varlist[EFLAGS].type  = NC_SHORT;
     varlist[EFLAGS].ndims = 2;
     varlist[EFLAGS].dims = dimensions; 
-    varlist[EFLAGS].nattrs = 0;
     varlist[EFLAGS].nattrs = num_standard_attrs;
     ERR((varlist[EFLAGS].attrs = (typeof varlist[EFLAGS].attrs)
                 malloc(varlist[EFLAGS].nattrs * 
                     (sizeof *varlist[EFLAGS].attrs))) == NULL);
 
     varlist[EFLAGS].attrs[FILL_VALUE].name = "FillValue";
+    varlist[EFLAGS].attrs[FILL_VALUE].size = 1;
     varlist[EFLAGS].attrs[FILL_VALUE].type = varlist[EFLAGS].type;
     varlist[EFLAGS].attrs[FILL_VALUE].value.s = 0;
     varlist[EFLAGS].attrs[VALID_MIN].name = "valid_min";
+    varlist[EFLAGS].attrs[VALID_MIN].size = 1;
     varlist[EFLAGS].attrs[VALID_MIN].type = varlist[EFLAGS].type;
     varlist[EFLAGS].attrs[VALID_MIN].value.s = 0;
     varlist[EFLAGS].attrs[VALID_MAX].name = "valid_max";
+    varlist[EFLAGS].attrs[VALID_MAX].size = 1;
     varlist[EFLAGS].attrs[VALID_MAX].type = varlist[EFLAGS].type;
     varlist[EFLAGS].attrs[VALID_MAX].value.s = 0xFfff;
     varlist[EFLAGS].attrs[LONG_NAME].name = "long_name";
+    varlist[EFLAGS].attrs[LONG_NAME].size = 1;
     varlist[EFLAGS].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[EFLAGS].attrs[LONG_NAME].value.str = "extended_flags";
+    varlist[EFLAGS].attrs[LONG_NAME].value.str = "extended flags";
 
+    varlist[NUDGE_SPEED].name  = "ecmwf_wind_speed";
+    varlist[NUDGE_SPEED].type  = NC_FLOAT;
+    varlist[NUDGE_SPEED].ndims = 2;
+    varlist[NUDGE_SPEED].dims = dimensions; 
+    varlist[NUDGE_SPEED].nattrs = num_standard_attrs + 2;
+    ERR((varlist[NUDGE_SPEED].attrs = (typeof varlist[NUDGE_SPEED].attrs)
+                malloc(varlist[NUDGE_SPEED].nattrs * 
+                    (sizeof *varlist[NUDGE_SPEED].attrs))) == NULL);
+
+    varlist[NUDGE_SPEED].attrs[FILL_VALUE].name = "FillValue";
+    varlist[NUDGE_SPEED].attrs[FILL_VALUE].size = 1;
+    varlist[NUDGE_SPEED].attrs[FILL_VALUE].type = varlist[NUDGE_SPEED].type;
+    varlist[NUDGE_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
+    varlist[NUDGE_SPEED].attrs[VALID_MIN].name = "valid_min";
+    varlist[NUDGE_SPEED].attrs[VALID_MIN].size = 1;
+    varlist[NUDGE_SPEED].attrs[VALID_MIN].type = varlist[NUDGE_SPEED].type;
+    varlist[NUDGE_SPEED].attrs[VALID_MIN].value.f = 0.0f;
+    varlist[NUDGE_SPEED].attrs[VALID_MAX].name = "valid_max";
+    varlist[NUDGE_SPEED].attrs[VALID_MAX].size = 1;
+    varlist[NUDGE_SPEED].attrs[VALID_MAX].type = varlist[NUDGE_SPEED].type;
+    varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f = 100.0f;
+    varlist[NUDGE_SPEED].attrs[LONG_NAME].name = "long_name";
+    varlist[NUDGE_SPEED].attrs[LONG_NAME].size = 1;
+    varlist[NUDGE_SPEED].attrs[LONG_NAME].type = NC_CHAR;
+    varlist[NUDGE_SPEED].attrs[LONG_NAME].value.str = "ecmwf 10 m wind speed";
+    varlist[NUDGE_SPEED].attrs[num_standard_attrs].name = "units";
+    varlist[NUDGE_SPEED].attrs[num_standard_attrs].size = 1;
+    varlist[NUDGE_SPEED].attrs[num_standard_attrs].type = NC_CHAR;
+    varlist[NUDGE_SPEED].attrs[num_standard_attrs].value.str = "m s-1";
+    varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].size = 1;
+    varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
+    varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].value.f = 1.0f;
+             
+    varlist[NUDGE_DIRECTION].name  = "ecmwf_wind_direction";
+    varlist[NUDGE_DIRECTION].type  = NC_FLOAT;
+    varlist[NUDGE_DIRECTION].ndims = 2;
+    varlist[NUDGE_DIRECTION].dims = dimensions; 
+    varlist[NUDGE_DIRECTION].nattrs = num_standard_attrs + 2;
+    ERR((varlist[NUDGE_DIRECTION].attrs = (typeof varlist[NUDGE_DIRECTION].attrs)
+                malloc(varlist[NUDGE_DIRECTION].nattrs * 
+                    (sizeof *varlist[NUDGE_DIRECTION].attrs))) == NULL);
+
+    varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].name = "FillValue";
+    varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].size = 1;
+    varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].type = varlist[NUDGE_DIRECTION].type;
+    varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
+    varlist[NUDGE_DIRECTION].attrs[VALID_MIN].name = "valid_min";
+    varlist[NUDGE_DIRECTION].attrs[VALID_MIN].size = 1;
+    varlist[NUDGE_DIRECTION].attrs[VALID_MIN].type = varlist[NUDGE_DIRECTION].type;
+    varlist[NUDGE_DIRECTION].attrs[VALID_MIN].value.f = 0.0f;
+    varlist[NUDGE_DIRECTION].attrs[VALID_MAX].name = "valid_max";
+    varlist[NUDGE_DIRECTION].attrs[VALID_MAX].size = 1;
+    varlist[NUDGE_DIRECTION].attrs[VALID_MAX].type = varlist[NUDGE_DIRECTION].type;
+    varlist[NUDGE_DIRECTION].attrs[VALID_MAX].value.f = 360.0f;
+    varlist[NUDGE_DIRECTION].attrs[LONG_NAME].name = "long_name";
+    varlist[NUDGE_DIRECTION].attrs[LONG_NAME].size = 1;
+    varlist[NUDGE_DIRECTION].attrs[LONG_NAME].type = NC_CHAR;
+    varlist[NUDGE_DIRECTION].attrs[LONG_NAME].value.str = "ecmwf 10 m wind direction";
+    varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].name = "units";
+    varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].size = 1;
+    varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].type = NC_CHAR;
+    varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].value.str = "degrees";
+    varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].size = 1;
+    varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].type = NC_FLOAT;
+    varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].value.f = 1.0f;
+               
     if (run_config.extended) { 
-        varlist[NUDGE_SPEED].name  = "ecmwf_wind_speed";
-        varlist[NUDGE_SPEED].type  = NC_FLOAT;
-        varlist[NUDGE_SPEED].ndims = 2;
-        varlist[NUDGE_SPEED].dims = dimensions; 
-        varlist[NUDGE_SPEED].nattrs = num_standard_attrs + 2;
-        ERR((varlist[NUDGE_SPEED].attrs = (typeof varlist[NUDGE_SPEED].attrs)
-                    malloc(varlist[NUDGE_SPEED].nattrs * 
-                        (sizeof *varlist[NUDGE_SPEED].attrs))) == NULL);
-    
-        varlist[NUDGE_SPEED].attrs[FILL_VALUE].name = "FillValue";
-        varlist[NUDGE_SPEED].attrs[FILL_VALUE].type = varlist[NUDGE_SPEED].type;
-        varlist[NUDGE_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
-        varlist[NUDGE_SPEED].attrs[VALID_MIN].name = "valid_min";
-        varlist[NUDGE_SPEED].attrs[VALID_MIN].type = varlist[NUDGE_SPEED].type;
-        varlist[NUDGE_SPEED].attrs[VALID_MIN].value.f = 0.0f;
-        varlist[NUDGE_SPEED].attrs[VALID_MAX].name = "valid_max";
-        varlist[NUDGE_SPEED].attrs[VALID_MAX].type = varlist[NUDGE_SPEED].type;
-        varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f = 100.0f;
-        varlist[NUDGE_SPEED].attrs[LONG_NAME].name = "long_name";
-        varlist[NUDGE_SPEED].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[NUDGE_SPEED].attrs[LONG_NAME].value.str = "ecmwf_wind_speed";
-        varlist[NUDGE_SPEED].attrs[num_standard_attrs].name = "units";
-        varlist[NUDGE_SPEED].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[NUDGE_SPEED].attrs[num_standard_attrs].value.str = "m s-1";
-        varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].name = "scale_factor";
-        varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-        varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].value.f = 1.0f;
-                 
-        varlist[NUDGE_DIRECTION].name  = "ecmwf_wind_direction";
-        varlist[NUDGE_DIRECTION].type  = NC_FLOAT;
-        varlist[NUDGE_DIRECTION].ndims = 2;
-        varlist[NUDGE_DIRECTION].dims = dimensions; 
-        varlist[NUDGE_DIRECTION].nattrs = num_standard_attrs + 2;
-        ERR((varlist[NUDGE_DIRECTION].attrs = (typeof varlist[NUDGE_DIRECTION].attrs)
-                    malloc(varlist[NUDGE_DIRECTION].nattrs * 
-                        (sizeof *varlist[NUDGE_DIRECTION].attrs))) == NULL);
-    
-        varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].name = "FillValue";
-        varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].type = varlist[NUDGE_DIRECTION].type;
-        varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
-        varlist[NUDGE_DIRECTION].attrs[VALID_MIN].name = "valid_min";
-        varlist[NUDGE_DIRECTION].attrs[VALID_MIN].type = varlist[NUDGE_DIRECTION].type;
-        varlist[NUDGE_DIRECTION].attrs[VALID_MIN].value.f = 0.0f;
-        varlist[NUDGE_DIRECTION].attrs[VALID_MAX].name = "valid_max";
-        varlist[NUDGE_DIRECTION].attrs[VALID_MAX].type = varlist[NUDGE_DIRECTION].type;
-        varlist[NUDGE_DIRECTION].attrs[VALID_MAX].value.f = 360.0f;
-        varlist[NUDGE_DIRECTION].attrs[LONG_NAME].name = "long_name";
-        varlist[NUDGE_DIRECTION].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[NUDGE_DIRECTION].attrs[LONG_NAME].value.str = "ecmwf_wind_direction";
-        varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].name = "units";
-        varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].value.str = "degrees";
-        varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].name = "scale_factor";
-        varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-        varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].value.f = 1.0f;
-                   
         varlist[SEL_OBJ].name  = "wind_obj";
         varlist[SEL_OBJ].type  = NC_FLOAT;
         varlist[SEL_OBJ].ndims = 2;
         varlist[SEL_OBJ].dims = dimensions; 
-        varlist[SEL_OBJ].nattrs = 0;
         varlist[SEL_OBJ].nattrs = num_standard_attrs + 2;
         ERR((varlist[SEL_OBJ].attrs = (typeof varlist[SEL_OBJ].attrs)
                     malloc(varlist[SEL_OBJ].nattrs * 
                         (sizeof *varlist[SEL_OBJ].attrs))) == NULL);
     
         varlist[SEL_OBJ].attrs[FILL_VALUE].name = "FillValue";
+        varlist[SEL_OBJ].attrs[FILL_VALUE].size = 1;
         varlist[SEL_OBJ].attrs[FILL_VALUE].type = varlist[SEL_OBJ].type;
         varlist[SEL_OBJ].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
         varlist[SEL_OBJ].attrs[VALID_MIN].name = "valid_min";
+        varlist[SEL_OBJ].attrs[VALID_MIN].size = 1;
         varlist[SEL_OBJ].attrs[VALID_MIN].type = varlist[SEL_OBJ].type;
         varlist[SEL_OBJ].attrs[VALID_MIN].value.f = 0.0f;
         varlist[SEL_OBJ].attrs[VALID_MAX].name = "valid_max";
+        varlist[SEL_OBJ].attrs[VALID_MAX].size = 1;
         varlist[SEL_OBJ].attrs[VALID_MAX].type = varlist[SEL_OBJ].type;
         varlist[SEL_OBJ].attrs[VALID_MAX].value.f = 360.0f;
         varlist[SEL_OBJ].attrs[LONG_NAME].name = "long_name";
+        varlist[SEL_OBJ].attrs[LONG_NAME].size = 1;
         varlist[SEL_OBJ].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[SEL_OBJ].attrs[LONG_NAME].value.str = "wind_obj";
+        varlist[SEL_OBJ].attrs[LONG_NAME].value.str = "selected wind objective function value";
         varlist[SEL_OBJ].attrs[num_standard_attrs].name = "units";
+        varlist[SEL_OBJ].attrs[num_standard_attrs].size = 1;
         varlist[SEL_OBJ].attrs[num_standard_attrs].type = NC_CHAR;
         varlist[SEL_OBJ].attrs[num_standard_attrs].value.str = "1";
         varlist[SEL_OBJ].attrs[num_standard_attrs + 1].name = "scale_factor";
+        varlist[SEL_OBJ].attrs[num_standard_attrs + 1].size = 1;
         varlist[SEL_OBJ].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[SEL_OBJ].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
@@ -769,28 +888,33 @@ int main(int argc, char **argv) {
         varlist[AMBIG_SPEED].type  = NC_FLOAT;
         varlist[AMBIG_SPEED].ndims = 3;
         varlist[AMBIG_SPEED].dims = dimensions; 
-        varlist[AMBIG_SPEED].nattrs = 0;
         varlist[AMBIG_SPEED].nattrs = num_standard_attrs + 2;
         ERR((varlist[AMBIG_SPEED].attrs = (typeof varlist[AMBIG_SPEED].attrs)
                     malloc(varlist[AMBIG_SPEED].nattrs * 
                         (sizeof *varlist[AMBIG_SPEED].attrs))) == NULL);
     
         varlist[AMBIG_SPEED].attrs[FILL_VALUE].name = "FillValue";
+        varlist[AMBIG_SPEED].attrs[FILL_VALUE].size = 1;
         varlist[AMBIG_SPEED].attrs[FILL_VALUE].type = varlist[AMBIG_SPEED].type;
         varlist[AMBIG_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
         varlist[AMBIG_SPEED].attrs[VALID_MIN].name = "valid_min";
+        varlist[AMBIG_SPEED].attrs[VALID_MIN].size = 1;
         varlist[AMBIG_SPEED].attrs[VALID_MIN].type = varlist[AMBIG_SPEED].type;
         varlist[AMBIG_SPEED].attrs[VALID_MIN].value.f = 0.0f;
         varlist[AMBIG_SPEED].attrs[VALID_MAX].name = "valid_max";
+        varlist[AMBIG_SPEED].attrs[VALID_MAX].size = 1;
         varlist[AMBIG_SPEED].attrs[VALID_MAX].type = varlist[AMBIG_SPEED].type;
         varlist[AMBIG_SPEED].attrs[VALID_MAX].value.f = 100.0f;
         varlist[AMBIG_SPEED].attrs[LONG_NAME].name = "long_name";
+        varlist[AMBIG_SPEED].attrs[LONG_NAME].size = 1;
         varlist[AMBIG_SPEED].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[AMBIG_SPEED].attrs[LONG_NAME].value.str = "ambig_speed";
+        varlist[AMBIG_SPEED].attrs[LONG_NAME].value.str = "wind speed ambiguity";
         varlist[AMBIG_SPEED].attrs[num_standard_attrs].name = "units";
+        varlist[AMBIG_SPEED].attrs[num_standard_attrs].size = 1;
         varlist[AMBIG_SPEED].attrs[num_standard_attrs].type = NC_CHAR;
         varlist[AMBIG_SPEED].attrs[num_standard_attrs].value.str = "m s-1";
         varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].name = "scale_factor";
+        varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].size = 1;
         varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
@@ -804,21 +928,27 @@ int main(int argc, char **argv) {
                         (sizeof *varlist[AMBIG_DIRECTION].attrs))) == NULL);
     
         varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].name = "FillValue";
+        varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].size = 1;
         varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].type = varlist[AMBIG_DIRECTION].type;
         varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
         varlist[AMBIG_DIRECTION].attrs[VALID_MIN].name = "valid_min";
+        varlist[AMBIG_DIRECTION].attrs[VALID_MIN].size = 1;
         varlist[AMBIG_DIRECTION].attrs[VALID_MIN].type = varlist[AMBIG_DIRECTION].type;
         varlist[AMBIG_DIRECTION].attrs[VALID_MIN].value.f = 0.0f;
         varlist[AMBIG_DIRECTION].attrs[VALID_MAX].name = "valid_max";
+        varlist[AMBIG_DIRECTION].attrs[VALID_MAX].size = 1;
         varlist[AMBIG_DIRECTION].attrs[VALID_MAX].type = varlist[AMBIG_DIRECTION].type;
         varlist[AMBIG_DIRECTION].attrs[VALID_MAX].value.f = 360.0f;
         varlist[AMBIG_DIRECTION].attrs[LONG_NAME].name = "long_name";
+        varlist[AMBIG_DIRECTION].attrs[LONG_NAME].size = 1;
         varlist[AMBIG_DIRECTION].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[AMBIG_DIRECTION].attrs[LONG_NAME].value.str = "ambig_to_direction";
+        varlist[AMBIG_DIRECTION].attrs[LONG_NAME].value.str = "wind direction ambiguity";
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].name = "units";
+        varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].size = 1;
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].type = NC_CHAR;
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].value.str = "degrees";
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs + 1].name = "scale_factor";
+        varlist[AMBIG_DIRECTION].attrs[num_standard_attrs + 1].size = 1;
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[AMBIG_DIRECTION].attrs[num_standard_attrs + 1].value.f = 1.0f;
                       
@@ -832,21 +962,27 @@ int main(int argc, char **argv) {
                         (sizeof *varlist[AMBIG_OBJ].attrs))) == NULL);
     
         varlist[AMBIG_OBJ].attrs[FILL_VALUE].name = "FillValue";
+        varlist[AMBIG_OBJ].attrs[FILL_VALUE].size = 1;
         varlist[AMBIG_OBJ].attrs[FILL_VALUE].type = varlist[AMBIG_OBJ].type;
         varlist[AMBIG_OBJ].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
         varlist[AMBIG_OBJ].attrs[VALID_MIN].name = "valid_min";
+        varlist[AMBIG_OBJ].attrs[VALID_MIN].size = 1;
         varlist[AMBIG_OBJ].attrs[VALID_MIN].type = varlist[AMBIG_OBJ].type;
         varlist[AMBIG_OBJ].attrs[VALID_MIN].value.f = 0.0f;
         varlist[AMBIG_OBJ].attrs[VALID_MAX].name = "valid_max";
+        varlist[AMBIG_OBJ].attrs[VALID_MAX].size = 1;
         varlist[AMBIG_OBJ].attrs[VALID_MAX].type = varlist[AMBIG_OBJ].type;
         varlist[AMBIG_OBJ].attrs[VALID_MAX].value.f = 360.0f;
         varlist[AMBIG_OBJ].attrs[LONG_NAME].name = "long_name";
+        varlist[AMBIG_OBJ].attrs[LONG_NAME].size = 1;
         varlist[AMBIG_OBJ].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[AMBIG_OBJ].attrs[LONG_NAME].value.str = "ambig_obj";
+        varlist[AMBIG_OBJ].attrs[LONG_NAME].value.str = "wind ambiguity objective function value";
         varlist[AMBIG_OBJ].attrs[num_standard_attrs].name = "units";
+        varlist[AMBIG_OBJ].attrs[num_standard_attrs].size = 1;
         varlist[AMBIG_OBJ].attrs[num_standard_attrs].type = NC_CHAR;
         varlist[AMBIG_OBJ].attrs[num_standard_attrs].value.str = "1";
         varlist[AMBIG_OBJ].attrs[num_standard_attrs + 1].name = "scale_factor";
+        varlist[AMBIG_OBJ].attrs[num_standard_attrs + 1].size = 1;
         varlist[AMBIG_OBJ].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[AMBIG_OBJ].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
@@ -854,25 +990,29 @@ int main(int argc, char **argv) {
         varlist[N_IN_FORE].type  = NC_BYTE;
         varlist[N_IN_FORE].ndims = 2;
         varlist[N_IN_FORE].dims = dimensions; 
-        varlist[N_IN_FORE].nattrs = 0;
         varlist[N_IN_FORE].nattrs = num_standard_attrs + 1;
         ERR((varlist[N_IN_FORE].attrs = (typeof varlist[N_IN_FORE].attrs)
                     malloc(varlist[N_IN_FORE].nattrs * 
                         (sizeof *varlist[N_IN_FORE].attrs))) == NULL);
     
         varlist[N_IN_FORE].attrs[FILL_VALUE].name = "FillValue";
+        varlist[N_IN_FORE].attrs[FILL_VALUE].size = 1;
         varlist[N_IN_FORE].attrs[FILL_VALUE].type = varlist[N_IN_FORE].type;
         varlist[N_IN_FORE].attrs[FILL_VALUE].value.b = 0;
         varlist[N_IN_FORE].attrs[VALID_MIN].name = "valid_min";
+        varlist[N_IN_FORE].attrs[VALID_MIN].size = 1;
         varlist[N_IN_FORE].attrs[VALID_MIN].type = varlist[N_IN_FORE].type;
         varlist[N_IN_FORE].attrs[VALID_MIN].value.b = 0;
         varlist[N_IN_FORE].attrs[VALID_MAX].name = "valid_max";
+        varlist[N_IN_FORE].attrs[VALID_MAX].size = 1;
         varlist[N_IN_FORE].attrs[VALID_MAX].type = varlist[N_IN_FORE].type;
         varlist[N_IN_FORE].attrs[VALID_MAX].value.b = 0xFf;
         varlist[N_IN_FORE].attrs[LONG_NAME].name = "long_name";
+        varlist[N_IN_FORE].attrs[LONG_NAME].size = 1;
         varlist[N_IN_FORE].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[N_IN_FORE].attrs[LONG_NAME].value.str = "number_in_fore";
+        varlist[N_IN_FORE].attrs[LONG_NAME].value.str = "number of inner forward looks in wind vector cell";
         varlist[N_IN_FORE].attrs[num_standard_attrs].name = "units";
+        varlist[N_IN_FORE].attrs[num_standard_attrs].size = 1;
         varlist[N_IN_FORE].attrs[num_standard_attrs].type = NC_CHAR;
         varlist[N_IN_FORE].attrs[num_standard_attrs].value.str = "1";
             
@@ -886,18 +1026,23 @@ int main(int argc, char **argv) {
                         (sizeof *varlist[N_IN_AFT].attrs))) == NULL);
     
         varlist[N_IN_AFT].attrs[FILL_VALUE].name = "FillValue";
+        varlist[N_IN_AFT].attrs[FILL_VALUE].size = 1;
         varlist[N_IN_AFT].attrs[FILL_VALUE].type = varlist[N_IN_AFT].type;
         varlist[N_IN_AFT].attrs[FILL_VALUE].value.b = 0;
         varlist[N_IN_AFT].attrs[VALID_MIN].name = "valid_min";
+        varlist[N_IN_AFT].attrs[VALID_MIN].size = 1;
         varlist[N_IN_AFT].attrs[VALID_MIN].type = varlist[N_IN_AFT].type;
         varlist[N_IN_AFT].attrs[VALID_MIN].value.b = 0;
         varlist[N_IN_AFT].attrs[VALID_MAX].name = "valid_max";
+        varlist[N_IN_AFT].attrs[VALID_MAX].size = 1;
         varlist[N_IN_AFT].attrs[VALID_MAX].type = varlist[N_IN_AFT].type;
         varlist[N_IN_AFT].attrs[VALID_MAX].value.b = 0xFf;
         varlist[N_IN_AFT].attrs[LONG_NAME].name = "long_name";
+        varlist[N_IN_AFT].attrs[LONG_NAME].size = 1;
         varlist[N_IN_AFT].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[N_IN_AFT].attrs[LONG_NAME].value.str = "number_in_aft";
+        varlist[N_IN_AFT].attrs[LONG_NAME].value.str = "number of inner aft looks in wind vector cell";
         varlist[N_IN_AFT].attrs[num_standard_attrs].name = "units";
+        varlist[N_IN_AFT].attrs[num_standard_attrs].size = 1;
         varlist[N_IN_AFT].attrs[num_standard_attrs].type = NC_CHAR;
         varlist[N_IN_AFT].attrs[num_standard_attrs].value.str = "1";
                
@@ -911,18 +1056,23 @@ int main(int argc, char **argv) {
                         (sizeof *varlist[N_OUT_FORE].attrs))) == NULL);
     
         varlist[N_OUT_FORE].attrs[FILL_VALUE].name = "FillValue";
+        varlist[N_OUT_FORE].attrs[FILL_VALUE].size = 1;
         varlist[N_OUT_FORE].attrs[FILL_VALUE].type = varlist[N_OUT_FORE].type;
         varlist[N_OUT_FORE].attrs[FILL_VALUE].value.b = 0;
         varlist[N_OUT_FORE].attrs[VALID_MIN].name = "valid_min";
+        varlist[N_OUT_FORE].attrs[VALID_MIN].size = 1;
         varlist[N_OUT_FORE].attrs[VALID_MIN].type = varlist[N_OUT_FORE].type;
         varlist[N_OUT_FORE].attrs[VALID_MIN].value.b = 0;
         varlist[N_OUT_FORE].attrs[VALID_MAX].name = "valid_max";
+        varlist[N_OUT_FORE].attrs[VALID_MAX].size = 1;
         varlist[N_OUT_FORE].attrs[VALID_MAX].type = varlist[N_OUT_FORE].type;
         varlist[N_OUT_FORE].attrs[VALID_MAX].value.b = 0xFf;
         varlist[N_OUT_FORE].attrs[LONG_NAME].name = "long_name";
+        varlist[N_OUT_FORE].attrs[LONG_NAME].size = 1;
         varlist[N_OUT_FORE].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[N_OUT_FORE].attrs[LONG_NAME].value.str = "number_out_fore";
+        varlist[N_OUT_FORE].attrs[LONG_NAME].value.str = "number of outer forward looks in wind vector cell";
         varlist[N_OUT_FORE].attrs[num_standard_attrs].name = "units";
+        varlist[N_OUT_FORE].attrs[num_standard_attrs].size = 1;
         varlist[N_OUT_FORE].attrs[num_standard_attrs].type = NC_CHAR;
         varlist[N_OUT_FORE].attrs[num_standard_attrs].value.str = "1";
                
@@ -936,18 +1086,23 @@ int main(int argc, char **argv) {
                         (sizeof *varlist[N_OUT_AFT].attrs))) == NULL);
     
         varlist[N_OUT_AFT].attrs[FILL_VALUE].name = "FillValue";
+        varlist[N_OUT_AFT].attrs[FILL_VALUE].size = 1;
         varlist[N_OUT_AFT].attrs[FILL_VALUE].type = varlist[N_OUT_AFT].type;
         varlist[N_OUT_AFT].attrs[FILL_VALUE].value.b = 0;
         varlist[N_OUT_AFT].attrs[VALID_MIN].name = "valid_min";
+        varlist[N_OUT_AFT].attrs[VALID_MIN].size = 1;
         varlist[N_OUT_AFT].attrs[VALID_MIN].type = varlist[N_OUT_AFT].type;
         varlist[N_OUT_AFT].attrs[VALID_MIN].value.b = 0;
         varlist[N_OUT_AFT].attrs[VALID_MAX].name = "valid_max";
+        varlist[N_OUT_AFT].attrs[VALID_MAX].size = 1;
         varlist[N_OUT_AFT].attrs[VALID_MAX].type = varlist[N_OUT_AFT].type;
         varlist[N_OUT_AFT].attrs[VALID_MAX].value.b = 0xFf;
         varlist[N_OUT_AFT].attrs[LONG_NAME].name = "long_name";
+        varlist[N_OUT_AFT].attrs[LONG_NAME].size = 1;
         varlist[N_OUT_AFT].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[N_OUT_AFT].attrs[LONG_NAME].value.str = "number_out_aft";
+        varlist[N_OUT_AFT].attrs[LONG_NAME].value.str = "number of outer aft looks in wind vector cell";
         varlist[N_OUT_AFT].attrs[num_standard_attrs].name = "units";
+        varlist[N_OUT_AFT].attrs[num_standard_attrs].size = 1;
         varlist[N_OUT_AFT].attrs[num_standard_attrs].type = NC_CHAR;
         varlist[N_OUT_AFT].attrs[num_standard_attrs].value.str = "1";
     }
@@ -966,20 +1121,40 @@ int main(int argc, char **argv) {
                                     strlen(attr->value.str), (attr->value.str)));
                         break;
                     case NC_SHORT:
-                        NCERR(nc_put_att_short(ncid, varlist[i].id, attr->name, 
-                                    attr->type, (size_t)(1), &(attr->value.s)));
+                        if (attr->size == 1) {
+                            NCERR(nc_put_att_short(ncid, varlist[i].id, attr->name, 
+                                        attr->type, (size_t)(1), &(attr->value.s)));
+                        } else {
+                            NCERR(nc_put_att_short(ncid, varlist[i].id, attr->name, 
+                                        attr->type, attr->size, attr->value.ps));
+                        }
                         break;
                     case NC_INT:
-                        NCERR(nc_put_att_int(ncid, varlist[i].id, attr->name, 
-                                    attr->type, (size_t)(1), &(attr->value.i)));
+                        if (attr->size == 1) {
+                            NCERR(nc_put_att_int(ncid, varlist[i].id, attr->name, 
+                                        attr->type, (size_t)(1), &(attr->value.i)));
+                        } else {
+                            NCERR(nc_put_att_int(ncid, varlist[i].id, attr->name, 
+                                        attr->type, attr->size, attr->value.pi));
+                        }
                         break;
                     case NC_FLOAT:
-                        NCERR(nc_put_att_float(ncid, varlist[i].id, attr->name, 
-                                    attr->type, (size_t)(1), &(attr->value.f)));
+                        if (attr->size == 1) {
+                            NCERR(nc_put_att_float(ncid, varlist[i].id, attr->name, 
+                                        attr->type, (size_t)(1), &(attr->value.f)));
+                        } else {
+                            NCERR(nc_put_att_float(ncid, varlist[i].id, attr->name, 
+                                        attr->type, attr->size, attr->value.pf));
+                        }
                         break;
                     case NC_BYTE:
-                        NCERR(nc_put_att_uchar(ncid, varlist[i].id, attr->name, 
-                                    attr->type, (size_t)(1), &(attr->value.b)));
+                        if (attr->size == 1) {
+                            NCERR(nc_put_att_uchar(ncid, varlist[i].id, attr->name, 
+                                        attr->type, (size_t)(1), &(attr->value.b)));
+                        } else {
+                            NCERR(nc_put_att_uchar(ncid, varlist[i].id, attr->name, 
+                                        attr->type, attr->size, attr->value.pb));
+                        }
                         break;
                     default:
                         fprintf(stderr, "Incorrect attribute type: %d\n", 
@@ -1086,23 +1261,24 @@ int main(int argc, char **argv) {
                 NCERR(nc_put_var1_short(ncid, varlist[FLAGS].id, idx, &flags));
                 NCERR(nc_put_var1_short(ncid, varlist[EFLAGS].id, idx, &eflags));
 
+                if (wvc->nudgeWV->spd <= varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f) {
+                    NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
+                            &wvc->nudgeWV->spd));
+                } else {
+                    NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
+                            &varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f));
+                }
+
+                conversion = 450.0f - (wvc->nudgeWV->dir)*180.0f/(float)(M_PI);
+                conversion = conversion - 360.0f*((int)(conversion/360.0f));
+                NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
+                            &conversion));
+
                 /* Extended variables */
                 if (run_config.extended) {
-                    NCERR(nc_put_var1_float(ncid, varlist[SEL_OBJ].id, idx,
+
+                    NCERR(nc_put_var1_float(ncid, varlist[SEL_OBJ].id, idx, 
                                 &wvc->selected->obj));
-
-                    if (wvc->nudgeWV->spd <= varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f) {
-                        NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
-                                &wvc->nudgeWV->spd));
-                    } else {
-                        NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
-                                &varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f));
-                    }
-
-                    conversion = 450.0f - (wvc->nudgeWV->dir)*180.0f/(float)(M_PI);
-                    conversion = conversion - 360.0f*((int)(conversion/360.0f));
-                    NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
-                                &conversion));
     
                     NCERR(nc_put_var1_uchar(ncid, varlist[N_IN_FORE].id, idx, 
                                 &wvc->numInFore));
@@ -1163,12 +1339,13 @@ int main(int argc, char **argv) {
                 NCERR(nc_put_var1_short(ncid, varlist[FLAGS].id, idx, &flags));
                 NCERR(nc_put_var1_short(ncid, varlist[EFLAGS].id, idx, &eflags));
 
+                NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
+                            &varlist[NUDGE_SPEED].attrs[FILL_VALUE].value.f));
+                NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
+                            &varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f));
+
                 /* Extended variables */
                 if (run_config.extended) {
-                    NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
-                                &varlist[NUDGE_SPEED].attrs[FILL_VALUE].value.f));
-                    NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
-                                &varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f));
                     NCERR(nc_put_var1_float(ncid, varlist[SEL_OBJ].id, idx, 
                                 &varlist[SEL_OBJ].attrs[FILL_VALUE].value.f));
                     NCERR(nc_put_var1_uchar(ncid, varlist[N_IN_FORE].id, idx, 
