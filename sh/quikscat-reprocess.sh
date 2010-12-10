@@ -752,6 +752,10 @@ function qs_reproc_by_file () {
             flock -u $PROC_LOCK_FD
         done 
     ) >&1 | sed -e "s/^/[$UNIQ] /"
+    #       ^^^^^^^^^^^^^^^^^^^^
+    # Prepend an ID to the output of the processes.
+    # This makes reading the outputs and comparing the results
+    # in the files MUCH easier
 }
 
 #######################################################################
