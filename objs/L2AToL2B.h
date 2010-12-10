@@ -83,6 +83,7 @@ public:
     int  ConvertAndWrite(L2A* l2a, GMF* gmf, Kp* kp, L2B* l2b);
     int  InitAndFilter(L2B* l2b);
     int  PopulateNudgeVectors(L2B* l2b);
+    void RainCorrectSpeed(L2B*l2b);
     int  PopulateOneNudgeVector(L2B* l2b, int cti, int ati, MeasList* ml);
     int  InitFilterAndFlush(L2B* l2b);
     void ComputeMLPInputs(L2A* l2a, MeasList* meas_list, WVC* wvc);

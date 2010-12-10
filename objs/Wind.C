@@ -301,7 +301,15 @@ WVC::~WVC()
 int
 WVC::WriteL2B(
     FILE*  fp)
-{    
+{       
+    //-- Begin BWS modifications for v3 of l2b data file 11/29/2010
+    if( fwrite( (void *)&rainCorrectedSpeed, sizeof(float),        1, fp) != 1 )
+    {
+        fprintf(stderr,"WVC::WriteL2B: Error writing rainCorrectedSpeed!\n"); 
+        return(0);
+    }
+    //--End of BWS modifications for v3 of l2b data file 11/29/2010   
+ 
     //--AGF added for v2 of L2B data file 6/3/2010
     // Sets bits of qualFlag depending on rainFlagBits and landiceFlagBits.
     qualFlag = 0;
@@ -395,6 +403,24 @@ WVC::WriteL2B(
         return(0);
    
     return(1);
+}
+
+//-----------------//
+// WVC::ReadL2B_v3 //
+//-----------------//
+
+int
+WVC::ReadL2B_v3(
+    FILE*  fp)
+{
+    // Reads v3 of the WVC from the L2B data file BWS 11/29/2010  
+    if( fread((void *)&rainCorrectedSpeed, sizeof(float),        1, fp) != 1)
+    {
+        fprintf(stderr,"In WVC::ReadL2B_v3: ERROR reading rainCorrectedSpeed!\n");         
+        return(0);
+    }
+    // read the rest of it
+    return(ReadL2B_v2(fp));
 }
 
 //-----------------//

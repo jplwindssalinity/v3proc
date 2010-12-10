@@ -2152,7 +2152,7 @@ L2AToL2B::ConvertAndWrite(
             }
 
             //------ perform ann speed correction if desired -//
-            if(rainCorrectMethod == ANNSpeed1 && wvc->rainImpact>rain_impact_thresh_for_correction &&
+            if(rainCorrectMethod == ANNSpeed1 &&
                spdnet2_mlp.AssignInputs(MLP_inpt_array,MLP_valid_array) ){
 
               spdnet2_mlp.Forward();
@@ -2162,42 +2162,28 @@ L2AToL2B::ConvertAndWrite(
               float bias=-0.4967*ann_speed2-0.8227*log(cosh(0.5*(ann_speed2-15)))+5.7520;
               float spd=ann_speed2-bias;
 
-              //------ modify first rank ambiguity -//
-              WindVectorPlus* wvp=wvc->ambiguities.GetHead();
-              wvp->spd=spd;
-              wvp->obj=0;
-              
-              // modify all other ambiguities
-              wvp=wvc->ambiguities.GetNext();
-              while(wvp){
-                wvp->spd=spd;
-                wvp->obj=0;
-                wvp=wvc->ambiguities.GetNext();
-              }
-              //---------modify directionRanges speed array --------//
-              // set best speed and obj function curves to be flat vs azimuth.
+              wvc->rainCorrectedSpeed=spd;
 
-              int nbins=wvc->directionRanges.dirIdx.GetBins();
-              for(int c=0;c<nbins;c++){
-                wvc->directionRanges.bestSpd[c]=spd;
-                wvc->directionRanges.bestObj[c]=0;
-              }
-              
-
-            }// end rainCorrectMethod==ANNSpeed1, and correction rain flag threshold exceeded
+            }// end rainCorrectMethod==ANNSpeed1
+	    else{
+	      wvc->rainCorrectedSpeed=-1;
+	    }
 
           } // end valid inputs to rainflag MLP case
             // Handle invalid inputs to rainflag case; flag as rain flag unusable.
           else{
-            //wvc->rainFlagBits=RAIN_FLAG_UNUSABLE;
+	    wvc->rainFlagBits=RAIN_FLAG_UNUSABLE;
+            wvc->rainCorrectedSpeed=-1;
+            wvc->rainImpact=0;
           } 
         } // end if rainFlagMethod==ANNRainFlag1 case
       } // end of invalid inputs to liquid or speed1 networks
 
       // Handle invalid inputs to liquid or speed net1 case.
       else{
-        //delete(wvc);
-        //return(17);
+	wvc->rainFlagBits=RAIN_FLAG_UNUSABLE;
+	wvc->rainCorrectedSpeed=-1;
+	wvc->rainImpact=0;
       } 
     } // end of rainFlagMethod==ANNRainFlag1 || rainCorrectMethodANNSpeed1 case
 
@@ -2228,6 +2214,100 @@ L2AToL2B::ConvertAndWrite(
         return(0);
 
     return(1);
+}
+
+
+void
+L2AToL2B::RainCorrectSpeed(L2B* l2b){
+  // Die if Rain Correction is not set up appropriately
+  if(rainCorrectMethod!=ANNSpeed1){
+    fprintf(stderr,"Error:L2AToL2B::RainCorrectSpeed called when rainCorrectMethod != ANNSpeed1\n");
+    exit(1);
+  }
+  WindSwath* swath = &(l2b->frame.swath);
+  int ncti=swath->GetCrossTrackBins();
+  int nati=swath->GetAlongTrackBins();
+
+  for (int cti = 0; cti < ncti; cti++)
+    {
+      for (int ati = 0; ati < nati; ati++)
+        {
+          WVC* wvc = swath->GetWVC(cti,ati);
+          
+          if ( ! wvc ) continue;
+          if ( wvc->rainImpact <= rain_impact_thresh_for_correction || wvc->rainCorrectedSpeed<0) continue;
+	  // modify all ambiguities when threshold exceeded
+
+# define RC_AMBIGFIX_METHOD 2
+          WindVectorPlus* wvp;
+          int nbins=wvc->directionRanges.dirIdx.GetBins();
+          float expected_speed, speed_bias;
+          float* obj;
+          float scale, sum=0; 
+	  switch(RC_AMBIGFIX_METHOD){
+
+          case 1:  // Replace all speeds with RainCorrectSpeed set objs values to zero
+	    wvp=wvc->ambiguities.GetHead();
+	    while(wvp){
+	      wvp->spd=wvc->rainCorrectedSpeed;
+	      wvp->obj=0;
+	      wvp=wvc->ambiguities.GetNext();
+	    }
+              
+	    //---------modify directionRanges speed array --------//
+	    // set best speed and obj function curves to be flat vs azimuth.
+	    
+	    for(int c=0;c<nbins;c++){
+	      wvc->directionRanges.bestSpd[c]=wvc->rainCorrectedSpeed;
+	      wvc->directionRanges.bestObj[c]=0;
+	    }
+	    break;
+
+	  case 2:  // Add bias E(spd)-rainCorrectedSpeed to all speeds; set obj values to zero
+            // convert bestObjs to probabilities float sum = 0.0;
+	    obj=wvc->directionRanges.bestObj;
+	    scale = obj[0];
+	    for (int c = 1; c < nbins; c++)
+	      {
+		if (scale < obj[c])
+		  scale = obj[c];
+	      }
+	    sum=0;
+	    for (int c = 0; c < nbins; c++)
+	      {
+		obj[c] = exp((obj[c] - scale) / 2);
+		sum += obj[c];
+	      }
+	    for (int c = 0; c < nbins; c++)
+	      {
+		obj[c] /= sum;
+	      }
+
+            // compute expected speed and bias
+            expected_speed=0;
+            for (int c = 0; c < nbins; c++){
+	      expected_speed+= wvc->directionRanges.bestSpd[c]*obj[c];
+	    }
+            speed_bias=expected_speed-wvc->rainCorrectedSpeed;
+            // unbias all speeds and set ambig obj values to zero
+            for (int c = 0; c < nbins; c++){
+	      wvc->directionRanges.bestSpd[c]-=speed_bias;
+	    }       
+
+	    wvp=wvc->ambiguities.GetHead();
+	    while(wvp){
+	      wvp->spd-=speed_bias;
+	      wvp->obj=0;
+	      wvp=wvc->ambiguities.GetNext();
+	    }     
+
+	    break;
+	  default:
+	    fprintf(stderr,"L2AtoL2B::RainCorrectSpeed  Bag RC_AMBIGFIX_METHOD %d\n", RC_AMBIGFIX_METHOD);
+	    exit(1);
+	  } // end switch
+	} // ati loop end
+    } // cti loop end
 }
 
 //-----------------//
@@ -2364,6 +2444,13 @@ L2AToL2B::InitAndFilter(
 {
  
     PopulateNudgeVectors(l2b);
+
+
+    //------ perform ann speed correction if desired -//
+    // This routine populates ambiguities using already computed
+    // ANN speeds for rainy conditions
+    if(rainCorrectMethod == ANNSpeed1 && medianFilterMaxPasses>0) RainCorrectSpeed(l2b);
+
     //------------//
     // initialize //
     //------------//

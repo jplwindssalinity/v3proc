@@ -150,7 +150,8 @@ public:
 
     int  WriteL2B(FILE* fp);
     int  ReadL2B(FILE* fp);
-    int  ReadL2B_v2(FILE* fp); // AGF added 6/3/2010
+    int  ReadL2B_v2(FILE* fp); // AGF added 6/3/2010   
+    int  ReadL2B_v3(FILE* fp); // BWS added 11/29/2010
     int  WriteVctr(FILE* fp, const int rank);    // 0 = selected
     int  WriteAscii(FILE* fp);
     int  WriteFlower(FILE* fp);
@@ -192,6 +193,7 @@ public:
     List<WindVectorPlus>   ambiguities;
     AngleIntervalListPlus  directionRanges;
     float                  rainProb;
+    float                  rainCorrectedSpeed;
     char                   rainFlagBits;
     // bit 0 1/0 = not usable                / usable
     // bit 1 1/0 = rain                      / no rain

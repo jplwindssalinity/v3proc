@@ -624,6 +624,10 @@ WindSwath::ReadL2B(
         {
           if (! wvc->ReadL2B_v2(fp)) return(0);
         }
+        else if( version_id_major == 3 )
+        {
+          if (! wvc->ReadL2B_v3(fp)) return(0); // new version BWS 11/29/2010
+        }
         else
         {
           fprintf(stderr, "Unknown L2B version ID: %d.%d\n",
