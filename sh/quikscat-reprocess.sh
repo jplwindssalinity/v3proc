@@ -74,8 +74,6 @@ function unlock () {
     
     echo
     echo "Releasing lock: $LOCKFILE"
-    echo "Still holding: $HELD_LOCKS"
-    echo
 
     echo "$HELD_LOCKS" | grep "$LOCKFILE" > /dev/null 2>&1
     HAVE_LOCK=$? 
@@ -85,6 +83,9 @@ function unlock () {
         rm -rf "$LOCKFILE" > /dev/null 2>&1
         HELD_LOCKS="${HELD_LOCKS/ $LOCKFILE/}"
     fi
+
+    echo "Still holding: $HELD_LOCKS"
+    echo
 }
 
 #######################################################################
