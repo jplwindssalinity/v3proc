@@ -26,6 +26,75 @@
 ######################################################################
 
 #######################################################################
+# Custom file un/locking commands.  flock apparently doesn't work 
+# across NFS, so we need to homebrew.
+#
+# Uses mkdir for atomicity.  
+
+#######################################################################
+# Lock a lockfile.  The lockfile filename should have no spaces in it.
+# Accepts a second parameter (PROC_ID), which is used as the name of a
+# blank file that is written into the lockfile directory.  This
+# makes it easy to tell who owns the lock.
+function lock () {
+    LOCKFILE="$1"
+    PROC_ID="$2"
+
+    echo
+    echo "$PROC_ID trying to lock: $LOCKFILE"
+    echo "$PROC_ID holds: $HELD_LOCKS"
+    echo
+
+    echo "$HELD_LOCKS" | grep "$LOCKFILE" > /dev/null 2>&1
+    HAVE_LOCK=$? 
+
+    # Check to see if we already hold the lock
+    if [[ $HAVE_LOCK -eq 0 ]]; then
+        return 0
+    fi
+
+    mkdir "$1" > /dev/null 2>&1
+    while [[ $? -ne 0 ]]; do
+        sleep 1
+        mkdir "$1" > /dev/null 2>&1
+    done
+
+    # If a PROC_ID is passed, create a 
+    if ! [[ -z "$PROC_ID" ]]; then
+        touch "$LOCKFILE/$PROC_ID"
+    fi
+
+    HELD_LOCKS="$HELD_LOCKS $LOCKFILE"
+}
+
+#######################################################################
+# Release a held lock file
+function unlock () {
+    LOCKFILE="$1"
+    
+    echo
+    echo "Releasing lock: $LOCKFILE"
+    echo "Still holding: $HELD_LOCKS"
+    echo
+
+    echo "$HELD_LOCKS" | grep "$LOCKFILE" > /dev/null 2>&1
+    HAVE_LOCK=$? 
+    
+    # Check to see if we already hold the lock
+    if [[ $HAVE_LOCK -eq 0 ]]; then
+        rm -rf "$LOCKFILE" > /dev/null 2>&1
+        HELD_LOCKS="${HELD_LOCKS/ $LOCKFILE/}"
+    fi
+}
+
+#######################################################################
+# Release all held locks
+function unlock_all () {
+    rm -rf $HELD_LOCKS
+    HELD_LOCKS=""
+}
+
+#######################################################################
 # Print a prompt
 function qs_reproc_prompt () {
     
@@ -185,7 +254,7 @@ function qs_reproc_generate_directory_structure () {
     
     SIM_DIR="$DIR_OUT_BASE/$REV"
     
-    if [[ ! -d $SIM_DIR ]]; then
+    if ! [[ -d $SIM_DIR ]]; then
         mkdir -p $SIM_DIR
     fi
     
@@ -537,51 +606,40 @@ function qs_reproc_execute_automated_cmd () {
 
     case "$CMD" in 
     STAGE)
-        echo -e "$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n" | \
-            qs_reproc_process_command STAGE
-        RETVAL=$?
+        INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n"
         ;;
     GENERATE)
-        echo -e "$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n$GENERIC_CFG\n" | \
-            qs_reproc_process_command GENERATE
-        RETVAL=$?
+        INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n$GENERIC_CFG\n"
         ;;
     L1BHDF-TO-L1B)
-        echo -e "$REV\n$OUTPUT_DIR\n$CFG\n" | \
-            qs_reproc_process_command L1BHDF-TO-L1B
-        RETVAL=$?
+        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
         ;;
     L1B-TO-L2A)
-        echo -e "$REV\n$OUTPUT_DIR\n$CFG\n" | \
-            qs_reproc_process_command L1B-TO-L2A
-        RETVAL=$?
+        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
         ;;
     L2A-FIX-QS-COMPOSITES)
-        echo -e "$REV\n$OUTPUT_DIR\n$CFG\n" | \
-            qs_reproc_process_command L2A-FIX-QS-COMPOSITES
-        RETVAL=$?
+        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
         ;;
     L2A-TO-L2B)
-        echo -e "$REV\n$OUTPUT_DIR\n$CFG\n" | \
-            qs_reproc_process_command L2A-TO-L2B
-        RETVAL=$?
+        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
         ;;
     L2B-MEDIAN-FILTER)
-        echo -e "$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n" | \
-            qs_reproc_process_command L2B-MEDIAN-FILTER
-        RETVAL=$?
+        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
         ;;
     L2B-TO-NETCDF)
-        echo -e "$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n" | \
-            qs_reproc_process_command L2B-TO-NETCDF
-        RETVAL=$?
+        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
         ;;
     CLEAN)
-        echo -e "$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n$CFG\n$ARGS\n" | \
-            qs_reproc_process_command CLEAN
-        RETVAL=$?
+        INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
         ;;
     esac
+
+    echo
+    echo "Sending: '$INPUT' to '$CMD'"
+    echo
+
+    echo -e "$INPUT" | qs_reproc_process_command "$CMD"
+    RETVAL=$?
 
     return $RETVAL
 }
@@ -612,6 +670,8 @@ function qs_reproc_by_rev () {
 function qs_reproc_schedule () {
     CMDS=`cut -f 1-2 "$CMD_FILE"`
     
+    # You can duplicate this idiom to define lower priority commands
+
     # TOP PRIORITY: Look for L2A-TO-L2B
     PRIORITY_CMD=`echo "$CMDS" | grep "L2A-TO-L2B" -`
     if [[ $? -eq 0 ]]; then
@@ -641,7 +701,10 @@ function qs_reproc_by_file () {
 
     # Multiple concurrent processes.  We need a unique ID to use in 
     # logging.
-    UNIQ="`hostname`: $$"
+    UNIQ="`hostname -s`:$$"
+
+    # Define per-process logfile
+    LOG_FILE="$LOG_DIR/$UNIQ.log"
 
     # Define lockfiles
     CMD_LOCK="$LOCKDIR/$CMD_FILE"
@@ -649,113 +712,125 @@ function qs_reproc_by_file () {
     ERR_LOCK="$LOCKDIR/$ERR_FILE"
     SUCCESS_LOCK="$LOCKDIR/$SUCCESS_FILE"
 
-    # Define corresponding lockfile file descriptors
-    CMD_LOCK_FD=200
-    PROC_LOCK_FD=201
-    ERR_LOCK_FD=202
-    SUCCESS_LOCK_FD=203
-
-    if [[ ! -d "$LOCKDIR" ]]; then
+    if ! [[ -d "$LOG_DIR" ]]; then
+        mkdir -p "$LOG_DIR" > /dev/null 2>&1
+    fi
+    if ! [[ -d "$LOCKDIR" ]]; then
         mkdir -p "$LOCKDIR" > /dev/null 2>&1
     fi
 
+    lock "$CMD_LOCK" "$UNIQ"
+    # Let ALL be a synonym for all actual processing
+    sed -i -e 's/ALL/STAGE	GENERATE	L1BHDF-TO-L1B	L1B-TO-L2A	L2A-FIX-QS-COMPOSITES	L2A-TO-L2B	L2B-MEDIAN-FILTER GS	L2B-MEDIAN-FILTER S3	L2B-TO-NETCDF GS	L2B-TO-NETCDF S3/' "$CMD_FILE"
+    unlock "$CMD_LOCK"
+
+    while [[ -s "$CMD_FILE" ]]; do
     (
-        # Use I/O redirection to define lockfiles
-        eval "exec $CMD_LOCK_FD> $CMD_LOCK" 
-        eval "exec $PROC_LOCK_FD> $PROC_LOCK" 
-        eval "exec $SUCCESS_LOCK_FD> $SUCCESS_LOCK" 
-        eval "exec $ERR_LOCK_FD> $ERR_LOCK"
+        # Yes, we really do want to spawn a new subshell for each processing run.
+        # This allows the logfiles to be overwritten after each command.
 
-        flock $CMD_LOCK_FD
-        # Let ALL be a synonym for all actual processing
-        sed -i -e 's/ALL/STAGE	GENERATE	L1BHDF-TO-L1B	L1B-TO-L2A	L2A-FIX-QS-COMPOSITES	L2A-TO-L2B	L2B-MEDIAN-FILTER GS	L2B-MEDIAN-FILTER S3	L2B-TO-NETCDF GS	L2B-TO-NETCDF S3/' "$CMD_FILE"
-        flock -u $CMD_LOCK_FD
+        # Since this is the ONLY place we nest mutexes, there's no
+        # threat of deadlock
+        lock "$CMD_LOCK" "$UNIQ"
+        lock "$PROC_LOCK" "$UNIQ"
 
-        while [[ -s "$CMD_FILE" ]]; do
+        # Give CMD_FILE to the scheduler.  It will chose the next command.
+        # CMD is: "Revision\tCommand"
+        CMD=`qs_reproc_schedule "$CMD_FILE"`
+        if [ -z "$CMD" ]; then
+            # If a NULL command is returned, exit gracefully
+            # Make sure we unlock first
+            unlock "$PROC_LOCK"
+            unlock "$CMD_LOCK"
+
+            sleep 30
+            return 0
+        fi
+
+        # Parse the command line
+        # Get the corresponding line in the file
+        # Pick off the revision, command, and subsequent commands
+        CMD_LINE=`grep "^$CMD" "$CMD_FILE" | head -n 1`
+        REV=`echo "$CMD_LINE" | cut -f 1`
+        CMD=`echo "$CMD_LINE" | cut -f 2`
+        NEXT_CMD_LINE=`echo "$CMD_LINE" | cut -f 1,3-`
+
+        START=`date`
+
+        # Log to the PROC_FILE
+        echo "$REV	$CMD	$UNIQ	$START" >> "$PROC_FILE"
+        unlock "$PROC_LOCK"
+
+        # Delete the comamnd from the file so no one else tries 
+        # to execute it
+        sed -i "/$CMD_LINE/d" "$CMD_FILE"       
+
+        unlock "$CMD_LOCK"
+
+        # Execute the command
+        echo
+        echo "Executing '$CMD' for '$REV'."
+        echo "The following command is '$NEXT_CMD_LINE'."
+        echo
+
+        qs_reproc_execute_automated_cmd "$REV" "$CMD"
+        RETVAL=$?
+        END=`date`
+
+        # Calculate the runtime using `date`
+        RUNTIME=$((`date --date="$END" +%s` - `date --date="$START" +%s`))
+
+        if [[ $RETVAL -eq 0 ]]; then
+            # If the command returns successfully, then log it to the 
+            # SUCCESS_FILE and write the subsequent command (if available
+            # to CMD_FILE
+  
+            lock "$SUCCESS_LOCK" "$UNIQ"
+            echo "$REV	$CMD	$UNIQ	$START	$END	$RUNTIME" >> "$SUCCESS_FILE"
+            unlock "$SUCCESS_LOCK"
     
-            # Since this is the ONLY place we nest mutexes, there's no
-            # threat of deadlock
-            flock $CMD_LOCK_FD
-            flock $PROC_LOCK_FD
-
-            # Give CMD_FILE to the scheduler.  It will chose the next command.
-            # CMD is: "Revision\tCommand"
-            CMD=`qs_reproc_schedule "$CMD_FILE"`
-            if [ -z "$CMD" ]; then
-                # If a NULL command is returned, exit gracefully
-                return 0;
-            fi
-
-            # Parse the command line
-            # Get the corresponding line in the file
-            # Pick off the revision, command, and subsequent commands
-            CMD_LINE=`grep "^$CMD" "$CMD_FILE" | head -n 1`
-            REV=`echo "$CMD_LINE" | cut -f 1`
-            CMD=`echo "$CMD_LINE" | cut -f 2`
-            NEXT_CMD_LINE=`echo "$CMD_LINE" | cut -f 1,3-`
-
-            START=`date`
-
-            # Log to the PROC_FILE
-            echo "$REV	$CMD	$UNIQ	$START" >> "$PROC_FILE"
-            flock -u $PROC_LOCK_FD
-
-            # Delete the comamnd from the file so no one else tries 
-            # to execute it
-            sed -i "/$CMD_LINE/d" "$CMD_FILE"       
-
-            flock -u $CMD_LOCK_FD
-
-            # Execute the command
-            qs_reproc_execute_automated_cmd "$REV" "$CMD"
-            RETVAL=$?
-            END=`date`
-            # Calculate the runtime using `date`
-            RUNTIME=$((`date --date="$END" +%s` - `date --date="$START" +%s`))
-
-            if [[ $RETVAL -eq 0 ]]; then
-                # If the command returns successfully, then log it to the 
-                # SUCCESS_FILE and write the subsequent command (if available
-                # to CMD_FILE
-      
-                flock $SUCCESS_LOCK_FD
-                echo "$REV	$CMD	$UNIQ	$START	$END	$RUNTIME" >> success.txt
-                flock -u $SUCCESS_LOCK_FD
-        
-                flock 200
-                if [[ "$NEXT_CMD_LINE" != "$REV" ]]; then
-                    # If there are more commands for this REV, we need to 
-                    # reinsert them into the command file
-                    if [[ -s "$CMD_FILE" ]]; then
-                        # Use sed to prepend the command
-                    	sed -i -e "1i$NEXT_CMD_LINE" "$CMD_FILE"
-                    else
-                        # sed can't prepend to an empty file
-                        echo "$NEXT_CMD_LINE" >> "$CMD_FILE"
-                    fi
+            lock "$CMD_LOCK" "$UNIQ"
+            if [[ "$NEXT_CMD_LINE" != "$REV" ]]; then
+                # If there are more commands for this REV, we need to 
+                # reinsert them into the command file
+                if [[ -s "$CMD_FILE" ]]; then
+                    # Use sed to prepend the command
+                    sed -i -e "1i$NEXT_CMD_LINE" "$CMD_FILE"
+                else
+                    # sed can't prepend to an empty file
+                    echo "$NEXT_CMD_LINE" >> "$CMD_FILE"
                 fi
-                flock -u 200
-            else
-                # If the command returns unsuccessfully, log it to the
-                # ERR_FILE (along with any subsequent commands)
+            fi
+            unlock "$CMD_LOCK"
+        else
+            # If the command returns unsuccessfully, log it to the
+            # ERR_FILE (along with any subsequent commands) and
+            # copy the process log file to a persistent file.
 
-                NEXT_CMD_LINE=`echo $NEXT_CMD_LINE | cut -f 2-`
+            NEXT_CMD_LINE=`echo $NEXT_CMD_LINE | cut -f 2-`
 
-                flock $ERR_LOCK_FD
-                echo "$REV	$CMD	$NEXT_CMD_LINE	$UNIQ	$START	$END	$RUNTIME" >> error.txt
-                flock -u $ERR_LOCK_FD
-            fi       
+            lock "$ERR_LOCK" "$UNIQ"
+            echo "$REV	$CMD	$NEXT_CMD_LINE	$UNIQ	$START	$END	$RUNTIME" >> "$ERR_FILE"
+            cp "$LOG_FILE" "$LOG_DIR/$REV-$CMD-$UNIQ-error.log"
+            unlock "$ERR_LOCK"
+        fi       
 
-            # Remove the line from the processing file
-            flock $PROC_LOCK_FD
-            sed -i "/$REV	$CMD.*/d" "$PROC_FILE"
-            flock -u $PROC_LOCK_FD
-        done 
-    ) >&1 | sed -e "s/^/[$UNIQ] /"
-    #       ^^^^^^^^^^^^^^^^^^^^
+        # Remove the line from the processing file
+        lock "$PROC_LOCK" "$UNIQ"
+        sed -i "/$REV	$CMD.*/d" "$PROC_FILE"
+        unlock "$PROC_LOCK"
+
+    ) 2>&1 | tee "$LOG_FILE" | sed -e "s/^/[$UNIQ] /"
+    #                          ^^^^^^^^^^^^^^^^^^^^^ 
     # Prepend an ID to the output of the processes.
     # This makes reading the outputs and comparing the results
     # in the files MUCH easier
+    #
+    #        ^^^^^^^^^^^^^^
+    # Write the results of this run into a per-process logfile
+    # in addition to dumping to the command line.  This log
+    # is rewritten on each iteration of the loop.
+    done 
 }
 
 #######################################################################
@@ -777,6 +852,9 @@ function qs_reproc_interactive () {
 # We fire off a bunch of children.
 # Trap SIGINT and exit gracefully so that the children are killed as well.
 trap "exit" SIGINT
+
+# Release all file locks on exit
+trap "unlock_all" EXIT
 
 if [[ $# -ge 1 ]]; then
     CFG_FILE="$1"
