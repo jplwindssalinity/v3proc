@@ -679,6 +679,7 @@ function qs_reproc_schedule () {
         # Found an L2A-TO-L2B as a valid next command
         PRIORITY_CMD=`echo "$PRIORITY_CMD" | head -n 1`
         NUM_RUNS=`grep "L2A-TO-L2B" "$PROC_FILE" | wc -l`
+        echo "$NUM_RUNS/$MAX_L2A_TO_L2B runs executing."
         if [[ $NUM_RUNS -lt $MAX_L2A_TO_L2B ]]; then
             # There are fewer running L2A-TO-L2B processes than allowed.
             # Do this one.
