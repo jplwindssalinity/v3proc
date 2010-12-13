@@ -652,6 +652,9 @@ function qs_reproc_by_rev () {
     REV="$2"
 
     source "$CFG_FILE"
+    if [[ -z "$LOG_DIR" ]]; then
+        LOG_DIR=./
+    fi
 
     qs_reproc_execute_automated_cmd "$REV" "STAGE"
     qs_reproc_execute_automated_cmd "$REV" "GENERATE"
