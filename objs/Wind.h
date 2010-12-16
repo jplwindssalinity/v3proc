@@ -131,7 +131,7 @@ public:
 #define L2B_QUAL_FLAG_ICE             0x02   // bit 1 1/0 = ice  / no ice
 #define L2B_QUAL_FLAG_RAIN_UNUSABLE   0x04   // bit 2 1/0 = not usable/usable
 #define L2B_QUAL_FLAG_RAIN            0x08   // bit 3 1/0 = rain/no rain
-#define L2B_QUAL_FLAG_RAIN_LOCATION   0x10   // bit 4 1/0 = outer/inner
+#define L2B_QUAL_FLAG_RAIN_LOCATION   0x10   // bit 4 1/0 = sig0 from 4 looks not/are available
 
 class WVC
 {
