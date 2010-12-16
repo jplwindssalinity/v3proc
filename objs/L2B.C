@@ -1333,6 +1333,19 @@ L2B::ReadPureHdf(
             wvc->rainFlagBits     = (char)((0x7000 & wvc_quality_flag[cti]) >> 12);
             wvc->landiceFlagBits  = (char)((0x0180 & wvc_quality_flag[cti]) >> 7 );
             
+            // Set qualFlag variable from wvc_quality_flag 12/16/2010 AGF
+            wvc->qualFlag = 0;
+            if( L2B_HDF_QUAL_FLAG_LAND           & wvc_quality_flag[cti]) 
+              wvc->qualFlag += L2B_QUAL_FLAG_LAND;
+            if( L2B_HDF_QUAL_FLAG_ICE            & wvc_quality_flag[cti]) 
+              wvc->qualFlag += L2B_QUAL_FLAG_ICE;
+            if( L2B_HDF_QUAL_FLAG_RAIN_UNUSABLE  & wvc_quality_flag[cti]) 
+              wvc->qualFlag += L2B_QUAL_FLAG_RAIN_UNUSABLE;
+            if( L2B_HDF_QUAL_FLAG_RAIN           & wvc_quality_flag[cti]) 
+              wvc->qualFlag += L2B_QUAL_FLAG_RAIN;
+            if( L2B_HDF_QUAL_FLAG_AVAILABLE_DATA & wvc_quality_flag[cti])
+              wvc->qualFlag += L2B_QUAL_FLAG_RAIN_LOCATION;
+            
             //------------------//
             // add WVC to swath //
             //------------------//

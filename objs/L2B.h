@@ -107,6 +107,12 @@ public:
 #define HDF_WIND_DIR_SELECTION_SCALE    0.01
 #define HDF_MP_RAIN_PROBABILITY_SCALE   0.001
 
+#define L2B_HDF_QUAL_FLAG_LAND           0x0080  // 2^7;  bit set => some land in WVC
+#define L2B_HDF_QUAL_FLAG_ICE            0x0100  // 2^8;  bit set => some ice  in WVC
+#define L2B_HDF_QUAL_FLAG_RAIN_UNUSABLE  0x1000  // 2^12; bit set => rain flag not usable
+#define L2B_HDF_QUAL_FLAG_RAIN           0x2000  // 2^13; bit set => rain detected if usable
+#define L2B_HDF_QUAL_FLAG_AVAILABLE_DATA 0x4000  // 2^14; bit set => not all 4 looks available
+
 class L2B : public BaseFile
 {
 public:
