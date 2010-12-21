@@ -750,7 +750,7 @@ main(
       int minute    = atoi( strtok( NULL,               ":"  ) );
       float seconds = atof( strtok( NULL,               "\0" ) );
       
-      double sec_year = seconds+60.0*(float(minute)+60.0*(float(hour)+24.0*float(doy)));
+      double sec_year = seconds+60.0*(float(minute)+60.0*(float(hour)+24.0*float(doy - 1)));
       
       //printf("Frame time: %4.4d-%3.3d-%2.2d:%2.2d:%2.6f\n", year, doy, hour, minute, seconds );
       
