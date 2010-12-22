@@ -272,7 +272,7 @@ function qs_reproc_generate_directory_structure () {
     
     # Obtain the n6h ECMWF filename
     CLOSEST_NWP_STR=`cat $L1B_TIMES_FILE | tail -1`
-    NCEP_FILENAME_STR='SNWP3'$CLOSEST_NWP_STR".swap"
+    NCEP_FILENAME_STR='SNWP3'$CLOSEST_NWP_STR
     
     ICE_FILENAME_STR='NRT_ICEM'${CLOSEST_NWP_STR:0:7}
     
@@ -656,16 +656,46 @@ function qs_reproc_by_rev () {
         LOG_DIR=./
     fi
 
-    qs_reproc_execute_automated_cmd "$REV" "STAGE"
-    qs_reproc_execute_automated_cmd "$REV" "GENERATE"
-    qs_reproc_execute_automated_cmd "$REV" "L1BHDF-TO-L1B"
-    qs_reproc_execute_automated_cmd "$REV" "L1B-TO-L2A"
-    qs_reproc_execute_automated_cmd "$REV" "L2A-FIX-QS-COMPOSITES"
-    qs_reproc_execute_automated_cmd "$REV" "L2A-TO-L2B"
-    qs_reproc_execute_automated_cmd "$REV" "L2B-MEDIAN-FILTER GS"
-    qs_reproc_execute_automated_cmd "$REV" "L2B-MEDIAN-FILTER S3"
-    qs_reproc_execute_automated_cmd "$REV" "L2B-TO-NETCDF GS"
-    qs_reproc_execute_automated_cmd "$REV" "L2B-TO-NETCDF S3"
+    qs_reproc_execute_automated_cmd "$REV" "STAGE"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
+    qs_reproc_execute_automated_cmd "$REV" "GENERATE"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
+    qs_reproc_execute_automated_cmd "$REV" "L1BHDF-TO-L1B"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
+    qs_reproc_execute_automated_cmd "$REV" "L1B-TO-L2A"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
+    qs_reproc_execute_automated_cmd "$REV" "L2A-FIX-QS-COMPOSITES"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
+    qs_reproc_execute_automated_cmd "$REV" "L2A-TO-L2B"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
+    qs_reproc_execute_automated_cmd "$REV" "L2B-MEDIAN-FILTER GS"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
+    qs_reproc_execute_automated_cmd "$REV" "L2B-MEDIAN-FILTER S3"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
+    qs_reproc_execute_automated_cmd "$REV" "L2B-TO-NETCDF GS"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
+    qs_reproc_execute_automated_cmd "$REV" "L2B-TO-NETCDF S3"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
 }
 
 #######################################################################
@@ -825,16 +855,20 @@ function qs_reproc_by_file () {
         sed -i "/$REV	$CMD.*/d" "$PROC_FILE"
         unlock "$PROC_LOCK"
 
-    ) 2>&1 | tee "$LOG_FILE" | sed -e "s/^/[$UNIQ] /"
-    #                          ^^^^^^^^^^^^^^^^^^^^^ 
-    # Prepend an ID to the output of the processes.
-    # This makes reading the outputs and comparing the results
-    # in the files MUCH easier
+    ) 2>&1 | sed -e "s/^/`date +"%F %T"` /" | tee "$LOG_FILE" | sed -e "s/^/[$UNIQ] /"
+    #       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    # Write the date/time of each line into the files.
+    # Timestamps are useful.
     #
-    #        ^^^^^^^^^^^^^^
+    #                                         ^^^^^^^^^^^^^^
     # Write the results of this run into a per-process logfile
     # in addition to dumping to the command line.  This log
     # is rewritten on each iteration of the loop.
+    #
+    #                                                          ^^^^^^^^^^^^^^^^^^^^^ 
+    # Prepend an ID to the output of the processes.
+    # This makes reading the outputs and comparing the results
+    # in the files MUCH easier.
     done 
 }
 
