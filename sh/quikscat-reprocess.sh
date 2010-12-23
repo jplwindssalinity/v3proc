@@ -40,7 +40,6 @@ function lock () {
     LOCKFILE="$1"
     PROC_ID="$2"
 
-    echo
     echo "$PROC_ID trying to lock: $LOCKFILE"
     echo "$PROC_ID holds: $HELD_LOCKS"
     echo
@@ -55,6 +54,7 @@ function lock () {
 
     mkdir "$1" > /dev/null 2>&1
     while [[ $? -ne 0 ]]; do
+        echo "$PROC_ID lock attempt failed.  Block."
         sleep 1
         mkdir "$1" > /dev/null 2>&1
     done
@@ -65,6 +65,10 @@ function lock () {
     fi
 
     HELD_LOCKS="$HELD_LOCKS $LOCKFILE"
+
+    echo "$PROC_ID lock attempt successful."
+    echo "$PROC_ID holds: $HELD_LOCKS"
+    echo
 }
 
 #######################################################################
@@ -72,7 +76,6 @@ function lock () {
 function unlock () {
     LOCKFILE="$1"
     
-    echo
     echo "Releasing lock: $LOCKFILE"
 
     echo "$HELD_LOCKS" | grep "$LOCKFILE" > /dev/null 2>&1
@@ -170,7 +173,6 @@ function qs_reproc_stage () {
     echo -n "L2B HDF Directory: "
     read DIR_QSL2B_HDF
 
-    RETVAL=0
     L1BURL="ftp://qL1B:data4me@podaac/data/L1B"
     L2BURL="ftp://podaac/pub/ocean_wind/quikscat/L2B12/data"
 
@@ -180,12 +182,18 @@ function qs_reproc_stage () {
     # file will land in, so just check in both days if this one does.
 
     DATE1=`echo $ID | sed -e 's/  */ /g' | cut -f 2 -d \  `
-    DATE2=`echo $ID | sed -e 's/  */ /g' | cut -f 4 -d \  `
 
     YEAR1=`echo $DATE1 | sed -e 's/^\(.*\)-.*/\1/'`
     DAY1=`echo $DATE1 | sed -e 's/.*-\(.*\)T.*/\1/'`
-    YEAR2=`echo $DATE2 | sed -e 's/^\(.*\)-.*/\1/'`
-    DAY2=`echo $DATE2 | sed -e 's/.*-\(.*\)T.*/\1/'`
+
+    # Play some games with `date` to get a "properly formatted" 
+    # version of DATE1, then add one day to it to find the following
+    # day
+    DATE1=$(date --date="$YEAR1-01-01 +$(($DAY1 - 1))days")
+    DATE2=$(date --date="$DATE1 +1days")
+    
+    YEAR2=$(date --date="$DATE2" +%Y)
+    DAY2=$(date --date="$DATE2" +%j)
 
     # See if there are any existing L1B HDF files associated to this rev
     ls "$DIR_QSL1B_HDF"/*"$REV"* > /dev/null 2>&1
@@ -196,16 +204,21 @@ function qs_reproc_stage () {
         # L1B HDF File
         wget -nH -N --cut-dirs=4 -P "$DIR_QSL1B_HDF" \
             "$L1BURL/$YEAR1/$DAY1/*$REV*"
-        RETVAL1=$?
-        if [[ ($YEAR1 -ne $YEAR2) || ($DAY1 -ne $DAY2) ]]; then
-            # Cross a day bdry? Try the next day too.
+        ls "$DIR_QSL1B_HDF"/*"$REV"* > /dev/null 2>&1
+
+        if [[ $? -ne 0 ]]; then
+            # Couldn't find the file in DATE1, try DATE2
             wget -nH -N --cut-dirs=4 -P "$DIR_QSL1B_HDF" \
                 "$L1BURL/$YEAR2/$DAY2/*$REV*"
-            [[ ($RETVAL1 -eq 0) || ($? -eq 0) ]]; RETVAL1=$?
         fi
-        [[ ($RETVAL -eq 0) && ($RETVAL1 -eq 0) ]]; RETVAL=$?
-
     fi
+
+    ls "$DIR_QSL1B_HDF"/*"$REV"* > /dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        echo "ERROR: REV L1B HDF file not found"
+        return 1
+    fi
+
     gunzip -f "$DIR_QSL1B_HDF"/*"$REV"*.gz > /dev/null 2>&1
 
     # See if there are any existing L2B HDF files associated to this rev
@@ -216,19 +229,24 @@ function qs_reproc_stage () {
         # L2B HDF File
         wget -nH -N --cut-dirs=4 -P "$DIR_QSL2B_HDF" \
             "$L2BURL/$YEAR1/$DAY1/*$REV*"
-        RETVAL1=$?
-        if [[ ($YEAR1 -ne $YEAR2) || ($DAY1 -ne $YEAR2) ]]; then
-            # Cross a day bdry? Try the next day too.
+
+        ls "$DIR_QSL2B_HDF"/*"$REV"* > /dev/null 2>&1
+        if [[ $? -ne 0 ]]; then
+            # Couldn't find the file in DATE1, try DATE2
             wget -nH -N --cut-dirs=4 -P "$DIR_QSL2B_HDF" \
                 "$L2BURL/$YEAR2/$DAY2/*$REV*"
-            [[ ($RETVAL1 -eq 0) || ($? -eq 0) ]]; RETVAL1=$?
         fi
-        [[ ($RETVAL -eq 0) && ($RETVAL1 -eq 0) ]]; RETVAL=$?
-
     fi
+
+    ls "$DIR_QSL2B_HDF"/*"$REV"* > /dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        echo "ERROR: REV L2B HDF file not found"
+        return 1
+    fi
+
     gunzip -f "$DIR_QSL2B_HDF"/*"$REV"*.gz > /dev/null 2>&1
 
-    return $RETVAL
+    return 0
 }
 
 #######################################################################
@@ -512,6 +530,7 @@ function qs_reproc_clean () {
         # Spoof switch with fallthrough
         if [[ $LEVEL -le 2 ]]; then
             rm -f \
+                "nn_train.dat" \
                 "$L1B_HDF_FNAME" \
                 "$L2B_HDF_FNAME" \
                 "$L1B_FNAME" \
@@ -747,12 +766,29 @@ function qs_reproc_by_file () {
     ERR_LOCK="$LOCKDIR/$ERR_FILE"
     SUCCESS_LOCK="$LOCKDIR/$SUCCESS_FILE"
 
+    ERR_DIR="$LOG_DIR/error"
+    SUC_DIR="$LOG_DIR/success"
+
     if ! [[ -d "$LOG_DIR" ]]; then
         mkdir -p "$LOG_DIR" > /dev/null 2>&1
+        mkdir -p "$ERR_DIR" > /dev/null 2>&1
+        mkdir -p "$SUC_DIR" > /dev/null 2>&1
     fi
     if ! [[ -d "$LOCKDIR" ]]; then
         mkdir -p "$LOCKDIR" > /dev/null 2>&1
     fi
+
+    # We want to work on a COPY of the command file.  If that copy
+    # doesn't already exist, create it.
+    NEW_CMD_FILE="$CMD_FILE.working"
+    lock "$CMD_LOCK" "$UNIQ"
+    if ! [[ -e "$NEW_CMD_FILE" ]]; then 
+        cp -f "$CMD_FILE" "$NEW_CMD_FILE"
+    fi
+    unlock "$CMD_LOCK"
+
+    CMD_FILE="$NEW_CMD_FILE"
+    CMD_LOCK="$LOCKDIR/$NEW_CMD_FILE"
 
     lock "$CMD_LOCK" "$UNIQ"
     # Let ALL be a synonym for all actual processing
@@ -803,7 +839,6 @@ function qs_reproc_by_file () {
         unlock "$CMD_LOCK"
 
         # Execute the command
-        echo
         echo "Executing '$CMD' for '$REV'."
         echo "The following command is '$NEXT_CMD_LINE'."
         echo
@@ -821,7 +856,8 @@ function qs_reproc_by_file () {
             # to CMD_FILE
   
             lock "$SUCCESS_LOCK" "$UNIQ"
-            echo "$REV	$CMD	$UNIQ	$START	$END	$RUNTIME" >> "$SUCCESS_FILE"
+            echo "$REV	$CMD	$UNIQ	$START	$END	$RUNTIME" >> \
+                "$SUCCESS_FILE"
             unlock "$SUCCESS_LOCK"
     
             lock "$CMD_LOCK" "$UNIQ"
@@ -846,7 +882,6 @@ function qs_reproc_by_file () {
 
             lock "$ERR_LOCK" "$UNIQ"
             echo "$REV	$CMD	$NEXT_CMD_LINE	$UNIQ	$START	$END	$RUNTIME" >> "$ERR_FILE"
-            cp "$LOG_FILE" "$LOG_DIR/$REV-$CMD-$UNIQ-error.log"
             unlock "$ERR_LOCK"
         fi       
 
@@ -855,21 +890,50 @@ function qs_reproc_by_file () {
         sed -i "/$REV	$CMD.*/d" "$PROC_FILE"
         unlock "$PROC_LOCK"
 
-    ) 2>&1 | sed -e "s/^/`date +"%F %T"` /" | tee "$LOG_FILE" | sed -e "s/^/[$UNIQ] /"
+        # The last thing to do is handle the logfile.
+        # This is a little tricky since the logfile is populated by
+        # redirecting stdout & stderr from this subshell, and the
+        # associated file descriptors may not flush until the
+        # subshell exits (i.e. AFTER a file copy).
+        
+        # First, manually close stdout and sterr, then copy the log files
+        exec 1>&-
+        exec 2>&-
+        if [[ $RETVAL -eq 0 ]]; then
+            # The command was sucessful, see if we need to save the
+            # log file
+            if [[ "$(echo "$KEEP_SUCCESS_LOGS" | \
+                    tr "[:lower:]" "[:upper:]")" == "YES" ]]; then
+                cp "$LOG_FILE" "$SUC_DIR/$REV-$CMD-$UNIQ.log"
+            fi
+        else
+            # The command ended in an error.  Log it.
+            cp "$LOG_FILE" "$ERR_DIR/$REV-$CMD-$UNIQ.log"
+        fi
+
+    ) 2>&1 | sed -e "s/^/(`date +"%F %T"`) /" | tee "$LOG_FILE" | sed -e "s/^/[$UNIQ] /"
     #       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     # Write the date/time of each line into the files.
     # Timestamps are useful.
     #
-    #                                         ^^^^^^^^^^^^^^
+    #                                           ^^^^^^^^^^^^^^
     # Write the results of this run into a per-process logfile
     # in addition to dumping to the command line.  This log
     # is rewritten on each iteration of the loop.
     #
-    #                                                          ^^^^^^^^^^^^^^^^^^^^^ 
+    #                                                             ^^^^^^^^^^^^^^^^^^^^^ 
     # Prepend an ID to the output of the processes.
     # This makes reading the outputs and comparing the results
     # in the files MUCH easier.
     done 
+
+    # If CMD is empty, delete it.  Don't worry if there are other 
+    # processes still running: they APPEND subsequent commands to CMD.
+    # So, if we delete it now and someone else needs it, it will get
+    # created later.
+    lock "$CMD_LOCK" "$UNIQ"
+    rm -f "$CMD_FILE"
+    unlock "$CMD_LOCK"
 }
 
 #######################################################################
