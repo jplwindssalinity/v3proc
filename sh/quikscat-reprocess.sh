@@ -60,7 +60,7 @@ function lock () {
     done
 
     # If a PROC_ID is passed, create a 
-    if ! [[ -z "$PROC_ID" ]]; then
+    if [[ -n "$PROC_ID" ]]; then
         touch "$LOCKFILE/$PROC_ID"
     fi
 
@@ -302,6 +302,7 @@ function qs_reproc_generate_directory_structure () {
         -e "s:QS_ICEMAP_FILE              = DUMMY_FILENAME:QS_ICEMAP_FILE              = ../../dat/ice/$ICE_FILENAME_STR:" \
         -e "s:ATTEN_MAP_SEC_YEAR          = DUMMY:ATTEN_MAP_SEC_YEAR          = $SEC_YEAR:" \
                 $TEMPLATE_FILE > $CONFIG_FILE
+    RETVAL=$(($RETVAL || $?))
 
     return $RETVAL
 }
@@ -433,6 +434,7 @@ function qs_reproc_l2b_median_filter () {
             OUTFILE=l2b_flagged_S3.dat
             sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
                 $CONFIG_FILE > "$MEDFILT_CONFIG"
+            RETVAL=$?
             ;; 
         GS) 
             MEDFILT_CONFIG=tmp2.rdf
@@ -440,11 +442,16 @@ function qs_reproc_l2b_median_filter () {
             sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
                 -e 's:WIND_RETRIEVAL_METHOD       = S3:WIND_RETRIEVAL_METHOD       = GS:' \
                     $CONFIG_FILE > "$MEDFILT_CONFIG"
+            RETVAL=$?
             ;; 
         *)
             echo "Unknown TYPE"
+            RETVAL=1
             ;;
         esac
+        if [[ $RETVAL -ne 0 ]]; then
+            return $RETVAL
+        fi
         
         l2b_medianfilter -c "$MEDFILT_CONFIG" -o "$OUTFILE" -nudgeHDF "$L2B_HDF_FNAME"
         RETVAL=$?
@@ -726,7 +733,7 @@ function qs_reproc_schedule () {
     # You can duplicate this idiom to define lower priority commands
 
     # TOP PRIORITY: Look for L2A-TO-L2B
-    PRIORITY_CMD=`echo "$CMDS" | grep "L2A-TO-L2B" -`
+    PRIORITY_CMD=`echo "$CMDS" | grep "L2A-TO-L2B"`
     if [[ $? -eq 0 ]]; then
         # Found an L2A-TO-L2B as a valid next command
         PRIORITY_CMD=`echo "$PRIORITY_CMD" | head -n 1`
@@ -742,7 +749,7 @@ function qs_reproc_schedule () {
 
     # Either there are no L2A-TO-L2B processes to run, or there are too
     # many already running.  Just grab the next legitimate command
-    CMD=`echo "$CMDS" | grep -v "L2A-TO-L2B" - | head -n 1`
+    CMD=`echo "$CMDS" | grep -m 1 -v "L2A-TO-L2B"`
     echo "$CMD"
 }
 
@@ -821,10 +828,10 @@ function qs_reproc_by_file () {
         # Parse the command line
         # Get the corresponding line in the file
         # Pick off the revision, command, and subsequent commands
-        CMD_LINE=`grep "^$CMD" "$CMD_FILE" | head -n 1`
+        CMD_LINE=`grep -m 1 "^$CMD" "$CMD_FILE"`
         REV=`echo "$CMD_LINE" | cut -f 1`
         CMD=`echo "$CMD_LINE" | cut -f 2`
-        NEXT_CMD_LINE=`echo "$CMD_LINE" | cut -f 1,3-`
+        NEXT_CMD_LINE=`echo "$CMD_LINE" | cut -f 3-`
 
         START=`date`
 
@@ -840,7 +847,7 @@ function qs_reproc_by_file () {
 
         # Execute the command
         echo "Executing '$CMD' for '$REV'."
-        echo "The following command is '$NEXT_CMD_LINE'."
+        echo "The following commands are '$NEXT_CMD_LINE'."
         echo
 
         qs_reproc_execute_automated_cmd "$REV" "$CMD"
@@ -861,15 +868,15 @@ function qs_reproc_by_file () {
             unlock "$SUCCESS_LOCK"
     
             lock "$CMD_LOCK" "$UNIQ"
-            if [[ "$NEXT_CMD_LINE" != "$REV" ]]; then
+            if [[ -n "$NEXT_CMD_LINE" ]]; then
                 # If there are more commands for this REV, we need to 
                 # reinsert them into the command file
                 if [[ -s "$CMD_FILE" ]]; then
                     # Use sed to prepend the command
-                    sed -i -e "1i$NEXT_CMD_LINE" "$CMD_FILE"
+                    sed -i -e "1i$REV	$NEXT_CMD_LINE" "$CMD_FILE"
                 else
                     # sed can't prepend to an empty file
-                    echo "$NEXT_CMD_LINE" >> "$CMD_FILE"
+                    echo "$REV	$NEXT_CMD_LINE" >> "$CMD_FILE"
                 fi
             fi
             unlock "$CMD_LOCK"
@@ -877,8 +884,6 @@ function qs_reproc_by_file () {
             # If the command returns unsuccessfully, log it to the
             # ERR_FILE (along with any subsequent commands) and
             # copy the process log file to a persistent file.
-
-            NEXT_CMD_LINE=`echo $NEXT_CMD_LINE | cut -f 2-`
 
             lock "$ERR_LOCK" "$UNIQ"
             echo "$REV	$CMD	$NEXT_CMD_LINE	$UNIQ	$START	$END	$RUNTIME" >> "$ERR_FILE"
