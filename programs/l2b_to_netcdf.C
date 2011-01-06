@@ -235,7 +235,7 @@ int main(int argc, char **argv) {
     int16 flags, eflags;
     const float zerof = 0.0f;
     float conversion;
-    char time_format[] = "YYYYDDDTHH:MM:SS.SSS";
+    char time_format[] = "YYYY-DDDTHH:MM:SS.SSS";
 
     float lat, lon;
 
@@ -699,61 +699,30 @@ int main(int argc, char **argv) {
     varlist[FLAGS].attrs[LONG_NAME].type = NC_CHAR;
     varlist[FLAGS].attrs[LONG_NAME].value.str = "wind vector cell quality flags";
 
-    varlist[FLAGS].attrs[num_standard_attrs + 0].name = "flag_meanings";
-    varlist[FLAGS].attrs[num_standard_attrs + 0].size = 1;
-    varlist[FLAGS].attrs[num_standard_attrs + 0].type = NC_CHAR;
-    varlist[FLAGS].attrs[num_standard_attrs + 0].value.str = "adequate_sigma0_flag "
-        "adequate_azimuth_diversity_flag coastal_flag ice_edge_flag wind_retrieval_flag "
-        "high_wind_speed_flag low_wind_speed_flag rain_impact_flag_usable rain_impact_flag "
-        "available_data_flag";
-
-    varlist[FLAGS].attrs[num_standard_attrs + 1].name = "flag_masks";
-    varlist[FLAGS].attrs[num_standard_attrs + 1].size = NUM_FLAGS;
-    varlist[FLAGS].attrs[num_standard_attrs + 1].type = varlist[FLAGS].type;
-    ERR((varlist[FLAGS].attrs[num_standard_attrs + 1].value.ps = (int16 *)
-                malloc(varlist[FLAGS].attrs[num_standard_attrs + 1].size *
-                    sizeof(*varlist[FLAGS].attrs[num_standard_attrs + 1].value.ps)))
+    varlist[FLAGS].attrs[num_standard_attrs + 0].name = "flag_masks";
+    varlist[FLAGS].attrs[num_standard_attrs + 0].size = NUM_FLAGS;
+    varlist[FLAGS].attrs[num_standard_attrs + 0].type = varlist[FLAGS].type;
+    ERR((varlist[FLAGS].attrs[num_standard_attrs + 0].value.ps = (int16 *)
+                malloc(varlist[FLAGS].attrs[num_standard_attrs + 0].size *
+                    sizeof(*varlist[FLAGS].attrs[num_standard_attrs + 0].value.ps)))
             == NULL);
     {
         int16 init_list[NUM_FLAGS] = {SIGMA0_MASK, AZIMUTH_DIV_MASK, COASTAL_MASK, 
             ICE_EDGE_MASK, WIND_RETRIEVAL_MASK, HIGH_WIND_MASK, LOW_WIND_MASK, 
             RAIN_IMPACT_UNUSABLE_MASK, RAIN_IMPACT_MASK, AVAILABLE_DATA_MASK};
 
-        ERR(memcpy(varlist[FLAGS].attrs[num_standard_attrs + 1].value.ps, init_list, 
+        ERR(memcpy(varlist[FLAGS].attrs[num_standard_attrs + 0].value.ps, init_list, 
                     NUM_FLAGS* sizeof init_list[0]) == NULL);
     }
 
-/*    varlist[FLAGS].attrs[num_standard_attrs + 0].name = "adequate_sigma0_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 0].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[num_standard_attrs + 0].value.s = SIGMA0_MASK;
-    varlist[FLAGS].attrs[num_standard_attrs + 1].name = "adequate_azimuth_diversity_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 1].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[num_standard_attrs + 1].value.s = AZIMUTH_DIV_MASK;
-    varlist[FLAGS].attrs[num_standard_attrs + 2].name = "coastal_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 2].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[num_standard_attrs + 2].value.s = COASTAL_MASK;
-    varlist[FLAGS].attrs[num_standard_attrs + 3].name = "ice_edge_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 3].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[num_standard_attrs + 3].value.s = ICE_EDGE_MASK;
-    varlist[FLAGS].attrs[num_standard_attrs + 4].name = "wind_retrieval_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 4].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[num_standard_attrs + 4].value.s = WIND_RETRIEVAL_MASK;
-    varlist[FLAGS].attrs[num_standard_attrs + 5].name = "high_wind_speed_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 5].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[num_standard_attrs + 5].value.s = HIGH_WIND_MASK;
-    varlist[FLAGS].attrs[num_standard_attrs + 6].name = "low_wind_speed_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 6].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[num_standard_attrs + 6].value.s = LOW_WIND_MASK;
-    varlist[FLAGS].attrs[num_standard_attrs + 7].name = "rain_impact_flag_usable";
-    varlist[FLAGS].attrs[num_standard_attrs + 7].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[num_standard_attrs + 7].value.s = RAIN_IMPACT_UNUSABLE_MASK;
-    varlist[FLAGS].attrs[num_standard_attrs + 8].name = "rain_impact_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 8].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[num_standard_attrs + 8].value.s = RAIN_IMPACT_MASK;
-    varlist[FLAGS].attrs[num_standard_attrs + 9].name = "available_data_flag";
-    varlist[FLAGS].attrs[num_standard_attrs + 9].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[num_standard_attrs + 9].value.s = AVAILABLE_DATA_MASK;
-    */
+    varlist[FLAGS].attrs[num_standard_attrs + 1].name = "flag_meanings";
+    varlist[FLAGS].attrs[num_standard_attrs + 1].size = 1;
+    varlist[FLAGS].attrs[num_standard_attrs + 1].type = NC_CHAR;
+    varlist[FLAGS].attrs[num_standard_attrs + 1].value.str = "adequate_sigma0_flag "
+        "adequate_azimuth_diversity_flag coastal_flag ice_edge_flag wind_retrieval_flag "
+        "high_wind_speed_flag low_wind_speed_flag rain_impact_flag_usable rain_impact_flag "
+        "available_data_flag";
+
 
     varlist[EFLAGS].name  = "eflags";
     varlist[EFLAGS].type  = NC_SHORT;
@@ -779,7 +748,7 @@ int main(int argc, char **argv) {
     varlist[EFLAGS].attrs[LONG_NAME].name = "long_name";
     varlist[EFLAGS].attrs[LONG_NAME].size = 1;
     varlist[EFLAGS].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[EFLAGS].attrs[LONG_NAME].value.str = "extended flags";
+    varlist[EFLAGS].attrs[LONG_NAME].value.str = "extended wind vector cell quality flags";
 
     varlist[NUDGE_SPEED].name  = "ecmwf_wind_speed";
     varlist[NUDGE_SPEED].type  = NC_FLOAT;
