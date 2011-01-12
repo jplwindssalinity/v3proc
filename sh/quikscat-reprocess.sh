@@ -52,7 +52,7 @@ function lock () {
         return 0
     fi
 
-    mkdir "$1" > /dev/null 2>&1
+    mkdir "$LOCKFILE" > /dev/null 2>&1
     while [[ $? -ne 0 ]]; do
         echo "$PROC_ID lock attempt failed.  Block."
         sleep 1
@@ -101,7 +101,6 @@ function unlock_all () {
 #######################################################################
 # Print a prompt
 function qs_reproc_prompt () {
-    
     echo "================================================================"
     echo "  QuikSCAT Reprocessing"
     echo "================================================================"
@@ -123,17 +122,19 @@ function qs_reproc_prompt () {
     echo "      Applies the L2B median filtering"
     echo "8  L2B-TO-NETCDF"
     echo "      Converts the L2B file to NetCDF format"
-    echo "9  CLEAN"
+    echo "9  LINK"
+    echo "      Symlink files in a directory structure"
+    echo "10 CLEAN"
     echo "      Removed unnecessary data files"
     echo "================================================================"
     echo ""
     echo -n "> "
-    
 }
 
 #######################################################################
 # Convert command numbers to command names
 function qs_reproc_get_command() {
+(
     COMMAND=$1
     
     case "$COMMAND" in
@@ -155,23 +156,39 @@ function qs_reproc_get_command() {
         ;;
     8)  echo "L2B-TO-NETCDF"
         ;;
-    9)  echo "CLEAN"
+    9)  echo "LINK"
+        ;;
+    10) echo "CLEAN"
         ;;
     *)  echo "$COMMAND"
         ;;
     
     esac
+)
 }
 
 #######################################################################
 # Download and extract existing L1B and L2B HDF files
 function qs_reproc_stage () {
+(
     echo -n "Rev: "
-    read REV
+    read REV ; tty > /dev/null 2>&1; 
+        [[ $? -eq 0 ]] || echo "$REV"
+    echo -n "Rev log: "
+    read REVLOG ; tty > /dev/null 2>&1; 
+        [[ $? -eq 0 ]] || echo "$REVLOG"
     echo -n "L1B HDF Directory: "
-    read DIR_QSL1B_HDF
+    read DIR_QSL1B_HDF; tty > /dev/null 2>&1; 
+        [[ $? -eq 0 ]] || echo "$DIR_QSL1B_HDF"
     echo -n "L2B HDF Directory: "
-    read DIR_QSL2B_HDF
+    read DIR_QSL2B_HDF; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$DIR_QSL2B_HDF"
+
+    # We need a temporary directory to use as a target for wget.
+    # This keeps .listing files from getting smashed
+    TMP="./tmp"
+    mkdir "$TMP" > /dev/null 2>&1
+    TDIR=`mktemp -d "$TMP/XXXXXXXXXX"`
 
     L1BURL="ftp://qL1B:data4me@podaac/data/L1B"
     L2BURL="ftp://podaac/pub/ocean_wind/quikscat/L2B12/data"
@@ -202,24 +219,27 @@ function qs_reproc_stage () {
         # Gotta download the data files
   
         # L1B HDF File
-        wget -nH -N --cut-dirs=4 -P "$DIR_QSL1B_HDF" \
+        wget -nH -N --cut-dirs=4 -P "$TDIR" \
             "$L1BURL/$YEAR1/$DAY1/*$REV*"
-        ls "$DIR_QSL1B_HDF"/*"$REV"* > /dev/null 2>&1
+        ls "$TDIR"/*"$REV"* > /dev/null 2>&1
 
         if [[ $? -ne 0 ]]; then
             # Couldn't find the file in DATE1, try DATE2
-            wget -nH -N --cut-dirs=4 -P "$DIR_QSL1B_HDF" \
+            wget -nH -N --cut-dirs=4 -P "$TDIR" \
                 "$L1BURL/$YEAR2/$DAY2/*$REV*"
         fi
+
+        ls "$TDIR"/*"$REV"* > /dev/null 2>&1
+        if [[ $? -ne 0 ]]; then
+            echo "ERROR: REV L1B HDF file not found"
+            return 1
+        fi
+
+        gunzip -f "$TDIR"/*"$REV"*.gz
+        mkdir "$DIR_QSL1B_HDF" > /dev/null 2>&1
+        mv "$TDIR"/*"$REV"* "$DIR_QSL1B_HDF/"
     fi
 
-    ls "$DIR_QSL1B_HDF"/*"$REV"* > /dev/null 2>&1
-    if [[ $? -ne 0 ]]; then
-        echo "ERROR: REV L1B HDF file not found"
-        return 1
-    fi
-
-    gunzip -f "$DIR_QSL1B_HDF"/*"$REV"*.gz > /dev/null 2>&1
 
     # See if there are any existing L2B HDF files associated to this rev
     ls "$DIR_QSL2B_HDF"/*"$REV"* > /dev/null 2>&1
@@ -227,49 +247,58 @@ function qs_reproc_stage () {
         # Gotta download the data files
   
         # L2B HDF File
-        wget -nH -N --cut-dirs=4 -P "$DIR_QSL2B_HDF" \
+        wget -nH -N --cut-dirs=4 -P "$TDIR" \
             "$L2BURL/$YEAR1/$DAY1/*$REV*"
 
-        ls "$DIR_QSL2B_HDF"/*"$REV"* > /dev/null 2>&1
+        ls "$TDIR"/*"$REV"* > /dev/null 2>&1
         if [[ $? -ne 0 ]]; then
             # Couldn't find the file in DATE1, try DATE2
-            wget -nH -N --cut-dirs=4 -P "$DIR_QSL2B_HDF" \
+            wget -nH -N --cut-dirs=4 -P "$TDIR" \
                 "$L2BURL/$YEAR2/$DAY2/*$REV*"
         fi
+
+        ls "$TDIR"/*"$REV"* > /dev/null 2>&1
+        if [[ $? -ne 0 ]]; then
+            echo "ERROR: REV L2B HDF file not found"
+            return 1
+        fi
+
+        gunzip -f "$TDIR"/*"$REV"*.gz
+        mkdir "$DIR_QSL2B_HDF" > /dev/null 2>&1
+        mv "$TDIR"/*"$REV"* "$DIR_QSL2B_HDF/"
     fi
 
-    ls "$DIR_QSL2B_HDF"/*"$REV"* > /dev/null 2>&1
-    if [[ $? -ne 0 ]]; then
-        echo "ERROR: REV L2B HDF file not found"
-        return 1
-    fi
-
-    gunzip -f "$DIR_QSL2B_HDF"/*"$REV"*.gz > /dev/null 2>&1
-
+    rm -rf "$TDIR"
     return 0
+)
 }
 
 #######################################################################
 # Generate the rev directory structure.
 # Based on code from A. Fore
 function qs_reproc_generate_directory_structure () {
-    
+(
     # Read process-specific variables
     echo -n "Rev: "
-    read REV
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
     echo -n "L1B HDF Directory: "
-    read DIR_QSL1B_HDF
+    read DIR_QSL1B_HDF; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$DIR_QSL1B_HDF"
     echo -n "L2B HDF Directory: "
-    read DIR_QSL2B_HDF
+    read DIR_QSL2B_HDF; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$DIR_QSL2B_HDF"
     echo -n "Output Directory:  "
-    read DIR_OUT_BASE
+    read DIR_OUT_BASE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$DIR_OUT_BASE"
     echo -n "Template config file: "
-    read TEMPLATE_FILE
+    read TEMPLATE_FILE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$TEMPLATE_FILE"
     
     QS_MATLAB_INC_DIR="./mat"
     
-    L1B_HDF_FILE=`ls $DIR_QSL1B_HDF/*$REV*`
-    L2B_HDF_FILE=`ls $DIR_QSL2B_HDF/*$REV*.CP12`
+    L1B_HDF_FILE=`ls $DIR_QSL1B_HDF/*$REV* | tail -n 1`
+    L2B_HDF_FILE=`ls $DIR_QSL2B_HDF/*$REV*.CP12 | tail -n 1`
     
     SIM_DIR="$DIR_OUT_BASE/$REV"
     
@@ -305,108 +334,105 @@ function qs_reproc_generate_directory_structure () {
     RETVAL=$(($RETVAL || $?))
 
     return $RETVAL
+)
 }
 
 #######################################################################
 # Convert L1BHDF files to local-format L1B files
 # Based on code from A. Fore
 function qs_reproc_l1bhdf_to_l1b () {
-
+(
     echo -n "Rev: "
-    read REV
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
     echo -n "Base directory: "
-    read BASEDIR
+    read BASEDIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$BASEDIR"
     echo -n "Config: "
-    read CONFIG_FILE
+    read CONFIG_FILE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
 
-    (
-        cd "$BASEDIR/$REV"
-        
-        l1b_hdf_to_l1b_fast $CONFIG_FILE
-        RETVAL=$?
-
-        return $RETVAL
-    )
+    cd "$BASEDIR/$REV"
+    
+    l1b_hdf_to_l1b_fast $CONFIG_FILE
     RETVAL=$?
 
     return $RETVAL
+)
 }
 
 #######################################################################
 # Convert from local-format L1B to L2A files
 # Based on code from A. Fore
 function qs_reproc_l1b_to_l2a () {
-
+(
     echo -n "Rev: "
-    read REV
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
     echo -n "Base directory: "
-    read BASEDIR
+    read BASEDIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$BASEDIR"
     echo -n "Config: "
-    read CONFIG_FILE
+    read CONFIG_FILE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
 
-    (
-        cd "$BASEDIR/$REV"
-        
-        l1b_to_l2a $CONFIG_FILE
-        RETVAL=$?
-
-        return $RETVAL
-    )
+    cd "$BASEDIR/$REV"
+    
+    l1b_to_l2a $CONFIG_FILE
     RETVAL=$?
 
     return $RETVAL
+)
 }
 
 #######################################################################
 # Based on code from A. Fore
 function qs_reproc_l2a_fix_qs_composites () {
-
+(
     echo -n "Rev: "
-    read REV
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
     echo -n "Base directory: "
-    read BASEDIR
+    read BASEDIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$BASEDIR"
     echo -n "Config: "
-    read CONFIG_FILE
+    read CONFIG_FILE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
 
-    (
-        cd "$BASEDIR/$REV"
-        L2A_FNAME=`awk '/L2A_FILE/ { print $3 }' "$CONFIG_FILE"`
-        
-        l2a_fix_QS_composites -c "$CONFIG_FILE" -o l2a_flagged.dat -kp
-        RETVAL=$?
-        mv "$L2A_FNAME" "$L2A_FNAME.orig"
-        mv l2a_flagged.dat "$L2A_FNAME"
-
-        return $RETVAL
-    )
+    cd "$BASEDIR/$REV"
+    L2A_FNAME=`awk '/L2A_FILE/ { print $3 }' "$CONFIG_FILE"`
+    
+    l2a_fix_QS_composites -c "$CONFIG_FILE" -o l2a_flagged.dat -kp
     RETVAL=$?
+    mv "$L2A_FNAME" "$L2A_FNAME.orig"
+    mv l2a_flagged.dat "$L2A_FNAME"
 
     return $RETVAL
+)
 }
 
 #######################################################################
 # Convert from local-format L2A to L2B files
 # Based on code from A. Fore
 function qs_reproc_l2a_to_l2b () {
-
+(
     echo -n "Rev: "
-    read REV
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
     echo -n "Base directory: "
-    read BASEDIR
+    read BASEDIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$BASEDIR"
     echo -n "Config: "
-    read CONFIG_FILE
+    read CONFIG_FILE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
 
-    (
-        cd "$BASEDIR/$REV"
-        
-        l2a_to_l2b -t nn_train.dat "$CONFIG_FILE"
-        RETVAL=$?
-
-        return $RETVAL
-    )
+    cd "$BASEDIR/$REV"
+    
+    l2a_to_l2b -t nn_train.dat "$CONFIG_FILE"
     RETVAL=$?
 
     return $RETVAL
+)
 }
     
 
@@ -414,112 +440,147 @@ function qs_reproc_l2a_to_l2b () {
 # Do L2B median filtering
 # Based on code from A. Fore
 function qs_reproc_l2b_median_filter () {
-
+(
     echo -n "Rev: "
-    read REV
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
     echo -n "Base directory: "
-    read BASEDIR
+    read BASEDIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$BASEDIR"
     echo -n "Config: "
-    read CONFIG_FILE
+    read CONFIG_FILE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
     echo -n "Type (GS|S3): "
-    read TYPE
+    read TYPE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$TYPE"
 
-    (
-        cd "$BASEDIR/$REV"
-        L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ {print $3}' $CONFIG_FILE`
+    cd "$BASEDIR/$REV"
+    L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ {print $3}' $CONFIG_FILE`
 
-        case "$TYPE" in
-        S3) 
-            MEDFILT_CONFIG=tmp1.rdf
-            OUTFILE=l2b_flagged_S3.dat
-            sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
-                $CONFIG_FILE > "$MEDFILT_CONFIG"
-            RETVAL=$?
-            ;; 
-        GS) 
-            MEDFILT_CONFIG=tmp2.rdf
-            OUTFILE=l2b_flagged_GS.dat
-            sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
-                -e 's:WIND_RETRIEVAL_METHOD       = S3:WIND_RETRIEVAL_METHOD       = GS:' \
-                    $CONFIG_FILE > "$MEDFILT_CONFIG"
-            RETVAL=$?
-            ;; 
-        *)
-            echo "Unknown TYPE"
-            RETVAL=1
-            ;;
-        esac
-        if [[ $RETVAL -ne 0 ]]; then
-            return $RETVAL
-        fi
-        
-        l2b_medianfilter -c "$MEDFILT_CONFIG" -o "$OUTFILE" -nudgeHDF "$L2B_HDF_FNAME"
+    case "$TYPE" in
+    S3) 
+        MEDFILT_CONFIG=tmp1.rdf
+        OUTFILE=l2b_flagged_S3.dat
+        sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
+            $CONFIG_FILE > "$MEDFILT_CONFIG"
         RETVAL=$?
-
+        ;; 
+    GS) 
+        MEDFILT_CONFIG=tmp2.rdf
+        OUTFILE=l2b_flagged_GS.dat
+        sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
+            -e 's:WIND_RETRIEVAL_METHOD       = S3:WIND_RETRIEVAL_METHOD       = GS:' \
+                $CONFIG_FILE > "$MEDFILT_CONFIG"
+        RETVAL=$?
+        ;; 
+    *)
+        echo "Unknown TYPE"
+        RETVAL=1
+        ;;
+    esac
+    if [[ $RETVAL -ne 0 ]]; then
         return $RETVAL
-    )
+    fi
+    
+    l2b_medianfilter -c "$MEDFILT_CONFIG" -o "$OUTFILE" -nudgeHDF "$L2B_HDF_FNAME"
     RETVAL=$?
 
     return $RETVAL
+)
 }
 
 #######################################################################
 # Convert from local-format L2B to NetCDF files
 function qs_reproc_l2b_to_netcdf () {
-
+(
     echo -n "Rev: "
-    read REV
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
     echo -n "Base directory: "
-    read BASEDIR
+    read BASEDIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$BASEDIR"
     echo -n "Config: "
-    read CONFIG_FILE
+    read CONFIG_FILE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
     echo -n "Type (GS|S3): "
-    read TYPE
+    read TYPE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$TYPE"
 
-    (
-        cd "$BASEDIR/$REV"
-        L1B_HDF_FNAME=`awk '/L1B_HDF_FILE/ {print $3}' $CONFIG_FILE`
-        L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ {print $3}' $CONFIG_FILE`
+    cd "$BASEDIR/$REV"
+    L1B_HDF_FNAME=`awk '/L1B_HDF_FILE/ {print $3}' $CONFIG_FILE`
+    L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ {print $3}' $CONFIG_FILE`
 
-        case $TYPE in
-        S3)
-            INFILE=l2b_flagged_S3.dat
-            OUTFILE=l2bc_flagged_S3.nc
-            ;;
-        GS)
-            INFILE=l2b_flagged_GS.dat
-            OUTFILE=l2bc_flagged_GS.nc
-            ;;
-        *)
-            echo "Unknown TYPE"
-            ;;
-        esac
+    case $TYPE in
+    S3)
+        INFILE=l2b_flagged_S3.dat
+    	OUTFILE=`basename ${L2B_HDF_FNAME/%\.CP12/_S3.L2BC.nc}`
+        ;;
+    GS)
+        INFILE=l2b_flagged_GS.dat
+    	OUTFILE=`basename ${L2B_HDF_FNAME/%\.CP12/_GS.L2BC.nc}`
+        ;;
+    *)
+        echo "Unknown TYPE"
+        ;;
+    esac
 
-        l2b_to_netcdf --l2bhdf "$L2B_HDF_FNAME" --l1bhdf "$L1B_HDF_FNAME" --l2bc "$OUTFILE"  --l2b "$INFILE"
-        RETVAL=$?
-
-        return $RETVAL
-    )
+    l2b_to_netcdf --l2bhdf "$L2B_HDF_FNAME" --l1bhdf "$L1B_HDF_FNAME" --l2bc "$OUTFILE"  --l2b "$INFILE"
     RETVAL=$?
 
     return $RETVAL
+)
+}
+
+#######################################################################
+# Link a files from a directory structure
+function qs_reproc_link() {
+(
+    echo -n "Rev: "
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
+    echo -n "Destination Base Directory: "
+    read DIR_OUT_BASE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$DIR_OUT_BASE"
+    echo -n "Source Base Directory: "
+    read SRC_DIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$SRC_DIR"
+    echo -n "File name: "
+    read FNAME; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$FNAME"
+
+    rm -f "$DIR_OUT_BASE/$REV/$FNAME"
+    RETVAL=$?
+    
+    mkdir -p "$DIR_OUT_BASE/$REV/"
+    ln "$SRC_DIR/$REV/$FNAME" "$DIR_OUT_BASE/$REV/$FNAME"
+    RETVAL=$(($RETVAL || $?))
+    
+    return $RETVAL
+)
 }
 
 #######################################################################
 # Clean the directories
 function qs_reproc_clean () {
+(
     echo -n "Rev: "
-    read REV
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
     echo -n "L1B HDF Directory: "
-    read DIR_QSL1B_HDF
+    read DIR_QSL1B_HDF; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$DIR_QSL1B_HDF"
     echo -n "L2B HDF Directory: "
-    read DIR_QSL2B_HDF
+    read DIR_QSL2B_HDF; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$DIR_QSL2B_HDF"
     echo -n "Output Directory:  "
-    read DIR_OUT_BASE
+    read DIR_OUT_BASE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$DIR_OUT_BASE"
     echo -n "Config: "
-    read CONFIG_FILE
+    read CONFIG_FILE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
     echo -n "Clean level: "
-    read LEVEL
+    read LEVEL; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$LEVEL"
 
     RETVAL=0
 
@@ -527,39 +588,38 @@ function qs_reproc_clean () {
         LEVEL=3
     fi
 
-    (
-        cd "$DIR_OUT_BASE/$REV"
-        L1B_FNAME=`awk '/L1B_FILE/ { print $3 }' $CONFIG_FILE`
-        L2B_FNAME=`awk '/L2B_FILE/ { print $3 }' $CONFIG_FILE`
-        L1B_HDF_FNAME=`awk '/L1B_HDF_FILE/ { print $3 }' $CONFIG_FILE`
-        L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ { print $3 }' $CONFIG_FILE`
+    cd "$DIR_OUT_BASE/$REV"
+    L1B_FNAME=`awk '/L1B_FILE/ { print $3 }' $CONFIG_FILE`
+    L2B_FNAME=`awk '/L2B_FILE/ { print $3 }' $CONFIG_FILE`
+    L1B_HDF_FNAME=`awk '/L1B_HDF_FILE/ { print $3 }' $CONFIG_FILE`
+    L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ { print $3 }' $CONFIG_FILE`
 
-        # Spoof switch with fallthrough
-        if [[ $LEVEL -le 2 ]]; then
-            rm -f \
-                "nn_train.dat" \
-                "$L1B_HDF_FNAME" \
-                "$L2B_HDF_FNAME" \
-                "$L1B_FNAME" \
-                "$L2A_FNAME.orig" \
-                l1bhdf_to_l1b_tmpfile \
-                ephem.dat \
-                "tmp1.rdf" \
-                "tmp2.rdf" \
-                "l2b_flagged_S3.dat" \
-                "l2b_flagged_GS.dat" 
-        fi
-        if [[ $LEVEL -le 1 ]]; then
-            rm -f \
-                "$L2B_FNAME"
-        fi
-        if [[ $LEVEL -le 0 ]]; then
-            rm -f \
-                "$L2A_FNAME"
-        fi
-    )
+    # Spoof switch with fallthrough
+    if [[ $LEVEL -le 2 ]]; then
+        rm -f \
+            "nn_train.dat" \
+            "$L1B_HDF_FNAME" \
+            "$L2B_HDF_FNAME" \
+            "$L1B_FNAME" \
+            "$L2A_FNAME.orig" \
+            l1bhdf_to_l1b_tmpfile \
+            ephem.dat \
+            "tmp1.rdf" \
+            "tmp2.rdf" \
+            "l2b_flagged_S3.dat" \
+            "l2b_flagged_GS.dat" 
+    fi
+    if [[ $LEVEL -le 1 ]]; then
+        rm -f \
+            "$L2B_FNAME"
+    fi
+    if [[ $LEVEL -le 0 ]]; then
+        rm -f \
+            "$L2A_FNAME"
+    fi
 
     return $RETVAL
+)
 }
 
 #######################################################################
@@ -606,6 +666,10 @@ function qs_reproc_process_command () {
         qs_reproc_l2b_to_netcdf
         RETVAL=$?
         ;;
+    LINK)
+        qs_reproc_link
+        RETVAL=$?
+        ;;
     CLEAN)
         qs_reproc_clean
         RETVAL=$?
@@ -626,6 +690,7 @@ function qs_reproc_process_command () {
 #######################################################################
 # Execute commands, echoing values into the STDIN of those processes
 function qs_reproc_execute_automated_cmd () {
+(
     REV="$1"
     CMD=`echo "$2" | cut -f 1 -d \ `
     ARGS=`echo "$2" | cut -f 2- -d \ `
@@ -633,7 +698,7 @@ function qs_reproc_execute_automated_cmd () {
 
     case "$CMD" in 
     STAGE)
-        INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n"
+        INPUT="$REV\n$REVLOG\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n"
         ;;
     GENERATE)
         INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n$GENERIC_CFG\n"
@@ -656,6 +721,10 @@ function qs_reproc_execute_automated_cmd () {
     L2B-TO-NETCDF)
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
         ;;
+    LINK)
+        ARGS=`echo "$ARGS" | tr ' ' '\n'`
+        INPUT="$REV\n$OUTPUT_DIR\n$ARGS\n"
+        ;;
     CLEAN)
         INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
         ;;
@@ -669,11 +738,13 @@ function qs_reproc_execute_automated_cmd () {
     RETVAL=$?
 
     return $RETVAL
+)
 }
 
 #######################################################################
 # Given a CFG file and REV, process it completely.
 function qs_reproc_by_rev () {
+(
     CFG_FILE="$1"
     REV="$2"
 
@@ -722,12 +793,14 @@ function qs_reproc_by_rev () {
     if [[ $EXIT -ne 0 ]]; then
         return $EXIT
     fi
+)
 }
 
 #######################################################################
 # Scheduler to chose which command to execute next
 # Requires that CMD_FILE be locked before being called
 function qs_reproc_schedule () {
+(
     CMDS=`cut -f 1-2 "$CMD_FILE"`
     
     # You can duplicate this idiom to define lower priority commands
@@ -751,6 +824,7 @@ function qs_reproc_schedule () {
     # many already running.  Just grab the next legitimate command
     CMD=`echo "$CMDS" | grep -m 1 -v "L2A-TO-L2B"`
     echo "$CMD"
+)
 }
 
 #######################################################################
@@ -795,7 +869,7 @@ function qs_reproc_by_file () {
     unlock "$CMD_LOCK"
 
     CMD_FILE="$NEW_CMD_FILE"
-    CMD_LOCK="$LOCKDIR/$NEW_CMD_FILE"
+    CMD_LOCK="$LOCKDIR/$CMD_FILE"
 
     lock "$CMD_LOCK" "$UNIQ"
     # Let ALL be a synonym for all actual processing
@@ -806,6 +880,17 @@ function qs_reproc_by_file () {
     (
         # Yes, we really do want to spawn a new subshell for each processing run.
         # This allows the logfiles to be overwritten after each command.
+
+        # Try to deal with funny NFS no-mount bug...
+        # /u/potr-r0 is the NFS mount point for the 10 TB drive.
+        # Look for it, and if `ls` fails, then the NFS mount must be bad
+        ls '/u/potr-r0' > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            echo "Possible NFS no-mount bug... sleeping"
+            sleep 30
+            continue
+        fi
+
 
         # Since this is the ONLY place we nest mutexes, there's no
         # threat of deadlock
@@ -860,7 +945,7 @@ function qs_reproc_by_file () {
         if [[ $RETVAL -eq 0 ]]; then
             # If the command returns successfully, then log it to the 
             # SUCCESS_FILE and write the subsequent command (if available
-            # to CMD_FILE
+            # to CMD_FILE)
   
             lock "$SUCCESS_LOCK" "$UNIQ"
             echo "$REV	$CMD	$UNIQ	$START	$END	$RUNTIME" >> \
@@ -944,7 +1029,6 @@ function qs_reproc_by_file () {
 #######################################################################
 # Print an interactive prompt and do the user's processing
 function qs_reproc_interactive () {
-
     while true; do
         qs_reproc_prompt 
         read COMMAND
