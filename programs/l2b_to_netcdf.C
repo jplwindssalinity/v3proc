@@ -135,6 +135,7 @@ typedef enum {
     first_extended_variable,
 
     SEL_OBJ = first_extended_variable,
+    NUM_AMBIG,
     AMBIG_SPEED,
     AMBIG_DIRECTION,
     AMBIG_OBJ,
@@ -233,7 +234,6 @@ int main(int argc, char **argv) {
     size_t idx[3], time_idx[2] = {0, 0};
     WVC *wvc;
     int16 flags, eflags;
-    const float zerof = 0.0f;
     float conversion;
     char time_format[] = "YYYY-DDDTHH:MM:SS.SSS";
 
@@ -853,6 +853,36 @@ int main(int argc, char **argv) {
         varlist[SEL_OBJ].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[SEL_OBJ].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
+        varlist[NUM_AMBIG].name  = "num_ambiguities";
+        varlist[NUM_AMBIG].type  = NC_BYTE;
+        varlist[NUM_AMBIG].ndims = 2;
+        varlist[NUM_AMBIG].dims = dimensions; 
+        varlist[NUM_AMBIG].nattrs = num_standard_attrs + 1;
+        ERR((varlist[NUM_AMBIG].attrs = (typeof varlist[NUM_AMBIG].attrs)
+                    malloc(varlist[NUM_AMBIG].nattrs * 
+                        (sizeof *varlist[NUM_AMBIG].attrs))) == NULL);
+    
+        varlist[NUM_AMBIG].attrs[FILL_VALUE].name = "FillValue";
+        varlist[NUM_AMBIG].attrs[FILL_VALUE].size = 1;
+        varlist[NUM_AMBIG].attrs[FILL_VALUE].type = varlist[NUM_AMBIG].type;
+        varlist[NUM_AMBIG].attrs[FILL_VALUE].value.b = 0;
+        varlist[NUM_AMBIG].attrs[VALID_MIN].name = "valid_min";
+        varlist[NUM_AMBIG].attrs[VALID_MIN].size = 1;
+        varlist[NUM_AMBIG].attrs[VALID_MIN].type = varlist[NUM_AMBIG].type;
+        varlist[NUM_AMBIG].attrs[VALID_MIN].value.b = 1;
+        varlist[NUM_AMBIG].attrs[VALID_MAX].name = "valid_max";
+        varlist[NUM_AMBIG].attrs[VALID_MAX].size = 1;
+        varlist[NUM_AMBIG].attrs[VALID_MAX].type = varlist[NUM_AMBIG].type;
+        varlist[NUM_AMBIG].attrs[VALID_MAX].value.b = 0x04;
+        varlist[NUM_AMBIG].attrs[LONG_NAME].name = "long_name";
+        varlist[NUM_AMBIG].attrs[LONG_NAME].size = 1;
+        varlist[NUM_AMBIG].attrs[LONG_NAME].type = NC_CHAR;
+        varlist[NUM_AMBIG].attrs[LONG_NAME].value.str = "number of ambiguities from wind retrieval";
+        varlist[NUM_AMBIG].attrs[num_standard_attrs].name = "units";
+        varlist[NUM_AMBIG].attrs[num_standard_attrs].size = 1;
+        varlist[NUM_AMBIG].attrs[num_standard_attrs].type = NC_CHAR;
+        varlist[NUM_AMBIG].attrs[num_standard_attrs].value.str = "1";
+            
         varlist[AMBIG_SPEED].name  = "ambiguity_speed";
         varlist[AMBIG_SPEED].type  = NC_FLOAT;
         varlist[AMBIG_SPEED].ndims = 3;
@@ -1260,8 +1290,10 @@ int main(int argc, char **argv) {
         
     
                     WindVectorPlus *wv = wvc->ambiguities.GetHead();
-                    int num_ambiguities = wvc->ambiguities.NodeCount();
+                    char num_ambiguities = wvc->ambiguities.NodeCount();
         
+                    NCERR(nc_put_var1(ncid, varlist[NUM_AMBIG].id, 
+                            idx, &num_ambiguities));
                     for (idx[2] = 0; (int)idx[2] < num_ambiguities && wv != NULL; 
                             idx[2]++, wv = wvc->ambiguities.GetNext()) {
         
@@ -1281,12 +1313,12 @@ int main(int argc, char **argv) {
                                     idx, &wv->obj));
                     }
                     for ( ; (int)idx[2] < max_ambiguities; idx[2]++) {
-                        NCERR(nc_put_var1(ncid, varlist[AMBIG_SPEED].id, 
-                                    idx, &zerof));
-                        NCERR(nc_put_var1(ncid, varlist[AMBIG_DIRECTION].id, 
-                                    idx, &zerof));
-                        NCERR(nc_put_var1(ncid, varlist[AMBIG_OBJ].id, 
-                                    idx, &zerof));
+                        NCERR(nc_put_var1_float(ncid, varlist[AMBIG_SPEED].id, idx,
+                                    &varlist[AMBIG_SPEED].attrs[FILL_VALUE].value.f));
+                        NCERR(nc_put_var1_float(ncid, varlist[AMBIG_DIRECTION].id, idx,
+                                    &varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].value.f));
+                        NCERR(nc_put_var1_float(ncid, varlist[AMBIG_OBJ].id, idx,
+                                    &varlist[AMBIG_OBJ].attrs[FILL_VALUE].value.f));
                     }
                 }    
             } else {
@@ -1328,6 +1360,8 @@ int main(int argc, char **argv) {
         
                     for (idx[2] = 0; (int)idx[2] < max_ambiguities; idx[2]++) {
         
+                        NCERR(nc_put_var1(ncid, varlist[NUM_AMBIG].id, idx,
+                                    &varlist[NUM_AMBIG].attrs[FILL_VALUE].value.b));
                         NCERR(nc_put_var1_float(ncid, varlist[AMBIG_SPEED].id, idx,
                                     &varlist[AMBIG_SPEED].attrs[FILL_VALUE].value.f));
                         NCERR(nc_put_var1_float(ncid, varlist[AMBIG_DIRECTION].id, idx,
