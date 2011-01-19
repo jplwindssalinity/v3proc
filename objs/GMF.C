@@ -3034,6 +3034,10 @@ GMF::LineMaximize( MeasList* meas_list,
     out_spd = center_spd;
   }
   
+  // Added 1/19/2011 to enforce speed bounds AGF
+  if( out_spd <= LOWER_SPEED_BOUND ) out_spd = LOWER_SPEED_BOUND;
+  if( out_spd >= UPPER_SPEED_BOUND ) out_spd = UPPER_SPEED_BOUND;
+  
   *final_spd = out_spd;
   *final_obj = out_obj;
   
