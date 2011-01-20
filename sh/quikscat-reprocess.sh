@@ -124,7 +124,9 @@ function qs_reproc_prompt () {
     echo "      Converts the L2B file to NetCDF format"
     echo "9  LINK"
     echo "      Symlink files in a directory structure"
-    echo "10 CLEAN"
+    echo "10 TDV"
+    echo "      Run 2D Var"
+    echo "11 CLEAN"
     echo "      Removed unnecessary data files"
     echo "================================================================"
     echo ""
@@ -158,7 +160,9 @@ function qs_reproc_get_command() {
         ;;
     9)  echo "LINK"
         ;;
-    10) echo "CLEAN"
+    10) echo "TDV"
+        ;;
+    11) echo "CLEAN"
         ;;
     *)  echo "$COMMAND"
         ;;
@@ -450,7 +454,7 @@ function qs_reproc_l2b_median_filter () {
     echo -n "Config: "
     read CONFIG_FILE; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
-    echo -n "Type (GS|S3): "
+    echo -n "Type (GS|S3|TDV): "
     read TYPE; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$TYPE"
 
@@ -461,6 +465,7 @@ function qs_reproc_l2b_median_filter () {
     S3) 
         MEDFILT_CONFIG=tmp1.rdf
         OUTFILE=l2b_flagged_S3.dat
+        OTHER="-nudgeHDF \"$L2B_HDF_FNAME\""
         sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
             $CONFIG_FILE > "$MEDFILT_CONFIG"
         RETVAL=$?
@@ -468,8 +473,19 @@ function qs_reproc_l2b_median_filter () {
     GS) 
         MEDFILT_CONFIG=tmp2.rdf
         OUTFILE=l2b_flagged_GS.dat
+        OTHER="-nudgeHDF \"$L2B_HDF_FNAME\""
         sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
             -e 's:WIND_RETRIEVAL_METHOD       = S3:WIND_RETRIEVAL_METHOD       = GS:' \
+                $CONFIG_FILE > "$MEDFILT_CONFIG"
+        RETVAL=$?
+        ;; 
+    TDV)
+        MEDFILT_CONFIG=tmp3.rdf
+        OUTFILE=l2b_flagged_TDV.dat
+        OTHER=""
+        sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
+            -e 's:\(NUDGE_WINDFIELD_TYPE *= *\).*:\1NCEP\nQSCP12_ECMWF_ARRAY_NUDGING  = 1:' \
+            -e 's:\(NUDGE_WINDFIELD_FILE *= *\).*:\1./l2b-tdv-nudge.dat:' \
                 $CONFIG_FILE > "$MEDFILT_CONFIG"
         RETVAL=$?
         ;; 
@@ -482,7 +498,7 @@ function qs_reproc_l2b_median_filter () {
         return $RETVAL
     fi
     
-    l2b_medianfilter -c "$MEDFILT_CONFIG" -o "$OUTFILE" -nudgeHDF "$L2B_HDF_FNAME"
+    l2b_medianfilter -c "$MEDFILT_CONFIG" -o "$OUTFILE" $OTHER
     RETVAL=$?
 
     return $RETVAL
@@ -502,7 +518,7 @@ function qs_reproc_l2b_to_netcdf () {
     echo -n "Config: "
     read CONFIG_FILE; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
-    echo -n "Type (GS|S3): "
+    echo -n "Type (GS|S3|TDV): "
     read TYPE; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$TYPE"
 
@@ -518,6 +534,10 @@ function qs_reproc_l2b_to_netcdf () {
     GS)
         INFILE=l2b_flagged_GS.dat
     	OUTFILE=`basename ${L2B_HDF_FNAME/%\.CP12/_GS.L2BC.nc}`
+        ;;
+    TDV)
+        INFILE=l2b_flagged_TDV.dat
+    	OUTFILE=`basename ${L2B_HDF_FNAME/%\.CP12/_TDV.L2BC.nc}`
         ;;
     *)
         echo "Unknown TYPE"
@@ -559,6 +579,47 @@ function qs_reproc_link() {
 )
 }
 
+
+#######################################################################
+# Perform 2D Var
+function qs_reproc_tdv() {
+(
+    echo -n "Rev: "
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
+    echo -n "Base directory: "
+    read BASEDIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$BASEDIR"
+    echo -n "Config: "
+    read CONFIG_FILE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
+
+    QS_MATLAB_INC_DIR="./mat"
+    INFILE="l2b.dat"
+    NCFILE="l2b.nc"
+    DATFILE="l2b-tdv-nudge.dat"
+
+    cd "$BASEDIR/$REV"
+    L1B_HDF_FNAME=`awk '/L1B_HDF_FILE/ {print $3}' $CONFIG_FILE`
+    L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ {print $3}' $CONFIG_FILE`
+
+    l2b_to_netcdf --l2bhdf "$L2B_HDF_FNAME" --l1bhdf "$L1B_HDF_FNAME" \
+        --l2bc "$NCFILE"  --l2b "$INFILE" --extended
+    RETVAL=$?
+
+    cd "../../"
+    # Extract orbit start and end-time
+    (
+        echo "addpath('$QS_MATLAB_INC_DIR');"
+        echo "addpath('$QS_MATLAB_INC_DIR/minFunc');"
+        echo "run_tdv_qs_l2bnc('$BASEDIR/$REV/$NCFILE', '$BASEDIR/$REV/$DATFILE');"
+    ) | matlab -nodisplay -nojvm
+    RETVAL=$(($RETVAL || $?))
+
+    return $RETVAL
+)
+}
+
 #######################################################################
 # Clean the directories
 function qs_reproc_clean () {
@@ -589,10 +650,11 @@ function qs_reproc_clean () {
     fi
 
     cd "$DIR_OUT_BASE/$REV"
-    L1B_FNAME=`awk '/L1B_FILE/ { print $3 }' $CONFIG_FILE`
-    L2B_FNAME=`awk '/L2B_FILE/ { print $3 }' $CONFIG_FILE`
-    L1B_HDF_FNAME=`awk '/L1B_HDF_FILE/ { print $3 }' $CONFIG_FILE`
-    L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ { print $3 }' $CONFIG_FILE`
+    L1B_FNAME=`awk '/L1B_FILE/ { print $3 }' "$CONFIG_FILE"`
+    L2A_FNAME=`awk '/L2A_FILE/ { print $3 }' "$CONFIG_FILE"`
+    L2B_FNAME=`awk '/L2B_FILE/ { print $3 }' "$CONFIG_FILE"`
+    L1B_HDF_FNAME=`awk '/L1B_HDF_FILE/ { print $3 }' "$CONFIG_FILE"`
+    L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ { print $3 }' "$CONFIG_FILE"`
 
     # Spoof switch with fallthrough
     if [[ $LEVEL -le 2 ]]; then
@@ -670,6 +732,10 @@ function qs_reproc_process_command () {
         qs_reproc_link
         RETVAL=$?
         ;;
+    TDV)
+        qs_reproc_tdv
+        RETVAL=$?
+        ;;
     CLEAN)
         qs_reproc_clean
         RETVAL=$?
@@ -724,6 +790,9 @@ function qs_reproc_execute_automated_cmd () {
     LINK)
         ARGS=`echo "$ARGS" | tr ' ' '\n'`
         INPUT="$REV\n$OUTPUT_DIR\n$ARGS\n"
+        ;;
+    TDV)
+        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
         ;;
     CLEAN)
         INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
