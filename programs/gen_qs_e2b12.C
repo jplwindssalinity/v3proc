@@ -467,10 +467,17 @@ main(
       t_1    = 18.0;
       t_2    = 24.0;
       
-      if( doy_curr == 365 ||
-          doy_curr == 366 &&
-          ( year_curr % 4 == 0 &&
-          ( year_curr % 100 != 0 || year_curr % 400 == 0 ) ) ) {
+      int is_leap_year = 0;
+      if( year % 400 == 0 )
+        is_leap_year = 1;
+      else if( year % 100 == 0 )
+        is_leap_year = 0;
+      else if( year % 4 == 0 )
+        is_leap_year = 1;
+      else
+        is_leap_year = 0;
+
+      if( ( doy_curr == 365 && is_leap_year == 0 ) || doy_curr == 366 ) {
         doy_2  = 1;
         year_2 = year_1 + 1;
       }
