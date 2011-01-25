@@ -468,11 +468,11 @@ main(
       t_2    = 24.0;
       
       int is_leap_year = 0;
-      if( year % 400 == 0 )
+      if( year_curr % 400 == 0 )
         is_leap_year = 1;
-      else if( year % 100 == 0 )
+      else if( year_curr % 100 == 0 )
         is_leap_year = 0;
-      else if( year % 4 == 0 )
+      else if( year_curr % 4 == 0 )
         is_leap_year = 1;
       else
         is_leap_year = 0;
