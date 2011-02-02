@@ -366,6 +366,7 @@ function qs_reproc_l1bhdf_to_l1b () {
 
     cd "$BASEDIR/$REV"
     
+    DIR_QSL1B_HDF=`grep L1B_HDF_FILE "$CONFIG_FILE" | cut -d \/ -f 3`
     case "$TYPE" in
     QSCAT) 
         l1b_hdf_to_l1b_fast $CONFIG_FILE
@@ -374,7 +375,7 @@ function qs_reproc_l1bhdf_to_l1b () {
     OSCAT2) 
         L1B_ISRO_FILE=`ls ../../$DIR_QSL1B_HDF/S1L1B*$REV*_*`
         sed -i -e "s:\(L1B_HDF_FILE *=.*\)[^\\]*:\1$L1B_ISRO_HDF_FILE:" \
-            QS.rdf
+            $CONFIG_FILE
         l1b_isro_to_l1b $CONFIG_FILE
         RETVAL=$?
         ;; 
