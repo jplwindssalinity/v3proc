@@ -1,0 +1,107 @@
+
+# Filenames
+EPHEMERIS_FILE              = ephem.dat
+ATTITUDE_FILE               = att.dat
+L1B_FILE                    = l1b.dat
+L2A_FILE                    = l2a.dat
+L2B_FILE                    = l2b.dat
+L1B_HDF_FILE                = DUMMY_FILENAME
+L2B_HDF_FILE                = DUMMY_FILENAME
+
+# land/ice maps
+QS_LANDMAP_FILE             = ../../dat/LMAP1111
+USE_QS_LANDMAP              = 1
+QS_ICEMAP_FILE              = DUMMY_FILENAME
+USE_QS_ICEMAP               = 1
+
+# Gridding stuff
+CROSSTRACK_RESOLUTION       = 12.5  <km> 
+ALONGTRACK_RESOLUTION       = 12.5  <km> 
+REGRID_ALGORITHM            = SOM
+REGRID_METHOD               = OVERLAP
+GEN_GRID_TIMES_FROM_L1B     = 1
+REGRID_OVERLAP_FACTOR       = 0.75
+GRID_WINDOW_CROSSTRACK_SIZE = 1900.0 <km>
+GRID_WINDOW_ALONGTRACK_SIZE = 40600.0 <km>
+
+# Wind retrieval stuff
+WIND_RETRIEVAL_METHOD       = S3
+REQUIRED_AZIMUTH_DIVERSITY  = 20.0
+RETRIEVE_USING_KPC_FLAG     = 1
+RETRIEVE_USING_KPM_FLAG     = 1
+RETRIEVE_USING_KPRI_FLAG    = 1
+RETRIEVE_USING_KPRS_FLAG    = 1
+RETRIEVE_USING_LOGVAR       = 1
+USE_MANY_AMBIGUITIES        = 0
+USE_AMBIGUITY_WEIGHTS       = 0
+USE_SIGMA0_SPATIAL_WEIGHTS  = 0
+USE_COMPOSITING             = 1
+PTGR_NOISE_KP               = 0.3 <dB>
+SSW_CORRELATION_LENGTH      = 1 <km>
+SIM_KPRC                    = 0
+OBJ_FUNC_USE_SCALE_FACTOR   = 1
+OBJ_FUNC_SCALE_FACTOR       = 9.66
+S3_PROBABILITY_THRESHOLD    = 0.99
+
+# GMF / wind retrieval processing tables
+GMF_FILE                    = ../../dat/QS_MODLa004_le_1
+GMF_FILE_FORMAT             = QUIKSCAT
+GMF_PHI_COUNT               = 360
+KPRS_FILE                   = ../../dat/QS_KPRP0002_SimFormat.dat
+KPM_FILE                    = ../../dat/kpm_fixed.dat
+ATTEN_MAP_FILE              = ../../dat/ATTN0001
+USE_ATTEN_MAP               = 1
+ATTEN_MAP_SEC_YEAR          = DUMMY
+
+# Ambiguity removal
+MEDIAN_FILTER_WINDOW_SIZE   = 7
+MEDIAN_FILTER_MAX_PASSES    = 0
+USE_NARROW_MEDIAN_FILTER    = 0
+USE_RANDOM_RANK_INIT        = 0
+
+# Nudging
+NUDGE_WINDFIELD_TYPE        = NCEP
+NUDGE_WINDFIELD_FILE        = DUMMY_FILENAME
+SMART_NUDGE_FLAG            = 0
+USE_NUDGING                 = 1
+MAX_RANK_FOR_NUDGING        = 4
+USE_NUDGING_THRESHOLD       = 1
+NEAR_SWATH_NUDGE_THRESHOLD  = 0.05
+FAR_SWATH_NUDGE_THRESHOLD   = 0.05
+
+# Additions per B. Stiles on 10 Dec 2010
+NEURAL_NET_LIQUID1_FILE     = ../../NeuralNetworks/liqnet1_June_22_2010.net
+NEURAL_NET_SPEED1_FILE      = ../../NeuralNetworks/spdnet1_June_22_2010.net
+NEURAL_NET_SPEED2_FILE      = ../../NeuralNetworks/spdnet2_June_22_2010.net
+NEURAL_NET_RAINFLAG_FILE    = ../../NeuralNetworks/rainflagnet_June_22_2010.net
+RAIN_IMPACT_FLAG_THRESHOLD  = 2.5
+RAIN_IMPACT_CORR_THRESHOLD  = 2.5
+RAIN_CORRECTION_METHOD      = ANN_SPEED1
+RAIN_FLAG_METHOD            = ANN_RAINFLAG1
+
+
+
+
+# Stuff it should not need!!
+SIM_KPRS_FLAG               = 1
+ATTITUDE                    = geodetic
+ATTITUDE_CONTROL_MODEL      = NONE
+ATTITUDE_KNOWLEDGE_MODEL    = NONE 
+SIM_ROLL_BIAS               = 0.0
+SIM_PITCH_BIAS              = 0.0
+SIM_YAW_BIAS                = 0.0
+EPOCH_TIME_STRING           = 2005-001T00:00:00.000
+ORBIT_EPOCH                 = 2008-07-06T13:49:56.845
+ORBIT_EPOCH_LAT             = 0
+ORBIT_EPOCH_LON             = 243.826
+ORBIT_EPOCH_ASC             = 1
+SEMI_MAJOR_AXIS             = 7168.905 <km> 
+ECCENTRICITY                = 0.002781  <deg>
+INCLINATION                 = 98.642557 <deg>
+LONG_OF_ASC_NODE            = 243.826 <deg>
+ARGUMENT_OF_PERIGEE         = 90.0 <deg>
+MEAN_ANOMALY_AT_EPOCH       = 0.0 <deg>
+EPHEMERIS_PERIOD            = 60.0 <s>
+
+
+

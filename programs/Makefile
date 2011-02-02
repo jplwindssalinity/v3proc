@@ -26,7 +26,7 @@ LDLIBS =		-L/usr/local/lib $(LIBS) $(EALIBS) $(HDFLIBS) -lm
 PURE =
 
 CCC =			$(PURE) g++
-DEBUGFLAGS =	-ggdb2 --save-temps -O0 -g
+DEBUGFLAGS =	-ggdb2 --save-temps -O2 #-O0 -g
 #DEBUGFLAGS = -O2
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) $(NCDFINCDIR) -DNOPM
 

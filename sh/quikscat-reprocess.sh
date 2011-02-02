@@ -112,7 +112,8 @@ function qs_reproc_prompt () {
     echo "2  GENERATE"
     echo "      Generates the folder structure for the rev."
     echo "3  L1BHDF-TO-L1B"
-    echo "      Converts the L1B HDF file to simulation L1B format"
+    echo "      Converts the L1B HDF (for QuikSCAT or OSCAT2) file to "
+    echo "      simulation L1B format"
     echo "4  L1B-TO-L2A"
     echo "      Performs L1B to L2A processing"
     echo "5  L2A-FIX-QS-COMPOSITES"
@@ -126,7 +127,9 @@ function qs_reproc_prompt () {
     echo "      Symlink files in a directory structure"
     echo "10 TDV"
     echo "      Run 2D Var"
-    echo "11 CLEAN"
+    echo "11 MAKE-ARRAYS"
+    echo "      Extract arrays from dataset"
+    echo "12 CLEAN"
     echo "      Removed unnecessary data files"
     echo "================================================================"
     echo ""
@@ -162,7 +165,9 @@ function qs_reproc_get_command() {
         ;;
     10) echo "TDV"
         ;;
-    11) echo "CLEAN"
+    11) echo "MAKE-ARRAYS"
+        ;;
+    12) echo "CLEAN"
         ;;
     *)  echo "$COMMAND"
         ;;
@@ -301,8 +306,8 @@ function qs_reproc_generate_directory_structure () {
     
     QS_MATLAB_INC_DIR="./mat"
     
-    L1B_HDF_FILE=`ls $DIR_QSL1B_HDF/*$REV* | tail -n 1`
-    L2B_HDF_FILE=`ls $DIR_QSL2B_HDF/*$REV*.CP12 | tail -n 1`
+    L1B_HDF_FILE=`ls $DIR_QSL1B_HDF/QS_*$REV* | tail -n 1`
+    L2B_HDF_FILE=`ls $DIR_QSL2B_HDF/QS_*$REV*.CP12 | tail -n 1`
     
     SIM_DIR="$DIR_OUT_BASE/$REV"
     
@@ -355,11 +360,31 @@ function qs_reproc_l1bhdf_to_l1b () {
     echo -n "Config: "
     read CONFIG_FILE; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
+    echo -n "Type (QSCAT|OSCAT2): "
+    read TYPE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$TYPE"
 
     cd "$BASEDIR/$REV"
     
-    l1b_hdf_to_l1b_fast $CONFIG_FILE
-    RETVAL=$?
+    case "$TYPE" in
+    QSCAT) 
+        l1b_hdf_to_l1b_fast $CONFIG_FILE
+        RETVAL=$?
+        ;; 
+    OSCAT2) 
+        L1B_ISRO_FILE=`ls ../../$DIR_QSL1B_HDF/S1L1B*$REV*_*`
+        sed -i -e "s:\(L1B_HDF_FILE *=.*\)[^\\]*:\1$L1B_ISRO_HDF_FILE:" \
+            QS.rdf
+        l1b_isro_to_l1b $CONFIG_FILE
+        RETVAL=$?
+        ;; 
+    *)
+        echo "Unknown TYPE"
+        RETVAL=1
+        ;;
+    esac
+    
+
 
     return $RETVAL
 )
@@ -465,7 +490,7 @@ function qs_reproc_l2b_median_filter () {
     S3) 
         MEDFILT_CONFIG=tmp1.rdf
         OUTFILE=l2b_flagged_S3.dat
-        OTHER="-nudgeHDF \"$L2B_HDF_FNAME\""
+        OTHER="-nudgeHDF $L2B_HDF_FNAME"
         sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
             $CONFIG_FILE > "$MEDFILT_CONFIG"
         RETVAL=$?
@@ -473,7 +498,7 @@ function qs_reproc_l2b_median_filter () {
     GS) 
         MEDFILT_CONFIG=tmp2.rdf
         OUTFILE=l2b_flagged_GS.dat
-        OTHER="-nudgeHDF \"$L2B_HDF_FNAME\""
+        OTHER="-nudgeHDF $L2B_HDF_FNAME"
         sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
             -e 's:WIND_RETRIEVAL_METHOD       = S3:WIND_RETRIEVAL_METHOD       = GS:' \
                 $CONFIG_FILE > "$MEDFILT_CONFIG"
@@ -579,7 +604,6 @@ function qs_reproc_link() {
 )
 }
 
-
 #######################################################################
 # Perform 2D Var
 function qs_reproc_tdv() {
@@ -593,6 +617,50 @@ function qs_reproc_tdv() {
     echo -n "Config: "
     read CONFIG_FILE; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
+
+    QS_MATLAB_INC_DIR="./mat"
+    INFILE="l2b.dat"
+    NCFILE="l2b.nc"
+    DATFILE="l2b-tdv-nudge.dat"
+
+    cd "$BASEDIR/$REV"
+    L1B_HDF_FNAME=`awk '/L1B_HDF_FILE/ {print $3}' $CONFIG_FILE`
+    L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ {print $3}' $CONFIG_FILE`
+
+    l2b_to_netcdf --l2bhdf "$L2B_HDF_FNAME" --l1bhdf "$L1B_HDF_FNAME" \
+        --l2bc "$NCFILE"  --l2b "$INFILE" --extended
+    RETVAL=$?
+
+    cd "../../"
+    # Extract orbit start and end-time
+    (
+        echo "addpath('$QS_MATLAB_INC_DIR');"
+        echo "addpath('$QS_MATLAB_INC_DIR/minFunc');"
+        echo "run_tdv_qs_l2bnc('$BASEDIR/$REV/$NCFILE', '$BASEDIR/$REV/$DATFILE');"
+    ) | matlab -nodisplay -nojvm
+    RETVAL=$(($RETVAL || $?))
+
+    return $RETVAL
+)
+}
+
+#######################################################################
+# Extract data into arrays
+function qs_reproc_make_arrays() {
+(
+    echo -n "Rev: "
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
+    echo -n "Base directory: "
+    read BASEDIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$BASEDIR"
+    echo -n "Config: "
+    read CONFIG_FILE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
+    echo -n "Type (L2B): "
+    read TYPE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$TYPE"
+    
 
     QS_MATLAB_INC_DIR="./mat"
     INFILE="l2b.dat"
@@ -736,6 +804,10 @@ function qs_reproc_process_command () {
         qs_reproc_tdv
         RETVAL=$?
         ;;
+#    MAKE-ARRAYS)
+#        qs_reproc_make_arrays
+#        RETVAL=$?
+#        ;;
     CLEAN)
         qs_reproc_clean
         RETVAL=$?
@@ -770,7 +842,7 @@ function qs_reproc_execute_automated_cmd () {
         INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n$GENERIC_CFG\n"
         ;;
     L1BHDF-TO-L1B)
-        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
+        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
         ;;
     L1B-TO-L2A)
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
@@ -793,6 +865,9 @@ function qs_reproc_execute_automated_cmd () {
         ;;
     TDV)
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
+        ;;
+    MAKE-ARRAYS)
+        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
         ;;
     CLEAN)
         INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
@@ -942,7 +1017,7 @@ function qs_reproc_by_file () {
 
     lock "$CMD_LOCK" "$UNIQ"
     # Let ALL be a synonym for all actual processing
-    sed -i -e 's/ALL/STAGE	GENERATE	L1BHDF-TO-L1B	L1B-TO-L2A	L2A-FIX-QS-COMPOSITES	L2A-TO-L2B	L2B-MEDIAN-FILTER GS	L2B-MEDIAN-FILTER S3	L2B-TO-NETCDF GS	L2B-TO-NETCDF S3/' "$CMD_FILE"
+    sed -i -e 's/ALL/STAGE	GENERATE	L1BHDF-TO-L1B QSCAT	L1B-TO-L2A	L2A-FIX-QS-COMPOSITES	L2A-TO-L2B	L2B-MEDIAN-FILTER GS	L2B-MEDIAN-FILTER S3	L2B-TO-NETCDF GS	L2B-TO-NETCDF S3/' "$CMD_FILE"
     unlock "$CMD_LOCK"
 
     while [[ -s "$CMD_FILE" ]]; do
