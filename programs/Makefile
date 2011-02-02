@@ -17,7 +17,7 @@ EALIBS =		../../lib/libEAData.a
 ifneq '$(shell uname -s)' 'Linux'
     EALIBS += /sw/lib/libtiff.a
 endif
-HDFLIBS =		-L/sw/lib -lmfhdf -ldf -ljpeg -lz
+HDFLIBS =		-L/sw/lib -lmfhdf -ldf -ljpeg -lz -lhdf5 -lsz
 NETCDFLIBS :=   -lnetcdf -lz -lm
 LIBS =			../../lib/libSim.a
 #OMITTED_LIBS = -lnsl -lsocket -lstdc++
@@ -26,7 +26,7 @@ LDLIBS =		-L/usr/local/lib $(LIBS) $(EALIBS) $(HDFLIBS) -lm
 PURE =
 
 CCC =			$(PURE) g++
-DEBUGFLAGS =	-ggdb2 --save-temps -O2 #-O0 -g
+DEBUGFLAGS =	-ggdb2 --save-temps -O0 -g
 #DEBUGFLAGS = -O2
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) $(NCDFINCDIR) -DNOPM
 
@@ -132,7 +132,8 @@ PROGRAMS = \
 	get_foff \
     check_inst_tracking \
 	make_simple_land_map \
-	l2b_to_netcdf
+	l2b_to_netcdf \
+	l1b_isro_to_l1b
 #	l00_to_l1a
 #   check_l1b 
 #   nof_and_qual
