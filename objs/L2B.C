@@ -2192,61 +2192,100 @@ int L2B::ReadLandIceRainFlagsFromHdfL2B(
     int read_land_ice_flags,
     int read_rain_flags)
 {
-    L2B n_l2b;
+  // Rewritten to load directly from HDF file instead of copying from
+  // another L2B object that was read in using ReadPureHDF.  That one will not
+  // have flag values in WVCs where numambigs == 0.   2/3/2011  AGF
+  WindSwath* swath = &(frame.swath);
+  
+  // read flags directly from HDF 
+  int32 sd_id = SDstart(filename, DFACC_READ);
+  if (sd_id == FAIL) {
+    fprintf(stderr, "L2B::ReadLandIceRainFlagsFromHdfL2B: error with SDstart\n");
+    return(0);
+  }
 
-    if (n_l2b.ReadPureHdf(filename,1) == 0)  // Use ReadPureHDF, old one broken.
-    {
-        fprintf(stderr, "ReadLandIceRainFlagsFromHdfL2B: error reading HDF L2B file %s\n",
-                filename);
-        return 0;
+  int32 wvc_quality_flag_sds_id = SDnametoid(sd_id, "wvc_quality_flag");
+  
+  char name[66];
+  int32 rank, dim_sizes[8], data_type, n_attrs;
+  if (SDgetinfo(wvc_quality_flag_sds_id, name, &rank, dim_sizes, &data_type,
+      &n_attrs) == FAIL) {
+    fprintf(stderr, "L2B::ReadLandIceRainFlagsFromHdfL2B: error with SDgetinfo\n");
+    SDend(sd_id);
+    return(0);
+  }
+  //printf( "name: %s; rank: %d; dim_sizes: %6d %6d\n", name, rank, dim_sizes[0], dim_sizes[1] ); 
+  
+  // compare # of cross-track bins and along-track bins
+  if( dim_sizes[0] != swath->GetAlongTrackBins() || 
+      dim_sizes[1] != swath->GetCrossTrackBins() ) {
+    fprintf(stderr, "L2B::ReadLandIceRainFlagsFromHdfL2B: size mismatch: %6d %6d %6d %6d\n",
+      dim_sizes[0], dim_sizes[1], swath->GetAlongTrackBins(), swath->GetCrossTrackBins() );
+    SDend(sd_id);
+    return(0);
+  }
+  
+  int32  start[2] = { 0, 0 };
+  int32  edges[2] = { dim_sizes[0], dim_sizes[1] };
+  uint16 wvc_quality_flags[dim_sizes[0]][dim_sizes[1]];
+  
+  if( SDreaddata( wvc_quality_flag_sds_id, start, NULL, edges, 
+        &wvc_quality_flags[0][0] ) == FAIL ) {
+    fprintf(stderr, "L2B::ReadLandIceRainFlagsFromHdfL2B: error with SDreaddata\n");
+    SDend(sd_id);
+    return(0);
+  }
+  
+  for( int ati = 0; ati < swath->GetAlongTrackBins(); ++ati ) {
+    for( int cti = 0; cti < swath->GetCrossTrackBins(); ++cti ) {
+
+      WVC* wvc = swath->GetWVC(cti, ati);
+      if( !wvc ) // no retrieval 
+        continue;
+      
+      // new_flag = ( flag & ~flag_mask ) | flag_state;
+      // flag & ~flag_mask returns flag with the bits that are set in flag_mask unset.
+      // then we bitwise or this with the state we want these bits to be in.
+      if( read_land_ice_flags ) {
+
+        // test for land (2^7 in hex == 0x80)
+        wvc->landiceFlagBits = ( wvc->landiceFlagBits & ~LAND_ICE_FLAG_COAST ) |
+                               ( (wvc_quality_flags[ati][cti]&0x00080) != 0  ) * LAND_ICE_FLAG_COAST;
+
+        wvc->qualFlag        = ( wvc->qualFlag & ~L2B_QUAL_FLAG_LAND ) |
+                               ( (wvc_quality_flags[ati][cti]&0x00080) != 0  ) * L2B_QUAL_FLAG_LAND;
+
+        // test for ice (2^8 in hex == 0x100)
+        wvc->landiceFlagBits = ( wvc->landiceFlagBits & ~LAND_ICE_FLAG_ICE ) |
+                               ( (wvc_quality_flags[ati][cti]&0x00100) != 0  ) * LAND_ICE_FLAG_ICE;
+        
+        wvc->qualFlag        = ( wvc->qualFlag & ~L2B_QUAL_FLAG_ICE ) |
+                               ( (wvc_quality_flags[ati][cti]&0x00100) != 0  ) * L2B_QUAL_FLAG_ICE;
+      }
+      if( read_rain_flags ) {
+        // test for rain flag unusable (2^12 in hex  == 0x1000)
+        wvc->rainFlagBits = ( wvc->rainFlagBits & ~RAIN_FLAG_UNUSABLE ) |
+                            ( (wvc_quality_flags[ati][cti]&0x01000) != 0  ) * RAIN_FLAG_UNUSABLE;
+
+        wvc->qualFlag     = ( wvc->qualFlag & ~L2B_QUAL_FLAG_RAIN_UNUSABLE ) |
+                            ( (wvc_quality_flags[ati][cti]&0x01000) != 0  ) * L2B_QUAL_FLAG_RAIN_UNUSABLE;
+
+        // test for rain flag rain (2^13 in hex  == 0x2000)
+        wvc->rainFlagBits = ( wvc->rainFlagBits & ~RAIN_FLAG_RAIN ) |
+                            ( (wvc_quality_flags[ati][cti]&0x02000) != 0  ) * RAIN_FLAG_RAIN;
+        
+        wvc->qualFlag     = ( wvc->qualFlag & ~L2B_QUAL_FLAG_RAIN ) |
+                            ( (wvc_quality_flags[ati][cti]&0x02000) != 0  ) * L2B_QUAL_FLAG_RAIN;                            
+      }
     }
-
-    WindSwath* swath = &(frame.swath);
-
-    int crossTrackBins = n_l2b.frame.swath.GetCrossTrackBins();
-#ifdef HIRES12
-    crossTrackBins = 152;
-#endif
-
-    // check that the number of cross track bins in the thing just read match the
-    // number in the current instance (where we'll be putting the data)
-    if (crossTrackBins != swath->GetCrossTrackBins())
-    {
-        fprintf(stderr, "ReadLandIceRainFlagsFromHdfL2B: crosstrackbins mismatch\n");
-        return(0);
-    }
-
-    int alongTrackBins = n_l2b.frame.swath.GetAlongTrackBins();
-
-    // check the number of along track bins match
-    if (alongTrackBins != swath->GetAlongTrackBins())
-    {
-        fprintf(stderr, "ReadLandIceRainFlagsFromHdfL2B: alongtrackbins mismatch\n");
-        fprintf(stderr, "along track bins allocated: %d; along track bins needed: %d\n",
-            swath->GetAlongTrackBins(), alongTrackBins);
-        return(0);
-    }
-
-    for (int32 ati = 0; ati < alongTrackBins; ati++)
-    {
-        for (int cti = 0; cti < crossTrackBins; cti++)
-        {
-            WVC* n_wvc = n_l2b.frame.swath.GetWVC(cti, ati);
-            WVC* o_wvc = swath->GetWVC(cti, ati);
-            if (!n_wvc || !o_wvc)
-                continue;
-                
-            if( read_rain_flags )
-              o_wvc->rainFlagBits   = n_wvc->rainFlagBits;
-              
-            if( read_land_ice_flags )
-              o_wvc->landiceFlagBits = n_wvc->landiceFlagBits;
-        }
-    }
-
-    return(1);
+  }
+  
+  if (SDend(sd_id) == FAIL) {
+    fprintf(stderr, "L2B::ReadLandIceRainFlagsFromHdfL2B: error with SDend\n");
+    return(0);
+  }
+  return(1);
 }
-
 
 //---------------------------------//
 // L2B::ReadNudgeVectorsFromHdfL2B //
