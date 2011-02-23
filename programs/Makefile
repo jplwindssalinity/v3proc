@@ -133,6 +133,7 @@ PROGRAMS = \
     check_inst_tracking \
 	make_simple_land_map \
 	l2b_to_netcdf \
+	l2b_hdf_to_netcdf \
 	l1b_isro_to_l1b
 #	l00_to_l1a
 #   check_l1b 
@@ -262,6 +263,9 @@ install: $(PROGRAMS)
 	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
 
 l2b_to_netcdf: l2b_to_netcdf.C $(LIBS) $(EALIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(NETCDFLIBS) $(LDLIBS)
+
+l2b_hdf_to_netcdf: l2b_hdf_to_netcdf.C $(LIBS) $(EALIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(NETCDFLIBS) $(LDLIBS)
 
 %: %.C $(LIBS) $(EALIBS)
