@@ -132,6 +132,7 @@ public:
 #define L2B_QUAL_FLAG_RAIN_UNUSABLE   0x04   // bit 2 1/0 = not usable/usable
 #define L2B_QUAL_FLAG_RAIN            0x08   // bit 3 1/0 = rain/no rain
 #define L2B_QUAL_FLAG_RAIN_LOCATION   0x10   // bit 4 1/0 = sig0 from 4 looks not/are available
+#define L2B_QUAL_FLAG_RAIN_CORR_APPL  0x20   // bit 4 1/0 = rainImpact quantity exceeds/below threshold
 
 class WVC
 {
@@ -152,6 +153,7 @@ public:
     int  ReadL2B(FILE* fp);
     int  ReadL2B_v2(FILE* fp); // AGF added 6/3/2010   
     int  ReadL2B_v3(FILE* fp); // BWS added 11/29/2010
+    int  ReadL2B_v4(FILE* fp); // TAW added 03/03/2010
     int  WriteVctr(FILE* fp, const int rank);    // 0 = selected
     int  WriteAscii(FILE* fp);
     int  WriteFlower(FILE* fp);
@@ -213,6 +215,8 @@ public:
     unsigned char          numInAft;
     unsigned char          numOutFore;
     unsigned char          numOutAft;
+
+    float speedBias;
 };
 
 //======================================================================

@@ -2235,18 +2235,18 @@ L2AToL2B::RainCorrectSpeed(L2B* l2b){
           WVC* wvc = swath->GetWVC(cti,ati);
           
           if ( ! wvc ) continue;
-          if ( wvc->rainImpact <= rain_impact_thresh_for_correction || wvc->rainCorrectedSpeed<0) continue;
 	  // modify all ambiguities when threshold exceeded
-
 # define RC_AMBIGFIX_METHOD 2
           WindVectorPlus* wvp;
           int nbins=wvc->directionRanges.dirIdx.GetBins();
-          float expected_speed, speed_bias;
+          float expected_speed;
           float* obj;
           float scale, sum=0; 
+
 	  switch(RC_AMBIGFIX_METHOD){
 
           case 1:  // Replace all speeds with RainCorrectSpeed set objs values to zero
+            if ( wvc->rainImpact <= rain_impact_thresh_for_correction || wvc->rainCorrectedSpeed<0) continue;
 	    wvp=wvc->ambiguities.GetHead();
 	    while(wvp){
 	      wvp->spd=wvc->rainCorrectedSpeed;
@@ -2264,39 +2264,44 @@ L2AToL2B::RainCorrectSpeed(L2B* l2b){
 	    break;
 
 	  case 2:  // Add bias E(spd)-rainCorrectedSpeed to all speeds; set obj values to zero
-            // convert bestObjs to probabilities float sum = 0.0;
-	    obj=wvc->directionRanges.bestObj;
-	    scale = obj[0];
-	    for (int c = 1; c < nbins; c++)
-	      {
-		if (scale < obj[c])
-		  scale = obj[c];
-	      }
-	    sum=0;
-	    for (int c = 0; c < nbins; c++)
-	      {
-		obj[c] = exp((obj[c] - scale) / 2);
-		sum += obj[c];
-	      }
-	    for (int c = 0; c < nbins; c++)
-	      {
-		obj[c] /= sum;
-	      }
 
+            // convert bestObjs to probabilities float sum = 0.0;
+            obj=wvc->directionRanges.bestObj;
+            scale = obj[0];
+            for (int c = 1; c < nbins; c++)
+              {
+                if (scale < obj[c])
+                  scale = obj[c];
+              }
+            sum=0;
+            for (int c = 0; c < nbins; c++)
+              {
+                obj[c] = exp((obj[c] - scale) / 2);
+                sum += obj[c];
+              }
+            for (int c = 0; c < nbins; c++)
+              {
+                obj[c] /= sum;
+              }
             // compute expected speed and bias
             expected_speed=0;
             for (int c = 0; c < nbins; c++){
-	      expected_speed+= wvc->directionRanges.bestSpd[c]*obj[c];
-	    }
-            speed_bias=expected_speed-wvc->rainCorrectedSpeed;
+              expected_speed+= wvc->directionRanges.bestSpd[c]*obj[c];
+            }
+            wvc->speedBias=expected_speed-wvc->rainCorrectedSpeed;
+
+            wvc->qualFlag &= ~L2B_QUAL_FLAG_RAIN_CORR_APPL;
+            if ( wvc->rainImpact <= rain_impact_thresh_for_correction || wvc->rainCorrectedSpeed<0) continue;
+            wvc->qualFlag |=  L2B_QUAL_FLAG_RAIN_CORR_APPL;
+
             // unbias all speeds and set ambig obj values to zero
             for (int c = 0; c < nbins; c++){
-	      wvc->directionRanges.bestSpd[c]-=speed_bias;
+	      wvc->directionRanges.bestSpd[c]-=wvc->speedBias;
 	    }       
 
 	    wvp=wvc->ambiguities.GetHead();
 	    while(wvp){
-	      wvp->spd-=speed_bias;
+	      wvp->spd-=wvc->speedBias;
 	      wvp->obj=0;
 	      wvp=wvc->ambiguities.GetNext();
 	    }     

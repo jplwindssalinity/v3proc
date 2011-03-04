@@ -262,7 +262,8 @@ WindVectorField::InterpolateVectorField(
 WVC::WVC()
 :   nudgeWV(NULL), selected(NULL), selected_allocated(0), specialVector(NULL),
     rainProb(0.0), rainFlagBits(0), landiceFlagBits(0), qualFlag(0),
-    rainImpact(0.0), numInFore(0), numInAft(0), numOutFore(0), numOutAft(0)
+    rainImpact(0.0), numInFore(0), numInAft(0), numOutFore(0), numOutAft(0),
+    speedBias(0.0)
 {
     return;
 }
@@ -302,6 +303,14 @@ int
 WVC::WriteL2B(
     FILE*  fp)
 {       
+    //-- Begin TAW modifications for v4 of l2b data file 03/02/2011
+    if( fwrite( (void *)&speedBias, sizeof(float),        1, fp) != 1 )
+    {
+        fprintf(stderr,"WVC::WriteL2B: Error writing speedBias!\n"); 
+        return(0);
+    }
+    //--End of TAW modifications for v4 of l2b data file 03/02/2011
+
     //-- Begin BWS modifications for v3 of l2b data file 11/29/2010
     if( fwrite( (void *)&rainCorrectedSpeed, sizeof(float),        1, fp) != 1 )
     {
@@ -403,6 +412,24 @@ WVC::WriteL2B(
         return(0);
    
     return(1);
+}
+
+//-----------------//
+// WVC::ReadL2B_v4 //
+//-----------------//
+
+int
+WVC::ReadL2B_v4(
+    FILE*  fp)
+{
+    // Reads v3 of the WVC from the L2B data file BWS 11/29/2010  
+    if( fread((void *)&speedBias, sizeof(float),        1, fp) != 1)
+    {
+        fprintf(stderr,"In WVC::ReadL2B_v4: ERROR reading rainCorrectedSpeed!\n");         
+        return(0);
+    }
+    // read the rest of it
+    return(ReadL2B_v3(fp));
 }
 
 //-----------------//

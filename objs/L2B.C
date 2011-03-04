@@ -98,7 +98,7 @@ int
 L2BHeader::Write(
     FILE*  fp)
 {
-    char l2b_ascii_header[80] = "QSCATSIM_L2B_VERSION_ID==3.0";
+    char l2b_ascii_header[80] = "QSCATSIM_L2B_VERSION_ID==4.0";
     
     if (fwrite((void *)&l2b_ascii_header[0], sizeof(char), 80, fp) != 80 ||
         fwrite(&crossTrackResolution, sizeof(float), 1, fp) != 1 ||
