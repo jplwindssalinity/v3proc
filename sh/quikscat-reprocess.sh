@@ -483,6 +483,9 @@ function qs_reproc_l2b_median_filter () {
     echo -n "Type (GS|S3|TDV): "
     read TYPE; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$TYPE"
+    echo -n "Nudge Windfield (NCEP|ECMWF): "
+    read WINDFIELD; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$WINDFIELD"
 
     cd "$BASEDIR/$REV"
     L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ {print $3}' $CONFIG_FILE`
@@ -508,10 +511,10 @@ function qs_reproc_l2b_median_filter () {
     TDV)
         MEDFILT_CONFIG=tmp3.rdf
         OUTFILE=l2b_flagged_TDV.dat
-        OTHER=""
+        OTHER="-flagsHDF $L2B_HDF_FNAME"
         sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
             -e 's:\(NUDGE_WINDFIELD_TYPE *= *\).*:\1NCEP\nQSCP12_ECMWF_ARRAY_NUDGING  = 1:' \
-            -e 's:\(NUDGE_WINDFIELD_FILE *= *\).*:\1./l2b-tdv-nudge.dat:' \
+            -e 's:\(NUDGE_WINDFIELD_FILE *= *\).*:\1./nudge_tdv.dat:' \
                 $CONFIG_FILE > "$MEDFILT_CONFIG"
         RETVAL=$?
         ;; 
@@ -520,10 +523,18 @@ function qs_reproc_l2b_median_filter () {
         RETVAL=1
         ;;
     esac
+    if [[ "$WINDFIELD" = "ECMWF" ]]; then
+        E2BFILE="../../E2B12/E2B_$REV.cp12.dat"
+        sed -i -e "s:^NUDGE_WINDFIELD_FILE.*:NUDGE_WINDFIELD_FILE      = $E2BFILE\nQSCP12_ECMWF_ARRAY_NUDGING  = 1:" \
+            "$MEDFILT_CONFIG"
+        RETVAL=$(($RETVAL || $?))
+        OTHER=`echo $OTHER | sed -e 's/nudgeHDF/flagsHDF/'`
+    fi
     if [[ $RETVAL -ne 0 ]]; then
         return $RETVAL
     fi
     
+    echo l2b_medianfilter -c "$MEDFILT_CONFIG" -o "$OUTFILE" $OTHER
     l2b_medianfilter -c "$MEDFILT_CONFIG" -o "$OUTFILE" $OTHER
     RETVAL=$?
 
@@ -615,19 +626,23 @@ function qs_reproc_tdv() {
     echo -n "Base directory: "
     read BASEDIR; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$BASEDIR"
+    echo -n "Input File: "
+    read INFILE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$INFILE"
     echo -n "Config: "
     read CONFIG_FILE; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
 
     QS_MATLAB_INC_DIR="./mat"
-    INFILE="l2b.dat"
-    NCFILE="l2b.nc"
-    DATFILE="l2b-tdv-nudge.dat"
+    NCFILE="l2b_flagged_GS_ext.nc"
+    DATFILE="nudge_tdv.dat"
 
     cd "$BASEDIR/$REV"
     L1B_HDF_FNAME=`awk '/L1B_HDF_FILE/ {print $3}' $CONFIG_FILE`
     L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ {print $3}' $CONFIG_FILE`
 
+    echo l2b_to_netcdf --l2bhdf "$L2B_HDF_FNAME" --l1bhdf "$L1B_HDF_FNAME" \
+        --l2bc "$NCFILE"  --l2b "$INFILE" --extended
     l2b_to_netcdf --l2bhdf "$L2B_HDF_FNAME" --l1bhdf "$L1B_HDF_FNAME" \
         --l2bc "$NCFILE"  --l2b "$INFILE" --extended
     RETVAL=$?
@@ -726,7 +741,7 @@ function qs_reproc_clean () {
     L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ { print $3 }' "$CONFIG_FILE"`
 
     # Spoof switch with fallthrough
-    if [[ $LEVEL -le 2 ]]; then
+    if [[ $LEVEL -le 3 ]]; then
         rm -f \
             "nn_train.dat" \
             "$L1B_HDF_FNAME" \
@@ -735,10 +750,19 @@ function qs_reproc_clean () {
             "$L2A_FNAME.orig" \
             l1bhdf_to_l1b_tmpfile \
             ephem.dat \
+            "l2b_flagged_S3.dat" \
+            "l2b_flagged_GS.dat" \
+            "l2b_flagged_TDV.dat" \
+            "l2b_flagged_GS_ext.nc"
+    fi
+    if [[ $LEVEL -le 2 ]]; then
+        rm -f \
             "tmp1.rdf" \
             "tmp2.rdf" \
-            "l2b_flagged_S3.dat" \
-            "l2b_flagged_GS.dat" 
+            "tmp3.rdf" \
+            "nudge_tdv.dat" \
+            "*_GS.L2BC.nc" \
+            "*_TDV.L2BC.nc"
     fi
     if [[ $LEVEL -le 1 ]]; then
         rm -f \
@@ -855,6 +879,7 @@ function qs_reproc_execute_automated_cmd () {
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
         ;;
     L2B-MEDIAN-FILTER)
+        ARGS=`echo "$ARGS" | tr ' ' '\n'`
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
         ;;
     L2B-TO-NETCDF)
@@ -865,7 +890,8 @@ function qs_reproc_execute_automated_cmd () {
         INPUT="$REV\n$OUTPUT_DIR\n$ARGS\n"
         ;;
     TDV)
-        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
+        ARGS="l2b_flagged_GS.dat"
+        INPUT="$REV\n$OUTPUT_DIR\n$ARGS\n$CFG\n"
         ;;
     MAKE-ARRAYS)
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
