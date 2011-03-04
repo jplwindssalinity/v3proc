@@ -102,6 +102,11 @@ enum {
     AVAILABLE_DATA_MASK       = 0x00004000
 };
 
+const size_t NUM_EFLAGS = 1;
+enum {
+    RAIN_CORR_APPL_MASK = 0x00000001
+};
+
 //-----------//
 // TEMPLATES //
 //-----------//
@@ -131,6 +136,7 @@ typedef enum {
     EFLAGS,
     NUDGE_SPEED,
     NUDGE_DIRECTION,
+    ATM_SPEED_BIAS,
 
     first_extended_variable,
 
@@ -143,6 +149,7 @@ typedef enum {
     N_IN_AFT,
     N_OUT_FORE,
     N_OUT_AFT,
+    WIND_SPEED_UNCORRECTED,
     num_variables
 } variables;
 
@@ -728,7 +735,7 @@ int main(int argc, char **argv) {
     varlist[EFLAGS].type  = NC_SHORT;
     varlist[EFLAGS].ndims = 2;
     varlist[EFLAGS].dims = dimensions; 
-    varlist[EFLAGS].nattrs = num_standard_attrs;
+    varlist[EFLAGS].nattrs = num_standard_attrs + 2;
     ERR((varlist[EFLAGS].attrs = (typeof varlist[EFLAGS].attrs)
                 malloc(varlist[EFLAGS].nattrs * 
                     (sizeof *varlist[EFLAGS].attrs))) == NULL);
@@ -749,6 +756,25 @@ int main(int argc, char **argv) {
     varlist[EFLAGS].attrs[LONG_NAME].size = 1;
     varlist[EFLAGS].attrs[LONG_NAME].type = NC_CHAR;
     varlist[EFLAGS].attrs[LONG_NAME].value.str = "extended wind vector cell quality flags";
+
+    varlist[EFLAGS].attrs[num_standard_attrs + 0].name = "flag_masks";
+    varlist[EFLAGS].attrs[num_standard_attrs + 0].size = NUM_EFLAGS;
+    varlist[EFLAGS].attrs[num_standard_attrs + 0].type = varlist[EFLAGS].type;
+    ERR((varlist[EFLAGS].attrs[num_standard_attrs + 0].value.ps = (int16 *)
+                malloc(varlist[EFLAGS].attrs[num_standard_attrs + 0].size *
+                    sizeof(*varlist[EFLAGS].attrs[num_standard_attrs + 0].value.ps)))
+            == NULL);
+    {
+        int16 init_list[NUM_EFLAGS] = {RAIN_CORR_APPL_MASK};
+
+        ERR(memcpy(varlist[EFLAGS].attrs[num_standard_attrs + 0].value.ps, init_list, 
+                    NUM_EFLAGS* sizeof init_list[0]) == NULL);
+    }
+
+    varlist[EFLAGS].attrs[num_standard_attrs + 1].name = "flag_meanings";
+    varlist[EFLAGS].attrs[num_standard_attrs + 1].size = 1;
+    varlist[EFLAGS].attrs[num_standard_attrs + 1].type = NC_CHAR;
+    varlist[EFLAGS].attrs[num_standard_attrs + 1].value.str = "rain_correction_applied_flag ";
 
     varlist[NUDGE_SPEED].name  = "ecmwf_wind_speed";
     varlist[NUDGE_SPEED].type  = NC_FLOAT;
@@ -817,7 +843,41 @@ int main(int argc, char **argv) {
     varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].size = 1;
     varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].value.f = 1.0f;
-               
+
+    varlist[ATM_SPEED_BIAS].name  = "atmospheric_speed_bias";
+    varlist[ATM_SPEED_BIAS].type  = NC_FLOAT;
+    varlist[ATM_SPEED_BIAS].ndims = 2;
+    varlist[ATM_SPEED_BIAS].dims = dimensions; 
+    varlist[ATM_SPEED_BIAS].nattrs = num_standard_attrs + 2;
+    ERR((varlist[ATM_SPEED_BIAS].attrs = (typeof varlist[ATM_SPEED_BIAS].attrs)
+                malloc(varlist[ATM_SPEED_BIAS].nattrs * 
+                    (sizeof *varlist[ATM_SPEED_BIAS].attrs))) == NULL);
+
+    varlist[ATM_SPEED_BIAS].attrs[FILL_VALUE].name = "FillValue";
+    varlist[ATM_SPEED_BIAS].attrs[FILL_VALUE].size = 1;
+    varlist[ATM_SPEED_BIAS].attrs[FILL_VALUE].type = varlist[ATM_SPEED_BIAS].type;
+    varlist[ATM_SPEED_BIAS].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
+    varlist[ATM_SPEED_BIAS].attrs[VALID_MIN].name = "valid_min";
+    varlist[ATM_SPEED_BIAS].attrs[VALID_MIN].size = 1;
+    varlist[ATM_SPEED_BIAS].attrs[VALID_MIN].type = varlist[ATM_SPEED_BIAS].type;
+    varlist[ATM_SPEED_BIAS].attrs[VALID_MIN].value.f = 0.0f;
+    varlist[ATM_SPEED_BIAS].attrs[VALID_MAX].name = "valid_max";
+    varlist[ATM_SPEED_BIAS].attrs[VALID_MAX].size = 1;
+    varlist[ATM_SPEED_BIAS].attrs[VALID_MAX].type = varlist[ATM_SPEED_BIAS].type;
+    varlist[ATM_SPEED_BIAS].attrs[VALID_MAX].value.f = 100.0f;
+    varlist[ATM_SPEED_BIAS].attrs[LONG_NAME].name = "long_name";
+    varlist[ATM_SPEED_BIAS].attrs[LONG_NAME].size = 1;
+    varlist[ATM_SPEED_BIAS].attrs[LONG_NAME].type = NC_CHAR;
+    varlist[ATM_SPEED_BIAS].attrs[LONG_NAME].value.str = "speed bias from rain correction";
+    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs].name = "units";
+    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs].size = 1;
+    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs].type = NC_CHAR;
+    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs].value.str = "m s-1";
+    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs + 1].name = "scale_factor";
+    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs + 1].size = 1;
+    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs + 1].type = NC_FLOAT;
+    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs + 1].value.f = 1.0f;
+
     if (run_config.extended) { 
         varlist[SEL_OBJ].name  = "wind_obj";
         varlist[SEL_OBJ].type  = NC_FLOAT;
@@ -1104,6 +1164,40 @@ int main(int argc, char **argv) {
         varlist[N_OUT_AFT].attrs[num_standard_attrs].size = 1;
         varlist[N_OUT_AFT].attrs[num_standard_attrs].type = NC_CHAR;
         varlist[N_OUT_AFT].attrs[num_standard_attrs].value.str = "1";
+
+        varlist[WIND_SPEED_UNCORRECTED].name  = "wind_speed_uncorrected";
+        varlist[WIND_SPEED_UNCORRECTED].type  = NC_FLOAT;
+        varlist[WIND_SPEED_UNCORRECTED].ndims = 3;
+        varlist[WIND_SPEED_UNCORRECTED].dims = dimensions; 
+        varlist[WIND_SPEED_UNCORRECTED].nattrs = num_standard_attrs + 2;
+        ERR((varlist[WIND_SPEED_UNCORRECTED].attrs = (typeof varlist[WIND_SPEED_UNCORRECTED].attrs)
+                    malloc(varlist[WIND_SPEED_UNCORRECTED].nattrs * 
+                        (sizeof *varlist[WIND_SPEED_UNCORRECTED].attrs))) == NULL);
+    
+        varlist[WIND_SPEED_UNCORRECTED].attrs[FILL_VALUE].name = "FillValue";
+        varlist[WIND_SPEED_UNCORRECTED].attrs[FILL_VALUE].size = 1;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[FILL_VALUE].type = varlist[WIND_SPEED_UNCORRECTED].type;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
+        varlist[WIND_SPEED_UNCORRECTED].attrs[VALID_MIN].name = "valid_min";
+        varlist[WIND_SPEED_UNCORRECTED].attrs[VALID_MIN].size = 1;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[VALID_MIN].type = varlist[WIND_SPEED_UNCORRECTED].type;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[VALID_MIN].value.f = 0.0f;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[VALID_MAX].name = "valid_max";
+        varlist[WIND_SPEED_UNCORRECTED].attrs[VALID_MAX].size = 1;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[VALID_MAX].type = varlist[WIND_SPEED_UNCORRECTED].type;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[VALID_MAX].value.f = 100.0f;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[LONG_NAME].name = "long_name";
+        varlist[WIND_SPEED_UNCORRECTED].attrs[LONG_NAME].size = 1;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[LONG_NAME].type = NC_CHAR;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[LONG_NAME].value.str = "wind speed without rain correction";
+        varlist[WIND_SPEED_UNCORRECTED].attrs[num_standard_attrs].name = "units";
+        varlist[WIND_SPEED_UNCORRECTED].attrs[num_standard_attrs].size = 1;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[num_standard_attrs].type = NC_CHAR;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[num_standard_attrs].value.str = "m s-1";
+        varlist[WIND_SPEED_UNCORRECTED].attrs[num_standard_attrs + 1].name = "scale_factor";
+        varlist[WIND_SPEED_UNCORRECTED].attrs[num_standard_attrs + 1].size = 1;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
+        varlist[WIND_SPEED_UNCORRECTED].attrs[num_standard_attrs + 1].value.f = 1.0f;
     }
 
     for (int i = 0; i < (run_config.extended ? num_variables : 
@@ -1237,6 +1331,8 @@ int main(int argc, char **argv) {
                 flags |= ((wvc->selected->spd > 30) != 0) * HIGH_WIND_MASK;
                 flags |= ((wvc->selected->spd < 3) != 0) * LOW_WIND_MASK;
 
+                eflags |= ((wvc->qualFlag & L2B_QUAL_FLAG_RAIN_CORR_APPL) != 0) * RAIN_CORR_APPL_MASK;
+
                 lat = RAD_TO_DEG(wvc->lonLat.latitude);
                 lon = RAD_TO_DEG(wvc->lonLat.longitude);
 
@@ -1272,6 +1368,8 @@ int main(int argc, char **argv) {
                 conversion = conversion - 360.0f*((int)(conversion/360.0f));
                 NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
                             &conversion));
+
+                NCERR(nc_put_var1_float(ncid, varlist[ATM_SPEED_BIAS].id, idx, &wvc->speedBias));
 
                 /* Extended variables */
                 if (run_config.extended) {
@@ -1311,6 +1409,18 @@ int main(int argc, char **argv) {
                                     idx, &conversion));
                         NCERR(nc_put_var1(ncid, varlist[AMBIG_OBJ].id, 
                                     idx, &wv->obj));
+
+                        if (eflags & RAIN_CORR_APPL_MASK) {
+                            float uncorr_speed;
+                            uncorr_speed = wv->spd +  wvc->speedBias;
+                            NCERR(nc_put_var1_float(ncid, 
+                                varlist[WIND_SPEED_UNCORRECTED].id, idx, 
+                                &uncorr_speed));
+                        } else {
+                            NCERR(nc_put_var1_float(ncid, 
+                                varlist[WIND_SPEED_UNCORRECTED].id, idx, 
+                                &wv->spd));
+                        }
                     }
                     for ( ; (int)idx[2] < max_ambiguities; idx[2]++) {
                         NCERR(nc_put_var1_float(ncid, varlist[AMBIG_SPEED].id, idx,
@@ -1319,6 +1429,8 @@ int main(int argc, char **argv) {
                                     &varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].value.f));
                         NCERR(nc_put_var1_float(ncid, varlist[AMBIG_OBJ].id, idx,
                                     &varlist[AMBIG_OBJ].attrs[FILL_VALUE].value.f));
+                        NCERR(nc_put_var1_float(ncid, varlist[WIND_SPEED_UNCORRECTED].id, idx,
+                                    &varlist[WIND_SPEED_UNCORRECTED].attrs[FILL_VALUE].value.f));
                     }
                 }    
             } else {
@@ -1345,6 +1457,9 @@ int main(int argc, char **argv) {
                 NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
                             &varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f));
 
+                NCERR(nc_put_var1_float(ncid, varlist[ATM_SPEED_BIAS].id, idx, 
+                            &varlist[ATM_SPEED_BIAS].attrs[FILL_VALUE].value.f));
+
                 /* Extended variables */
                 if (run_config.extended) {
                     NCERR(nc_put_var1_float(ncid, varlist[SEL_OBJ].id, idx, 
@@ -1368,6 +1483,8 @@ int main(int argc, char **argv) {
                                     &varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].value.f));
                         NCERR(nc_put_var1_float(ncid, varlist[AMBIG_OBJ].id, idx,
                                     &varlist[AMBIG_OBJ].attrs[FILL_VALUE].value.f));
+                        NCERR(nc_put_var1_float(ncid, varlist[WIND_SPEED_UNCORRECTED].id, idx,
+                                    &varlist[WIND_SPEED_UNCORRECTED].attrs[FILL_VALUE].value.f));
                     }
                 }
             }
