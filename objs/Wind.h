@@ -127,12 +127,15 @@ public:
 #define LAND_ICE_FLAG_COAST 0x01    // bit 0 1/0 = land / no land
 #define LAND_ICE_FLAG_ICE   0x02    // bit 1 1/0 = ice  / no ice
 
-#define L2B_QUAL_FLAG_LAND            0x01   // bit 0 1/0 = land / no land
-#define L2B_QUAL_FLAG_ICE             0x02   // bit 1 1/0 = ice  / no ice
-#define L2B_QUAL_FLAG_RAIN_UNUSABLE   0x04   // bit 2 1/0 = not usable/usable
-#define L2B_QUAL_FLAG_RAIN            0x08   // bit 3 1/0 = rain/no rain
-#define L2B_QUAL_FLAG_RAIN_LOCATION   0x10   // bit 4 1/0 = sig0 from 4 looks not/are available
-#define L2B_QUAL_FLAG_RAIN_CORR_APPL  0x20   // bit 4 1/0 = rainImpact quantity exceeds/below threshold
+#define L2B_QUAL_FLAG_LAND            0x001   // bit 0 1/0 = land / no land
+#define L2B_QUAL_FLAG_ICE             0x002   // bit 1 1/0 = ice  / no ice
+#define L2B_QUAL_FLAG_RAIN_UNUSABLE   0x004   // bit 2 1/0 = not usable/usable
+#define L2B_QUAL_FLAG_RAIN            0x008   // bit 3 1/0 = rain/no rain
+#define L2B_QUAL_FLAG_RAIN_LOCATION   0x010   // bit 4 1/0 = outer/inner
+#define L2B_QUAL_FLAG_RAIN_CORR_APPL  0x020   // bit 5 1/0 = rainImpact quantity exceeds/below threshold
+#define L2B_QUAL_FLAG_ADQ_S0          0x040   // bit 6 1/0 = < 4 usable s0 / >= 4 s0 in wvc
+#define L2B_QUAL_FLAG_ADQ_AZI_DIV     0x080   // bit 7 1/0 = < 20 deg azimuth div / >= 20 deg
+#define L2B_QUAL_FLAG_FOUR_FLAVOR     0x100   // bit 8 1/0 = 4 flavors of s0 not avail/avil
 
 class WVC
 {
