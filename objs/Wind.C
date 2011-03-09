@@ -321,12 +321,20 @@ WVC::WriteL2B(
  
     //--AGF added for v2 of L2B data file 6/3/2010
     // Sets bits of qualFlag depending on rainFlagBits and landiceFlagBits.
-    qualFlag = 0;
-    if( landiceFlagBits & LAND_ICE_FLAG_COAST ) qualFlag += L2B_QUAL_FLAG_LAND;
-    if( landiceFlagBits & LAND_ICE_FLAG_ICE )   qualFlag += L2B_QUAL_FLAG_ICE;
-    if( rainFlagBits    & RAIN_FLAG_UNUSABLE )  qualFlag += L2B_QUAL_FLAG_RAIN_UNUSABLE;
-    if( rainFlagBits    & RAIN_FLAG_RAIN )      qualFlag += L2B_QUAL_FLAG_RAIN;
-    if( rainFlagBits    & RAIN_FLAG_LOCATION )  qualFlag += L2B_QUAL_FLAG_RAIN_LOCATION;
+    qualFlag = ( qualFlag & ~L2B_QUAL_FLAG_LAND )
+             | ( L2B_QUAL_FLAG_LAND * ( (landiceFlagBits&LAND_ICE_FLAG_COAST) != 0) );
+
+    qualFlag = ( qualFlag & ~L2B_QUAL_FLAG_ICE )
+             | ( L2B_QUAL_FLAG_ICE * ( (landiceFlagBits&LAND_ICE_FLAG_ICE) != 0) );
+
+    qualFlag = ( qualFlag & ~L2B_QUAL_FLAG_RAIN_UNUSABLE )
+             | ( L2B_QUAL_FLAG_RAIN_UNUSABLE * ( (rainFlagBits&RAIN_FLAG_UNUSABLE) != 0));
+
+    qualFlag = ( qualFlag & ~L2B_QUAL_FLAG_RAIN )
+             | ( L2B_QUAL_FLAG_RAIN * ( (rainFlagBits&RAIN_FLAG_RAIN) != 0));
+    
+    qualFlag = ( qualFlag & ~L2B_QUAL_FLAG_RAIN_LOCATION )
+             | ( L2B_QUAL_FLAG_RAIN_LOCATION * ( (rainFlagBits&RAIN_FLAG_LOCATION) != 0));
     
     //fpos_t pos;
     //fgetpos(fp,&pos);
@@ -422,7 +430,7 @@ int
 WVC::ReadL2B_v4(
     FILE*  fp)
 {
-    // Reads v3 of the WVC from the L2B data file BWS 11/29/2010  
+    // Reads v4 of the WVC from the L2B data file TAW 03/02/2011
     if( fread((void *)&speedBias, sizeof(float),        1, fp) != 1)
     {
         fprintf(stderr,"In WVC::ReadL2B_v4: ERROR reading rainCorrectedSpeed!\n");         
