@@ -1794,7 +1794,87 @@ int L2AToL2B::convertMeasToMLP_IOType(Meas* meas, char *type, char *out_buf) {
     return 1;
 }
 
+int 
+L2AToL2B::GenSigma0Flags( MeasList* meas_list, GMF *gmf, WVC* wvc ) {
+  
+  float flagThreshDiversity = gmf->minimumAzimuthDiversity; // radians, from config file
+  int   flagThreshGoodS0    = 4;
+  
+  int   foreInnerFound = 0;
+  int   foreOuterFound = 0;
+  int   aftInnerFound  = 0;
+  int   aftOuterFound  = 0;
+  int   landFound      = 0;
+  int   iceFound       = 0;
+  float max_div_found  = 0;
+  int   count_good_s0  = 0;
+  
+  int   meas_count = meas_list->NodeCount();
+  float s0_azi_vector[meas_count];
+  
+  // Check for land + ice, only flag if found in this function
+  for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext()) {
+    
+    // Check for land
+    if( meas->landFlag == 1 || meas->landFlag == 3 )
+      landFound = 1;
 
+    // Check for ice      
+    if( meas->landFlag == 2 || meas->landFlag == 3 )
+      iceFound = 1;
+    
+    // Check for usable sigma0
+    double snr = meas->value * meas->XK / meas->EnSlice;
+    if( meas->landFlag == 0 && finite(meas->value) && 10*log10(fabs(snr)) > -20 ) {
+      // Check flavor of sigma0
+      float antazi = meas->scanAngle * rtd;
+      if( antazi >= 180 ) antazi -= 180;
+      if( meas->measType == Meas::VV_MEAS_TYPE ) {
+        if( fabs(antazi) < 90 )
+          foreOuterFound = 1;
+        else
+          aftOuterFound = 1;
+      }
+      else {
+        if( fabs(antazi) < 90 )
+          foreInnerFound = 1;
+        else
+          aftInnerFound = 1;
+      }
+      s0_azi_vector[count_good_s0] = meas->eastAzimuth;
+      count_good_s0++;
+    }
+  }
+  
+  if( count_good_s0 > 0 ) {
+    for( int ii = 0; ii < count_good_s0-1; ++ii ) {
+      for( int jj = ii+1; jj < count_good_s0; ++jj ) {
+        float azidiv = ANGDIF( s0_azi_vector[ii], s0_azi_vector[jj] );
+        max_div_found = (azidiv > max_div_found) ? azidiv : max_div_found;
+      }
+    }
+  }
+  
+  int allfour = foreOuterFound*aftOuterFound*foreInnerFound*aftInnerFound;
+  
+  // Set flags
+  wvc->qualFlag = (wvc->qualFlag & ~L2B_QUAL_FLAG_ADQ_S0)
+   | (count_good_s0<flagThreshGoodS0) * L2B_QUAL_FLAG_ADQ_S0;
+
+  wvc->qualFlag = (wvc->qualFlag & ~L2B_QUAL_FLAG_ADQ_AZI_DIV)
+   | (max_div_found<flagThreshDiversity) * L2B_QUAL_FLAG_ADQ_AZI_DIV;
+  
+  wvc->qualFlag = (wvc->qualFlag & ~L2B_QUAL_FLAG_FOUR_FLAVOR)
+   | (allfour == 0) * L2B_QUAL_FLAG_FOUR_FLAVOR;
+
+  wvc->qualFlag = (wvc->qualFlag & ~L2B_QUAL_FLAG_LAND)
+   | (landFound != 0) * L2B_QUAL_FLAG_LAND;
+
+  wvc->qualFlag = (wvc->qualFlag & ~L2B_QUAL_FLAG_ICE)
+   | (iceFound  != 0) * L2B_QUAL_FLAG_ICE;
+  
+  return(1);
+}
 
 //---------------------------//
 // L2AToL2B::ConvertAndWrite //
@@ -1919,7 +1999,10 @@ L2AToL2B::ConvertAndWrite(
     float ctd, speed, dir;
     WindVectorPlus* wvp;
     static int num = 1;
-
+    
+    // Generate sigma0 related quality flags 3/9/2011 AGF
+    GenSigma0Flags( meas_list, gmf, wvc );
+    
     //HACK for breakpoint in gdb
     if(l2a->frame.cti==722 && l2a->frame.ati==2181){
       int bp=0;

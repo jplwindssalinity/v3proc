@@ -87,6 +87,7 @@ public:
     int  PopulateOneNudgeVector(L2B* l2b, int cti, int ati, MeasList* ml);
     int  InitFilterAndFlush(L2B* l2b);
     void ComputeMLPInputs(L2A* l2a, MeasList* meas_list, WVC* wvc);
+    int  GenSigma0Flags( MeasList* meas_list, GMF* gmf, WVC* wvc );
     //------------------------------------------//
     // Routine for outputting the Nudge Field   //
     // wind vector                              //
