@@ -2289,7 +2289,8 @@ WindField::NearestWindVector(
 // Bryan Stiles changed Clipped to Strict Interpolation for _wrap=0 and
 // latitude, as he could not think of any case in which you would want
 // to extrapolate the wind field
-
+// AGF added speed scaling by interpolated speed, to conform to
+// interpolation in offical/previous F90 QuikSCAT processor. 3/16/2011
 int
 WindField::InterpolatedWindVector(
     LonLat       lon_lat,
@@ -2326,12 +2327,17 @@ WindField::InterpolatedWindVector(
     corner_wv[1][0] = *(*(_field + lon_idx[1]) + lat_idx[0]);
     corner_wv[1][1] = *(*(_field + lon_idx[1]) + lat_idx[1]);
 
-    float corner_u[2][2], corner_v[2][2];
+    float corner_u[2][2], corner_v[2][2], corner_spd[2][2];
     corner_wv[0][0]->GetUV(&corner_u[0][0], &corner_v[0][0]);
     corner_wv[0][1]->GetUV(&corner_u[0][1], &corner_v[0][1]);
     corner_wv[1][0]->GetUV(&corner_u[1][0], &corner_v[1][0]);
     corner_wv[1][1]->GetUV(&corner_u[1][1], &corner_v[1][1]);
-
+    
+    corner_spd[0][0] = sqrt(pow(corner_u[0][0],2)+pow(corner_v[0][0],2));
+    corner_spd[0][1] = sqrt(pow(corner_u[0][1],2)+pow(corner_v[0][1],2));
+    corner_spd[1][0] = sqrt(pow(corner_u[1][0],2)+pow(corner_v[1][0],2));
+    corner_spd[1][1] = sqrt(pow(corner_u[1][1],2)+pow(corner_v[1][1],2));
+    
     float u =    lon_coef[0] * lat_coef[0] * corner_u[0][0] +
                 lon_coef[0] * lat_coef[1] * corner_u[0][1] +
                 lon_coef[1] * lat_coef[0] * corner_u[1][0] +
@@ -2341,7 +2347,17 @@ WindField::InterpolatedWindVector(
                 lon_coef[0] * lat_coef[1] * corner_v[0][1] +
                 lon_coef[1] * lat_coef[0] * corner_v[1][0] +
                 lon_coef[1] * lat_coef[1] * corner_v[1][1];
-
+    
+    float spd =  lon_coef[0] * lat_coef[0] * corner_spd[0][0] +
+                lon_coef[0] * lat_coef[1] * corner_spd[0][1] +
+                lon_coef[1] * lat_coef[0] * corner_spd[1][0] +
+                lon_coef[1] * lat_coef[1] * corner_spd[1][1];
+    
+    float uv_mag = sqrt( pow(u,2) + pow(v,2) );
+    
+    u *= spd/uv_mag;
+    v *= spd/uv_mag;
+    
     wv->SetUV(u, v);
 
     if (_useFixedSpeed)
