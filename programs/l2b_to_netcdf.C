@@ -90,21 +90,24 @@ static const char rcs_id[] =
 
 const size_t NUM_FLAGS = 10;
 enum {
-    SIGMA0_MASK               = 0x00000001,
-    AZIMUTH_DIV_MASK          = 0x00000002,
-    COASTAL_MASK              = 0x00000080,
-    ICE_EDGE_MASK             = 0x00000100,
-    WIND_RETRIEVAL_MASK       = 0x00000200,
-    HIGH_WIND_MASK            = 0x00000400,
-    LOW_WIND_MASK             = 0x00000800,
-    RAIN_IMPACT_UNUSABLE_MASK = 0x00001000,
-    RAIN_IMPACT_MASK          = 0x00002000,
-    AVAILABLE_DATA_MASK       = 0x00004000
+    SIGMA0_MASK               = 0x0001,
+    AZIMUTH_DIV_MASK          = 0x0002,
+    COASTAL_MASK              = 0x0080,
+    ICE_EDGE_MASK             = 0x0100,
+    WIND_RETRIEVAL_MASK       = 0x0200,
+    HIGH_WIND_MASK            = 0x0400,
+    LOW_WIND_MASK             = 0x0800,
+    RAIN_IMPACT_UNUSABLE_MASK = 0x1000,
+    RAIN_IMPACT_MASK          = 0x2000,
+    AVAILABLE_DATA_MASK       = 0x4000
 };
 
-const size_t NUM_EFLAGS = 1;
+const size_t NUM_EFLAGS = 4;
 enum {
-    RAIN_CORR_APPL_MASK = 0x00000001
+    RAIN_CORR_APPL_MASK    = 0x0001,
+    NEG_WIND_SPEED_MASK    = 0x0002,
+    ALL_AMBIG_CONTRIB_MASK = 0x0004,
+    RAIN_CORR_LARGE_MASK   = 0x0008
 };
 
 //-----------//
@@ -136,7 +139,6 @@ typedef enum {
     EFLAGS,
     NUDGE_SPEED,
     NUDGE_DIRECTION,
-    ATM_SPEED_BIAS,
     WIND_SPEED_UNCORRECTED,
 
     first_extended_variable,
@@ -765,7 +767,8 @@ int main(int argc, char **argv) {
                     sizeof(*varlist[EFLAGS].attrs[num_standard_attrs + 0].value.ps)))
             == NULL);
     {
-        int16 init_list[NUM_EFLAGS] = {RAIN_CORR_APPL_MASK};
+        int16 init_list[NUM_EFLAGS] = {RAIN_CORR_APPL_MASK, NEG_WIND_SPEED_MASK, 
+            ALL_AMBIG_CONTRIB_MASK, RAIN_CORR_LARGE_MASK};
 
         ERR(memcpy(varlist[EFLAGS].attrs[num_standard_attrs + 0].value.ps, init_list, 
                     NUM_EFLAGS* sizeof init_list[0]) == NULL);
@@ -774,7 +777,9 @@ int main(int argc, char **argv) {
     varlist[EFLAGS].attrs[num_standard_attrs + 1].name = "flag_meanings";
     varlist[EFLAGS].attrs[num_standard_attrs + 1].size = 1;
     varlist[EFLAGS].attrs[num_standard_attrs + 1].type = NC_CHAR;
-    varlist[EFLAGS].attrs[num_standard_attrs + 1].value.str = "rain_correction_applied_flag ";
+    varlist[EFLAGS].attrs[num_standard_attrs + 1].value.str = "rain_correction_not_applied_flag "
+        "correction_produced_negative_spd_flag all_ambiguities_contribute_to_nudging_flag "
+        "large_rain_correction_flag";
 
     varlist[NUDGE_SPEED].name  = "ecmwf_wind_speed";
     varlist[NUDGE_SPEED].type  = NC_FLOAT;
@@ -843,40 +848,6 @@ int main(int argc, char **argv) {
     varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].size = 1;
     varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[NUDGE_DIRECTION].attrs[num_standard_attrs + 1].value.f = 1.0f;
-
-    varlist[ATM_SPEED_BIAS].name  = "atmospheric_speed_bias";
-    varlist[ATM_SPEED_BIAS].type  = NC_FLOAT;
-    varlist[ATM_SPEED_BIAS].ndims = 2;
-    varlist[ATM_SPEED_BIAS].dims = dimensions; 
-    varlist[ATM_SPEED_BIAS].nattrs = num_standard_attrs + 2;
-    ERR((varlist[ATM_SPEED_BIAS].attrs = (typeof varlist[ATM_SPEED_BIAS].attrs)
-                malloc(varlist[ATM_SPEED_BIAS].nattrs * 
-                    (sizeof *varlist[ATM_SPEED_BIAS].attrs))) == NULL);
-
-    varlist[ATM_SPEED_BIAS].attrs[FILL_VALUE].name = "FillValue";
-    varlist[ATM_SPEED_BIAS].attrs[FILL_VALUE].size = 1;
-    varlist[ATM_SPEED_BIAS].attrs[FILL_VALUE].type = varlist[ATM_SPEED_BIAS].type;
-    varlist[ATM_SPEED_BIAS].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
-    varlist[ATM_SPEED_BIAS].attrs[VALID_MIN].name = "valid_min";
-    varlist[ATM_SPEED_BIAS].attrs[VALID_MIN].size = 1;
-    varlist[ATM_SPEED_BIAS].attrs[VALID_MIN].type = varlist[ATM_SPEED_BIAS].type;
-    varlist[ATM_SPEED_BIAS].attrs[VALID_MIN].value.f = 0.0f;
-    varlist[ATM_SPEED_BIAS].attrs[VALID_MAX].name = "valid_max";
-    varlist[ATM_SPEED_BIAS].attrs[VALID_MAX].size = 1;
-    varlist[ATM_SPEED_BIAS].attrs[VALID_MAX].type = varlist[ATM_SPEED_BIAS].type;
-    varlist[ATM_SPEED_BIAS].attrs[VALID_MAX].value.f = 100.0f;
-    varlist[ATM_SPEED_BIAS].attrs[LONG_NAME].name = "long_name";
-    varlist[ATM_SPEED_BIAS].attrs[LONG_NAME].size = 1;
-    varlist[ATM_SPEED_BIAS].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[ATM_SPEED_BIAS].attrs[LONG_NAME].value.str = "speed bias from rain correction";
-    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs].name = "units";
-    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs].size = 1;
-    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs].type = NC_CHAR;
-    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs].value.str = "m s-1";
-    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs + 1].name = "scale_factor";
-    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs + 1].size = 1;
-    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-    varlist[ATM_SPEED_BIAS].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
     varlist[WIND_SPEED_UNCORRECTED].name  = "wind_speed_uncorrected";
     varlist[WIND_SPEED_UNCORRECTED].type  = NC_FLOAT;
@@ -1301,7 +1272,6 @@ int main(int argc, char **argv) {
 
         HDFERR(VSread(time_vdata_id, (uint8 *)buffer, 1, FULL_INTERLACE) == FAIL);
         NCERR(nc_put_vara_text(ncid, varlist[TIME].id, time_idx, time_vara_length, buffer));
-        //NCERR(nc_put_var1_string(ncid, varlist[TIME].id, idx, (const char**)&buffer));
 
         for (idx[1] = 0; (int)idx[1] < l2b.frame.swath.GetCrossTrackBins(); idx[1]++) {
 
@@ -1319,19 +1289,35 @@ int main(int argc, char **argv) {
                         &varlist[STRESS_CURL].attrs[FILL_VALUE].value.f));
 
             if (wvc != NULL && wvc->selected != NULL) {
-                flags = 0;
-                eflags = 0;
 
-                flags |= ((wvc->landiceFlagBits & LAND_ICE_FLAG_COAST) != 0) * COASTAL_MASK;
-                flags |= ((wvc->landiceFlagBits & LAND_ICE_FLAG_ICE) != 0) * ICE_EDGE_MASK;
+                /* FLAGS */
+                flags = ~(1 << 15 & 1 << 6);
+                flags &= ((wvc->qualFlag & L2B_QUAL_FLAG_ADQ_S0) == 0) * ~SIGMA0_MASK;
+                flags &= ((wvc->qualFlag & L2B_QUAL_FLAG_ADQ_AZI_DIV) == 0) * ~AZIMUTH_DIV_MASK;
+                flags &= ((wvc->qualFlag & L2B_QUAL_FLAG_FOUR_FLAVOR) == 0) * ~AVAILABLE_DATA_MASK;
 
-                flags |= ((wvc->rainFlagBits & RAIN_FLAG_UNUSABLE) != 0) * RAIN_IMPACT_UNUSABLE_MASK;
-                flags |= ((wvc->rainFlagBits & RAIN_FLAG_RAIN) != 0) * RAIN_IMPACT_MASK;
+                flags &= ((wvc->landiceFlagBits & LAND_ICE_FLAG_COAST) == 0) * ~COASTAL_MASK;
+                flags &= ((wvc->landiceFlagBits & LAND_ICE_FLAG_ICE) == 0) * ~ICE_EDGE_MASK;
 
-                flags |= ((wvc->selected->spd > 30) != 0) * HIGH_WIND_MASK;
-                flags |= ((wvc->selected->spd < 3) != 0) * LOW_WIND_MASK;
+                flags &= ((wvc->rainFlagBits & RAIN_FLAG_UNUSABLE) == 0) * ~RAIN_IMPACT_UNUSABLE_MASK;
+                flags &= ((wvc->rainFlagBits & RAIN_FLAG_RAIN) == 0) * ~RAIN_IMPACT_MASK;
 
-                eflags |= ((wvc->qualFlag & L2B_QUAL_FLAG_RAIN_CORR_APPL) != 0) * RAIN_CORR_APPL_MASK;
+                flags &= ((wvc->selected->spd > 30) == 0) * ~HIGH_WIND_MASK;
+                flags &= ((wvc->selected->spd < 3) == 0) * ~LOW_WIND_MASK;
+
+                /* EFLAGS */
+                eflags = RAIN_CORR_APPL_MASK;
+                eflags &= (wvc->qualFlag & L2B_QUAL_FLAG_RAIN_CORR_APPL) * ~RAIN_CORR_APPL_MASK;
+
+                if (~eflags & RAIN_CORR_APPL_MASK) {
+                    eflags |= (wvc->selected->spd < 0)*NEG_WIND_SPEED_MASK;
+                } 
+
+
+                eflags |= (wvc->qualFlag & L2B_QUAL_FLAG_ALL_AMBIG)*ALL_AMBIG_CONTRIB_MASK;
+
+                eflags |= (fabs(wvc->speedBias) > 1) * RAIN_CORR_LARGE_MASK;
+
 
                 lat = RAD_TO_DEG(wvc->lonLat.latitude);
                 lon = RAD_TO_DEG(wvc->lonLat.longitude);
@@ -1351,8 +1337,6 @@ int main(int argc, char **argv) {
                 conversion = conversion - 360.0f*((int)(conversion/360.0f));
                 NCERR(nc_put_var1_float(ncid, varlist[SEL_DIRECTION].id, idx, 
                             &conversion));
-                NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
-                            &wvc->rainImpact));
                 NCERR(nc_put_var1_short(ncid, varlist[FLAGS].id, idx, &flags));
                 NCERR(nc_put_var1_short(ncid, varlist[EFLAGS].id, idx, &eflags));
 
@@ -1369,15 +1353,20 @@ int main(int argc, char **argv) {
                 NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
                             &conversion));
 
-                NCERR(nc_put_var1_float(ncid, varlist[ATM_SPEED_BIAS].id, idx, &wvc->speedBias));
-
-                if (eflags & RAIN_CORR_APPL_MASK) {
+                if (eflags & RAIN_CORR_APPL_MASK == 0) {
+                    /* Rain correction applied */
                     float uncorr_speed;
                     uncorr_speed = wvc->selected->spd + wvc->speedBias;
+
+                    NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
+                            &wvc->rainImpact));
+
                     NCERR(nc_put_var1_float(ncid, 
                         varlist[WIND_SPEED_UNCORRECTED].id, idx, 
                         &uncorr_speed));
                 } else {
+                    NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
+                            &varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f));
                     NCERR(nc_put_var1_float(ncid, 
                         varlist[WIND_SPEED_UNCORRECTED].id, idx, 
                         &wvc->selected->spd));
@@ -1456,8 +1445,8 @@ int main(int argc, char **argv) {
                 NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
                             &varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f));
 
-                NCERR(nc_put_var1_float(ncid, varlist[ATM_SPEED_BIAS].id, idx, 
-                            &varlist[ATM_SPEED_BIAS].attrs[FILL_VALUE].value.f));
+                NCERR(nc_put_var1_float(ncid, varlist[WIND_SPEED_UNCORRECTED].id, idx, 
+                            &varlist[WIND_SPEED_UNCORRECTED].attrs[FILL_VALUE].value.f));
 
                 /* Extended variables */
                 if (run_config.extended) {
