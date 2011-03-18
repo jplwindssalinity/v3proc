@@ -328,7 +328,7 @@ function qs_reproc_generate_directory_structure () {
     
     # Obtain the n6h ECMWF filename
     CLOSEST_NWP_STR=`cat $L1B_TIMES_FILE | tail -1`
-    NCEP_FILENAME_STR='SNWP3'$CLOSEST_NWP_STR
+    NCEP_FILENAME_STR='SNWP1'$CLOSEST_NWP_STR
     
     ICE_FILENAME_STR='NRT_ICEM'${CLOSEST_NWP_STR:0:7}
     
@@ -483,9 +483,9 @@ function qs_reproc_l2b_median_filter () {
     echo -n "Type (GS|S3|TDV): "
     read TYPE; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$TYPE"
-    echo -n "Nudge Windfield (NCEP|ECMWF): "
-    read WINDFIELD; tty > /dev/null 2>&1;
-        [[ $? -eq 0 ]] || echo "$WINDFIELD"
+#    echo -n "Nudge Windfield (NCEP|ECMWF): "
+#    read WINDFIELD; tty > /dev/null 2>&1;
+#        [[ $? -eq 0 ]] || echo "$WINDFIELD"
 
     cd "$BASEDIR/$REV"
     L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ {print $3}' $CONFIG_FILE`
@@ -494,7 +494,7 @@ function qs_reproc_l2b_median_filter () {
     S3) 
         MEDFILT_CONFIG=tmp1.rdf
         OUTFILE=l2b_flagged_S3.dat
-        OTHER="-nudgeHDF $L2B_HDF_FNAME"
+        OTHER="-flagsHDF $L2B_HDF_FNAME"
         sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
             $CONFIG_FILE > "$MEDFILT_CONFIG"
         RETVAL=$?
@@ -502,7 +502,7 @@ function qs_reproc_l2b_median_filter () {
     GS) 
         MEDFILT_CONFIG=tmp2.rdf
         OUTFILE=l2b_flagged_GS.dat
-        OTHER="-nudgeHDF $L2B_HDF_FNAME"
+        OTHER="-flagsHDF $L2B_HDF_FNAME"
         sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
             -e 's:WIND_RETRIEVAL_METHOD       = S3:WIND_RETRIEVAL_METHOD       = GS:' \
                 $CONFIG_FILE > "$MEDFILT_CONFIG"
@@ -523,13 +523,13 @@ function qs_reproc_l2b_median_filter () {
         RETVAL=1
         ;;
     esac
-    if [[ "$WINDFIELD" = "ECMWF" ]]; then
-        E2BFILE="../../E2B12/E2B_$REV.cp12.dat"
-        sed -i -e "s:^NUDGE_WINDFIELD_FILE.*:NUDGE_WINDFIELD_FILE      = $E2BFILE\nQSCP12_ECMWF_ARRAY_NUDGING  = 1:" \
-            "$MEDFILT_CONFIG"
-        RETVAL=$(($RETVAL || $?))
-        OTHER=`echo $OTHER | sed -e 's/nudgeHDF/flagsHDF/'`
-    fi
+#    if [[ "$WINDFIELD" = "ECMWF" ]]; then
+#        E2BFILE="../../E2B12/E2B_$REV.cp12.dat"
+#        sed -i -e "s:^NUDGE_WINDFIELD_FILE.*:NUDGE_WINDFIELD_FILE      = $E2BFILE\nQSCP12_ECMWF_ARRAY_NUDGING  = 1:" \
+#            "$MEDFILT_CONFIG"
+#        RETVAL=$(($RETVAL || $?))
+#        OTHER=`echo $OTHER | sed -e 's/nudgeHDF/flagsHDF/'`
+#    fi
     if [[ $RETVAL -ne 0 ]]; then
         return $RETVAL
     fi
