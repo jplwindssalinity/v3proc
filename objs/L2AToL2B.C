@@ -2348,6 +2348,7 @@ L2AToL2B::RainCorrectSpeed(L2B* l2b){
 
 	  case 2:  // Add bias E(spd)-rainCorrectedSpeed to all speeds; set obj values to zero
 
+            float speedBias;
             // convert bestObjs to probabilities float sum = 0.0;
             obj=wvc->directionRanges.bestObj;
             scale = obj[0];
@@ -2371,7 +2372,7 @@ L2AToL2B::RainCorrectSpeed(L2B* l2b){
             for (int c = 0; c < nbins; c++){
               expected_speed+= wvc->directionRanges.bestSpd[c]*obj[c];
             }
-            wvc->speedBias=expected_speed-wvc->rainCorrectedSpeed;
+            speedBias=expected_speed-wvc->rainCorrectedSpeed;
 
             wvc->qualFlag &= ~L2B_QUAL_FLAG_RAIN_CORR_APPL;
             if ( wvc->rainImpact <= rain_impact_thresh_for_correction || wvc->rainCorrectedSpeed<0) continue;
@@ -2379,15 +2380,17 @@ L2AToL2B::RainCorrectSpeed(L2B* l2b){
 
             // unbias all speeds and set ambig obj values to zero
             for (int c = 0; c < nbins; c++){
-	      wvc->directionRanges.bestSpd[c]-=wvc->speedBias;
-	    }       
+    	      wvc->directionRanges.bestSpd[c]-=speedBias;
+    	    }       
 
-	    wvp=wvc->ambiguities.GetHead();
-	    while(wvp){
-	      wvp->spd-=wvc->speedBias;
-	      wvp->obj=0;
-	      wvp=wvc->ambiguities.GetNext();
-	    }     
+    	    wvp=wvc->ambiguities.GetHead();
+    	    while(wvp){
+    	      wvp->spd-=speedBias;
+    	      wvp->obj=0;
+    	      wvp=wvc->ambiguities.GetNext();
+    	    }     
+            /* Only set the speed bias in the WVC if rain correction is applied */
+            wvc->speedBias = speedBias;
 
 	    break;
 	  default:
