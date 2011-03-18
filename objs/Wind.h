@@ -136,6 +136,7 @@ public:
 #define L2B_QUAL_FLAG_ADQ_S0          0x040   // bit 6 1/0 = < 4 usable s0 / >= 4 s0 in wvc
 #define L2B_QUAL_FLAG_ADQ_AZI_DIV     0x080   // bit 7 1/0 = < 20 deg azimuth div / >= 20 deg
 #define L2B_QUAL_FLAG_FOUR_FLAVOR     0x100   // bit 8 1/0 = 4 flavors of s0 not avail/avil
+#define L2B_QUAL_FLAG_ALL_AMBIG       0x200   // bit 9 1/0 = all ambiguities do/don't contribute to nudging
 
 class WVC
 {
@@ -157,6 +158,7 @@ public:
     int  ReadL2B_v2(FILE* fp); // AGF added 6/3/2010   
     int  ReadL2B_v3(FILE* fp); // BWS added 11/29/2010
     int  ReadL2B_v4(FILE* fp); // TAW added 03/03/2010
+    int  ReadL2B_v5(FILE* fp); // TAW added 03/18/2010
     int  WriteVctr(FILE* fp, const int rank);    // 0 = selected
     int  WriteAscii(FILE* fp);
     int  WriteFlower(FILE* fp);
@@ -220,6 +222,7 @@ public:
     unsigned char          numOutAft;
 
     float speedBias;
+    int numAmbiguities;
 };
 
 //======================================================================

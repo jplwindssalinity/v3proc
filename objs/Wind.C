@@ -263,7 +263,7 @@ WVC::WVC()
 :   nudgeWV(NULL), selected(NULL), selected_allocated(0), specialVector(NULL),
     rainProb(0.0), rainFlagBits(0), landiceFlagBits(0), qualFlag(0),
     rainImpact(0.0), numInFore(0), numInAft(0), numOutFore(0), numOutAft(0),
-    speedBias(0.0)
+    speedBias(0.0), numAmbiguities(0)
 {
     return;
 }
@@ -303,6 +303,14 @@ int
 WVC::WriteL2B(
     FILE*  fp)
 {       
+    //-- Begin TAW modifications for v5 of l2b data file 03/18/2011
+    if( fwrite( (void *)&numAmbiguities, sizeof(int),     1, fp) != 1 )
+    {
+        fprintf(stderr,"WVC::WriteL2B: Error writing numAmbiguities!\n"); 
+        return(0);
+    }
+    //--End of TAW modifications for v5 of l2b data file 03/18/2011
+
     //-- Begin TAW modifications for v4 of l2b data file 03/02/2011
     if( fwrite( (void *)&speedBias, sizeof(float),        1, fp) != 1 )
     {
@@ -423,6 +431,24 @@ WVC::WriteL2B(
 }
 
 //-----------------//
+// WVC::ReadL2B_v5 //
+//-----------------//
+
+int
+WVC::ReadL2B_v5(
+    FILE*  fp)
+{
+    // Reads v4 of the WVC from the L2B data file TAW 03/18/2011
+    if( fread((void *)&numAmbiguities, sizeof(int),     1, fp) != 1)
+    {
+        fprintf(stderr,"In WVC::ReadL2B_v5: ERROR reading numAmbiguities!\n");         
+        return(0);
+    }
+    // read the rest of it
+    return(ReadL2B_v4(fp));
+}
+
+//-----------------//
 // WVC::ReadL2B_v4 //
 //-----------------//
 
@@ -433,7 +459,7 @@ WVC::ReadL2B_v4(
     // Reads v4 of the WVC from the L2B data file TAW 03/02/2011
     if( fread((void *)&speedBias, sizeof(float),        1, fp) != 1)
     {
-        fprintf(stderr,"In WVC::ReadL2B_v4: ERROR reading rainCorrectedSpeed!\n");         
+        fprintf(stderr,"In WVC::ReadL2B_v4: ERROR reading speedBias!\n");         
         return(0);
     }
     // read the rest of it

@@ -632,6 +632,10 @@ WindSwath::ReadL2B(
         {
           if (! wvc->ReadL2B_v4(fp)) return(0); // new version TAW 03/02/2011
         }
+        else if( version_id_major == 5 )
+        {
+          if (! wvc->ReadL2B_v5(fp)) return(0); // new version TAW 03/18/2011
+        }
         else
         {
           fprintf(stderr, "Unknown L2B version ID: %d.%d\n",
@@ -1340,11 +1344,17 @@ WindSwath::Nudge(
             if (! wvc)
                 continue;
 
+            wvc->numAmbiguities = wvc->ambiguities.NodeCount();
+
             if (wvc->nudgeWV==NULL)
                 continue;
 
             wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir,
                 max_rank);
+
+            if (wvc->ambiguities.NodeCount() < max_rank) {
+                wvc->qualFlag &= L2B_QUAL_FLAG_ALL_AMBIG;
+            }
             count++;
         }
     }
@@ -1368,6 +1378,8 @@ WindSwath::StreamNudge(
             WVC* wvc = swath[cti][ati];
             if (! wvc)
                 continue;
+
+            wvc->numAmbiguities = wvc->ambiguities.NodeCount();
 
             if (wvc->nudgeWV == NULL)
                 continue;
@@ -1411,6 +1423,8 @@ WindSwath::HurricaneNudge(
             if (! wvc)
                 continue;
 
+            wvc->numAmbiguities = wvc->ambiguities.NodeCount();
+
             if (wvc->nudgeWV == NULL)
                 continue;
 
@@ -1449,6 +1463,8 @@ WindSwath::S3Nudge()
             if (! wvc)
                 continue;
 
+            wvc->numAmbiguities = wvc->ambiguities.NodeCount();
+
             if (wvc->nudgeWV==NULL)
                 continue;
 
@@ -1478,6 +1494,8 @@ WindSwath::ThresNudge(
             if (! wvc)
                 continue;
 
+            wvc->numAmbiguities = wvc->ambiguities.NodeCount();
+
             // threshold objective function //
 
             int rank_idx = 0;
@@ -1492,6 +1510,11 @@ WindSwath::ThresNudge(
                  wvp; wvp = wvc->ambiguities.GetNext()) {
               if ( exp(0.5*(wvp->obj - head->obj)) >= thres[w] )
                 rank_idx++;
+            }
+
+            /* If all the ambiguities contributed to nudging, note it */
+            if (rank_idx == wvc->numAmbiguities) {
+                wvc->qualFlag &= L2B_QUAL_FLAG_ALL_AMBIG;
             }
 
             WindVector nudge_wv;
@@ -1522,6 +1545,8 @@ WindSwath::LoResNudge(
             WVC* wvc = swath[cti][ati];
         if (! wvc)
           continue;
+
+        wvc->numAmbiguities = wvc->ambiguities.NodeCount();
 
         WindVector nudge_wv;
 
@@ -1554,6 +1579,8 @@ WindSwath::SmartNudge(
             WVC* wvc = swath[cti][ati];
             if (! wvc)
                 continue;
+
+            wvc->numAmbiguities = wvc->ambiguities.NodeCount();
 
             WindVector nudge_wv;
             if (! nudge_field->InterpolatedWindVector(wvc->lonLat, &nudge_wv))
