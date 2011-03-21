@@ -1353,7 +1353,7 @@ WindSwath::Nudge(
                 max_rank);
 
             if (wvc->ambiguities.NodeCount() < max_rank) {
-                wvc->qualFlag &= L2B_QUAL_FLAG_ALL_AMBIG;
+                wvc->qualFlag |= L2B_QUAL_FLAG_ALL_AMBIG;
             }
             count++;
         }
@@ -1514,7 +1514,7 @@ WindSwath::ThresNudge(
 
             /* If all the ambiguities contributed to nudging, note it */
             if (rank_idx == wvc->numAmbiguities) {
-                wvc->qualFlag &= L2B_QUAL_FLAG_ALL_AMBIG;
+                wvc->qualFlag |= L2B_QUAL_FLAG_ALL_AMBIG;
             }
 
             WindVector nudge_wv;
