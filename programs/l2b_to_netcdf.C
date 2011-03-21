@@ -88,6 +88,22 @@ static const char rcs_id[] =
         return EXIT_FAILURE; \
     }
 
+// Bit twiddling operations
+#define SET_IF(var, mask, cond) {\
+    if (cond) { \
+        var |= (mask); \
+    } \
+}
+#define UNSET_IF(var, mask, cond) {\
+    if (cond) { \
+        var &= ~(mask); \
+    } \
+}
+#define SET(var, mask)   SET_IF(var, mask, 1)
+#define UNSET(var, mask) UNSET_IF(var, mask, 1)
+#define IS_SET(var, mask) (var & mask)
+#define IS_NOT_SET(var, mask) (!IS_SET(var, mask))
+
 const size_t NUM_FLAGS = 10;
 enum {
     SIGMA0_MASK               = 0x0001,
@@ -104,10 +120,10 @@ enum {
 
 const size_t NUM_EFLAGS = 4;
 enum {
-    RAIN_CORR_APPL_MASK    = 0x0001,
-    NEG_WIND_SPEED_MASK    = 0x0002,
-    ALL_AMBIG_CONTRIB_MASK = 0x0004,
-    RAIN_CORR_LARGE_MASK   = 0x0008
+    RAIN_CORR_NOT_APPL_MASK = 0x0001,
+    NEG_WIND_SPEED_MASK     = 0x0002,
+    ALL_AMBIG_CONTRIB_MASK  = 0x0004,
+    RAIN_CORR_LARGE_MASK    = 0x0008
 };
 
 //-----------//
@@ -140,11 +156,12 @@ typedef enum {
     NUDGE_SPEED,
     NUDGE_DIRECTION,
     WIND_SPEED_UNCORRECTED,
+    NUM_AMBIG,
 
     first_extended_variable,
 
     SEL_OBJ = first_extended_variable,
-    NUM_AMBIG,
+    NUM_MEDFILT_AMBIG,
     AMBIG_SPEED,
     AMBIG_DIRECTION,
     AMBIG_OBJ,
@@ -694,7 +711,11 @@ int main(int argc, char **argv) {
     varlist[FLAGS].attrs[FILL_VALUE].name = "FillValue";
     varlist[FLAGS].attrs[FILL_VALUE].size = 1;
     varlist[FLAGS].attrs[FILL_VALUE].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[FILL_VALUE].value.s = 0;
+    varlist[FLAGS].attrs[FILL_VALUE].value.s =
+        SIGMA0_MASK | AZIMUTH_DIV_MASK | COASTAL_MASK |
+        ICE_EDGE_MASK | WIND_RETRIEVAL_MASK | HIGH_WIND_MASK |
+        LOW_WIND_MASK | RAIN_IMPACT_UNUSABLE_MASK |
+        RAIN_IMPACT_MASK | AVAILABLE_DATA_MASK;
     varlist[FLAGS].attrs[VALID_MIN].name = "valid_min";
     varlist[FLAGS].attrs[VALID_MIN].size = 1;
     varlist[FLAGS].attrs[VALID_MIN].type = varlist[FLAGS].type;
@@ -702,7 +723,8 @@ int main(int argc, char **argv) {
     varlist[FLAGS].attrs[VALID_MAX].name = "valid_max";
     varlist[FLAGS].attrs[VALID_MAX].size = 1;
     varlist[FLAGS].attrs[VALID_MAX].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[VALID_MAX].value.s = 0xFfff;
+    varlist[FLAGS].attrs[VALID_MAX].value.s = 
+        varlist[FLAGS].attrs[FILL_VALUE].value.s;
     varlist[FLAGS].attrs[LONG_NAME].name = "long_name";
     varlist[FLAGS].attrs[LONG_NAME].size = 1;
     varlist[FLAGS].attrs[LONG_NAME].type = NC_CHAR;
@@ -745,7 +767,9 @@ int main(int argc, char **argv) {
     varlist[EFLAGS].attrs[FILL_VALUE].name = "FillValue";
     varlist[EFLAGS].attrs[FILL_VALUE].size = 1;
     varlist[EFLAGS].attrs[FILL_VALUE].type = varlist[EFLAGS].type;
-    varlist[EFLAGS].attrs[FILL_VALUE].value.s = 0;
+    varlist[EFLAGS].attrs[FILL_VALUE].value.s = 
+        RAIN_CORR_NOT_APPL_MASK | NEG_WIND_SPEED_MASK |
+        ALL_AMBIG_CONTRIB_MASK | RAIN_CORR_LARGE_MASK;
     varlist[EFLAGS].attrs[VALID_MIN].name = "valid_min";
     varlist[EFLAGS].attrs[VALID_MIN].size = 1;
     varlist[EFLAGS].attrs[VALID_MIN].type = varlist[EFLAGS].type;
@@ -753,7 +777,8 @@ int main(int argc, char **argv) {
     varlist[EFLAGS].attrs[VALID_MAX].name = "valid_max";
     varlist[EFLAGS].attrs[VALID_MAX].size = 1;
     varlist[EFLAGS].attrs[VALID_MAX].type = varlist[EFLAGS].type;
-    varlist[EFLAGS].attrs[VALID_MAX].value.s = 0xFfff;
+    varlist[EFLAGS].attrs[VALID_MAX].value.s = 
+        varlist[EFLAGS].attrs[FILL_VALUE].value.s;
     varlist[EFLAGS].attrs[LONG_NAME].name = "long_name";
     varlist[EFLAGS].attrs[LONG_NAME].size = 1;
     varlist[EFLAGS].attrs[LONG_NAME].type = NC_CHAR;
@@ -767,7 +792,7 @@ int main(int argc, char **argv) {
                     sizeof(*varlist[EFLAGS].attrs[num_standard_attrs + 0].value.ps)))
             == NULL);
     {
-        int16 init_list[NUM_EFLAGS] = {RAIN_CORR_APPL_MASK, NEG_WIND_SPEED_MASK, 
+        int16 init_list[NUM_EFLAGS] = {RAIN_CORR_NOT_APPL_MASK, NEG_WIND_SPEED_MASK, 
             ALL_AMBIG_CONTRIB_MASK, RAIN_CORR_LARGE_MASK};
 
         ERR(memcpy(varlist[EFLAGS].attrs[num_standard_attrs + 0].value.ps, init_list, 
@@ -883,6 +908,36 @@ int main(int argc, char **argv) {
     varlist[WIND_SPEED_UNCORRECTED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[WIND_SPEED_UNCORRECTED].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
+    varlist[NUM_AMBIG].name  = "num_ambiguities";
+    varlist[NUM_AMBIG].type  = NC_BYTE;
+    varlist[NUM_AMBIG].ndims = 2;
+    varlist[NUM_AMBIG].dims = dimensions; 
+    varlist[NUM_AMBIG].nattrs = num_standard_attrs + 1;
+    ERR((varlist[NUM_AMBIG].attrs = (typeof varlist[NUM_AMBIG].attrs)
+                malloc(varlist[NUM_AMBIG].nattrs * 
+                    (sizeof *varlist[NUM_AMBIG].attrs))) == NULL);
+
+    varlist[NUM_AMBIG].attrs[FILL_VALUE].name = "FillValue";
+    varlist[NUM_AMBIG].attrs[FILL_VALUE].size = 1;
+    varlist[NUM_AMBIG].attrs[FILL_VALUE].type = varlist[NUM_AMBIG].type;
+    varlist[NUM_AMBIG].attrs[FILL_VALUE].value.b = 0;
+    varlist[NUM_AMBIG].attrs[VALID_MIN].name = "valid_min";
+    varlist[NUM_AMBIG].attrs[VALID_MIN].size = 1;
+    varlist[NUM_AMBIG].attrs[VALID_MIN].type = varlist[NUM_AMBIG].type;
+    varlist[NUM_AMBIG].attrs[VALID_MIN].value.b = 1;
+    varlist[NUM_AMBIG].attrs[VALID_MAX].name = "valid_max";
+    varlist[NUM_AMBIG].attrs[VALID_MAX].size = 1;
+    varlist[NUM_AMBIG].attrs[VALID_MAX].type = varlist[NUM_AMBIG].type;
+    varlist[NUM_AMBIG].attrs[VALID_MAX].value.b = 0x04;
+    varlist[NUM_AMBIG].attrs[LONG_NAME].name = "long_name";
+    varlist[NUM_AMBIG].attrs[LONG_NAME].size = 1;
+    varlist[NUM_AMBIG].attrs[LONG_NAME].type = NC_CHAR;
+    varlist[NUM_AMBIG].attrs[LONG_NAME].value.str = "number of ambiguities from wind retrieval";
+    varlist[NUM_AMBIG].attrs[num_standard_attrs].name = "units";
+    varlist[NUM_AMBIG].attrs[num_standard_attrs].size = 1;
+    varlist[NUM_AMBIG].attrs[num_standard_attrs].type = NC_CHAR;
+    varlist[NUM_AMBIG].attrs[num_standard_attrs].value.str = "1";
+
     if (run_config.extended) { 
         varlist[SEL_OBJ].name  = "wind_obj";
         varlist[SEL_OBJ].type  = NC_FLOAT;
@@ -918,36 +973,36 @@ int main(int argc, char **argv) {
         varlist[SEL_OBJ].attrs[num_standard_attrs + 1].type = NC_FLOAT;
         varlist[SEL_OBJ].attrs[num_standard_attrs + 1].value.f = 1.0f;
 
-        varlist[NUM_AMBIG].name  = "num_ambiguities";
-        varlist[NUM_AMBIG].type  = NC_BYTE;
-        varlist[NUM_AMBIG].ndims = 2;
-        varlist[NUM_AMBIG].dims = dimensions; 
-        varlist[NUM_AMBIG].nattrs = num_standard_attrs + 1;
-        ERR((varlist[NUM_AMBIG].attrs = (typeof varlist[NUM_AMBIG].attrs)
-                    malloc(varlist[NUM_AMBIG].nattrs * 
-                        (sizeof *varlist[NUM_AMBIG].attrs))) == NULL);
+        varlist[NUM_MEDFILT_AMBIG].name  = "num_ambiguities";
+        varlist[NUM_MEDFILT_AMBIG].type  = NC_BYTE;
+        varlist[NUM_MEDFILT_AMBIG].ndims = 2;
+        varlist[NUM_MEDFILT_AMBIG].dims = dimensions; 
+        varlist[NUM_MEDFILT_AMBIG].nattrs = num_standard_attrs + 1;
+        ERR((varlist[NUM_MEDFILT_AMBIG].attrs = (typeof varlist[NUM_MEDFILT_AMBIG].attrs)
+                    malloc(varlist[NUM_MEDFILT_AMBIG].nattrs * 
+                        (sizeof *varlist[NUM_MEDFILT_AMBIG].attrs))) == NULL);
     
-        varlist[NUM_AMBIG].attrs[FILL_VALUE].name = "FillValue";
-        varlist[NUM_AMBIG].attrs[FILL_VALUE].size = 1;
-        varlist[NUM_AMBIG].attrs[FILL_VALUE].type = varlist[NUM_AMBIG].type;
-        varlist[NUM_AMBIG].attrs[FILL_VALUE].value.b = 0;
-        varlist[NUM_AMBIG].attrs[VALID_MIN].name = "valid_min";
-        varlist[NUM_AMBIG].attrs[VALID_MIN].size = 1;
-        varlist[NUM_AMBIG].attrs[VALID_MIN].type = varlist[NUM_AMBIG].type;
-        varlist[NUM_AMBIG].attrs[VALID_MIN].value.b = 1;
-        varlist[NUM_AMBIG].attrs[VALID_MAX].name = "valid_max";
-        varlist[NUM_AMBIG].attrs[VALID_MAX].size = 1;
-        varlist[NUM_AMBIG].attrs[VALID_MAX].type = varlist[NUM_AMBIG].type;
-        varlist[NUM_AMBIG].attrs[VALID_MAX].value.b = 0x04;
-        varlist[NUM_AMBIG].attrs[LONG_NAME].name = "long_name";
-        varlist[NUM_AMBIG].attrs[LONG_NAME].size = 1;
-        varlist[NUM_AMBIG].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[NUM_AMBIG].attrs[LONG_NAME].value.str = "number of ambiguities from wind retrieval";
-        varlist[NUM_AMBIG].attrs[num_standard_attrs].name = "units";
-        varlist[NUM_AMBIG].attrs[num_standard_attrs].size = 1;
-        varlist[NUM_AMBIG].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[NUM_AMBIG].attrs[num_standard_attrs].value.str = "1";
-            
+        varlist[NUM_MEDFILT_AMBIG].attrs[FILL_VALUE].name = "FillValue";
+        varlist[NUM_MEDFILT_AMBIG].attrs[FILL_VALUE].size = 1;
+        varlist[NUM_MEDFILT_AMBIG].attrs[FILL_VALUE].type = varlist[NUM_MEDFILT_AMBIG].type;
+        varlist[NUM_MEDFILT_AMBIG].attrs[FILL_VALUE].value.b = 0;
+        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MIN].name = "valid_min";
+        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MIN].size = 1;
+        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MIN].type = varlist[NUM_MEDFILT_AMBIG].type;
+        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MIN].value.b = 1;
+        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MAX].name = "valid_max";
+        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MAX].size = 1;
+        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MAX].type = varlist[NUM_MEDFILT_AMBIG].type;
+        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MAX].value.b = 0x04;
+        varlist[NUM_MEDFILT_AMBIG].attrs[LONG_NAME].name = "long_name";
+        varlist[NUM_MEDFILT_AMBIG].attrs[LONG_NAME].size = 1;
+        varlist[NUM_MEDFILT_AMBIG].attrs[LONG_NAME].type = NC_CHAR;
+        varlist[NUM_MEDFILT_AMBIG].attrs[LONG_NAME].value.str = "number of ambiguities from wind retrieval after median filtering";
+        varlist[NUM_MEDFILT_AMBIG].attrs[num_standard_attrs].name = "units";
+        varlist[NUM_MEDFILT_AMBIG].attrs[num_standard_attrs].size = 1;
+        varlist[NUM_MEDFILT_AMBIG].attrs[num_standard_attrs].type = NC_CHAR;
+        varlist[NUM_MEDFILT_AMBIG].attrs[num_standard_attrs].value.str = "1";
+ 
         varlist[AMBIG_SPEED].name  = "ambiguity_speed";
         varlist[AMBIG_SPEED].type  = NC_FLOAT;
         varlist[AMBIG_SPEED].ndims = 3;
@@ -1288,36 +1343,36 @@ int main(int argc, char **argv) {
             NCERR(nc_put_var1_float(ncid, varlist[STRESS_CURL].id, idx, 
                         &varlist[STRESS_CURL].attrs[FILL_VALUE].value.f));
 
+            flags  = varlist[ FLAGS].attrs[FILL_VALUE].value.s;
+            eflags = varlist[EFLAGS].attrs[FILL_VALUE].value.s;
+
             if (wvc != NULL && wvc->selected != NULL) {
 
                 /* FLAGS */
-                flags = ~(1 << 15 & 1 << 6);
-                flags &= ((wvc->qualFlag & L2B_QUAL_FLAG_ADQ_S0) == 0) * ~SIGMA0_MASK;
-                flags &= ((wvc->qualFlag & L2B_QUAL_FLAG_ADQ_AZI_DIV) == 0) * ~AZIMUTH_DIV_MASK;
-                flags &= ((wvc->qualFlag & L2B_QUAL_FLAG_FOUR_FLAVOR) == 0) * ~AVAILABLE_DATA_MASK;
+                UNSET(flags, WIND_RETRIEVAL_MASK);
+                
+                UNSET_IF(flags, SIGMA0_MASK, IS_NOT_SET(wvc->qualFlag, L2B_QUAL_FLAG_ADQ_S0));
+                UNSET_IF(flags, AZIMUTH_DIV_MASK, IS_NOT_SET(wvc->qualFlag, L2B_QUAL_FLAG_ADQ_AZI_DIV));
+                UNSET_IF(flags, AVAILABLE_DATA_MASK, IS_NOT_SET(wvc->qualFlag, L2B_QUAL_FLAG_FOUR_FLAVOR));
 
-                flags &= ((wvc->landiceFlagBits & LAND_ICE_FLAG_COAST) == 0) * ~COASTAL_MASK;
-                flags &= ((wvc->landiceFlagBits & LAND_ICE_FLAG_ICE) == 0) * ~ICE_EDGE_MASK;
+                UNSET_IF(flags, COASTAL_MASK, IS_NOT_SET(wvc->landiceFlagBits, LAND_ICE_FLAG_COAST));
+                UNSET_IF(flags, ICE_EDGE_MASK, IS_NOT_SET(wvc->landiceFlagBits, LAND_ICE_FLAG_ICE));
 
-                flags &= ((wvc->rainFlagBits & RAIN_FLAG_UNUSABLE) == 0) * ~RAIN_IMPACT_UNUSABLE_MASK;
-                flags &= ((wvc->rainFlagBits & RAIN_FLAG_RAIN) == 0) * ~RAIN_IMPACT_MASK;
-
-                flags &= ((wvc->selected->spd > 30) == 0) * ~HIGH_WIND_MASK;
-                flags &= ((wvc->selected->spd < 3) == 0) * ~LOW_WIND_MASK;
+                UNSET_IF(flags, RAIN_IMPACT_UNUSABLE_MASK, IS_NOT_SET(wvc->rainFlagBits, RAIN_FLAG_UNUSABLE));
+                UNSET_IF(flags, RAIN_IMPACT_MASK, IS_NOT_SET(wvc->rainFlagBits, RAIN_FLAG_RAIN));
+                
+                UNSET_IF(flags, HIGH_WIND_MASK, wvc->selected->spd <= 30);
+                UNSET_IF(flags, LOW_WIND_MASK, wvc->selected->spd >= 3);
 
                 /* EFLAGS */
-                eflags = RAIN_CORR_APPL_MASK;
-                eflags &= (wvc->qualFlag & L2B_QUAL_FLAG_RAIN_CORR_APPL) * ~RAIN_CORR_APPL_MASK;
+                UNSET_IF(eflags, RAIN_CORR_NOT_APPL_MASK, IS_SET(wvc->qualFlag, L2B_QUAL_FLAG_RAIN_CORR_APPL));
 
-                if (~eflags & RAIN_CORR_APPL_MASK) {
-                    eflags |= (wvc->selected->spd < 0)*NEG_WIND_SPEED_MASK;
+                if (IS_NOT_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
+                    UNSET_IF(eflags, NEG_WIND_SPEED_MASK, wvc->selected->spd >= 0);
                 } 
 
-
-                eflags |= (wvc->qualFlag & L2B_QUAL_FLAG_ALL_AMBIG)*ALL_AMBIG_CONTRIB_MASK;
-
-                eflags |= (fabs(wvc->speedBias) > 1) * RAIN_CORR_LARGE_MASK;
-
+                UNSET_IF(eflags, ALL_AMBIG_CONTRIB_MASK, IS_NOT_SET(wvc->qualFlag, L2B_QUAL_FLAG_ALL_AMBIG));
+                UNSET_IF(eflags, RAIN_CORR_LARGE_MASK, fabs(wvc->speedBias) <= 1);
 
                 lat = RAD_TO_DEG(wvc->lonLat.latitude);
                 lon = RAD_TO_DEG(wvc->lonLat.longitude);
@@ -1353,7 +1408,7 @@ int main(int argc, char **argv) {
                 NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
                             &conversion));
 
-                if (eflags & RAIN_CORR_APPL_MASK == 0) {
+                if (IS_NOT_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
                     /* Rain correction applied */
                     float uncorr_speed;
                     uncorr_speed = wvc->selected->spd + wvc->speedBias;
@@ -1371,6 +1426,9 @@ int main(int argc, char **argv) {
                         varlist[WIND_SPEED_UNCORRECTED].id, idx, 
                         &wvc->selected->spd));
                 }
+
+                NCERR(nc_put_var1(ncid, varlist[NUM_AMBIG].id, 
+                        idx, &wvc->numAmbiguities));
 
                 /* Extended variables */
                 if (run_config.extended) {
@@ -1391,7 +1449,7 @@ int main(int argc, char **argv) {
                     WindVectorPlus *wv = wvc->ambiguities.GetHead();
                     char num_ambiguities = wvc->ambiguities.NodeCount();
         
-                    NCERR(nc_put_var1(ncid, varlist[NUM_AMBIG].id, 
+                    NCERR(nc_put_var1(ncid, varlist[NUM_MEDFILT_AMBIG].id, 
                             idx, &num_ambiguities));
                     for (idx[2] = 0; (int)idx[2] < num_ambiguities && wv != NULL; 
                             idx[2]++, wv = wvc->ambiguities.GetNext()) {
@@ -1423,9 +1481,6 @@ int main(int argc, char **argv) {
                 }    
             } else {
             
-                flags = WIND_RETRIEVAL_MASK;
-                eflags = 0;
-            
                 bin_to_latlon(idx[0], idx[1], &orbit_config, &lat, &lon);
 
                 NCERR(nc_put_var1_float(ncid, varlist[LATITUDE].id, idx, &lat));
@@ -1448,6 +1503,9 @@ int main(int argc, char **argv) {
                 NCERR(nc_put_var1_float(ncid, varlist[WIND_SPEED_UNCORRECTED].id, idx, 
                             &varlist[WIND_SPEED_UNCORRECTED].attrs[FILL_VALUE].value.f));
 
+                NCERR(nc_put_var1(ncid, varlist[NUM_AMBIG].id, idx,
+                            &varlist[NUM_AMBIG].attrs[FILL_VALUE].value.b));
+
                 /* Extended variables */
                 if (run_config.extended) {
                     NCERR(nc_put_var1_float(ncid, varlist[SEL_OBJ].id, idx, 
@@ -1461,10 +1519,11 @@ int main(int argc, char **argv) {
                     NCERR(nc_put_var1_uchar(ncid, varlist[N_OUT_AFT].id, idx, 
                                 &varlist[N_OUT_AFT].attrs[FILL_VALUE].value.b));
         
+                    NCERR(nc_put_var1(ncid, varlist[NUM_MEDFILT_AMBIG].id, idx,
+                                &varlist[NUM_MEDFILT_AMBIG].attrs[FILL_VALUE].value.b));
+
                     for (idx[2] = 0; (int)idx[2] < max_ambiguities; idx[2]++) {
         
-                        NCERR(nc_put_var1(ncid, varlist[NUM_AMBIG].id, idx,
-                                    &varlist[NUM_AMBIG].attrs[FILL_VALUE].value.b));
                         NCERR(nc_put_var1_float(ncid, varlist[AMBIG_SPEED].id, idx,
                                     &varlist[AMBIG_SPEED].attrs[FILL_VALUE].value.f));
                         NCERR(nc_put_var1_float(ncid, varlist[AMBIG_DIRECTION].id, idx,
