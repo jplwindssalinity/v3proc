@@ -2374,6 +2374,9 @@ L2AToL2B::RainCorrectSpeed(L2B* l2b){
             }
             speedBias=expected_speed-wvc->rainCorrectedSpeed;
 
+           // put in extra rain impact dependent correction to bias
+           speedBias+=3.9*exp(-(pow(fabs(wvc->rainImpact-5.5)/3,3)));
+
             wvc->qualFlag &= ~L2B_QUAL_FLAG_RAIN_CORR_APPL;
             if ( wvc->rainImpact <= rain_impact_thresh_for_correction || wvc->rainCorrectedSpeed<0) continue;
             wvc->qualFlag |=  L2B_QUAL_FLAG_RAIN_CORR_APPL;
@@ -2386,7 +2389,8 @@ L2AToL2B::RainCorrectSpeed(L2B* l2b){
     	    wvp=wvc->ambiguities.GetHead();
     	    while(wvp){
     	      wvp->spd-=speedBias;
-    	      wvp->obj=0;
+              // only set objective function to zero for high rain impact cases
+    	      if(wvc->rainImpact>2.5) wvp->obj=0;
     	      wvp=wvc->ambiguities.GetNext();
     	    }     
             /* Only set the speed bias in the WVC if rain correction is applied */
