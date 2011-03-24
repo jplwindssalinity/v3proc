@@ -315,7 +315,7 @@ main(
 	str=strtok(NULL," \t");
         gridres=atof(str);
 
-	str=strtok(NULL," \t");
+	str=strtok(NULL," \t\n");
 	if(str!=NULL){
 	  bias[0]=pow(10,0.1*atof(str))-1;
 	  for(int c=1;c<nlooks;c++){
