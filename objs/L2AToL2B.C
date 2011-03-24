@@ -1828,7 +1828,7 @@ L2AToL2B::GenSigma0Flags( MeasList* meas_list, GMF *gmf, WVC* wvc ) {
     if( meas->landFlag == 0 && finite(meas->value) && 10*log10(fabs(snr)) > -20 ) {
       // Check flavor of sigma0
       float antazi = meas->scanAngle * rtd;
-      if( antazi >= 180 ) antazi -= 180;
+      if( antazi >= 180 ) antazi -= 360;
       if( meas->measType == Meas::VV_MEAS_TYPE ) {
         if( fabs(antazi) < 90 )
           foreOuterFound = 1;
