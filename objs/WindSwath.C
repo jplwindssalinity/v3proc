@@ -1351,10 +1351,12 @@ WindSwath::Nudge(
 
             wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir,
                 max_rank);
-
-            if (wvc->ambiguities.NodeCount() < max_rank) {
-                wvc->qualFlag |= L2B_QUAL_FLAG_ALL_AMBIG;
-            }
+            
+            // if max_rank >= wvc->numAmbiguities, then we used
+            // all ambigs to nudge with.
+            wvc->qualFlag = ( wvc->qualFlag & ~L2B_QUAL_FLAG_ALL_AMBIG ) | 
+             (wvc->numAmbiguities < max_rank) * L2B_QUAL_FLAG_ALL_AMBIG;
+            
             count++;
         }
     }
@@ -1513,9 +1515,8 @@ WindSwath::ThresNudge(
             }
 
             /* If all the ambiguities contributed to nudging, note it */
-            if (rank_idx == wvc->numAmbiguities) {
-                wvc->qualFlag |= L2B_QUAL_FLAG_ALL_AMBIG;
-            }
+            wvc->qualFlag = ( wvc->qualFlag & ~L2B_QUAL_FLAG_ALL_AMBIG ) | 
+             (rank_idx == wvc->numAmbiguities) * L2B_QUAL_FLAG_ALL_AMBIG;
 
             WindVector nudge_wv;
             if (wvc->nudgeWV==NULL)
