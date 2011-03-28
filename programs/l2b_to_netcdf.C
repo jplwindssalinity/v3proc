@@ -806,7 +806,7 @@ int main(int argc, char **argv) {
         "correction_produced_negative_spd_flag all_ambiguities_contribute_to_nudging_flag "
         "large_rain_correction_flag";
 
-    varlist[NUDGE_SPEED].name  = "ecmwf_wind_speed";
+    varlist[NUDGE_SPEED].name  = "model_wind_speed";
     varlist[NUDGE_SPEED].type  = NC_FLOAT;
     varlist[NUDGE_SPEED].ndims = 2;
     varlist[NUDGE_SPEED].dims = dimensions; 
@@ -830,7 +830,7 @@ int main(int argc, char **argv) {
     varlist[NUDGE_SPEED].attrs[LONG_NAME].name = "long_name";
     varlist[NUDGE_SPEED].attrs[LONG_NAME].size = 1;
     varlist[NUDGE_SPEED].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[NUDGE_SPEED].attrs[LONG_NAME].value.str = "ecmwf 10 m wind speed";
+    varlist[NUDGE_SPEED].attrs[LONG_NAME].value.str = "model wind speed";
     varlist[NUDGE_SPEED].attrs[num_standard_attrs].name = "units";
     varlist[NUDGE_SPEED].attrs[num_standard_attrs].size = 1;
     varlist[NUDGE_SPEED].attrs[num_standard_attrs].type = NC_CHAR;
@@ -840,7 +840,7 @@ int main(int argc, char **argv) {
     varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
     varlist[NUDGE_SPEED].attrs[num_standard_attrs + 1].value.f = 1.0f;
              
-    varlist[NUDGE_DIRECTION].name  = "ecmwf_wind_direction";
+    varlist[NUDGE_DIRECTION].name  = "model_wind_direction";
     varlist[NUDGE_DIRECTION].type  = NC_FLOAT;
     varlist[NUDGE_DIRECTION].ndims = 2;
     varlist[NUDGE_DIRECTION].dims = dimensions; 
@@ -864,7 +864,7 @@ int main(int argc, char **argv) {
     varlist[NUDGE_DIRECTION].attrs[LONG_NAME].name = "long_name";
     varlist[NUDGE_DIRECTION].attrs[LONG_NAME].size = 1;
     varlist[NUDGE_DIRECTION].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[NUDGE_DIRECTION].attrs[LONG_NAME].value.str = "ecmwf 10 m wind direction";
+    varlist[NUDGE_DIRECTION].attrs[LONG_NAME].value.str = "model wind direction";
     varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].name = "units";
     varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].size = 1;
     varlist[NUDGE_DIRECTION].attrs[num_standard_attrs].type = NC_CHAR;
@@ -932,7 +932,7 @@ int main(int argc, char **argv) {
     varlist[NUM_AMBIG].attrs[LONG_NAME].name = "long_name";
     varlist[NUM_AMBIG].attrs[LONG_NAME].size = 1;
     varlist[NUM_AMBIG].attrs[LONG_NAME].type = NC_CHAR;
-    varlist[NUM_AMBIG].attrs[LONG_NAME].value.str = "number of ambiguities from wind retrieval";
+    varlist[NUM_AMBIG].attrs[LONG_NAME].value.str = "number of ambiguous wind directions found in point-wise wind retrieval prior to spatial filtering";
     varlist[NUM_AMBIG].attrs[num_standard_attrs].name = "units";
     varlist[NUM_AMBIG].attrs[num_standard_attrs].size = 1;
     varlist[NUM_AMBIG].attrs[num_standard_attrs].type = NC_CHAR;
@@ -1369,7 +1369,9 @@ int main(int argc, char **argv) {
 
                 if (IS_NOT_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
                     UNSET_IF(eflags, NEG_WIND_SPEED_MASK, wvc->selected->spd >= 0);
-                } 
+                } else {
+                    UNSET(eflags, NEG_WIND_SPEED_MASK);
+                }
 
                 UNSET_IF(eflags, ALL_AMBIG_CONTRIB_MASK, IS_NOT_SET(wvc->qualFlag, L2B_QUAL_FLAG_ALL_AMBIG));
                 UNSET_IF(eflags, RAIN_CORR_LARGE_MASK, fabs(wvc->speedBias) <= 1);
@@ -1381,13 +1383,42 @@ int main(int argc, char **argv) {
                             &lat));
                 NCERR(nc_put_var1_float(ncid, varlist[LONGITUDE].id, idx, 
                             &lon));
-                if (wvc->selected->spd <= varlist[SEL_SPEED].attrs[VALID_MAX].value.f) {
-                    NCERR(nc_put_var1_float(ncid, varlist[SEL_SPEED].id, idx, 
-                            &wvc->selected->spd));
-                } else {
-                    NCERR(nc_put_var1_float(ncid, varlist[SEL_SPEED].id, idx, 
-                            &varlist[SEL_SPEED].attrs[VALID_MAX].value.f));
+
+                if (IS_NOT_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
+                    /* Rain correction applied */
+                    float uncorr_speed;
+
+                    uncorr_speed = wvc->selected->spd + wvc->speedBias;
+
+                    if ((uncorr_speed < 0) && (uncorr_speed > -1e-6)) {
+                        uncorr_speed = 0.0f;
+                    }
+
+                    NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
+                            &wvc->rainImpact));
+
+                    NCERR(nc_put_var1_float(ncid, 
+                        varlist[WIND_SPEED_UNCORRECTED].id, idx, 
+                        &uncorr_speed));
+                } 
+
+		if (wvc->selected->spd < 0.0f) {
+                    wvc->selected->spd = 0.0f;
+                } else if (wvc->selected->spd >= varlist[SEL_SPEED].attrs[VALID_MAX].value.f) {
+                    wvc->selected->spd = varlist[SEL_SPEED].attrs[VALID_MAX].value.f;
                 }
+
+                NCERR(nc_put_var1_float(ncid, varlist[SEL_SPEED].id, idx, 
+                        &wvc->selected->spd));
+
+                if (IS_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
+                    NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
+                            &varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f));
+                    NCERR(nc_put_var1_float(ncid, 
+                        varlist[WIND_SPEED_UNCORRECTED].id, idx, 
+                        &wvc->selected->spd));
+                }
+
                 conversion = 450.0f - (wvc->selected->dir)*180.0f/(float)(M_PI);
                 conversion = conversion - 360.0f*((int)(conversion/360.0f));
                 NCERR(nc_put_var1_float(ncid, varlist[SEL_DIRECTION].id, idx, 
@@ -1407,25 +1438,6 @@ int main(int argc, char **argv) {
                 conversion = conversion - 360.0f*((int)(conversion/360.0f));
                 NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
                             &conversion));
-
-                if (IS_NOT_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
-                    /* Rain correction applied */
-                    float uncorr_speed;
-                    uncorr_speed = wvc->selected->spd + wvc->speedBias;
-
-                    NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
-                            &wvc->rainImpact));
-
-                    NCERR(nc_put_var1_float(ncid, 
-                        varlist[WIND_SPEED_UNCORRECTED].id, idx, 
-                        &uncorr_speed));
-                } else {
-                    NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
-                            &varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f));
-                    NCERR(nc_put_var1_float(ncid, 
-                        varlist[WIND_SPEED_UNCORRECTED].id, idx, 
-                        &wvc->selected->spd));
-                }
 
                 NCERR(nc_put_var1(ncid, varlist[NUM_AMBIG].id, 
                         idx, &wvc->numAmbiguities));
