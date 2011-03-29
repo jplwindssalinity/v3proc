@@ -101,7 +101,7 @@ static const char rcs_id[] =
 }
 #define SET(var, mask)   SET_IF(var, mask, 1)
 #define UNSET(var, mask) UNSET_IF(var, mask, 1)
-#define IS_SET(var, mask) (var & mask)
+#define IS_SET(var, mask) ((var) & (mask))
 #define IS_NOT_SET(var, mask) (!IS_SET(var, mask))
 
 const size_t NUM_FLAGS = 10;
@@ -241,7 +241,7 @@ int main(int argc, char **argv) {
     L2B l2b;
 
     /* File IDs */
-    int l2bhdf_fid, ncid;
+    int l2bhdf_fid, l2bhdf_sds_fid, ncid;
 
     /* Net CDF dimension information */
     int max_ambiguities;
@@ -251,10 +251,16 @@ int main(int argc, char **argv) {
     size_t time_vara_length[2] = {1, 0};
 
     /* For extracting times from L2B HDF file */
-    const char time_vdata_name[] = "wvc_row_time";
+    const char time_vdata_name[]  = "wvc_row_time";
     const char time_vdata_fname[] = "wvc_row_time";
     int time_vdata_ref, time_vdata_id, time_vdata_fsize;
     char *buffer;
+
+
+    /* For extracting flags data from L2B HDF file */
+    const char flags_sds_name[]  = "wvc_quality_flag";
+    int flags_sds_idx, flags_sds_id;
+    unsigned short *hdf_flags;
 
     /* For populating Net CDF file */
     size_t idx[3], time_idx[2] = {0, 0};
@@ -1319,7 +1325,23 @@ int main(int argc, char **argv) {
                     (char *)time_vdata_fname)) == FAIL);
     ERR((buffer = (char *)calloc(time_vdata_fsize + 1, 1)) == NULL);
 
+    /* Set up for pulling land and ice flags from L2B HDF file */
+    HDFERR((l2bhdf_sds_fid = SDstart(run_config.l2bhdf_file, DFACC_READ)) == FAIL);
+    HDFERR((flags_sds_idx  = SDnametoindex(l2bhdf_sds_fid, flags_sds_name)) == FAIL);
+    HDFERR((flags_sds_id   = SDselect(l2bhdf_sds_fid, flags_sds_idx)) == FAIL);
+    ERR((hdf_flags = (unsigned short *)calloc(
+            l2b.frame.swath.GetCrossTrackBins()*l2b.frame.swath.GetAlongTrackBins(), 
+            sizeof *hdf_flags)) == NULL);
+
     time_vara_length[1] = strlen(time_format);
+
+    int start[2] = {0, 0}; 
+    int edges[2] = {0, 0};
+    edges[0] = l2b.frame.swath.GetAlongTrackBins(); 
+    edges[1] = l2b.frame.swath.GetCrossTrackBins();
+
+    HDFERR(SDreaddata(flags_sds_id, start, NULL, edges, hdf_flags) == FAIL);
+
     /* Same sneakiness with idx as described above with dimensions */
     for (idx[0] = 0; (int)idx[0] < l2b.frame.swath.GetAlongTrackBins(); idx[0]++) {
 
@@ -1345,6 +1367,7 @@ int main(int argc, char **argv) {
 
             flags  = varlist[ FLAGS].attrs[FILL_VALUE].value.s;
             eflags = varlist[EFLAGS].attrs[FILL_VALUE].value.s;
+
 
             if (wvc != NULL && wvc->selected != NULL) {
 
@@ -1402,7 +1425,7 @@ int main(int argc, char **argv) {
                         &uncorr_speed));
                 } 
 
-		if (wvc->selected->spd < 0.0f) {
+                if (wvc->selected->spd < 0.0f) {
                     wvc->selected->spd = 0.0f;
                 } else if (wvc->selected->spd >= varlist[SEL_SPEED].attrs[VALID_MAX].value.f) {
                     wvc->selected->spd = varlist[SEL_SPEED].attrs[VALID_MAX].value.f;
@@ -1493,6 +1516,9 @@ int main(int argc, char **argv) {
                 }    
             } else {
             
+                UNSET_IF(flags, COASTAL_MASK,  IS_NOT_SET(hdf_flags[idx[0]*l2b.frame.swath.GetCrossTrackBins() + idx[1]], COASTAL_MASK));
+                UNSET_IF(flags, ICE_EDGE_MASK, IS_NOT_SET(hdf_flags[idx[0]*l2b.frame.swath.GetCrossTrackBins() + idx[1]], ICE_EDGE_MASK));
+
                 bin_to_latlon(idx[0], idx[1], &orbit_config, &lat, &lon);
 
                 NCERR(nc_put_var1_float(ncid, varlist[LATITUDE].id, idx, &lat));
@@ -1549,6 +1575,8 @@ int main(int argc, char **argv) {
     }
 
     free(buffer);
+
+    HDFERR(SDend(l2bhdf_sds_fid) == FAIL);
 
     HDFERR(VSdetach(time_vdata_id) == FAIL);
     HDFERR(Vend(l2bhdf_fid) == FAIL);
