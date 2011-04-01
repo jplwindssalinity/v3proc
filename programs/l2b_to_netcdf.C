@@ -1516,8 +1516,11 @@ int main(int argc, char **argv) {
                 }    
             } else {
             
+                /* Assumes these flags are initially set... */
                 UNSET_IF(flags, COASTAL_MASK,  IS_NOT_SET(hdf_flags[idx[0]*l2b.frame.swath.GetCrossTrackBins() + idx[1]], COASTAL_MASK));
                 UNSET_IF(flags, ICE_EDGE_MASK, IS_NOT_SET(hdf_flags[idx[0]*l2b.frame.swath.GetCrossTrackBins() + idx[1]], ICE_EDGE_MASK));
+                UNSET_IF(flags, RAIN_IMPACT_UNUSABLE_MASK, IS_NOT_SET(hdf_flags[idx[0]*l2b.frame.swath.GetCrossTrackBins() + idx[1]], RAIN_IMPACT_UNUSABLE_MASK));
+                UNSET_IF(flags, RAIN_IMPACT_MASK, IS_NOT_SET(hdf_flags[idx[0]*l2b.frame.swath.GetCrossTrackBins() + idx[1]], RAIN_IMPACT_MASK));
 
                 bin_to_latlon(idx[0], idx[1], &orbit_config, &lat, &lon);
 
