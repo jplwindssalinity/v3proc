@@ -1,4 +1,4 @@
-function qs_convert_netcdf(file_src)
+function qs_convert_netcdf(orig_nc_file, e2b12_dir)
 
 %% Anonymous helper functions
 ncgetvar = @(ncid, var) netcdf.getVar(ncid, netcdf.inqVarID(ncid, var));
@@ -6,6 +6,7 @@ ncputvar = @(ncid, name, val) netcdf.putVar(ncid, ...
     netcdf.inqVarID(ncid, name), val);
 ncgetatt = @(ncid, var, name) netcdf.getAtt(ncid, ...
     netcdf.inqVarID(ncid, var), name);
+
 
 %% Define "Constants"
 SRC = 1;
@@ -36,36 +37,30 @@ var_mapping = ...
      'stress_curl', '', 'stress_curl'; ...
      'flags', 'flags', 'flags'; ...
      'eflags', 'eflags', 'eflags'; ...
-     'model_wind_speed', 'nudge_wind_speed', ...
-        'ecmwf_wind_speed'; ...
-     'model_wind_direction', 'nudge_wind_direction', ...
-        'ecmwf_wind_direction'; ...
+     'model_wind_speed', 'nudge_wind_speed', ''; ...
+     'model_wind_direction', 'nudge_wind_direction', ''; ...
      'wind_speed_uncorrected', 'retrieved_wind_speed_uncorrected', ''; ...
      'num_ambiguities', 'num_ambiguities', ''};
-% questions: wind_speed -> ?
-%            wind_to_direciton -> ?
-%            model_wind_speed -> ?
-%            model_wind_direction -> ?
-%            cross_track_wind_speed_bias in both?
-       
-ncid_src = netcdf.open(file_src, 'NOWRITE');
+
+src.file = orig_nc_file;
+src.ncid = netcdf.open(src.file, 'NOWRITE');
 
 %% Get dimensions
 dimid_mapping = zeros(3, 3);
 
 % Build a table with the correspondences between the dimension ids across
 % the three files
-dimid_mapping(AT_IDX, SRC) = netcdf.inqDimID(ncid_src, 'along_track');
-dimid_mapping(XT_IDX, SRC) = netcdf.inqDimID(ncid_src, 'cross_track');
-dimid_mapping(TS_IDX, SRC) = netcdf.inqDimID(ncid_src, 'time_strlength');
+dimid_mapping(AT_IDX, SRC) = netcdf.inqDimID(src.ncid, 'along_track');
+dimid_mapping(XT_IDX, SRC) = netcdf.inqDimID(src.ncid, 'cross_track');
+dimid_mapping(TS_IDX, SRC) = netcdf.inqDimID(src.ncid, 'time_strlength');
 
-[~, at_len] = netcdf.inqDim(ncid_src, dimid_mapping(AT_IDX, SRC));
-[~, xt_len] = netcdf.inqDim(ncid_src, dimid_mapping(XT_IDX, SRC));
-[~, ts_len] = netcdf.inqDim(ncid_src, dimid_mapping(TS_IDX, SRC));
+[~, at_len] = netcdf.inqDim(src.ncid, dimid_mapping(AT_IDX, SRC));
+[~, xt_len] = netcdf.inqDim(src.ncid, dimid_mapping(XT_IDX, SRC));
+[~, ts_len] = netcdf.inqDim(src.ncid, dimid_mapping(TS_IDX, SRC));
 
 %% Compute new file name
-run_no = netcdf.getAtt(ncid_src, GLOBAL, 'StopOrbitNumber');
-run_date = netcdf.getAtt(ncid_src, GLOBAL, 'EquatorCrossingDate');
+run_no = netcdf.getAtt(src.ncid, GLOBAL, 'StopOrbitNumber');
+run_date = netcdf.getAtt(src.ncid, GLOBAL, 'EquatorCrossingDate');
 run_year = str2double(run_date(1:4));
 run_doy = str2double(run_date(6:end));
 
@@ -88,100 +83,121 @@ switch run_doy
     otherwise, display 'Couldn''t determine DOY -> Mo';
 end
 
-file_unfilt = sprintf('L2B_%05d_v3_%04d_%02d.nc', run_no, run_year, ...
+unfilt.file = sprintf('L2B_%05d_v3_%04d_%02d.nc', run_no, run_year, ...
     run_month);
-file_filt   = sprintf('L2C_%05d_v3_%04d_%02d.nc', run_no, run_year, ...
+filt.file   = sprintf('L2C_%05d_v3_%04d_%02d.nc', run_no, run_year, ...
     run_month);
 
 %% Open the product files
-ncid_unfilt = netcdf.create(file_unfilt, 'CLASSIC_MODEL');
-ncid_filt   = netcdf.create(file_filt,   'CLASSIC_MODEL');
+unfilt.ncid = netcdf.create(unfilt.file, 'CLASSIC_MODEL');
+filt.ncid   = netcdf.create(filt.file,   'CLASSIC_MODEL');
 
-dimid_mapping(AT_IDX, UNFILT) = netcdf.defDim(ncid_unfilt, ...
+dimid_mapping(AT_IDX, UNFILT) = netcdf.defDim(unfilt.ncid, ...
     'along_track', at_len);
-dimid_mapping(XT_IDX, UNFILT) = netcdf.defDim(ncid_unfilt, ...
+dimid_mapping(XT_IDX, UNFILT) = netcdf.defDim(unfilt.ncid, ...
     'cross_track', xt_len);
-dimid_mapping(TS_IDX, UNFILT) = netcdf.defDim(ncid_unfilt, ...
+dimid_mapping(TS_IDX, UNFILT) = netcdf.defDim(unfilt.ncid, ...
     'time_strlength', ts_len);
-dimid_mapping(AT_IDX, FILT) = netcdf.defDim(ncid_filt, ...
+dimid_mapping(AT_IDX, FILT) = netcdf.defDim(filt.ncid, ...
     'along_track', at_len);
-dimid_mapping(XT_IDX, FILT) = netcdf.defDim(ncid_filt, ...
+dimid_mapping(XT_IDX, FILT) = netcdf.defDim(filt.ncid, ...
     'cross_track', xt_len);
-dimid_mapping(TS_IDX, FILT) = netcdf.defDim(ncid_filt, ...
+dimid_mapping(TS_IDX, FILT) = netcdf.defDim(filt.ncid, ...
     'time_strlength', ts_len);
 
 %% Copy the global attributes
-[~, ~, ngatts, ~] = netcdf.inq(ncid_src);
+[~, ~, ngatts, ~] = netcdf.inq(src.ncid);
 for k = 0:ngatts - 1
-    name = netcdf.inqAttName(ncid_src, GLOBAL, k);
-    netcdf.copyAtt(ncid_src, GLOBAL, name, ncid_unfilt, GLOBAL);
-    netcdf.copyAtt(ncid_src, GLOBAL, name, ncid_filt, GLOBAL);
+    name = netcdf.inqAttName(src.ncid, GLOBAL, k);
+    netcdf.copyAtt(src.ncid, GLOBAL, name, unfilt.ncid, GLOBAL);
+    netcdf.copyAtt(src.ncid, GLOBAL, name, filt.ncid, GLOBAL);
 end
 
 %% Copy variable definitions
 [nvar, ~] = size(var_mapping);
 for k = 1:nvar
     % copy the information from the old file
-    varid_src = netcdf.inqVarID(ncid_src, var_mapping{k, SRC});
-    [~, xtype, dimids, natts] = netcdf.inqVar(ncid_src, varid_src);
+    varid_src = netcdf.inqVarID(src.ncid, var_mapping{k, SRC});
+    [~, xtype, dimids, natts] = netcdf.inqVar(src.ncid, varid_src);
         
     % Given source dimension ids, lookup the index in the dimid LUT
     [X, Y] = meshgrid(dimid_mapping(:, SRC), dimids);
     [~, dimids] = find(X == Y);
    
     if (~isempty(var_mapping{k, UNFILT}))
-        varid_tgt = netcdf.defVar(ncid_unfilt, var_mapping{k, UNFILT}, ...
+        varid_tgt = netcdf.defVar(unfilt.ncid, var_mapping{k, UNFILT}, ...
             xtype, dimid_mapping(dimids, UNFILT));
         
         % Copy the variable attributes
         for m = 0:natts - 1
-            name = netcdf.inqAttName(ncid_src, varid_src, m);
-            netcdf.copyAtt(ncid_src, varid_src, name, ...
-                ncid_unfilt, varid_tgt);
+            name = netcdf.inqAttName(src.ncid, varid_src, m);
+            netcdf.copyAtt(src.ncid, varid_src, name, ...
+                unfilt.ncid, varid_tgt);
         end
     end
     if (~isempty(var_mapping{k, FILT}))
-        varid_tgt = netcdf.defVar(ncid_filt, var_mapping{k, FILT}, ...
+        varid_tgt = netcdf.defVar(filt.ncid, var_mapping{k, FILT}, ...
             xtype, dimid_mapping(dimids, FILT));
         
         % Copy the variable attributes
         for m = 0:natts - 1
-            name = netcdf.inqAttName(ncid_src, varid_src, m);
-            netcdf.copyAtt(ncid_src, varid_src, name, ...
-                ncid_filt, varid_tgt);
+            name = netcdf.inqAttName(src.ncid, varid_src, m);
+            netcdf.copyAtt(src.ncid, varid_src, name, ...
+                filt.ncid, varid_tgt);
         end        
     end
 end
 
 %% Build the new variables
 % cross-track-wind-speed bias
-varid = netcdf.defVar(ncid_unfilt, 'cross_track_wind_speed_bias', ...
+varid = netcdf.defVar(unfilt.ncid, 'cross_track_wind_speed_bias', ...
     'float', [dimid_mapping(AT_IDX, UNFILT), ...
               dimid_mapping(XT_IDX, UNFILT)]);
-netcdf.putAtt(ncid_unfilt, varid, 'FillValue', '-9999.0');
-netcdf.putAtt(ncid_unfilt, varid, 'valid_min', '0.0');
-netcdf.putAtt(ncid_unfilt, varid, 'valid_max', '100.0');
-netcdf.putAtt(ncid_unfilt, varid, 'long_name', ['relative wind speed ' ...
+netcdf.putAtt(unfilt.ncid, varid, 'FillValue', '-9999.0');
+netcdf.putAtt(unfilt.ncid, varid, 'valid_min', '0.0');
+netcdf.putAtt(unfilt.ncid, varid, 'valid_max', '100.0');
+netcdf.putAtt(unfilt.ncid, varid, 'long_name', ['relative wind speed ' ...
     'bias with respect to sweet spot']);
-netcdf.putAtt(ncid_unfilt, varid, 'units', 'm s-1');
-netcdf.putAtt(ncid_unfilt, varid, 'scale_factor', '1.0');
+netcdf.putAtt(unfilt.ncid, varid, 'units', 'm s-1');
+netcdf.putAtt(unfilt.ncid, varid, 'scale_factor', '1.0');
 
 % atmospheric speed bias
-varid = netcdf.defVar(ncid_unfilt, 'atmospheric_speed_bias', ...
+varid = netcdf.defVar(unfilt.ncid, 'atmospheric_speed_bias', ...
     'float', [dimid_mapping(AT_IDX, UNFILT), ...
               dimid_mapping(XT_IDX, UNFILT)]);
-netcdf.putAtt(ncid_unfilt, varid, 'FillValue', '-9999.0');
-netcdf.putAtt(ncid_unfilt, varid, 'valid_min', '0.0');
-netcdf.putAtt(ncid_unfilt, varid, 'valid_max', '100.0');
-netcdf.putAtt(ncid_unfilt, varid, 'long_name', 'atmospheric speed bias');
-netcdf.putAtt(ncid_unfilt, varid, 'units', 'm s-1');
-netcdf.putAtt(ncid_unfilt, varid, 'scale_factor', '1.0');
- 
+netcdf.putAtt(unfilt.ncid, varid, 'FillValue', '-9999.0');
+netcdf.putAtt(unfilt.ncid, varid, 'valid_min', '0.0');
+netcdf.putAtt(unfilt.ncid, varid, 'valid_max', '100.0');
+netcdf.putAtt(unfilt.ncid, varid, 'long_name', 'atmospheric speed bias');
+netcdf.putAtt(unfilt.ncid, varid, 'units', 'm s-1');
+netcdf.putAtt(unfilt.ncid, varid, 'scale_factor', '1.0');
+
+% ECMWF wind speed
+varid = netcdf.defVar(filt.ncid, 'ecmwf_wind_speed', ...
+    'float', [dimid_mapping(AT_IDX, FILT), ...
+              dimid_mapping(XT_IDX, FILT)]);
+netcdf.putAtt(filt.ncid, varid, 'FillValue', '-9999.0');
+netcdf.putAtt(filt.ncid, varid, 'valid_min', '0.0');
+netcdf.putAtt(filt.ncid, varid, 'valid_max', '100.0');
+netcdf.putAtt(filt.ncid, varid, 'long_name', 'model wind speed');
+netcdf.putAtt(filt.ncid, varid, 'units', 'm s-1');
+netcdf.putAtt(filt.ncid, varid, 'scale_factor', '1.0');
+
+% ECMWF wind direction
+varid = netcdf.defVar(filt.ncid, 'ecmwf_wind_direction', ...
+    'float', [dimid_mapping(AT_IDX, FILT), ...
+              dimid_mapping(XT_IDX, FILT)]);
+netcdf.putAtt(filt.ncid, varid, 'FillValue', '-9999.0');
+netcdf.putAtt(filt.ncid, varid, 'valid_min', '0.0');
+netcdf.putAtt(filt.ncid, varid, 'valid_max', '360.0');
+netcdf.putAtt(filt.ncid, varid, 'long_name', 'model wind direction');
+netcdf.putAtt(filt.ncid, varid, 'units', 'degrees');
+netcdf.putAtt(filt.ncid, varid, 'scale_factor', '1.0');
 
 %% Alter copied definitions
 % Correct erroneous ProductionDateTime.  Use the access date/time for the
-% source .nc file (at this point it's the best we have
-finfo = dir(file_src);
+% source .nc file (at this point it's the best we have)
+finfo = dir(src.file);
 proc_date = datevec(finfo.date);
 
 % Convert MM/DD -> DOY
@@ -202,30 +218,48 @@ proc_doy = proc_doy + is_leap_year(proc_date(1));
 
 proc_date_att = sprintf('%04d-%03dT%02d:%02d:%02d.%03d', ...
     proc_date(1), proc_doy, proc_date(4), proc_date(5), proc_date(6), 0);
-netcdf.putAtt(ncid_unfilt, GLOBAL, 'ProductionDateTime', proc_date_att);
-netcdf.putAtt(ncid_filt,   GLOBAL, 'ProductionDateTime', proc_date_att);
+netcdf.putAtt(unfilt.ncid, GLOBAL, 'ProductionDateTime', proc_date_att);
+netcdf.putAtt(filt.ncid,   GLOBAL, 'ProductionDateTime', proc_date_att);
 
 %% End the definitions stage
-netcdf.endDef(ncid_unfilt);
-netcdf.endDef(ncid_filt);
+netcdf.endDef(unfilt.ncid);
+netcdf.endDef(filt.ncid);
 
 %% Copy over the data
 [nvar, ~] = size(var_mapping);
 for k = 1:nvar
-    data = ncgetvar(ncid_src, var_mapping{k, SRC});
+    data = ncgetvar(src.ncid, var_mapping{k, SRC});
     
     if (~isempty(var_mapping{k, UNFILT}))
-        ncputvar(ncid_unfilt, var_mapping{k, UNFILT}, data);
+        ncputvar(unfilt.ncid, var_mapping{k, UNFILT}, data);
     end
     if (~isempty(var_mapping{k, FILT}))
-        ncputvar(ncid_filt, var_mapping{k, FILT}, data);
+        ncputvar(filt.ncid, var_mapping{k, FILT}, data);
     end
 end
 
+%% Fill in the new data
+data = '';
+e2b12.file = sprintf('%s/%04d/E2B_%05d.cp12.dat', ...
+    e2b12_dir, run_year, run_no);
+
+% Check to see if the file exists
+if (exist(e2b12.file, 'file') ~= 0)
+    data = read_qs_e2b12(e2b12.file);
+else
+    warning(['Can''t find ' e2b12.file]);
+    data.spd = str2double(ncgetatt(filt.ncid, 'ecmwf_wind_speed', ...
+        'FillValue')).*ones(xt_len, at_len);
+    data.dir = str2double(ncgetatt(filt.ncid, 'ecmwf_wind_direction', ...
+        'FillValue')).*ones(xt_len, at_len);
+end
+ncputvar(filt.ncid, 'ecmwf_wind_speed', data.spd);
+ncputvar(filt.ncid, 'ecmwf_wind_direction', data.dir);
+
 %% Close files
-netcdf.close(ncid_src);
-netcdf.close(ncid_unfilt);
-netcdf.close(ncid_filt);
+netcdf.close(src.ncid);
+netcdf.close(unfilt.ncid);
+netcdf.close(filt.ncid);
 
 return
 
