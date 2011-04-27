@@ -129,7 +129,9 @@ function qs_reproc_prompt () {
     echo "      Run 2D Var"
     echo "11 MAKE-ARRAYS"
     echo "      Extract arrays from dataset"
-    echo "12 CLEAN"
+    echo "12 L2B-HDF-TO-NETCDF"
+    echo "      Convert L2B HDF files to NetCDF"
+    echo "13 CLEAN"
     echo "      Removed unnecessary data files"
     echo "================================================================"
     echo ""
@@ -167,7 +169,9 @@ function qs_reproc_get_command() {
         ;;
     11) echo "MAKE-ARRAYS"
         ;;
-    12) echo "CLEAN"
+    12) echo "L2B-HDF-TO-NETCDF"
+        ;;
+    13) echo "CLEAN"
         ;;
     *)  echo "$COMMAND"
         ;;
@@ -200,7 +204,8 @@ function qs_reproc_stage () {
     TDIR=`mktemp -d "$TMP/XXXXXXXXXX"`
 
     L1BURL="ftp://qL1B:data4me@podaac/data/L1B"
-    L2BURL="ftp://podaac/pub/ocean_wind/quikscat/L2B12/data"
+    #L2BURL="ftp://podaac/pub/ocean_wind/quikscat/L2B/data"  # 25km L2B
+    L2BURL="ftp://podaac/pub/ocean_wind/quikscat/L2B12/data" # 12.5km L2B
 
     ID=`awk "/^$REV/" "$REVLOG"`
 
@@ -329,6 +334,7 @@ function qs_reproc_generate_directory_structure () {
     # Obtain the n6h ECMWF filename
     CLOSEST_NWP_STR=`cat $L1B_TIMES_FILE | tail -1`
     NCEP_FILENAME_STR='SNWP1'$CLOSEST_NWP_STR
+#    NCEP_FILENAME_STR='SNWP3'$CLOSEST_NWP_STR
     
     ICE_FILENAME_STR='NRT_ICEM'${CLOSEST_NWP_STR:0:7}
     
@@ -483,9 +489,9 @@ function qs_reproc_l2b_median_filter () {
     echo -n "Type (GS|S3|TDV): "
     read TYPE; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$TYPE"
-#    echo -n "Nudge Windfield (NCEP|ECMWF): "
-#    read WINDFIELD; tty > /dev/null 2>&1;
-#        [[ $? -eq 0 ]] || echo "$WINDFIELD"
+    echo -n "Nudge Windfield (NCEP|ECMWF): "
+    read WINDFIELD; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$WINDFIELD"
 
     cd "$BASEDIR/$REV"
     L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ {print $3}' $CONFIG_FILE`
@@ -494,6 +500,7 @@ function qs_reproc_l2b_median_filter () {
     S3) 
         MEDFILT_CONFIG=tmp1.rdf
         OUTFILE=l2b_flagged_S3.dat
+        #OTHER="-nudgeHDF $L2B_HDF_FNAME"
         OTHER="-flagsHDF $L2B_HDF_FNAME"
         sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
             $CONFIG_FILE > "$MEDFILT_CONFIG"
@@ -502,6 +509,7 @@ function qs_reproc_l2b_median_filter () {
     GS) 
         MEDFILT_CONFIG=tmp2.rdf
         OUTFILE=l2b_flagged_GS.dat
+        #OTHER="-nudgeHDF $L2B_HDF_FNAME"
         OTHER="-flagsHDF $L2B_HDF_FNAME"
         sed -e 's:MEDIAN_FILTER_MAX_PASSES    = 0:MEDIAN_FILTER_MAX_PASSES    = 200:' \
             -e 's:WIND_RETRIEVAL_METHOD       = S3:WIND_RETRIEVAL_METHOD       = GS:' \
@@ -523,13 +531,13 @@ function qs_reproc_l2b_median_filter () {
         RETVAL=1
         ;;
     esac
-#    if [[ "$WINDFIELD" = "ECMWF" ]]; then
-#        E2BFILE="../../E2B12/E2B_$REV.cp12.dat"
-#        sed -i -e "s:^NUDGE_WINDFIELD_FILE.*:NUDGE_WINDFIELD_FILE      = $E2BFILE\nQSCP12_ECMWF_ARRAY_NUDGING  = 1:" \
-#            "$MEDFILT_CONFIG"
-#        RETVAL=$(($RETVAL || $?))
-#        OTHER=`echo $OTHER | sed -e 's/nudgeHDF/flagsHDF/'`
-#    fi
+    if [[ "$WINDFIELD" = "ECMWF" ]]; then
+        E2BFILE="../../E2B12/E2B_$REV.cp12.dat"
+        sed -i -e "s:^NUDGE_WINDFIELD_FILE.*:NUDGE_WINDFIELD_FILE      = $E2BFILE\nQSCP12_ECMWF_ARRAY_NUDGING  = 1:" \
+            "$MEDFILT_CONFIG"
+        RETVAL=$(($RETVAL || $?))
+        OTHER=`echo $OTHER | sed -e 's/nudgeHDF/flagsHDF/'`
+    fi
     if [[ $RETVAL -ne 0 ]]; then
         return $RETVAL
     fi
@@ -705,6 +713,36 @@ function qs_reproc_make_arrays() {
 }
 
 #######################################################################
+# Convert from L2B HDF files to NetCDF
+function qs_l2b_hdf_to_netcdf () {
+(
+    echo -n "Rev: "
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
+    echo -n "L1B HDF Directory: "
+    read DIR_QSL1B_HDF; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$DIR_QSL1B_HDF"
+    echo -n "L2B HDF Directory: "
+    read DIR_QSL2B_HDF; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$DIR_QSL2B_HDF"
+    echo -n "Output Directory:  "
+    read DIR_OUT_BASE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$DIR_OUT_BASE"
+
+    L1B=`ls "$DIR_QSL1B_HDF/"*"$REV"*`
+    L2B=`ls "$DIR_QSL2B_HDF/"*"$REV"*`
+    L2BC="$DIR_OUT_BASE/$REV/`basename \"$L2B\"`.nc"
+    
+    mkdir -p `dirname "$L2BC"` > /dev/null 2>&1
+
+    l2b_hdf_to_netcdf --l2bhdf="$L2B" --l1bhdf="$L1B" --l2bc="$L2BC"
+    RETVAL=$?
+    return $RETVAL
+)
+}
+
+
+#######################################################################
 # Clean the directories
 function qs_reproc_clean () {
 (
@@ -753,7 +791,8 @@ function qs_reproc_clean () {
             "l2b_flagged_S3.dat" \
             "l2b_flagged_GS.dat" \
             "l2b_flagged_TDV.dat" \
-            "l2b_flagged_GS_ext.nc"
+            "l2b_flagged_GS_ext.nc" \
+            "$L2A_FNAME"
     fi
     if [[ $LEVEL -le 2 ]]; then
         rm -f \
@@ -833,6 +872,10 @@ function qs_reproc_process_command () {
 #        qs_reproc_make_arrays
 #        RETVAL=$?
 #        ;;
+    L2B-HDF-TO-NETCDF)
+        qs_l2b_hdf_to_netcdf 
+        RETVAL=$?
+        ;;
     CLEAN)
         qs_reproc_clean
         RETVAL=$?
@@ -892,6 +935,9 @@ function qs_reproc_execute_automated_cmd () {
     TDV)
         ARGS="l2b_flagged_GS.dat"
         INPUT="$REV\n$OUTPUT_DIR\n$ARGS\n$CFG\n"
+        ;;
+    L2B-HDF-TO-NETCDF)
+        INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n"
         ;;
     MAKE-ARRAYS)
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
