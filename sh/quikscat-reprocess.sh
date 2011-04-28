@@ -203,9 +203,9 @@ function qs_reproc_stage () {
     mkdir "$TMP" > /dev/null 2>&1
     TDIR=`mktemp -d "$TMP/XXXXXXXXXX"`
 
-    L1BURL="ftp://qL1B:data4me@podaac/data/L1B"
-    #L2BURL="ftp://podaac/pub/ocean_wind/quikscat/L2B/data"  # 25km L2B
-    L2BURL="ftp://podaac/pub/ocean_wind/quikscat/L2B12/data" # 12.5km L2B
+    L1BURL="ftp://qL1B:data4me@podaac-old/data/L1B"
+    #L2BURL="ftp://podaac-ftp.jpl.nasa.gov/allData/quikscat/L2B/" # 25km L2B
+    L2BURL="ftp://podaac-ftp.jpl.nasa.gov/allData/quikscat/L2B12/" # 12.5km L2B
 
     ID=`awk "/^$REV/" "$REVLOG"`
 
