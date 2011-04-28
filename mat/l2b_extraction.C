@@ -45,6 +45,8 @@ static const char rcs_id[] =
 
 #include "mex.h"
 
+#define FOPEN_ERROR "Could not open file: "
+
 //-----------//
 // TEMPLATES //
 //-----------//
@@ -83,12 +85,16 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs) {
     parameter = (char *)calloc(n + 1, sizeof *filename);
     mxGetString(prhs[PARAMETER], parameter, n + 1);
 
-    mexPrintf("In mex function \n");
-    mexPrintf("Parameters: %d\n", nrhs);
-    mexPrintf("Filename: %s\n", filename);
-    mexPrintf("Parameter: %s\n", parameter);
+    if (l2b.OpenForReading(filename) == 0) {
+        char *errmsg = (char *)calloc(strlen(FOPEN_ERROR) + 
+            strlen(filename) + 1, sizeof *errmsg);
+        /* These are safe because errmsg is built-to-size */
+        strcpy(errmsg, FOPEN_ERROR);
+        strcat(errmsg, filename);
+        
+        mexErrMsgTxt(errmsg);
+    }
 
-    l2b.OpenForReading(filename);
     l2b.ReadHeader();
     l2b.ReadDataRec();
 
@@ -98,9 +104,6 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs) {
     if (strcmp("speedBias", parameter) == 0) {
         double *data;
         double fill_val = *mxGetPr(prhs[FILLVAL]);
-
-        mexPrintf("Extracting speed bias.  Fill value: %f\n", fill_val);
-	mexPrintf("Dim: %d, %d\n", xt_num, at_num);
 
         plhs[0] = mxCreateDoubleMatrix(xt_num, at_num, mxREAL);
         data = mxGetPr(plhs[0]);

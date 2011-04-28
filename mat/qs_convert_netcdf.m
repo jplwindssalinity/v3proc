@@ -1,5 +1,11 @@
 function qs_convert_netcdf(orig_nc_file, e2b12_dir)
 
+%% Load in the cross track bias map and keep it resident
+persistent relspdbias2year;
+if isempty(relspdbias2year)
+    load 'crosstrackbiasmap.mat'
+end
+
 %% Anonymous helper functions
 ncgetvar = @(ncid, var) netcdf.getVar(ncid, netcdf.inqVarID(ncid, var));
 ncputvar = @(ncid, name, val) netcdf.putVar(ncid, ...
@@ -66,6 +72,7 @@ run_doy = str2double(run_date(6:end));
 
 leap_year = is_leap_year(run_year);
 
+% DOY -> month #
 run_month = 0;
 switch run_doy
     case num2cell(1:31), run_month = 1;
@@ -85,8 +92,10 @@ end
 
 unfilt.file = sprintf('L2B_%05d_v3_%04d_%02d.nc', run_no, run_year, ...
     run_month);
+unfilt.file = regexprep(src.file, '[^/]*$', unfilt.file);
 filt.file   = sprintf('L2C_%05d_v3_%04d_%02d.nc', run_no, run_year, ...
     run_month);
+filt.file   = regexprep(src.file, '[^/]*$', filt.file);
 
 %% Open the product files
 unfilt.ncid = netcdf.create(unfilt.file, 'CLASSIC_MODEL');
@@ -124,6 +133,7 @@ for k = 1:nvar
     [X, Y] = meshgrid(dimid_mapping(:, SRC), dimids);
     [~, dimids] = find(X == Y);
    
+    % Unfiltered file
     if (~isempty(var_mapping{k, UNFILT}))
         varid_tgt = netcdf.defVar(unfilt.ncid, var_mapping{k, UNFILT}, ...
             xtype, dimid_mapping(dimids, UNFILT));
@@ -135,6 +145,8 @@ for k = 1:nvar
                 unfilt.ncid, varid_tgt);
         end
     end
+
+    % Filtered file
     if (~isempty(var_mapping{k, FILT}))
         varid_tgt = netcdf.defVar(filt.ncid, var_mapping{k, FILT}, ...
             xtype, dimid_mapping(dimids, FILT));
@@ -153,46 +165,46 @@ end
 varid = netcdf.defVar(unfilt.ncid, 'cross_track_wind_speed_bias', ...
     'float', [dimid_mapping(AT_IDX, UNFILT), ...
               dimid_mapping(XT_IDX, UNFILT)]);
-netcdf.putAtt(unfilt.ncid, varid, 'FillValue', '-9999.0');
-netcdf.putAtt(unfilt.ncid, varid, 'valid_min', '0.0');
-netcdf.putAtt(unfilt.ncid, varid, 'valid_max', '100.0');
+netcdf.putAtt(unfilt.ncid, varid, 'FillValue', -9999.0);
+netcdf.putAtt(unfilt.ncid, varid, 'valid_min', 0.0);
+netcdf.putAtt(unfilt.ncid, varid, 'valid_max', 100.0);
 netcdf.putAtt(unfilt.ncid, varid, 'long_name', ['relative wind speed ' ...
     'bias with respect to sweet spot']);
 netcdf.putAtt(unfilt.ncid, varid, 'units', 'm s-1');
-netcdf.putAtt(unfilt.ncid, varid, 'scale_factor', '1.0');
+netcdf.putAtt(unfilt.ncid, varid, 'scale_factor', 1.0);
 
 % atmospheric speed bias
 varid = netcdf.defVar(unfilt.ncid, 'atmospheric_speed_bias', ...
     'float', [dimid_mapping(AT_IDX, UNFILT), ...
               dimid_mapping(XT_IDX, UNFILT)]);
-netcdf.putAtt(unfilt.ncid, varid, 'FillValue', '-9999.0');
-netcdf.putAtt(unfilt.ncid, varid, 'valid_min', '0.0');
-netcdf.putAtt(unfilt.ncid, varid, 'valid_max', '100.0');
+netcdf.putAtt(unfilt.ncid, varid, 'FillValue', -9999.0);
+netcdf.putAtt(unfilt.ncid, varid, 'valid_min', 0.0);
+netcdf.putAtt(unfilt.ncid, varid, 'valid_max', 100.0);
 netcdf.putAtt(unfilt.ncid, varid, 'long_name', 'atmospheric speed bias');
 netcdf.putAtt(unfilt.ncid, varid, 'units', 'm s-1');
-netcdf.putAtt(unfilt.ncid, varid, 'scale_factor', '1.0');
+netcdf.putAtt(unfilt.ncid, varid, 'scale_factor', 1.0);
 
 % ECMWF wind speed
 varid = netcdf.defVar(filt.ncid, 'ecmwf_wind_speed', ...
     'float', [dimid_mapping(AT_IDX, FILT), ...
               dimid_mapping(XT_IDX, FILT)]);
-netcdf.putAtt(filt.ncid, varid, 'FillValue', '-9999.0');
-netcdf.putAtt(filt.ncid, varid, 'valid_min', '0.0');
-netcdf.putAtt(filt.ncid, varid, 'valid_max', '100.0');
+netcdf.putAtt(filt.ncid, varid, 'FillValue', -9999.0);
+netcdf.putAtt(filt.ncid, varid, 'valid_min', 0.0);
+netcdf.putAtt(filt.ncid, varid, 'valid_max', 100.0);
 netcdf.putAtt(filt.ncid, varid, 'long_name', 'model wind speed');
 netcdf.putAtt(filt.ncid, varid, 'units', 'm s-1');
-netcdf.putAtt(filt.ncid, varid, 'scale_factor', '1.0');
+netcdf.putAtt(filt.ncid, varid, 'scale_factor', 1.0);
 
 % ECMWF wind direction
 varid = netcdf.defVar(filt.ncid, 'ecmwf_wind_direction', ...
     'float', [dimid_mapping(AT_IDX, FILT), ...
               dimid_mapping(XT_IDX, FILT)]);
-netcdf.putAtt(filt.ncid, varid, 'FillValue', '-9999.0');
-netcdf.putAtt(filt.ncid, varid, 'valid_min', '0.0');
-netcdf.putAtt(filt.ncid, varid, 'valid_max', '360.0');
+netcdf.putAtt(filt.ncid, varid, 'FillValue', -9999.0);
+netcdf.putAtt(filt.ncid, varid, 'valid_min', 0.0);
+netcdf.putAtt(filt.ncid, varid, 'valid_max', 360.0);
 netcdf.putAtt(filt.ncid, varid, 'long_name', 'model wind direction');
 netcdf.putAtt(filt.ncid, varid, 'units', 'degrees');
-netcdf.putAtt(filt.ncid, varid, 'scale_factor', '1.0');
+netcdf.putAtt(filt.ncid, varid, 'scale_factor', 1.0);
 
 %% Alter copied definitions
 % Correct erroneous ProductionDateTime.  Use the access date/time for the
@@ -239,6 +251,7 @@ for k = 1:nvar
 end
 
 %% Fill in the new data
+% ECMWF
 data = '';
 e2b12.file = sprintf('%s/%04d/E2B_%05d.cp12.dat', ...
     e2b12_dir, run_year, run_no);
@@ -248,13 +261,76 @@ if (exist(e2b12.file, 'file') ~= 0)
     data = read_qs_e2b12(e2b12.file);
 else
     warning(['Can''t find ' e2b12.file]);
-    data.spd = str2double(ncgetatt(filt.ncid, 'ecmwf_wind_speed', ...
-        'FillValue')).*ones(xt_len, at_len);
-    data.dir = str2double(ncgetatt(filt.ncid, 'ecmwf_wind_direction', ...
-        'FillValue')).*ones(xt_len, at_len);
+    data.spd = ncgetatt(filt.ncid, 'ecmwf_wind_speed', ...
+        'FillValue').*ones(xt_len, at_len);
+    data.dir = ncgetatt(filt.ncid, 'ecmwf_wind_direction', ...
+        'FillValue').*ones(xt_len, at_len);
 end
 ncputvar(filt.ncid, 'ecmwf_wind_speed', data.spd);
 ncputvar(filt.ncid, 'ecmwf_wind_direction', data.dir);
+
+% Cross track speed bias
+impact_thresh = 2.5;
+rain_impact = ncgetvar(unfilt.ncid, 'rain_impact');
+speed = ncgetvar(unfilt.ncid, 'retrieved_wind_speed');
+
+% index into dimension 3 of cross track speed bias table
+impact_idx = 1 + double(rain_impact > impact_thresh);
+
+% used during interpolation
+ref_speed = (0.5:19.5)';
+dbias = diff(relspdbias2year, [], 2);
+
+lower_idx = floor(speed - 0.5) + 1;
+lower_idx(lower_idx <  1) =  1;
+lower_idx(lower_idx > 20) = 20;
+
+% pre-allocate for speed
+data = zeros(size(speed));
+
+% vector-ized interpolation
+% Step through each column separately
+[m, n] = size(speed);
+for c = 1:n
+    % pick off relevant columns so we can do logical indexing
+    lower_col  = lower_idx(:, c); % copy-on-write => this is an alias
+    impact_col = impact_idx(:, c);
+    speed_col  = speed(:, c);
+    data_col   = zeros(m, 1);
+    
+    % step through the two rain impact cases
+    for k = 1:2
+        dbias_col = dbias(c, :, k)';
+        bias_col   = relspdbias2year(c, :, k)';
+        
+        % If it's the highest bin, saturate
+        idx = (lower_col == 20) & (impact_col == k);
+        data_col(idx) = bias_col(lower_col(idx));
+    
+        % Otherwise, interpolate
+        idx = (lower_col < 20) & (impact_col == k);
+        data_col(idx) = bias_col(lower_col(idx)) + (speed_col(idx) - ...
+            ref_speed(lower_col(idx))).*dbias_col(lower_col(idx));
+        
+    end
+    % Insert into the data structure
+    data(:, c) = data_col;
+end
+
+% Account for invalid cells
+data(speed == ncgetatt(unfilt.ncid, 'retrieved_wind_speed', ...
+    'FillValue')) = ncgetatt(unfilt.ncid, ...
+    'cross_track_wind_speed_bias', 'FillValue');
+% Insert data structure into the file
+ncputvar(unfilt.ncid, 'cross_track_wind_speed_bias', data);
+
+% Atmospheric speed bias
+% assume that the l2b.dat file is in the same directory as the .nc file
+l2bfile = regexprep(src.file, '[^/]*$', 'l2b.dat');
+ncputvar(unfilt.ncid, 'atmospheric_speed_bias', ...
+    l2b_extraction(l2bfile, 'speedBias', ncgetatt(unfilt.ncid, ...
+    'atmospheric_speed_bias', 'FillValue')));
+
 
 %% Close files
 netcdf.close(src.ncid);
@@ -263,6 +339,8 @@ netcdf.close(filt.ncid);
 
 return
 
+
+% A helper function for leap-year calculations
 function ly = is_leap_year(year)
 
 ly = 0;
