@@ -44,8 +44,37 @@ static const char rcs_id[] =
 #include "Constants.h"
 
 #include "mex.h"
+#include "matrix.h"
 
 #define FOPEN_ERROR "Could not open file: "
+
+/* This macro does the real work.  Modulo types, it's the same code for each
+ * variable---let the compiler do the work.
+ */
+#define FROM_L2B_2D(l2bvar, l2bname, l2btype, mxvar, mxtype) {             \
+    int i, j;                                                              \
+    if (strcmp(l2bname, mxvar) == 0) {                                     \
+        l2btype *data;                                                     \
+        l2btype fill_val = *(__typeof__ &fill_val)mxGetData(prhs[FILLVAL]);\
+        mwSize dims[2] = {xt_num, at_num};                                 \
+        plhs[0] = mxCreateNumericArray((sizeof dims)/(sizeof *dims), dims, \
+            mxtype, mxREAL);                                               \
+                                                                           \
+        data = (__typeof__ data)mxGetData(plhs[0]);                        \
+                                                                           \
+        for (i = 0; i < at_num; i++) {                                     \
+            for (j = 0; j < xt_num; j++) {                                 \
+                wvc = l2b.frame.swath.swath[j][i];                         \
+                                                                           \
+                if ((wvc != NULL) && (wvc->selected != NULL)) {            \
+                    data[i*xt_num + j] = wvc->l2bvar;                      \
+                } else {                                                   \
+                    data[i*xt_num + j] = fill_val;                         \
+                }                                                          \
+            }                                                              \
+        }                                                                  \
+    }                                                                      \
+}
 
 //-----------//
 // TEMPLATES //
@@ -101,6 +130,13 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs) {
     at_num = l2b.frame.swath.GetAlongTrackBins(); 
     xt_num = l2b.frame.swath.GetCrossTrackBins();
 
+        
+
+    FROM_L2B_2D(speedBias, "speedBias", double, parameter, mxDOUBLE_CLASS);
+    FROM_L2B_2D(rainImpact, "rainImpact", double, parameter, mxDOUBLE_CLASS);
+    FROM_L2B_2D(qualFlag, "qualFlag", uint32, parameter, mxUINT32_CLASS);
+    FROM_L2B_2D(rainFlagBits, "rainFlagBits", uint8,  parameter, mxUINT8_CLASS);
+/*
     if (strcmp("speedBias", parameter) == 0) {
         double *data;
         double fill_val = *mxGetPr(prhs[FILLVAL]);
@@ -120,6 +156,71 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs) {
             }
         }
     }
+    if (strcmp("rainImpact", parameter) == 0) {
+        double *data;
+        double fill_val = *mxGetPr(prhs[FILLVAL]);
+
+        plhs[0] = mxCreateDoubleMatrix(xt_num, at_num, mxREAL);
+        data = mxGetPr(plhs[0]);
+
+        for (i = 0; i < at_num; i++) {
+            for (j = 0; j < xt_num; j++) {
+                wvc = l2b.frame.swath.swath[j][i];
+
+                if ((wvc != NULL) && (wvc->selected != NULL)) {
+                    data[i*xt_num + j] = wvc->rainImpact;
+                } else {
+                    data[i*xt_num + j] = fill_val;
+                }
+            }
+        }
+    }
+    if (strcmp("qualFlag", parameter) == 0) {
+        uint32 *data;
+        uint32 fill_val = *(__typeof__ &fill_val)mxGetData(prhs[FILLVAL]);
+
+        mwSize dims[2] = {xt_num, at_num};
+        plhs[0] = mxCreateNumericArray((sizeof dims)/(sizeof *dims), dims, 
+            mxUINT32_CLASS, mxREAL);
+
+        data = (__typeof__ data)mxGetData(plhs[0]);
+
+        for (i = 0; i < at_num; i++) {
+            for (j = 0; j < xt_num; j++) {
+                wvc = l2b.frame.swath.swath[j][i];
+
+                if ((wvc != NULL) && (wvc->selected != NULL)) {
+                    data[i*xt_num + j] = wvc->qualFlag;
+                } else {
+                    data[i*xt_num + j] = fill_val;
+                }
+            }
+        }
+    }
+    if (strcmp("rainFlagBits", parameter) == 0) {
+        uint8 *data;
+        uint8 fill_val = *(__typeof__ &fill_val)mxGetData(prhs[FILLVAL]);
+
+        mwSize dims[2] = {xt_num, at_num};
+        plhs[0] = mxCreateNumericArray((sizeof dims)/(sizeof *dims), dims, 
+            mxUINT32_CLASS, mxREAL);
+
+        data = (__typeof__ data)mxGetData(plhs[0]);
+
+        for (i = 0; i < at_num; i++) {
+            for (j = 0; j < xt_num; j++) {
+                wvc = l2b.frame.swath.swath[j][i];
+
+                if ((wvc != NULL) && (wvc->selected != NULL)) {
+                    data[i*xt_num + j] = wvc->rainFlagBits;
+                } else {
+                    data[i*xt_num + j] = fill_val;
+                }
+            }
+        }
+    }
+*/
+
 
     l2b.Close();
 

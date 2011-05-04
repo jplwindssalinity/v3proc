@@ -1,3 +1,29 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% ORIGINAL AUTHOR: Thomas Werne
+% COMPANY: Jet Propulsion Laboratory
+% VERSION:
+%
+% File Name:     qs_convert_netcdf.m
+% Creation Date: 26 Apr 2011
+%
+% $Author$
+% $Date$
+% $Revision$
+%
+% Copyright 2009-2011, by the California Institute of Technology.
+% ALL RIGHTS RESERVED.  United States Government Sponsorship
+% acknowledged. Any commercial use must be negotiated with the Office
+% of Technology Transfer at the California Institute of Technology.
+%
+% This software may be subject to U.S. export control laws and
+% regulations.  By accepting this document, the user agrees to comply
+% with all U.S. export laws and regulations.  User has the
+% responsibility to obtain export licenses, or other export authority
+% as may be required before exporting such information to foreign
+% countries or providing access to foreign persons.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 function qs_convert_netcdf(orig_nc_file, e2b12_dir)
 
 %% Load in the cross track bias map and keep it resident
@@ -90,12 +116,12 @@ switch run_doy
     otherwise, display 'Couldn''t determine DOY -> Mo';
 end
 
-unfilt.file = sprintf('L2B_%05d_v3_%04d_%02d.nc', run_no, run_year, ...
+unfilt.filename = sprintf('qs_l2b_%05d_v3_%04d_%02d.nc', run_no, run_year, ...
     run_month);
-unfilt.file = regexprep(src.file, '[^/]*$', unfilt.file);
-filt.file   = sprintf('L2C_%05d_v3_%04d_%02d.nc', run_no, run_year, ...
+unfilt.file     = regexprep(src.file, '[^/]*$', unfilt.filename);
+filt.filename   = sprintf('qs_l2c_%05d_v3_%04d_%02d.nc', run_no, run_year, ...
     run_month);
-filt.file   = regexprep(src.file, '[^/]*$', filt.file);
+filt.file       = regexprep(src.file, '[^/]*$', filt.filename);
 
 %% Open the product files
 unfilt.ncid = netcdf.create(unfilt.file, 'CLASSIC_MODEL');
@@ -128,16 +154,16 @@ for k = 1:nvar
     % copy the information from the old file
     varid_src = netcdf.inqVarID(src.ncid, var_mapping{k, SRC});
     [~, xtype, dimids, natts] = netcdf.inqVar(src.ncid, varid_src);
-        
+
     % Given source dimension ids, lookup the index in the dimid LUT
     [X, Y] = meshgrid(dimid_mapping(:, SRC), dimids);
     [~, dimids] = find(X == Y);
-   
+
     % Unfiltered file
     if (~isempty(var_mapping{k, UNFILT}))
         varid_tgt = netcdf.defVar(unfilt.ncid, var_mapping{k, UNFILT}, ...
             xtype, dimid_mapping(dimids, UNFILT));
-        
+
         % Copy the variable attributes
         for m = 0:natts - 1
             name = netcdf.inqAttName(src.ncid, varid_src, m);
@@ -150,13 +176,13 @@ for k = 1:nvar
     if (~isempty(var_mapping{k, FILT}))
         varid_tgt = netcdf.defVar(filt.ncid, var_mapping{k, FILT}, ...
             xtype, dimid_mapping(dimids, FILT));
-        
+
         % Copy the variable attributes
         for m = 0:natts - 1
             name = netcdf.inqAttName(src.ncid, varid_src, m);
             netcdf.copyAtt(src.ncid, varid_src, name, ...
                 filt.ncid, varid_tgt);
-        end        
+        end
     end
 end
 
@@ -233,6 +259,26 @@ proc_date_att = sprintf('%04d-%03dT%02d:%02d:%02d.%03d', ...
 netcdf.putAtt(unfilt.ncid, GLOBAL, 'ProductionDateTime', proc_date_att);
 netcdf.putAtt(filt.ncid,   GLOBAL, 'ProductionDateTime', proc_date_att);
 
+% Fix long and short name attributes
+netcdf.putAtt(unfilt.ncid, GLOBAL, 'ShortName', 'QSCAT_LEVEl_2B_OWV_COMP_12');
+netcdf.putAtt(filt.ncid, GLOBAL, 'ShortName', 'QSCAT_LEVEl_2C_SFOWSV_COMP_12');
+
+netcdf.putAtt(unfilt.ncid, GLOBAL, 'LongName', ...
+    'QuikSCAT Level 2B Ocean Wind Vectors in 12.5km Slice Composites');
+netcdf.putAtt(filt.ncid, GLOBAL, 'LongName', ...
+    ['QuikSCAT Level 2C Spatially Filtered Ocean Wind and Stress ' ...
+     'Vectors in 12.5km Slice Composites']);
+
+% Granule and QAGranule Pointers
+netcdf.putAtt(unfilt.ncid, GLOBAL, 'GranulePointer', unfilt.filename);
+netcdf.putAtt(filt.ncid, GLOBAL, 'GranulePointer', filt.filename);
+netcdf.putAtt(unfilt.ncid, GLOBAL, 'QAGranulePointer', '');
+netcdf.putAtt(filt.ncid, GLOBAL, 'QAGranulePointer', '');
+
+% Add new history attribute
+netcdf.putAtt(unfilt.ncid, GLOBAL, 'history', '');
+netcdf.putAtt(filt.ncid, GLOBAL, 'history', '');
+
 %% End the definitions stage
 netcdf.endDef(unfilt.ncid);
 netcdf.endDef(filt.ncid);
@@ -241,7 +287,7 @@ netcdf.endDef(filt.ncid);
 [nvar, ~] = size(var_mapping);
 for k = 1:nvar
     data = ncgetvar(src.ncid, var_mapping{k, SRC});
-    
+
     if (~isempty(var_mapping{k, UNFILT}))
         ncputvar(unfilt.ncid, var_mapping{k, UNFILT}, data);
     end
@@ -297,21 +343,21 @@ for c = 1:n
     impact_col = impact_idx(:, c);
     speed_col  = speed(:, c);
     data_col   = zeros(m, 1);
-    
+
     % step through the two rain impact cases
     for k = 1:2
         dbias_col = dbias(c, :, k)';
         bias_col   = relspdbias2year(c, :, k)';
-        
+
         % If it's the highest bin, saturate
         idx = (lower_col == 20) & (impact_col == k);
         data_col(idx) = bias_col(lower_col(idx));
-    
+
         % Otherwise, interpolate
         idx = (lower_col < 20) & (impact_col == k);
         data_col(idx) = bias_col(lower_col(idx)) + (speed_col(idx) - ...
             ref_speed(lower_col(idx))).*dbias_col(lower_col(idx));
-        
+
     end
     % Insert into the data structure
     data(:, c) = data_col;
