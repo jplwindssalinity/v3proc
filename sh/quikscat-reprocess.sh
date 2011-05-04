@@ -215,7 +215,7 @@ function qs_reproc_stage () {
     DATE1=`echo $ID | sed -e 's/  */ /g' | cut -f 2 -d \  `
 
     YEAR1=`echo $DATE1 | sed -e 's/^\(.*\)-.*/\1/'`
-    DAY1=`echo $DATE1 | sed -e 's/.*-\(.*\)T.*/\1/'`
+    DAY1=`echo $DATE1 | sed -e 's/.*-0*\(.*\)T.*/\1/'`
 
     # Play some games with `date` to get a "properly formatted" 
     # version of DATE1, then add one day to it to find the following
@@ -225,6 +225,9 @@ function qs_reproc_stage () {
     
     YEAR2=$(date --date="$DATE2" +%Y)
     DAY2=$(date --date="$DATE2" +%j)
+
+    # Prepend zeros as necessary
+    DAY1=$(date --date="$DATE1" +%j)
 
     # See if there are any existing L1B HDF files associated to this rev
     ls "$DIR_QSL1B_HDF"/*"$REV"* > /dev/null 2>&1
