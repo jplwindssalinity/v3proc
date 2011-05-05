@@ -1407,6 +1407,14 @@ int main(int argc, char **argv) {
                 NCERR(nc_put_var1_float(ncid, varlist[LONGITUDE].id, idx, 
                             &lon));
 
+                if ((wvc->rainCorrectedSpeed == -1) && (wvc->rainImpact == 0)) {
+                    NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
+                            &varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f));
+                } else {
+                    NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
+                            &wvc->rainImpact));
+                }
+
                 if (IS_NOT_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
                     /* Rain correction applied */
                     float uncorr_speed;
@@ -1416,9 +1424,6 @@ int main(int argc, char **argv) {
                     if ((uncorr_speed < 0) && (uncorr_speed > -1e-6)) {
                         uncorr_speed = 0.0f;
                     }
-
-                    NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
-                            &wvc->rainImpact));
 
                     NCERR(nc_put_var1_float(ncid, 
                         varlist[WIND_SPEED_UNCORRECTED].id, idx, 
@@ -1435,8 +1440,6 @@ int main(int argc, char **argv) {
                         &wvc->selected->spd));
 
                 if (IS_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
-                    NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
-                            &varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f));
                     NCERR(nc_put_var1_float(ncid, 
                         varlist[WIND_SPEED_UNCORRECTED].id, idx, 
                         &wvc->selected->spd));
