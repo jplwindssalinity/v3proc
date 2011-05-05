@@ -134,6 +134,8 @@ void mexFunction(int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs) {
 
     FROM_L2B_2D(speedBias, "speedBias", double, parameter, mxDOUBLE_CLASS);
     FROM_L2B_2D(rainImpact, "rainImpact", double, parameter, mxDOUBLE_CLASS);
+    FROM_L2B_2D(rainCorrectedSpeed, "rainCorrectedSpeed", double,  parameter,
+        mxDOUBLE_CLASS);
     FROM_L2B_2D(qualFlag, "qualFlag", uint32, parameter, mxUINT32_CLASS);
     FROM_L2B_2D(rainFlagBits, "rainFlagBits", uint8,  parameter, mxUINT8_CLASS);
 /*

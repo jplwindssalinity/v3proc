@@ -25,6 +25,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function qs_convert_netcdf(orig_nc_file, e2b12_dir)
+%
+% qs_convert_netcdf(orig_nc_file, e2b12_dir)
+%
+% This function is used to convert the "old style" QuikSCAT NetCDF files to the
+% "new style" L2B.nc/L2C.nc files.  Some attributes are added/modified to
+% conform with PO.DAAC requirements.
+%
+% The given NetCDF file (orig_nc_file) and appropriate E1B12 file (found in a
+% year-indexed subdirectory of e2b12_dir) are used to produce two new NetCDF
+% files.
+%
+% --- taw, 04-May-2011
 
 %% Load in the cross track bias map and keep it resident
 persistent relspdbias2year;
