@@ -335,6 +335,14 @@ ncputatt(filt.ncid, 'stress_curl', 'units', 'N m-3');
 netcdf.putAtt(unfilt.ncid, GLOBAL, 'Conventions', 'CF-1.4');
 netcdf.putAtt(filt.ncid,   GLOBAL, 'Conventions', 'CF-1.4');
 
+% Set algorithm description
+netcdf.putAtt(unfilt.ncid, GLOBAL, 'l2a_algorithm_descriptor', ...
+    ['Uses Ku2011 GMF from Remote Sensing Systems and Neural ', ...
+    'Network Rain Correction']);
+netcdf.putAtt(filt.ncid, GLOBAL, 'l2a_algorithm_descriptor', ...
+    ['Uses Ku2011 GMF from Remote Sensing Systems and Neural ', ...
+    'Network Rain Correction']);
+
 %% End the definitions stage
 netcdf.endDef(unfilt.ncid);
 netcdf.endDef(filt.ncid);
