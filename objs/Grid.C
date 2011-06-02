@@ -79,7 +79,11 @@ Grid::SetStartTime(
       double r_n_at_bins      = 1624.0 * 25.0 / _alongtrack_res; 
       double atrack_bin_const = 360.0         / r_n_at_bins; 
       _start_vati_SOM         = (int)floor( at_lon / atrack_bin_const + 1.0 ) - 1;
+      
+      // restrict _start_vati_SOM to be non-negative 6/2/2011 AGF
+      if( _start_vati_SOM < 0 ) _start_vati_SOM = 0;
       //fprintf(stdout,"Grid::SetStartTime: at_lon, _start_vati_SOM: %12.6f %d\n",at_lon,_start_vati_SOM);
+      
     }
     return(1);
 }
