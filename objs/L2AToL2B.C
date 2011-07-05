@@ -1873,6 +1873,14 @@ L2AToL2B::GenSigma0Flags( MeasList* meas_list, GMF *gmf, WVC* wvc ) {
   wvc->qualFlag = (wvc->qualFlag & ~L2B_QUAL_FLAG_ICE)
    | (iceFound  != 0) * L2B_QUAL_FLAG_ICE;
   
+  // For compatability
+  wvc->landiceFlagBits = 0;
+  wvc->landiceFlagBits = (wvc->landiceFlagBits & ~LAND_ICE_FLAG_COAST)
+   | (landFound != 0) * LAND_ICE_FLAG_COAST;
+
+  wvc->landiceFlagBits = (wvc->landiceFlagBits & ~LAND_ICE_FLAG_ICE)
+   | (iceFound != 0) * LAND_ICE_FLAG_ICE;
+  
   return(1);
 }
 
@@ -1926,6 +1934,26 @@ L2AToL2B::ConvertAndWrite(
     {
       meas->value*=(1+kprc_err);
     }
+    
+    // allocate WVC
+    WVC* wvc = new WVC();
+    
+    // Generate sigma0 related quality flags 3/9/2011 AGF
+    GenSigma0Flags( meas_list, gmf, wvc );
+    
+    { // Remove land/ice flagged meas in meas_list
+      Meas* meas = meas_list->GetHead();
+      for( int c = 0; c < meas_list->NodeCount(); c++ ) {
+        if( meas->landFlag == 0 )
+          meas = meas_list->GetNext();
+        else {
+          meas = meas_list->RemoveCurrent();
+          delete meas;
+          meas = meas_list->GetCurrent();
+        }
+      }
+    }
+
 
     //-----------------------------------//
     // check for wind retrieval criteria //
@@ -1933,6 +1961,7 @@ L2AToL2B::ConvertAndWrite(
 
     if (! gmf->CheckRetrieveCriteria(meas_list))
     {
+        delete wvc;
         return(4);
     }
 
@@ -1988,6 +2017,7 @@ L2AToL2B::ConvertAndWrite(
       } // end valid inputs to MLP case
       // for now exit if inputs are invalid (this will toss out single beam swath )
       else{
+    delete wvc;
 	return(18);
       }
     } // end of RainCorrectMethod==ANN_NRCS_CORRECTION
@@ -1995,13 +2025,11 @@ L2AToL2B::ConvertAndWrite(
     // retrieve wind //
     //---------------//
 
-    WVC* wvc = new WVC();
+    
     float ctd, speed, dir;
     WindVectorPlus* wvp;
     static int num = 1;
     
-    // Generate sigma0 related quality flags 3/9/2011 AGF
-    GenSigma0Flags( meas_list, gmf, wvc );
     
     //HACK for breakpoint in gdb
     if(l2a->frame.cti==722 && l2a->frame.ati==2181){
