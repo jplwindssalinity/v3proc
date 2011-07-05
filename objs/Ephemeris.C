@@ -485,8 +485,9 @@ int
 Ephemeris::GetSOMCoordinates(
     EarthPosition    rground,
     double           measurement_time,
+    int              grid_starts_north_pole,
     double*          ct_lat,
-    double*          at_lon)
+    double*          at_lon )
 {	
 	double sc_pos[3];
 	double sc_vel[3];
@@ -696,20 +697,37 @@ Ephemeris::GetSOMCoordinates(
     sphipi /= sqrt(1.0 - e2*snlat*snlat);
     double phipi = asin(sphipi);    // cross-track latitude	
 	
+	// If grid starts at north pole, remove pi from at_lon and wrap in range.
+  	if( grid_starts_north_pole ) {
+  	  lip -= pi;
+	  if( lip < 0 ) lip += two_pi;
+	}
+	
 	*at_lon = lip*rtd;   // along-track longitude
     *ct_lat = phipi*rtd; // cross-track latitude
-	
-	
-	// Un-wrap along-track longitude depending on ascending/decending.
-	// Near end of orbit, sc_vel[2] (VZ) should be less than zero 
-	// (approaches zero at orbit boundary).
-	if( *at_lon > 340 && sc_vel[2] > 0 ) 
-	  *at_lon -= 360;
-	
-	// Similar logic on other boundary.
-	if( *at_lon < 20 && sc_vel[2] < 0 )
-	  *at_lon += 360;
-	
+
+ 	// Un-wrap along-track longitude depending on ascending/decending.	
+	if( grid_starts_north_pole ) {
+	  // For grids starting at north pole:
+	  // If decending (vz<0) and at_lon says at end of orbit, it is probably 
+	  // wrapped from observations near the start of orbit.	  
+	  if( *at_lon > 340 && sc_vel[2] < 0 ) 
+	    *at_lon -= 360;
+	    
+	  // Similar logic on other boundary.
+	  if( *at_lon < 20 && sc_vel[2] > 0 )
+	    *at_lon += 360;
+	} else {
+	  // For grids starting at south pole:
+	  // If ascending (vz>0) and at_lon says at end of orbit, it is probably 
+	  // wrapped from observations near the start of orbit.	  
+	  if( *at_lon > 340 && sc_vel[2] > 0 )
+	    *at_lon -= 360;
+	  
+	  // Similar logic on other boundary.
+	  if( *at_lon < 20 && sc_vel[2] < 0 )
+	    *at_lon += 360;
+	}
 	return(1);
 }
 

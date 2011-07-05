@@ -112,7 +112,9 @@ public:
              EarthPosition* rground);
              
     int GetSOMCoordinates( EarthPosition rground,
-             double measurement_time, double *ct_lat, double *at_lon);
+             double measurement_time, 
+             int    grid_starts_north_pole,
+             double *ct_lat, double *at_lon);
     
     
 protected:

@@ -2291,6 +2291,14 @@ ConfigGrid(
         exit(1);
       }
     }
+    
+    // AGF 7/5/2011 -- ISRO L1B files start at north pole; Grid object needs to know so it
+    // can tell the Ephemeris object when requesting coordinates in the SOM projection.
+    config_list->WarnForMissingKeywords();
+    int grid_starts_north_pole;
+    if( config_list->GetInt(GRID_STARTS_NORTH_POLE_KEYWORD, &grid_starts_north_pole) )
+      grid->grid_starts_north_pole = grid_starts_north_pole;
+    
     config_list->ExitForMissingKeywords();
     
     return(1);

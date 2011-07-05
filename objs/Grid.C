@@ -30,7 +30,7 @@ Grid::Grid()
     _alongtrack_size(0.0), _crosstrack_bins(0), _alongtrack_bins(0),
     _start_time(0.0), _end_time(0.0), _max_vati(0), _ati_start(0),
     _ati_offset(0), _orbit_period(0.0), _grid(NULL),_writeIndices(false),
-    _indfp(NULL),_plotMode(false)
+    _indfp(NULL),_plotMode(false), grid_starts_north_pole(0)
 {
     return;
 }
@@ -75,7 +75,8 @@ Grid::SetStartTime(
     if( algorithm == SOM )
     {
       double at_lon, ct_lat;
-      ephemeris.GetSOMCoordinates( _start_position, _start_time, &ct_lat, &at_lon );
+      ephemeris.GetSOMCoordinates( _start_position, _start_time, 
+        grid_starts_north_pole, &ct_lat, &at_lon );
       double r_n_at_bins      = 1624.0 * 25.0 / _alongtrack_res; 
       double atrack_bin_const = 360.0         / r_n_at_bins; 
       _start_vati_SOM         = (int)floor( at_lon / atrack_bin_const + 1.0 ) - 1;
@@ -232,7 +233,8 @@ Grid::Add(
       double ijbin_r_ati, ijbin_r_cti;
       double ijbin_atlon, ijbin_ctlat;
       
-      ephemeris.GetSOMCoordinates( meas->centroid, meas_time, &ijbin_ctlat, &ijbin_atlon );
+      ephemeris.GetSOMCoordinates( meas->centroid, meas_time, 
+        grid_starts_north_pole, &ijbin_ctlat, &ijbin_atlon );
 
       // # of along-track bins for 360 of along-track longitude.
       double r_n_at_bins = 1624.0 * 25.0 / _alongtrack_res; 
