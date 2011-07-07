@@ -82,9 +82,9 @@ Grid::SetStartTime(
       _start_vati_SOM         = (int)floor( at_lon / atrack_bin_const + 1.0 ) - 1;
       
       // restrict _start_vati_SOM to be non-negative 6/2/2011 AGF
-      if( _start_vati_SOM < 0 ) _start_vati_SOM = 0;
-      //fprintf(stdout,"Grid::SetStartTime: at_lon, _start_vati_SOM: %12.6f %d\n",at_lon,_start_vati_SOM);
-      
+      // ISRO OS2 data needs to force this to zero, or else we mess up the l2b grid.
+      if( _start_vati_SOM < 0 || grid_starts_north_pole ) _start_vati_SOM = 0;
+      fprintf(stdout,"Grid::SetStartTime: at_lon, _start_vati_SOM: %12.6f %d\n",at_lon,_start_vati_SOM);
     }
     return(1);
 }
