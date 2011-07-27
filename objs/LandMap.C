@@ -741,7 +741,7 @@ int QSLandMap::IsLand( float lon,      // radians
   // Check that inputs are in range
   if( lon_deg       <   0 || lon_deg       >= 360 ||
       lat_deg       < -90 || lat_deg       >   90 ||
-      flagging_mode <   0 || flagging_mode >    1 ) {
+      flagging_mode <   0 || flagging_mode >    2 ) {
     fprintf(stderr,"In QSLandMap::IsLand: Error inputs out of range!\n");
     return(0);
   }
@@ -761,6 +761,8 @@ int QSLandMap::IsLand( float lon,      // radians
     bits = (unsigned char)0x40;
   else if ( flagging_mode == 1 ) // bit 4 used in L2B 12.5 km product
     bits = (unsigned char)0x10;
+  else if ( flagging_mode == 2 ) // Use most restrictive bit
+    bits = (unsigned char)0x80;
   else {
     fprintf(stderr,"In QSLandMap::IsLand: Unknown value of flagging_mode: %d\n",
            flagging_mode);
