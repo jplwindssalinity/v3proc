@@ -944,6 +944,11 @@ main(
              new_meas->C = kp_C[gatewidth*2+new_meas->beamIdx];
            }
            
+           if( fabs(new_meas->value) > 1.0e5 ) {
+             delete new_meas;
+             continue;
+           }
+           
            // Stick this meas in the measSpot
            new_meas_spot->Append(new_meas);
         }
