@@ -30,7 +30,7 @@ Grid::Grid()
     _alongtrack_size(0.0), _crosstrack_bins(0), _alongtrack_bins(0),
     _start_time(0.0), _end_time(0.0), _max_vati(0), _ati_start(0),
     _ati_offset(0), _orbit_period(0.0), _grid(NULL),_writeIndices(false),
-    _indfp(NULL),_plotMode(false), grid_starts_north_pole(0)
+    _indfp(NULL),_plotMode(false), grid_starts_north_pole(0), grid_starts_south_pole(0)
 {
     return;
 }
@@ -81,9 +81,11 @@ Grid::SetStartTime(
       double atrack_bin_const = 360.0         / r_n_at_bins; 
       _start_vati_SOM         = (int)floor( at_lon / atrack_bin_const + 1.0 ) - 1;
       
-      // restrict _start_vati_SOM to be non-negative 6/2/2011 AGF
+      // Added option for grid to start at north pole, 9/15/2011 AGF
       // ISRO OS2 data needs to force this to zero, or else we mess up the l2b grid.
-      if( _start_vati_SOM < 0 || grid_starts_north_pole ) _start_vati_SOM = 0;
+      if( _start_vati_SOM < 0 || grid_starts_north_pole || grid_starts_south_pole )
+        _start_vati_SOM = 0;
+
       fprintf(stdout,"Grid::SetStartTime: at_lon, _start_vati_SOM: %12.6f %d\n",at_lon,_start_vati_SOM);
     }
     return(1);

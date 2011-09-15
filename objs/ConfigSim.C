@@ -2298,6 +2298,10 @@ ConfigGrid(
     int grid_starts_north_pole;
     if( config_list->GetInt(GRID_STARTS_NORTH_POLE_KEYWORD, &grid_starts_north_pole) )
       grid->grid_starts_north_pole = grid_starts_north_pole;
+
+    int grid_starts_south_pole;
+    if( config_list->GetInt(GRID_STARTS_SOUTH_POLE_KEYWORD, &grid_starts_south_pole) )
+      grid->grid_starts_south_pole = grid_starts_south_pole;
     
     config_list->ExitForMissingKeywords();
     

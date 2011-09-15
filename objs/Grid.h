@@ -83,6 +83,7 @@ public:
         GridAlgoE   algorithm;
         float overlapFactor;
         int grid_starts_north_pole;
+        int grid_starts_south_pole;
 protected:
 
 	// resolution and sizes are in km
