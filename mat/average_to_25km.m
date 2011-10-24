@@ -43,11 +43,7 @@ div = 2;
 
 ncid_12p5 = netcdf.open(fname_12p5, 'NOWRITE');
 
-if (~isempty(strfind(fname_12p5, '_GS')))
-    fname_25p0 = strrep(fname_12p5, '_GS', '_25km_GS');
-else
-    fname_25p0 = strrep(fname_12p5, '_S3', '_25km_S3');
-end
+fname_25p0 = strrep(fname_12p5, '_l2b', '_l2b_25km');
 
 % Get dimensions
 [~, nvars, ngatts, ~] = netcdf.inq(ncid_12p5);
@@ -55,8 +51,6 @@ end
     'along_track'));
 [~, xt_len] = netcdf.inqDim(ncid_12p5, netcdf.inqDimID(ncid_12p5, ...
     'cross_track'));
-[~, ts_len] = netcdf.inqDim(ncid_12p5, netcdf.inqDimID(ncid_12p5, ...
-    'time_strlength'));
 
 % Get the variables
 ncgetvar12p5 = @(name) ncgetvar(ncid_12p5, name);
@@ -67,37 +61,32 @@ lat = ncgetvar12p5('lat');
     lat_fill = ncgetatt12p5('lat', 'FillValue');
 lon = ncgetvar12p5('lon');
     lon_fill = ncgetatt12p5('lon', 'FillValue');
-wind_speed = ncgetvar12p5('wind_speed');
-    wind_speed_fill = ncgetatt12p5('wind_speed', 'FillValue');
-wind_dir = ncgetvar12p5('wind_to_direction');
-    wind_dir_fill = ncgetatt12p5('wind_to_direction', 'FillValue');
+wind_speed = ncgetvar12p5('retrieved_wind_speed');
+    wind_speed_fill = ncgetatt12p5('retrieved_wind_speed', 'FillValue');
+wind_dir = ncgetvar12p5('retrieved_wind_direction');
+    wind_dir_fill = ncgetatt12p5('retrieved_wind_direction', 'FillValue');
 rain_impact = ncgetvar12p5('rain_impact');
     rain_impact_fill = ncgetatt12p5('rain_impact', 'FillValue');
-wind_divergence = ncgetvar12p5('wind_divergence');
-    wind_divergence_fill = ncgetatt12p5('wind_divergence', 'FillValue');
-wind_curl = ncgetvar12p5('wind_curl');
-    wind_curl_fill = ncgetatt12p5('wind_curl', 'FillValue');
-stress = ncgetvar12p5('stress');
-    stress_fill = ncgetatt12p5('stress', 'FillValue');
-stress_div = ncgetvar12p5('stress_divergence');
-    stress_div_fill = ncgetatt12p5('stress_divergence', 'FillValue');
-stress_curl = ncgetvar12p5('stress_curl');
-    stress_curl_fill = ncgetatt12p5('stress_curl', 'FillValue');
 flags = uint16(ncgetvar12p5('flags'));
 %    flags_fill = ncgetatt12p5('flags', 'FillValue');
 eflags = uint16(ncgetvar12p5('eflags'));
 %    eflags_fill = ncgetatt12p5('eflags', 'FillValue');
-model_wind_speed = ncgetvar12p5('model_wind_speed');
-    model_wind_speed_fill = ncgetatt12p5('model_wind_speed', 'FillValue');
-model_wind_dir = ncgetvar12p5('model_wind_direction');
-    model_wind_dir_fill = ncgetatt12p5('model_wind_direction', ...
+model_wind_speed = ncgetvar12p5('nudge_wind_speed');
+    model_wind_speed_fill = ncgetatt12p5('nudge_wind_speed', 'FillValue');
+model_wind_dir = ncgetvar12p5('nudge_wind_direction');
+    model_wind_dir_fill = ncgetatt12p5('nudge_wind_direction', ...
         'FillValue');
-wind_speed_uncorrected = ncgetvar12p5('wind_speed_uncorrected');
-    wind_speed_uncorrected_fill = ncgetatt12p5('wind_speed_uncorrected', ...
-        'FillValue');
+wind_speed_uncorrected = ncgetvar12p5('retrieved_wind_speed_uncorrected');
+    wind_speed_uncorrected_fill = ncgetatt12p5(...
+        'retrieved_wind_speed_uncorrected', 'FillValue');
 num_ambiguities = ncgetvar12p5('num_ambiguities');
     num_ambiguities_fill = ncgetatt12p5('num_ambiguities', 'FillValue');
-
+xtrack_wind_speed_bias = ncgetvar12p5('cross_track_wind_speed_bias');
+    xtrack_wind_speed_bias_fill = ncgetatt12p5(...
+        'cross_track_wind_speed_bias', 'FillValue');
+atm_speed_bias = ncgetvar12p5('atmospheric_speed_bias');
+    atm_speed_bias_fill = ncgetatt12p5('atmospheric_speed_bias', ...
+        'FillValue');
 
 % Do the appropriate conversions and averaging
 u = wind_speed.*cosd(wind_dir);
@@ -105,22 +94,19 @@ v = wind_speed.*sind(wind_dir);
 model_u = model_wind_speed.*cosd(model_wind_dir);
 model_v = model_wind_speed.*sind(model_wind_dir);
 
-warning('Just using time idx %d instead of averaging', ...
-    floor((div + 1)/2)); %#ok
-
-time = time(:, floor((div + 1)/2):div:end);
+time = avg(time, div, -Inf);
 lat = avg(lat, div, lat_fill);
 lon = avg(lon, div, lon_fill);
 u = avg(u, div);
 v = avg(v, div);
-wind_divergence = avg(wind_divergence, div, wind_divergence_fill);
-wind_curl = avg(wind_curl, div, wind_curl_fill);
-stress = avg(stress, div, stress_fill);
-stress_div = avg(stress_div, div, stress_div_fill);
-stress_curl = avg(stress_curl, div, stress_curl_fill);
 model_u = avg(model_u, div);
 model_v = avg(model_v, div);
-wind_speed_uncorrected = avg(wind_speed_uncorrected, div);
+wind_speed_uncorrected = avg(wind_speed_uncorrected, div, ...
+    wind_speed_uncorrected_fill);
+xtrack_wind_speed_bias = avg(xtrack_wind_speed_bias, div, ...
+    xtrack_wind_speed_bias_fill);
+atm_speed_bias = avg(atm_speed_bias, div, ...
+    atm_speed_bias_fill);
 
 % For rain_impact, num_ambiguities, we want to take the max over
 % the averaged cells
@@ -147,11 +133,11 @@ new_rain_impact(sub2ind(size(new_rain_impact), ceil(inval_idx_r/div), ...
 
 rain_impact = new_rain_impact;
 
-[invalid_idx_r, invalid_idx_c] = find(num_ambiguities(1:endr, 1:endc) == ...
+[inval_idx_r, inval_idx_c] = find(num_ambiguities(1:endr, 1:endc) == ...
                                      num_ambiguities_fill);
 
 new_num_ambiguities(sub2ind(size(new_num_ambiguities), ...
-    ceil(inval_idx_r/div), ceil(inval_idx_c/div))) == rain_impact_fill;
+    ceil(inval_idx_r/div), ceil(inval_idx_c/div))) = rain_impact_fill;
 
 num_ambiguities = new_num_ambiguities;
 
@@ -234,7 +220,6 @@ xt_len = floor(xt_len/div);
 
 netcdf.defDim(ncid_25p0, 'along_track', at_len);
 netcdf.defDim(ncid_25p0, 'cross_track', xt_len);
-netcdf.defDim(ncid_25p0, 'time_strlength', ts_len);
 
 % Copy the global attributes
 for k = 0:ngatts - 1
@@ -258,23 +243,20 @@ netcdf.endDef(ncid_25p0);
 
 % Write variables back out into NetCDF file
 ncputvar25p0 = @(name, val) ncputvar(ncid_25p0, name, val);
-ncputvar25p0('time', time);
 ncputvar25p0('lat', lat);
 ncputvar25p0('lon', lon);
-ncputvar25p0('wind_speed', wind_speed);
-ncputvar25p0('wind_to_direction', wind_dir);
+ncputvar25p0('retrieved_wind_speed', wind_speed);
+ncputvar25p0('retrieved_wind_direction', wind_dir);
 ncputvar25p0('rain_impact', rain_impact);
-ncputvar25p0('wind_divergence', wind_divergence);
-ncputvar25p0('wind_curl', wind_curl);
-ncputvar25p0('stress', stress);
-ncputvar25p0('stress_divergence', stress_div);
-ncputvar25p0('stress_curl', stress_curl);
 ncputvar25p0('flags', flags);
 ncputvar25p0('eflags', eflags);
-ncputvar25p0('model_wind_speed', model_wind_speed);
-ncputvar25p0('model_wind_direction', model_wind_dir);
-ncputvar25p0('wind_speed_uncorrected', wind_speed_uncorrected);
+ncputvar25p0('nudge_wind_speed', model_wind_speed);
+ncputvar25p0('nudge_wind_direction', model_wind_dir);
+ncputvar25p0('retrieved_wind_speed_uncorrected', wind_speed_uncorrected);
 ncputvar25p0('num_ambiguities', num_ambiguities);
+ncputvar25p0('time', time);
+ncputvar25p0('cross_track_wind_speed_bias', xtrack_wind_speed_bias);
+ncputvar25p0('atmospheric_speed_bias', atm_speed_bias);
 
 netcdf.close(ncid_12p5);
 netcdf.close(ncid_25p0);
@@ -284,26 +266,37 @@ return
 function avg_data = avg(data, div, fill_val)
 
 % Preallocate for speed
-avg_data = zeros(floor(size(data)/div));
 [endr, endc] = size(data);
-endr = div*floor(endr/div);
-endc = div*floor(endc/div);
+if (div < endr)
+    divr = div;
+else
+    divr = endr;
+end
+if (div < endc)
+    divc = div;
+else
+    divc = endc;
+end
+
+avg_data = zeros(max(floor([endr endc]./[divr divc]), 1));
+endr = divr*floor(endr/divr);
+endc = divc*floor(endc/divc);
 
 % Do the subaveraging
-for m = 1:div
-    for n = 1:div
-        avg_data = avg_data + data(m:div:endr, n:div:endc);
+for m = 1:divr
+    for n = 1:divc
+        avg_data = avg_data + data(m:divr:endr, n:divc:endc);
     end
 end
-avg_data = avg_data/(div^2);
+avg_data = avg_data/(divr*divc);
 
 if (exist('fill_val', 'var'))
     % Look for invalid data in the original array...
     [inval_idx_r, inval_idx_c] = find(data(1:endr, 1:endc) == fill_val);
 
     % and set the appropriate cells
-    avg_data(sub2ind(size(avg_data), ceil(inval_idx_r/div), ...
-        ceil(inval_idx_c/div))) = fill_val;
+    avg_data(sub2ind(size(avg_data), ceil(inval_idx_r/divr), ...
+        ceil(inval_idx_c/divc))) = fill_val;
 end
 
 return
