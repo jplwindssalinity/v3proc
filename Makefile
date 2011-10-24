@@ -58,3 +58,9 @@ tree: HDF/Makefile.svt
 
 HDF/Makefile.svt: $(SIM_CENTRAL_TREE)/src/HDF/RCS/Makefile.svt,v
 	(cd HDF; co $(SIM_CENTRAL_TREE)/src/HDF/RCS/Makefile.svt,v)
+
+#----------------------------------------------------------------------
+# l2c: make L2C netcdf 
+#----------------------------------------------------------------------
+l2c:
+	(cd QuikSCAT_L2BC; ./buildlibs.sh; ./bin/scons)
