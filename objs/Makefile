@@ -20,7 +20,7 @@ DEBUGFLAGS =    -ggdb2 --save-temps -O2 -g
 INCFLAGS =      -I$(INCDIR) -I$(HDFINCDIR) -I$(MALLOC_DIR) -I.
 
 # CPPFLAGS =		$(DEBUGFLAGS) $(INCFLAGS) -fno-implicit-templates -Wall -Wshadow -Woverloaded-virtual
-CPPFLAGS =		$(DEBUGFLAGS) $(INCFLAGS) -fno-implicit-templates -Wall
+CPPFLAGS =		$(DEBUGFLAGS) $(INCFLAGS) -fno-implicit-templates -Wall -fPIC
 SYSLIBS =		-lm
 CCC =			gcc
 CC  =			gcc
