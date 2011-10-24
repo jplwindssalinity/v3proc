@@ -494,7 +494,7 @@ int main(int argc, char **argv) {
     varlist[RAIN_IMPACT].attrs[VALID_MAX].name = "valid_max";
     varlist[RAIN_IMPACT].attrs[VALID_MAX].size = 1;
     varlist[RAIN_IMPACT].attrs[VALID_MAX].type = varlist[RAIN_IMPACT].type;
-    varlist[RAIN_IMPACT].attrs[VALID_MAX].value.f = 9999.0;
+    varlist[RAIN_IMPACT].attrs[VALID_MAX].value.f = 100.0;
     varlist[RAIN_IMPACT].attrs[LONG_NAME].name = "long_name";
     varlist[RAIN_IMPACT].attrs[LONG_NAME].size = 1;
     varlist[RAIN_IMPACT].attrs[LONG_NAME].type = NC_CHAR;
@@ -717,11 +717,7 @@ int main(int argc, char **argv) {
     varlist[FLAGS].attrs[FILL_VALUE].name = "FillValue";
     varlist[FLAGS].attrs[FILL_VALUE].size = 1;
     varlist[FLAGS].attrs[FILL_VALUE].type = varlist[FLAGS].type;
-    varlist[FLAGS].attrs[FILL_VALUE].value.s =
-        SIGMA0_MASK | AZIMUTH_DIV_MASK | COASTAL_MASK |
-        ICE_EDGE_MASK | WIND_RETRIEVAL_MASK | HIGH_WIND_MASK |
-        LOW_WIND_MASK | RAIN_IMPACT_UNUSABLE_MASK |
-        RAIN_IMPACT_MASK | AVAILABLE_DATA_MASK;
+    varlist[FLAGS].attrs[FILL_VALUE].value.s = 32767;
     varlist[FLAGS].attrs[VALID_MIN].name = "valid_min";
     varlist[FLAGS].attrs[VALID_MIN].size = 1;
     varlist[FLAGS].attrs[VALID_MIN].type = varlist[FLAGS].type;
@@ -773,9 +769,7 @@ int main(int argc, char **argv) {
     varlist[EFLAGS].attrs[FILL_VALUE].name = "FillValue";
     varlist[EFLAGS].attrs[FILL_VALUE].size = 1;
     varlist[EFLAGS].attrs[FILL_VALUE].type = varlist[EFLAGS].type;
-    varlist[EFLAGS].attrs[FILL_VALUE].value.s = 
-        RAIN_CORR_NOT_APPL_MASK | NEG_WIND_SPEED_MASK |
-        ALL_AMBIG_CONTRIB_MASK | RAIN_CORR_LARGE_MASK;
+    varlist[EFLAGS].attrs[FILL_VALUE].value.s = 32767;
     varlist[EFLAGS].attrs[VALID_MIN].name = "valid_min";
     varlist[EFLAGS].attrs[VALID_MIN].size = 1;
     varlist[EFLAGS].attrs[VALID_MIN].type = varlist[EFLAGS].type;
