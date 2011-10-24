@@ -39,7 +39,7 @@ function qs_convert_netcdf(orig_nc_file, e2b12_dir)
 % --- taw, 04-May-2011
 
 %% Load in the cross track bias map and keep it resident
-persistent relspdbias2year;
+persistent relspdbias2year; %#ok
 if isempty(relspdbias2year)
     load 'crosstrackbiasmap.mat'
 end
@@ -66,6 +66,24 @@ GLOBAL = netcdf.getConstant('GLOBAL');
 
 EPOCH = datenum('1/1/1999', 'mm/dd/yyyy');
 
+
+%% Define variables for later use
+build_id = 'reproc_v1_0_0:A';
+
+l2b_algorithm_descriptor = sprintf([...
+'Uses Ku2011 GMF from Remote Sensing Systems.  Applies median filter technique for ambiguity\n' ...
+'removal.  Ambiguity removal median filter is based on wind vectors over a 7\n' ...
+'by 7 wind vector cell window.  Applies no median filter weights.\n' ...
+'Enhances the direction of the selected ambiguity based on the range of\n' ...
+'directions which exceed a specified probability threshold.\n' ...
+'Applies multi-pass median filter technique to reduce the effects of rain\n' ...
+'flagged cells on ambiguity selection.\n' ...
+'Assigns values from mp_rain_probability, nof_rain_index, and bits 12, 13\n' ...
+'of wvc_quality_flag in the L2B pulse 25km product.  Applies Neural Network Rain Correction.']);
+
+FLAG_FILL = 32767;
+
+
 %% Variables to copy
 % Defines a mapping of variables from the source to the filtered and
 % unfiltered targets.
@@ -79,9 +97,9 @@ var_mapping = ...
      'rain_impact', 'rain_impact', ''; ...
      'wind_divergence', '', 'wind_divergence'; ...
      'wind_curl', '', 'wind_curl'; ...
-     'stress', '', 'stress'; ...
-     'stress_divergence', '', 'stress_divergence'; ...
-     'stress_curl', '', 'stress_curl'; ...
+%     'stress', '', 'stress'; ...
+%     'stress_divergence', '', 'stress_divergence'; ...
+%     'stress_curl', '', 'stress_curl'; ...
      'flags', 'flags', 'flags'; ...
      'eflags', 'eflags', 'eflags'; ...
      'model_wind_speed', 'nudge_wind_speed', ''; ...
@@ -89,7 +107,7 @@ var_mapping = ...
      'wind_speed_uncorrected', 'retrieved_wind_speed_uncorrected', ''; ...
      'num_ambiguities', 'num_ambiguities', ''};
 
-src.file = orig_nc_file;
+src.file = orig_nc_file
 src.ncid = netcdf.open(src.file, 'NOWRITE');
 
 %% Add standard_name attributes
@@ -107,13 +125,13 @@ filt.standard_names = {'lon', 'longitude'; ...
                        'lat', 'latitude'; ...
                        'time', 'time'; ...
                        'wind_speed', 'wind_speed'; ...
-                       'stress', ...
-                        'magnitude_of_surface_downward_stress';
+%                       'stress', ...
+%                        'magnitude_of_surface_downward_stress';
                        'wind_direction', 'wind_to_direction'; ...
                        'wind_divergence', 'divergence_of_wind'; ...
-                       'stress_divergence', ...
-                            'divergence_of_surface_downward_stress'; ...
-                       'wind_curl', 'atmosphere_relative_vorticity'; ...
+%                       'stress_divergence', ...
+%                            'divergence_of_surface_downward_stress'; ...
+%                       'wind_curl', 'atmosphere_relative_vorticity'; ...
                        'ecmwf_wind_speed', 'wind_speed'; ...
                        'ecmwf_wind_direction', 'wind_to_direction'};
                          
@@ -129,7 +147,6 @@ dimid_mapping(TS_IDX, SRC) = netcdf.inqDimID(src.ncid, 'time_strlength');
 
 [~, at_len] = netcdf.inqDim(src.ncid, dimid_mapping(AT_IDX, SRC));
 [~, xt_len] = netcdf.inqDim(src.ncid, dimid_mapping(XT_IDX, SRC));
-[~, ts_len] = netcdf.inqDim(src.ncid, dimid_mapping(TS_IDX, SRC));
 
 %% Compute new file name
 run_no = netcdf.getAtt(src.ncid, GLOBAL, 'StopOrbitNumber');
@@ -160,14 +177,12 @@ dimid_mapping(AT_IDX, UNFILT) = netcdf.defDim(unfilt.ncid, ...
     'along_track', at_len);
 dimid_mapping(XT_IDX, UNFILT) = netcdf.defDim(unfilt.ncid, ...
     'cross_track', xt_len);
-dimid_mapping(TS_IDX, UNFILT) = netcdf.defDim(unfilt.ncid, ...
-    'time_strlength', ts_len);
+dimid_mapping(TS_IDX, UNFILT) = -1; % Not implemented
 dimid_mapping(AT_IDX, FILT) = netcdf.defDim(filt.ncid, ...
     'along_track', at_len);
 dimid_mapping(XT_IDX, FILT) = netcdf.defDim(filt.ncid, ...
     'cross_track', xt_len);
-dimid_mapping(TS_IDX, FILT) = netcdf.defDim(filt.ncid, ...
-    'time_strlength', ts_len);
+dimid_mapping(TS_IDX, FILT) = -1; % Not implemented
 
 %% Copy the global attributes
 [~, ~, ngatts, ~] = netcdf.inq(src.ncid);
@@ -186,7 +201,7 @@ for k = 1:nvar
 
     % Given source dimension ids, lookup the index in the dimid LUT
     [X, Y] = meshgrid(dimid_mapping(:, SRC), dimids);
-    [~, dimids] = find(X == Y);
+    [dimids, ~] = find(X == Y);
 
     % Unfiltered file
     if (~isempty(var_mapping{k, UNFILT}))
@@ -230,8 +245,8 @@ netcdf.putAtt(filt.ncid, varid, 'units', 'seconds since 1999-01-01 0:0:0');
 
 % cross-track-wind-speed bias
 varid = netcdf.defVar(unfilt.ncid, 'cross_track_wind_speed_bias', ...
-    'float', [dimid_mapping(AT_IDX, UNFILT), ...
-              dimid_mapping(XT_IDX, UNFILT)]);
+    'float', fliplr([dimid_mapping(AT_IDX, UNFILT), ...
+                     dimid_mapping(XT_IDX, UNFILT)]));
 netcdf.putAtt(unfilt.ncid, varid, 'FillValue', single(-9999.0));
 netcdf.putAtt(unfilt.ncid, varid, 'valid_min', single(0.0));
 netcdf.putAtt(unfilt.ncid, varid, 'valid_max', single(100.0));
@@ -242,8 +257,8 @@ netcdf.putAtt(unfilt.ncid, varid, 'scale_factor', single(1.0));
 
 % atmospheric speed bias
 varid = netcdf.defVar(unfilt.ncid, 'atmospheric_speed_bias', ...
-    'float', [dimid_mapping(AT_IDX, UNFILT), ...
-              dimid_mapping(XT_IDX, UNFILT)]);
+    'float', fliplr([dimid_mapping(AT_IDX, UNFILT), ...
+                     dimid_mapping(XT_IDX, UNFILT)]));
 netcdf.putAtt(unfilt.ncid, varid, 'FillValue', single(-9999.0));
 netcdf.putAtt(unfilt.ncid, varid, 'valid_min', single(0.0));
 netcdf.putAtt(unfilt.ncid, varid, 'valid_max', single(100.0));
@@ -253,8 +268,8 @@ netcdf.putAtt(unfilt.ncid, varid, 'scale_factor', single(1.0));
 
 % ECMWF wind speed
 varid = netcdf.defVar(filt.ncid, 'ecmwf_wind_speed', ...
-    'float', [dimid_mapping(AT_IDX, FILT), ...
-              dimid_mapping(XT_IDX, FILT)]);
+    'float', fliplr([dimid_mapping(AT_IDX, FILT), ...
+                     dimid_mapping(XT_IDX, FILT)]));
 netcdf.putAtt(filt.ncid, varid, 'FillValue', single(-9999.0));
 netcdf.putAtt(filt.ncid, varid, 'valid_min', single(0.0));
 netcdf.putAtt(filt.ncid, varid, 'valid_max', single(100.0));
@@ -264,8 +279,8 @@ netcdf.putAtt(filt.ncid, varid, 'scale_factor', single(1.0));
 
 % ECMWF wind direction
 varid = netcdf.defVar(filt.ncid, 'ecmwf_wind_direction', ...
-    'float', [dimid_mapping(AT_IDX, FILT), ...
-              dimid_mapping(XT_IDX, FILT)]);
+    'float', fliplr([dimid_mapping(AT_IDX, FILT), ...
+                     dimid_mapping(XT_IDX, FILT)]));
 netcdf.putAtt(filt.ncid, varid, 'FillValue', single(-9999.0));
 netcdf.putAtt(filt.ncid, varid, 'valid_min', single(0.0));
 netcdf.putAtt(filt.ncid, varid, 'valid_max', single(360.0));
@@ -312,9 +327,17 @@ end
 
 % Granule Pointers
 netcdf.putAtt(unfilt.ncid, GLOBAL, 'GranulePointer', unfilt.filename);
-netcdf.putAtt(filt.ncid, GLOBAL, 'GranulePointer', filt.filename);
+netcdf.putAtt(filt.ncid,   GLOBAL, 'GranulePointer', filt.filename);
 netcdf.delAtt(unfilt.ncid, GLOBAL, 'QAGranulePointer');
-netcdf.delAtt(filt.ncid, GLOBAL, 'QAGranulePointer');
+netcdf.delAtt(filt.ncid,   GLOBAL, 'QAGranulePointer');
+
+% Update InputPointer
+netcdf.putAtt(unfilt.ncid, GLOBAL, 'InputPointer', ...
+    basename(netcdf.getAtt(unfilt.ncid, GLOBAL, 'source_file')));
+netcdf.putAtt(filt.ncid,   GLOBAL, 'InputPointer', ...
+    basename(netcdf.getAtt(filt.ncid,   GLOBAL, 'source_file')));
+netcdf.delAtt(unfilt.ncid, GLOBAL, 'source_file');
+netcdf.delAtt(filt.ncid,   GLOBAL, 'source_file');
 
 % Add new history attribute
 netcdf.putAtt(unfilt.ncid, GLOBAL, 'history', '');
@@ -327,21 +350,51 @@ ncputatt(unfilt.ncid, 'eflags', 'units', 'bit');
 ncputatt(filt.ncid,   'eflags', 'units', 'bit');
 
 % Change the units of certain variables...
-ncputatt(filt.ncid, 'stress', 'units', 'N m-2');
-ncputatt(filt.ncid, 'stress_divergence', 'units', 'N m-3');
-ncputatt(filt.ncid, 'stress_curl', 'units', 'N m-3');
+%ncputatt(filt.ncid, 'stress', 'units', 'N m-2');
+%ncputatt(filt.ncid, 'stress_divergence', 'units', 'N m-3');
+%ncputatt(filt.ncid, 'stress_curl', 'units', 'N m-3');
 
 % Change the Conventions attribute value
 netcdf.putAtt(unfilt.ncid, GLOBAL, 'Conventions', 'CF-1.4');
 netcdf.putAtt(filt.ncid,   GLOBAL, 'Conventions', 'CF-1.4');
 
 % Set algorithm description
-netcdf.putAtt(unfilt.ncid, GLOBAL, 'l2a_algorithm_descriptor', ...
-    ['Uses Ku2011 GMF from Remote Sensing Systems and Neural ', ...
-    'Network Rain Correction']);
-netcdf.putAtt(filt.ncid, GLOBAL, 'l2a_algorithm_descriptor', ...
-    ['Uses Ku2011 GMF from Remote Sensing Systems and Neural ', ...
-    'Network Rain Correction']);
+netcdf.putAtt(unfilt.ncid, GLOBAL, 'l2b_algorithm_descriptor', ...
+    l2b_algorithm_descriptor);
+netcdf.putAtt(filt.ncid, GLOBAL, 'l2b_algorithm_descriptor', ...
+    l2b_algorithm_descriptor);
+
+% Revise version attributes
+netcdf.delAtt(unfilt.ncid, GLOBAL, 'version_id_major');
+netcdf.delAtt(filt.ncid, GLOBAL, 'version_id_major');
+netcdf.delAtt(unfilt.ncid, GLOBAL, 'version_id_minor');
+netcdf.delAtt(filt.ncid, GLOBAL, 'version_id_minor');
+netcdf.delAtt(unfilt.ncid, GLOBAL, 'HDF_version_id');
+netcdf.delAtt(filt.ncid, GLOBAL, 'HDF_version_id');
+
+netcdf.putAtt(unfilt.ncid, GLOBAL, 'NetCDF_version_id', netcdf.inqLibVers);
+netcdf.putAtt(filt.ncid, GLOBAL, 'NetCDF_version_id', netcdf.inqLibVers);
+
+netcdf.putAtt(unfilt.ncid, GLOBAL, 'build_id', build_id);
+netcdf.putAtt(filt.ncid, GLOBAL, 'build_id', build_id);
+
+% Update data descriptors
+ancillary_data_descriptors = gather_config_files(regexprep(src.file, ...
+    '[^/]*$', 'QS.rdf'));
+
+netcdf.putAtt(unfilt.ncid, GLOBAL, 'ancillary_data_descriptors', ...
+    ancillary_data_descriptors);
+netcdf.putAtt(filt.ncid, GLOBAL, 'ancillary_data_descriptors', ...
+    ancillary_data_descriptors);
+
+% Update fill values
+ncputatt(unfilt.ncid, 'flags',  'FillValue', FLAG_FILL);
+ncputatt(filt.ncid,   'flags',  'FillValue', FLAG_FILL);
+ncputatt(unfilt.ncid, 'eflags', 'FillValue', FLAG_FILL);
+ncputatt(filt.ncid,   'eflags', 'FillValue', FLAG_FILL);
+
+% Update max rain impact
+ncputatt(unfilt.ncid, 'rain_impact',  'valid_max', 100);
 
 %% End the definitions stage
 netcdf.endDef(unfilt.ncid);
@@ -359,6 +412,19 @@ for k = 1:nvar
         ncputvar(filt.ncid, var_mapping{k, FILT}, data);
     end
 end
+
+%% Correct eflags
+eflags = uint16(ncgetvar(unfilt.ncid, 'eflags'));
+rain_corr_perf = (eflags ~= FLAG_FILL) & bitand(eflags, 2^0);
+eflags(rain_corr_perf) = bitand(eflags(rain_corr_perf), ...
+    bitand(bitcmp(2^1, 16), bitcmp(2^3, 16)));
+ncputvar(unfilt.ncid, 'eflags', int16(eflags));
+
+eflags = uint16(ncgetvar(filt.ncid, 'eflags'));
+rain_corr_perf = (eflags ~= FLAG_FILL) & bitand(eflags, 2^0);
+eflags(rain_corr_perf) = bitand(eflags(rain_corr_perf), ...
+    bitand(bitcmp(2^1, 16), bitcmp(2^3, 16)));
+ncputvar(filt.ncid, 'eflags', int16(eflags));
 
 %% Fill in the new data
 % Time
@@ -406,48 +472,8 @@ impact_thresh = 2.5;
 rain_impact = ncgetvar(unfilt.ncid, 'rain_impact');
 speed = ncgetvar(unfilt.ncid, 'retrieved_wind_speed');
 
-% index into dimension 3 of cross track speed bias table
-impact_idx = 1 + double(rain_impact > impact_thresh);
-
-% used during interpolation
-ref_speed = (0.5:19.5)';
-dbias = diff(relspdbias2year, [], 2);
-
-lower_idx = floor(speed - 0.5) + 1;
-lower_idx(lower_idx <  1) =  1;
-lower_idx(lower_idx > 20) = 20;
-
-% pre-allocate for speed
-data = zeros(size(speed));
-
-% vector-ized interpolation
-% Step through each column separately
-[m, n] = size(speed);
-for c = 1:n
-    % pick off relevant columns so we can do logical indexing
-    lower_col  = lower_idx(:, c); % copy-on-write => this is an alias
-    impact_col = impact_idx(:, c);
-    speed_col  = speed(:, c);
-    data_col   = zeros(m, 1);
-
-    % step through the two rain impact cases
-    for k = 1:2
-        dbias_col = dbias(c, :, k)';
-        bias_col   = relspdbias2year(c, :, k)';
-
-        % If it's the highest bin, saturate
-        idx = (lower_col == 20) & (impact_col == k);
-        data_col(idx) = bias_col(lower_col(idx));
-
-        % Otherwise, interpolate
-        idx = (lower_col < 20) & (impact_col == k);
-        data_col(idx) = bias_col(lower_col(idx)) + (speed_col(idx) - ...
-            ref_speed(lower_col(idx))).*dbias_col(lower_col(idx));
-
-    end
-    % Insert into the data structure
-    data(:, c) = data_col;
-end
+data = compute_bias_adj_rainy(speed, relspdbias2year, rain_impact, ...
+    impact_thresh);
 
 % Account for invalid cells
 data(speed == ncgetatt(unfilt.ncid, 'retrieved_wind_speed', ...
@@ -464,17 +490,143 @@ val_idx = (wind_speed ~= wind_speed_fill);
 wind_speed(val_idx) = wind_speed(val_idx) - data(val_idx);
 ncputvar(unfilt.ncid, 'retrieved_wind_speed', wind_speed);
 
-% Atmospheric speed bias
-% assume that the l2b.dat file is in the same directory as the .nc file
-l2bfile = regexprep(src.file, '[^/]*$', 'l2b.dat');
-ncputvar(unfilt.ncid, 'atmospheric_speed_bias', ...
-    l2b_extraction(l2bfile, 'speedBias', ncgetatt(unfilt.ncid, ...
-    'atmospheric_speed_bias', 'FillValue')));
+% Update high/low wind speed bits
+flags = uint16(ncgetvar(src.ncid, 'flags'));
+% Unset the high & low wind speed bits for ALL retrievals
+flags = bitand(flags, bitcmp(bitor(2^10, 2^11), 16));
+% Then for valid retrievals, set the high/low wind speed bits
+flags(val_idx) = bitor(flags(val_idx), ...
+    uint16((2^10)*(wind_speed(val_idx) > 30)));
+flags(val_idx) = bitor(flags(val_idx), ...
+    uint16((2^11)*(wind_speed(val_idx) <  3)));
+ncputvar(unfilt.ncid, 'flags', int16(flags));
+ncputvar(filt.ncid,   'flags', int16(flags));
 
+% Atmospheric speed bias
+atmospheric_speed_bias = ncgetatt(unfilt.ncid, 'atmospheric_speed_bias', ...
+    'FillValue')*ones(size(wind_speed));
+
+retrieved_wind_speed_uncorr = ncgetvar(src.ncid, 'wind_speed_uncorrected');
+xt_wind_speed_bias = ncgetvar(unfilt.ncid, 'cross_track_wind_speed_bias');
+
+% bit 0 == 0 => rain correction applied
+good = bitand(uint16(ncgetvar(unfilt.ncid, 'eflags')), 2^0) == 0; 
+good = bitand(good, retrieved_wind_speed_uncorr ~= ncgetatt(src.ncid, ...
+    'wind_speed_uncorrected', 'FillValue'));
+good = bitand(good, wind_speed ~= wind_speed_fill);
+good = bitand(good, xt_wind_speed_bias ~= ncgetatt(unfilt.ncid, ...
+    'cross_track_wind_speed_bias', 'FillValue'));
+
+atmospheric_speed_bias(good) = retrieved_wind_speed_uncorr(good) - ...
+    wind_speed(good) - xt_wind_speed_bias(good) ;
+
+ncputvar(unfilt.ncid, 'atmospheric_speed_bias', atmospheric_speed_bias);
 
 %% Close files
 netcdf.close(src.ncid);
 netcdf.close(unfilt.ncid);
 netcdf.close(filt.ncid);
+
+return
+
+%% Extracts configuration files from a .rdf file
+function retstring = gather_config_files(src_file)
+
+retstring_len = 0;
+
+% Configuration file strings (and order) to be returned
+keywords = {...
+    'QS_LANDMAP_FILE', 'QS_ICEMAP_FILE', 'GMF_FILE', 'KPRS_FILE', ...
+    'KPM_FILE', 'ATTEN_MAP_FILE', 'NUDGE_WINDFIELD_FILE', ...
+    'NEURAL_NET_LIQUID1_FILE', 'NEURAL_NET_SPEED1_FILE', ...
+    'NEURAL_NET_SPEED2_FILE', 'NEURAL_NET_RAINFLAG_FILE', 'L2B_HDF_FILE'...
+    };
+
+% Initialize a configuration structure
+configs = cell(length(keywords), 1);
+
+fid = fopen(src_file);
+
+while 1
+    % Pick off a line of text
+    tline = fgetl(fid);
+    if ~ischar(tline), break, end
+    
+    % Split the text at the equals 
+    dlmidx = strfind(tline, '=');
+    key = strtrim(tline(1:dlmidx - 1));
+    data = strtrim(tline(dlmidx + 1:end));
+    
+    % See if the key matches one of the keywords
+    for k = 1:length(keywords)
+        if (1 == strcmp(key,  keywords{k}))
+            % It does, so pick the file name off its base directory
+            configs{k} = basename(data);
+            % Increase the length of the final string (+1 for \n)
+            retstring_len = retstring_len + (1 + length(configs{k}));
+        end
+    end
+end
+fclose(fid);
+
+retstring = char(zeros(1, retstring_len));
+start_idx = 1;
+% Iterate over the keywords again, this time concatenating them
+for k = 1:length(keywords)
+    end_idx = start_idx + length(configs{k});
+    retstring(start_idx:end_idx) = sprintf('%s\n', configs{k});
+    start_idx = end_idx + 1;
+end
+
+% Kill the final newline
+retstring = retstring(1:(end - 1));
+
+return
+
+function bias_adj = compute_bias_adj_rainy(nc_spd, relspdbias2year, ...
+    nc_ri, impact_thresh)
+% Computes bias adjustment (from A. Fore)
+
+% remove -9999 from table; it just messes things up.
+relspdbias2year(relspdbias2year==-9999) = 0;
+
+% pad table so it does nearest for extrapolation, but linear for 
+% interpolation.
+spdvec   = (1:size(relspdbias2year,2)) - 0.5;
+spdvec2  = [0 spdvec 100];
+
+table2_rainfree = [ relspdbias2year(:,1,1) relspdbias2year(:,:,1) ...
+    relspdbias2year(:,end,1) ];
+table2_rainy    = [ relspdbias2year(:,1,2) relspdbias2year(:,:,2) ...
+    relspdbias2year(:,end,2) ];
+
+bias_adj_rainfree = zeros(size(nc_spd));
+bias_adj_rainy    = zeros(size(nc_spd));
+
+m = size(nc_spd, 1);
+
+for cti=1:m
+  sel = find( nc_spd(cti,:) > 0 );
+  
+  bias_adj_rainfree(cti,sel) = ...
+    interp1( spdvec2, table2_rainfree(cti,:), nc_spd(cti,sel), 'linear' );
+  
+  bias_adj_rainy(cti,sel)    = ...
+    interp1( spdvec2, table2_rainy(cti,:), nc_spd(cti,sel), 'linear' );
+end
+
+bias_adj = zeros(size(nc_spd));
+bias_adj((nc_ri  > impact_thresh) & (nc_spd > 0)) = ...
+    bias_adj_rainy((nc_ri > impact_thresh) & (nc_spd > 0));
+bias_adj((nc_ri <= impact_thresh) & (nc_spd > 0)) = ...
+    bias_adj_rainfree((nc_ri <= impact_thresh) & (nc_spd > 0));
+
+return
+
+function base = basename(filepath)
+% Emulate the `basename` command
+
+splits = strfind(filepath, '/');
+base = filepath(splits(end) + 1:end);
 
 return
