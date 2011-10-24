@@ -1,0 +1,131 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="1038.32">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 18.0px 'Century Schoolbook'}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px 'Century Schoolbook'; min-height: 17.0px}
+    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px 'Century Schoolbook'}
+    p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px 'Century Schoolbook'; min-height: 15.0px}
+    p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Monaco}
+    p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Monaco; min-height: 16.0px}
+    span.s1 {font: 14.0px Monaco}
+    span.s2 {text-decoration: underline ; color: #1b32cf}
+    span.s3 {text-decoration: underline ; color: #1f36c9}
+    span.s4 {font: 12.0px 'Century Schoolbook'}
+    span.s5 {font: 12.0px Monaco}
+    span.s6 {text-decoration: underline ; color: #102bdd}
+    span.s7 {text-decoration: underline ; color: #0000ee}
+  </style>
+</head>
+<body>
+<p class="p1"><b>1- Intoduction</b></p>
+<p class="p2"><br></p>
+<p class="p3">This README contains the instructions to compile all the 2nd party packages required to compile the programs and libraries for the QuikSCAT_L2BC project. All packages are installed assuming that the base directory is the QuikSCAT_L2BC base directory. In the documentation below the root directory is assumed to be given by the environment variable <span class="s1">L2BCDIR. </span>For instance, under tcsh you can set</p>
+<p class="p4"><br></p>
+<p class="p5">setenv L2BCDIR /Users/er/Scatterometry/QuikSCAT/QuikSCAT_L2BC/</p>
+<p class="p4"><br></p>
+<p class="p3">Change accordingly for your location and shell.</p>
+<p class="p4"><br></p>
+<p class="p1"><b>2-Blitz</b></p>
+<p class="p2"><br></p>
+<p class="p3">The blitz library is used as the default library for array handling. Current library version is 0.9, which can be downloaded from <a href="http://sourceforge.net/projects/blitz/files/"><span class="s2">http://sourceforge.net/projects/blitz/files/</span></a>. The following instructions are given by compilation platform.</p>
+<p class="p2"><br></p>
+<p class="p3"><b>2.1 MacOSX compilation, Intel, OSX 10.6.4</b></p>
+<p class="p2"><br></p>
+<p class="p3">Run <span class="s1">gcc -v</span> to find the version of your gcc compiler. These instructions are valid (at least) for:</p>
+<p class="p4"><br></p>
+<p class="p5">gcc -v</p>
+<p class="p5">Using built-in specs.</p>
+<p class="p5">Target: i686-apple-darwin9</p>
+<p class="p5">Configured with: /var/tmp/gcc/gcc-5490~1/src/configure --disable-checking -enable-werror --prefix=/usr --mandir=/share/man --enable-languages=c,objc,c++,obj-c++ --program-transform-name=/^[cg][^.-]*$/s/$/-4.0/ --with-gxx-include-dir=/include/c++/4.0.0 --with-slibdir=/usr/lib --build=i686-apple-darwin9 --with-arch=apple --with-tune=generic --host=i686-apple-darwin9 --target=i686-apple-darwin9</p>
+<p class="p5">Thread model: posix</p>
+<p class="p5">gcc version 4.0.1 (Apple Inc. build 5490)</p>
+<p class="p4"><br></p>
+<p class="p3">and<span class="Apple-converted-space"> </span></p>
+<p class="p4"><br></p>
+<p class="p5">gcc -v</p>
+<p class="p5">Using built-in specs.</p>
+<p class="p5">Target: i686-apple-darwin10</p>
+<p class="p5">Configured with: /var/tmp/gcc/gcc-5659~1/src/configure --disable-checking --enable-werror --prefix=/usr --mandir=/share/man --enable-languages=c,objc,c++,obj-c++ --program-transform-name=/^[cg][^.-]*$/s/$/-4.2/ --with-slibdir=/usr/lib --build=i686-apple-darwin10 --program-prefix=i686-apple-darwin10- --host=x86_64-apple-darwin10 --target=i686-apple-darwin10 --with-gxx-include-dir=/include/c++/4.2.1</p>
+<p class="p5">Thread model: posix</p>
+<p class="p5">gcc version 4.2.1 (Apple Inc. build 5659)</p>
+<p class="p6"><br></p>
+<p class="p3">To compile blitz from the ./packages directory:</p>
+<p class="p4"><br></p>
+<p class="p5">tar xvzf blitz-0.9.tar.gz</p>
+<p class="p5">cd blitz-0.9</p>
+<p class="p5">configure --prefix=$L2BCDIR</p>
+<p class="p5">make install</p>
+<p class="p4"><br></p>
+<p class="p3">This should install the library correctly. After finishing, you can remove the blitz-0.9 directory.</p>
+<p class="p2"><br></p>
+<p class="p1"><b>3- Scons</b></p>
+<p class="p2"><br></p>
+<p class="p3">The build system for this project is scons <a href="http://www.scons.org/"><span class="s3">http://www.scons.org</span></a>. The current version used is 2.0.0.final.0. It is assumed that a working python distribution (version &gt; = 2.4) is available.<span class="Apple-converted-space"> </span></p>
+<p class="p2"><br></p>
+<p class="p3">To install a local version of scons:</p>
+<p class="p4"><br></p>
+<p class="p5">tar xvzf scons-2.0.0.final.0.tar.gz</p>
+<p class="p5">cd scons-2.0.0.final.0</p>
+<p class="p5">python setup.py install --prefix=$L2BCDIR</p>
+<p class="p6"><br></p>
+<p class="p3">This should install scons under<span class="s4"> </span><span class="s5">$L2BCDIR/bin.</span></p>
+<p class="p6"><br></p>
+<p class="p1"><b>4- NetCDF</b></p>
+<p class="p2"><br></p>
+<p class="p3">To make files platform independent, and to allow for future expansions of data fields, the output results are stored in netCDF format ( <a href="http://www.unidata.ucar.edu/software/netcdf/"><span class="s6">http://www.unidata.ucar.edu/software/netcdf/</span></a> ).<span class="Apple-converted-space"> </span></p>
+<p class="p2"><br></p>
+<p class="p3">However, in order to reduce dependencies on the HDF5 and other libraries, netcdf-4.1.1.1 is installed without hdf5 support, dap support, or fortran support. This may change in the future.</p>
+<p class="p2"><br></p>
+<p class="p3">To install version 4.1.1 of netcdf:</p>
+<p class="p2"><br></p>
+<p class="p5">tar xvzf netcdf-4-1.1.tar.gz</p>
+<p class="p5">cd netcdf-4.1.1</p>
+<p class="p5">./configure --prefix=$L2BCDIR --disable-netcdf-4 --disable-dap --disable-fortran --disable-f90</p>
+<p class="p5">make check install</p>
+<p class="p6"><br></p>
+<p class="p1"><b>5- HDF4</b></p>
+<p class="p2"><br></p>
+<p class="p3"><span class="s7"><a href="http://www.hdfgroup.org/">HDF4</a></span> is used for backward compatibility with the QuikSCAT L2B data. HDF4 requires both lib and the jpeg libraries, which are also included for a self-contained package.</p>
+<p class="p2"><br></p>
+<p class="p3">To install zlib:</p>
+<p class="p2"><br></p>
+<p class="p5">tar xvzf zlib-1.2.5.tar.gz</p>
+<p class="p5">cd zlib-1.2.5</p>
+<p class="p5">./configure --prefix=$L2BCDIR</p>
+<p class="p5">make install <span class="Apple-converted-space"> </span></p>
+<p class="p2"><br></p>
+<p class="p3">To install jpeg:</p>
+<p class="p2"><br></p>
+<p class="p5">tar xvzf jpegsrc.v6b.tar.gz</p>
+<p class="p5">cd jpeg-6b</p>
+<p class="p5">./configure --prefix=$L2BCDIR</p>
+<p class="p5">make install</p>
+<p class="p5">make install-lib<span class="Apple-converted-space"> </span></p>
+<p class="p2"><br></p>
+<p class="p3">To install HDF4 (after installing zlib and jpeg. NetCDF support is disabled due to incompatibilities between HDF4.2.5 and NetCDF4):</p>
+<p class="p2"><br></p>
+<p class="p5">tar xvzf hdf-4.2.5.tar.gz</p>
+<p class="p5">cd hdf-4.2.5</p>
+<p class="p5">./configure --prefix=$L2BCDIR --with-zlib=$L2BCDIR --with-jpeg=$L2BCDIR --enable-fortran=no --enable-netcdf=no</p>
+<p class="p5">make install</p>
+<p class="p6"><br></p>
+<p class="p1"><b>6- GSL</b></p>
+<p class="p4"><br></p>
+<p class="p3">The GNU Scientific Library <a href="http://www.gnu.org/software/gsl/">GSL</a> is used for fitting derivative surfaces to calculate the vector fields curl and divergence.</p>
+<p class="p2"><br></p>
+<p class="p3">To install GSL:</p>
+<p class="p2"><br></p>
+<p class="p5">tar xvzf gsl-1.14.tar.gz</p>
+<p class="p5">cd gsl-1.14</p>
+<p class="p5">./configure --prefix=$L2BCDIR</p>
+<p class="p5">make</p>
+<p class="p5">make install</p>
+<p class="p4"><br></p>
+</body>
+</html>

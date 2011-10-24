@@ -1,0 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Author" content="Ernesto Rodriguez">
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="1038.32">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 18.0px 'Century Schoolbook'}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px 'Century Schoolbook'; min-height: 17.0px}
+    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px 'Century Schoolbook'}
+    p.p4 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Monaco}
+    p.p5 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px 'Century Schoolbook'; min-height: 15.0px}
+    p.p6 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Monaco; min-height: 16.0px}
+    li.li3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px 'Century Schoolbook'}
+    span.s1 {text-decoration: underline ; color: #0020e0}
+    span.s2 {color: #0000ee}
+    span.s3 {text-decoration: underline}
+    span.s4 {font: 12.0px Monaco}
+    ul.ul1 {list-style-type: disc}
+  </style>
+</head>
+<body>
+<p class="p1"><b>1- Introduction</b></p>
+<p class="p2"><br></p>
+<p class="p3">The project QuikSCAT_L2BC contains software to generate the smoothed L2BC data, the stress, and curl and divergence derivative products. It is meant to be a standalone project, and many of the required external libraries are included in the distribution. The project is under revision control using <a href="http://wiki.bazaar.canonical.com/"><span class="s1">Bazaar</span></a> (aka, bzr).</p>
+<p class="p2"><br></p>
+<p class="p1"><b>2- Prerequisites</b></p>
+<p class="p2"><br></p>
+<p class="p3"><b>2.1- C++ and C compilers</b></p>
+<p class="p2"><br></p>
+<p class="p3">Most of the executable code is written in strict ANSI C or C++, and should be portable between reasonable compilers. The code has been tested (to date) with <a href="http://gcc.gnu.org/"><span class="s1">gcc</span></a> with the following compilers:</p>
+<p class="p2"><br></p>
+<p class="p4">gcc -v</p>
+<p class="p4">Using built-in specs.</p>
+<p class="p4">Target: i686-apple-darwin9</p>
+<p class="p4">Configured with: /var/tmp/gcc/gcc-5490~1/src/configure --disable-checking -enable-werror --prefix=/usr --mandir=/share/man --enable-languages=c,objc,c++,obj-c++ --program-transform-name=/^[cg][^.-]*$/s/$/-4.0/ --with-gxx-include-dir=/include/c++/4.0.0 --with-slibdir=/usr/lib --build=i686-apple-darwin9 --with-arch=apple --with-tune=generic --host=i686-apple-darwin9 --target=i686-apple-darwin9</p>
+<p class="p4">Thread model: posix</p>
+<p class="p4">gcc version 4.0.1 (Apple Inc. build 5490)</p>
+<p class="p5"><br></p>
+<p class="p3">and<span class="Apple-converted-space"> </span></p>
+<p class="p5"><br></p>
+<p class="p4">gcc -v</p>
+<p class="p4">Using built-in specs.</p>
+<p class="p4">Target: i686-apple-darwin10</p>
+<p class="p4">Configured with: /var/tmp/gcc/gcc-5659~1/src/configure --disable-checking --enable-werror --prefix=/usr --mandir=/share/man --enable-languages=c,objc,c++,obj-c++ --program-transform-name=/^[cg][^.-]*$/s/$/-4.2/ --with-slibdir=/usr/lib --build=i686-apple-darwin10 --program-prefix=i686-apple-darwin10- --host=x86_64-apple-darwin10 --target=i686-apple-darwin10 --with-gxx-include-dir=/include/c++/4.2.1</p>
+<p class="p4">Thread model: posix</p>
+<p class="p4">gcc version 4.2.1 (Apple Inc. build 5659)</p>
+<p class="p2"><br></p>
+<p class="p3"><b>2.2- Python</b></p>
+<p class="p2"><br></p>
+<p class="p3">Rather than makefiles, the code uses <a href="http://www.scons.org/"><span class="s1">scons</span></a> which in turn requires a working <a href="http://python.org/"><span class="s1">python</span></a> distribution greater than 1.6.</p>
+<p class="p2"><br></p>
+<p class="p3"><b>2.3- Doxygen (Optional)</b></p>
+<p class="p2"><br></p>
+<p class="p3">The C and C++ code is documented using <a href="http://www.stack.nl/~dimitri/doxygen/"><span class="s1">doxygen</span></a>, so generation of inline code documentation requires that it be installed, although compiling and running the code does not require it.</p>
+<p class="p2"><br></p>
+<p class="p1"><b>3- Installation</b></p>
+<p class="p2"><br></p>
+<p class="p3"><b>3.1- External Packages</b></p>
+<p class="p2"><br></p>
+<p class="p3">Additional external packages beyond those described in the previous section are kept in the development tree in the ./packages directory to insure consistency in the upgrades. The packages are compiled into the local directory structure and should be independent of other versions installed.</p>
+<p class="p2"><br></p>
+<p class="p3">External package installation is not handled by scons, and the packages must be compiled separately. Instructions for external package compilation are in the file QuikSCAT_L2BC_packages_README.html in the ./packages directory.</p>
+<p class="p2"><br></p>
+<p class="p3">Currently,<span class="Apple-converted-space"> </span></p>
+<p class="p2"><br></p>
+<ul class="ul1">
+  <li class="li3"><span class="s2"><a href="http://sourceforge.net/projects/blitz/files/"><span class="s3">blitz++</span></a></span>: fast C++ array handling.</li>
+  <li class="li3"><span class="s2"><a href="http://www.scons.org/"><span class="s3">scons</span></a></span>: improved replacement for make</li>
+  <li class="li3"><span class="s2"><a href="http://www.unidata.ucar.edu/software/netcdf/"><span class="s3">netcdf</span></a></span>: platform independent file format.</li>
+  <li class="li3"><span class="s2"><a href="http://www.hdfgroup.org/"><span class="s3">HDF4</span></a></span>: HDF4 for reading old L2B files (not required but for backward compatibility).<span class="Apple-converted-space"> </span></li>
+</ul>
+<p class="p2"><br></p>
+<p class="p3">are the external packages used. They must be compiled prior to compiling the code.</p>
+<p class="p2"><br></p>
+<p class="p3"><b>3.2- Compiling the Code</b></p>
+<p class="p2"><br></p>
+<p class="p3">The entire code should be compiled by running:</p>
+<p class="p2"><br></p>
+<p class="p4">./bin/scons</p>
+<p class="p2"><br></p>
+<p class="p3">from the root directory of the project (this should also work with other installed versions of scons).<span class="Apple-converted-space"> </span></p>
+<p class="p2"><br></p>
+<p class="p3">The details of the compilation are contained in the SConstruct file in the root directory. The first two sections in this file contain site specific options that you may want to modify to reflect your set-up (compiler, compilation flags, etc.).</p>
+<p class="p2"><br></p>
+<p class="p3">All binaries should compile into the ./bin directory; libraries into the ./lib directory; include files into the ./include directory.</p>
+<p class="p2"><br></p>
+<p class="p3"><b>3.3- Documentation</b></p>
+<p class="p2"><br></p>
+<p class="p3">Documentation is contained in the ./doc directory. (OPTIONAL) To generate doxygen documentation, use the following command from the root directory:</p>
+<p class="p2"><br></p>
+<p class="p4">doxygen QuikSCAT_L2BC.cfg</p>
+<p class="p2"><br></p>
+<p class="p1"><b>4- Project Organization and Developer Guidelines</b></p>
+<p class="p2"><br></p>
+<p class="p3">Please adhere to the following guidelines when developing for this project.</p>
+<p class="p2"><br></p>
+<p class="p3"><b>4.1- Project code</b></p>
+<p class="p2"><br></p>
+<p class="p3">All the project code is under ./src, which has two main subdirectories, ./src/Classes and ./src/Programs.<span class="Apple-converted-space"> </span></p>
+<p class="p2"><br></p>
+<p class="p3">All general purpose C++ classes and C functions and structure should be stored here. Each separate class or related set of functions should be placed under a different directory, and each directory should contain at least a .C (or .cpp, or .c) and a .h file. These files will be compile into the libswothr.a library to be used by all the executables in the project. Compilation of this code should be done by modifying the SConstruct file in the root directory by modifying the headerFile list (to include a path to the header file) and the libSource list (to include a path to the .C/.cpp/.c file).</p>
+<p class="p2"><span class="Apple-converted-space"> </span></p>
+<p class="p3">Each standalone program should be placed in a separate directory under the ./src/Programs directory. Each standalone program should consist of a .C (or .cpp or .c) file and a SConscript file. No additional files should be placed in these directories. Compilation of binaries is achieved by adding a line similar to the following to the SConstruct file in the root directory:</p>
+<p class="p2"><br></p>
+<p class="p4">SConscript('src/Programs/InitL2BCnetcdf/SConscript',build_dir='./build/InitL2BCnetcdf')</p>
+<p class="p2"><br></p>
+<p class="p3">This line will ensure that the program contained in the directory src/Programs/Orbits/OrbitHeading/ is built when scons is next run. A sample SConscript file for this program might look like this:</p>
+<p class="p2"><br></p>
+<p class="p4">Import('env','cpppath','libpath','libs','binDir')</p>
+<p class="p6"><br></p>
+<p class="p4">source = ['initL2BCnetcdf.C']</p>
+<p class="p6"><br></p>
+<p class="p4">initL2BCnetcdf = env.Program(source,CPPPATH = cpppath,<span class="Apple-converted-space"> </span></p>
+<p class="p4"><span class="Apple-converted-space">                       </span>LIBS = libs, LIBPATH = libpath)</p>
+<p class="p6"><br></p>
+<p class="p4">env.Install(binDir,initL2BCnetcdf)</p>
+<p class="p6"><br></p>
+<p class="p2"><br></p>
+<p class="p3"><b>4.2- Test code</b></p>
+<p class="p2"><br></p>
+<p class="p3">Test code should be placed under the ./test directory, with the same conventions as project code. Test code should not be placed in the ./src directory.</p>
+<p class="p2"><br></p>
+<p class="p3"><b>4.3- Python scripts</b></p>
+<p class="p2"><br></p>
+<p class="p3">Python standalone scripts should be placed in the ./scripts directory. Python packages should be installed in the ./lib/python/site-packages directory.</p>
+<p class="p2"><br></p>
+<p class="p3"><b>4.4- Binaries</b></p>
+<p class="p2"><br></p>
+<p class="p3">Binaries should be placed in the ./bin directory (preferably by scons).</p>
+<p class="p2"><br></p>
+<p class="p3"><b>4.5- Libraries</b></p>
+<p class="p2"><br></p>
+<p class="p3">Libraries should be placed in the ./lib directory (preferably by scons).</p>
+<p class="p2"><br></p>
+<p class="p3"><b>4.6- Include files</b></p>
+<p class="p2"><br></p>
+<p class="p3">Include (.h) files should be placed under the ./include directory (preferably by scons).</p>
+<p class="p2"><br></p>
+<p class="p3"><b>4.7- Build directory</b></p>
+<p class="p2"><br></p>
+<p class="p3">Compilation should occur in the ./build directory (preferably by scons).</p>
+<p class="p2"><br></p>
+<p class="p3"><b>4.8- Compilation Guidelines</b></p>
+<p class="p2"><br></p>
+<p class="p3">All code should compile with (at least) the equivalent of the gcc "<span class="s4">-ansi -pedantic -Wall"</span> flags.</p>
+<p class="p2"><br></p>
+<p class="p2"><br></p>
+</body>
+</html>

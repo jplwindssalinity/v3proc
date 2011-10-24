@@ -1,0 +1,9 @@
+Import('env','cpppath','libpath','libs','binDir')
+
+source = ['makeFilteredWinds.C']
+
+makeFilteredWinds = env.Program(source,CPPPATH = cpppath,
+                                 LIBS = libs, LIBPATH = libpath)
+
+env.Install(binDir,makeFilteredWinds)
+

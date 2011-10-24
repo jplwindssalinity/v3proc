@@ -1,0 +1,8 @@
+Import('env','cpppath','libpath','libs','testDir')
+
+source = ['testBitTools.C']
+
+testBitTools = env.Program(source,CPPPATH = cpppath, 
+                           LIBS = libs, LIBPATH = libpath)
+
+env.Install(testDir,testBitTools)

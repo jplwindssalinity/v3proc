@@ -1,0 +1,9 @@
+Import('env','cpppath','libpath','libs','binDir')
+
+source = ['initL2BCnetcdf.C']
+
+initL2BCnetcdf = env.Program(source,CPPPATH = cpppath,
+                                 LIBS = libs, LIBPATH = libpath)
+
+env.Install(binDir,initL2BCnetcdf)
+

@@ -1,0 +1,235 @@
+import os.path
+import sys
+
+########################################################################
+#
+# These variables should be adjusted based on the platform library setup.
+#
+########################################################################
+
+l2bc_root = os.path.abspath('.')  # l2bc home
+
+#netcdf_root = '/sw/' # where netcdf was installed
+#blitz_root = '/usr/local/' # where blitz++ was installed
+netcdf_root = l2bc_root # where netcdf was installed
+blitz_root = l2bc_root # where blitz++ was installed
+hdf4_root = l2bc_root # where HDF4 was installed
+jpeg_root = l2bc_root # where jpeg was installed
+z_root = l2bc_root # where zlib was installed
+gsl_root = l2bc_root # where gsl was installed
+
+########################################################################
+#
+# Set up the environment depending on the platform. These probably should
+# not be changed.
+#
+########################################################################
+
+debug = int(ARGUMENTS.get('debug', 0))
+
+env = Environment()
+if sys.platform.find('darwin') >= 0: # Mac build
+    cxx = 'g++'
+    cc = 'gcc'
+    if debug != 0:
+        ccflags = '-ansi -pedantic -Wall -g'
+        cxxflags = '-ansi -pedantic -Wall -g'
+    else:
+        ccflags = '-ansi -pedantic -Wall -funroll-loops -O3'
+        cxxflags = '-ansi -pedantic -Wall -funroll-loops -O3'
+##        ccflags = '-Wall -funroll-loops -O3'  # -ansi -pedantic has to be turned off for CEOS!
+##        cxxflags = '-Wall -funroll-loops -O3' # -ansi -pedantic has to be turned off for CEOS!
+    env = Environment(CXX = cxx, CC = cc,
+                      CCFLAGS = ccflags, CXXFLAGS = cxxflags)
+
+if sys.platform.find('linux') >= 0: # linux build
+    cxx = 'g++'
+    cc = 'gcc'
+    if debug != 0:
+        ccflags = '-ansi -pedantic -Wall -g'
+        cxxflags = '-ansi -pedantic -Wall -g'
+    else:
+        ccflags = '-ansi -pedantic -Wall -funroll-loops -O3'
+        cxxflags = '-ansi -pedantic -Wall -funroll-loops -O3'
+    env = Environment(CXX = cxx, CC = cc,
+                      CCFLAGS = ccflags, CXXFLAGS = cxxflags)
+    
+if sys.platform.find('irix') >= 0: # IRIX build
+    cxx = 'CC'
+    cc = 'cc'
+    if debug != 0:
+        ccflags = 'fullwarn -g -n32 -mips4 -DBOUNDS_CHECK -check_bounds -DEBUG:verbose_runtime -LANG:std -DNDEBUG'
+        cxxflags = 'fullwarn -g -n32 -mips4 -DBOUNDS_CHECK -check_bounds -DEBUG:verbose_runtime -LANG:std -DNDEBUG'
+    else:
+        ccflags = '-fullwarn -O3 -n32 -mips4 -DNDEBUG -LANG:std'
+        cxxflags = '-fullwarn -O3 -n32 -mips4 -DNDEBUG -LANG:std'
+    env = Environment(CXX = cxx, CC = cc,
+                      CCFLAGS = ccflags, CXXFLAGS = cxxflags)
+
+if sys.platform.find('sunos5') >= 0: # Solaris build using gcc
+    cxx = 'g++' # '/opt/SUNWspro/bin/CC' 
+    cc = 'gcc' # '/opt/SUNWspro/bin/cc'
+    if debug != 0:
+        ccflags = '-ansi -pedantic -Wall -g' # '-g' #
+        cxxflags = '-ansi -pedantic -Wall -g' # '-g' # 
+    else:
+        ccflags = '-ansi -pedantic -Wall -funroll-loops -O' # '-g -fast' #
+        cxxflags = '-ansi -pedantic -Wall -funroll-loops -O' # '-g -fast' #
+    env = Environment(CXX = cxx, CC = cc,
+                      CCFLAGS = ccflags, CXXFLAGS = cxxflags)
+
+########################################################################
+#    
+# Install the header files in the include directory
+#
+########################################################################
+
+classDir = os.path.abspath('src/Classes')
+headerFile = ['BitTools/BitTools.h',
+              'Blitz2GSL/Blitz2GSL.h',
+              'CurlDivergence/CurlDivergence.h',
+              'Exception/Exception.h',
+              'FilterL2BWinds/FilterL2BWinds.h',
+              'NC2Blitz/NC2Blitz.h',
+              'HDF42Blitz/HDF42Blitz.h',
+              'L2BCconstants/L2BCconstants.h',
+              'Median/median.h',
+              'NC2Options/NC2Options.h',
+              'NUM_TO_CHAR/numtochar.h',
+              'Options/Options.h',
+              'SeaWindsHDF4Data/SeaWindsHDF4Data.h',
+              'WindStress/WindStress.h',
+               ]
+for i in range(len(headerFile)):
+    headerFile[i] = os.path.join(classDir,headerFile[i])
+
+env.Install(dir = './include', source = headerFile)
+
+cpppath = [os.path.join(os.path.abspath('.'),'include'),
+           netcdf_root+'/include', # This is needed netcdf
+           blitz_root+'/include',  # This is needed blitz++
+           hdf4_root+'/include',     # This is needed for HDF4
+           jpeg_root+'/include',     # This is needed for HDF4
+           z_root+'/include',     # This is needed for HDF4
+           gsl_root+'/include',     # This is needed for GSL
+           ]
+
+########################################################################
+#
+# Make the L2BC library.
+#
+########################################################################
+
+libSource = [
+    'Blitz2GSL/Blitz2GSL.C',
+    'CurlDivergence/CurlDivergence.C',
+    'FilterL2BWinds/FilterL2BWinds.C',
+    'NC2Options/NC2Options.C',
+    'NUM_TO_CHAR/numtochar.C',
+    'Options/Options.C',
+    'SeaWindsHDF4Data/SeaWindsHDF4Data.C',
+    'WindStress/WindStress.C',
+              ]
+
+for i in range(len(libSource)):
+    libSource[i] = os.path.join(classDir,libSource[i])
+
+              
+libswot = env.Library('./lib/l2bc',source = libSource,
+                      CPPPATH = cpppath)
+
+libs = ['l2bc',
+        'mfhdf', # for HDF4
+        'df',    # for HDF4
+        'jpeg',  # for HDF4
+        'z',     # for HDF4
+        'blitz', # for Blitz
+        'netcdf_c++', # for netcdf
+        'netcdf',     # for netcdf
+        'gsl',      # for GSL
+        'gslcblas', # for GSL
+        'm']
+
+libpath = [os.path.join(os.path.abspath('.'),'lib'),
+           netcdf_root+'/lib', # This is needed for netcdf
+           blitz_root+'/lib', # This is needed for blitz++
+           hdf4_root+'/lib', # This is needed for HDF4
+           jpeg_root+'/lib', # This is needed for HDF4
+           z_root+'/lib',    # This is needed for HDF4
+           ]
+
+########################################################################
+#    
+# Install the executable script files in the binary directory
+#
+########################################################################
+
+binDir =  os.path.abspath('./bin')
+scriptDir = os.path.abspath('./scripts')
+binFile = ['processL2BC',]
+    
+scriptFile = []
+for f in binFile:
+    scriptFile.append(f+'.py')
+    
+for i in range(len(scriptFile)):
+    scriptFile[i] = os.path.join(scriptDir,scriptFile[i])
+    
+for i in range(len(binFile)):
+    binFile[i] = os.path.join(binDir,binFile[i])
+
+env.InstallAs(source = scriptFile, target=binFile)
+
+########################################################################
+#
+# Export common variables 
+#
+########################################################################
+
+binDir =  os.path.abspath('./bin')
+env.Alias('install',binDir)
+Depends(binDir,'./include')
+Depends(binDir,'./lib/libl2bc.a')
+
+testDir =  os.path.abspath('./test/bin')
+env.Alias('test',testDir)
+Depends(testDir,'./include')
+Depends(testDir,'./lib/libl2bc.a')
+
+Export('env','cpppath','libpath','libs',
+       'classDir','binDir','testDir','l2bc_root')
+
+########################################################################
+#
+# Programs to build
+#
+########################################################################
+
+SConscript('src/Programs/InitL2BCnetcdf/SConscript',
+           variant_dir='./build/InitL2BCnetcdf')
+
+SConscript('src/Programs/MakeFilteredWinds/SConscript',
+           variant_dir='./build/makeFilteredWinds')
+
+SConscript('src/Programs/MakeCurlDivergence/SConscript',
+           variant_dir='./build/makeCurlDivergence')
+
+########################################################################
+#
+# Test programs
+#
+########################################################################
+
+SConscript('test/Classes/SeaWindsHDF4Data/SConscript',
+           variant_dir='./build/SeaWindsHDF4Data')
+
+SConscript('test/Classes/Median/SConscript',
+           variant_dir='./build/Median')
+
+SConscript('test/Classes/BitTools/SConscript',
+           variant_dir='./build/BitTools')
+
+SConscript('test/Classes/Blitz2GSL/SConscript',
+           variant_dir='./build/Blitz2GSL')
+
+

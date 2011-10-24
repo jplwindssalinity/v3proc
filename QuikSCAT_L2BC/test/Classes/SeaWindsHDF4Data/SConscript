@@ -1,0 +1,9 @@
+Import('env','cpppath','libpath','libs','testDir')
+
+source = ['testSeaWindsHDF4Data.C']
+
+testSeaWindsHDF4Data = env.Program(source,CPPPATH = cpppath, 
+                          LIBS = libs, LIBPATH = libpath)
+
+env.Install(testDir,testSeaWindsHDF4Data)
+

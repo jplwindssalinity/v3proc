@@ -1,0 +1,9 @@
+Import('env','cpppath','libpath','libs','binDir')
+
+source = ['makeCurlDivergence.C']
+
+makeCurlDivergence = env.Program(source,CPPPATH = cpppath,
+                                 LIBS = libs, LIBPATH = libpath)
+
+env.Install(binDir,makeCurlDivergence)
+

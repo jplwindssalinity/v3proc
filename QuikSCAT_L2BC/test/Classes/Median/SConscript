@@ -1,0 +1,9 @@
+Import('env','cpppath','libpath','libs','testDir')
+
+source = ['testMedian.C']
+
+testMedian = env.Program(source,CPPPATH = cpppath, 
+                          LIBS = libs, LIBPATH = libpath)
+
+env.Install(testDir,testMedian)
+
