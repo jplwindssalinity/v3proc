@@ -27,7 +27,7 @@
 
 function store-md5 () (
 {
-    echo "Running md5"
+    echo "Running md5: $1"
     cd `dirname "$1"`
     FILE=`basename "$1"`
     md5sum "$FILE" > "$FILE.md5"

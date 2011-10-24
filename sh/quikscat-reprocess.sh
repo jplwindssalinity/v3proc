@@ -56,7 +56,7 @@ function lock () {
     while [[ $? -ne 0 ]]; do
         echo "$PROC_ID lock attempt failed.  Block."
         sleep 1
-        mkdir "$1" > /dev/null 2>&1
+        mkdir "$LOCKFILE" > /dev/null 2>&1
     done
 
     # If a PROC_ID is passed, create a 
@@ -131,7 +131,13 @@ function qs_reproc_prompt () {
     echo "      Extract arrays from dataset"
     echo "12 L2B-HDF-TO-NETCDF"
     echo "      Convert L2B HDF files to NetCDF"
-    echo "13 CLEAN"
+    echo "13 FIXUP"
+    echo "      Apply Matlab Fixups to NetCDF file"
+    echo "14 L2C"
+    echo "      Apply L2C conversions"
+    echo "15 BUILD-MD5S"
+    echo "      Create md5 checksums"
+    echo "16 CLEAN"
     echo "      Removed unnecessary data files"
     echo "================================================================"
     echo ""
@@ -171,7 +177,13 @@ function qs_reproc_get_command() {
         ;;
     12) echo "L2B-HDF-TO-NETCDF"
         ;;
-    13) echo "CLEAN"
+    13) echo "FIXUP"
+        ;;
+    14) echo "L2C"
+        ;;
+    15) echo "BUILD-MD5S"
+        ;;
+    16) echo "CLEAN"
         ;;
     *)  echo "$COMMAND"
         ;;
@@ -230,59 +242,59 @@ function qs_reproc_stage () {
     DAY1=$(date --date="$DATE1" +%j)
 
     # See if there are any existing L1B HDF files associated to this rev
-    ls "$DIR_QSL1B_HDF"/*"$REV"* > /dev/null 2>&1
+    ls "$DIR_QSL1B_HDF"/*"S1B$REV"* > /dev/null 2>&1
 
     if [[ $? -ne 0 ]]; then
         # Gotta download the data files
   
         # L1B HDF File
         wget -nH -N --cut-dirs=4 -P "$TDIR" \
-            "$L1BURL/$YEAR1/$DAY1/*$REV*"
-        ls "$TDIR"/*"$REV"* > /dev/null 2>&1
+            "$L1BURL/$YEAR1/$DAY1/*S1B$REV*"
+        ls "$TDIR"/*"S1B$REV"* > /dev/null 2>&1
 
         if [[ $? -ne 0 ]]; then
             # Couldn't find the file in DATE1, try DATE2
             wget -nH -N --cut-dirs=4 -P "$TDIR" \
-                "$L1BURL/$YEAR2/$DAY2/*$REV*"
+                "$L1BURL/$YEAR2/$DAY2/*S1B$REV*"
         fi
 
-        ls "$TDIR"/*"$REV"* > /dev/null 2>&1
+        ls "$TDIR"/*"S1B$REV"* > /dev/null 2>&1
         if [[ $? -ne 0 ]]; then
             echo "ERROR: REV L1B HDF file not found"
             return 1
         fi
 
-        gunzip -f "$TDIR"/*"$REV"*.gz
+        gunzip -f "$TDIR"/*"S1B$REV"*.gz
         mkdir "$DIR_QSL1B_HDF" > /dev/null 2>&1
-        mv "$TDIR"/*"$REV"* "$DIR_QSL1B_HDF/"
+        mv "$TDIR"/*"S1B$REV"* "$DIR_QSL1B_HDF/"
     fi
 
 
     # See if there are any existing L2B HDF files associated to this rev
-    ls "$DIR_QSL2B_HDF"/*"$REV"* > /dev/null 2>&1
+    ls "$DIR_QSL2B_HDF"/*"S2B$REV"* > /dev/null 2>&1
     if [[ $? -ne 0 ]]; then
         # Gotta download the data files
   
         # L2B HDF File
         wget -nH -N --cut-dirs=4 -P "$TDIR" \
-            "$L2BURL/$YEAR1/$DAY1/*$REV*"
+            "$L2BURL/$YEAR1/$DAY1/*S2B$REV*"
 
-        ls "$TDIR"/*"$REV"* > /dev/null 2>&1
+        ls "$TDIR"/*"S2B$REV"* > /dev/null 2>&1
         if [[ $? -ne 0 ]]; then
             # Couldn't find the file in DATE1, try DATE2
             wget -nH -N --cut-dirs=4 -P "$TDIR" \
-                "$L2BURL/$YEAR2/$DAY2/*$REV*"
+                "$L2BURL/$YEAR2/$DAY2/*S2B$REV*"
         fi
 
-        ls "$TDIR"/*"$REV"* > /dev/null 2>&1
+        ls "$TDIR"/*"S2B$REV"* > /dev/null 2>&1
         if [[ $? -ne 0 ]]; then
             echo "ERROR: REV L2B HDF file not found"
             return 1
         fi
 
-        gunzip -f "$TDIR"/*"$REV"*.gz
+        gunzip -f "$TDIR"/*"S2B$REV"*.gz
         mkdir "$DIR_QSL2B_HDF" > /dev/null 2>&1
-        mv "$TDIR"/*"$REV"* "$DIR_QSL2B_HDF/"
+        mv "$TDIR"/*"S2B$REV"* "$DIR_QSL2B_HDF/"
     fi
 
     rm -rf "$TDIR"
@@ -314,8 +326,8 @@ function qs_reproc_generate_directory_structure () {
     
     QS_MATLAB_INC_DIR="./mat"
     
-    L1B_HDF_FILE=`ls $DIR_QSL1B_HDF/QS_*$REV* | tail -n 1`
-    L2B_HDF_FILE=`ls $DIR_QSL2B_HDF/QS_*$REV*.CP12 | tail -n 1`
+    L1B_HDF_FILE=`ls $DIR_QSL1B_HDF/QS_S1B$REV* | tail -n 1`
+    L2B_HDF_FILE=`ls $DIR_QSL2B_HDF/QS_S2B$REV*.CP12 | tail -n 1`
     
     SIM_DIR="$DIR_OUT_BASE/$REV"
     
@@ -744,6 +756,108 @@ function qs_l2b_hdf_to_netcdf () {
 )
 }
 
+#######################################################################
+# Apply NetCDF fixup
+function qs_fixup () {
+(
+    echo -n "Rev: "
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
+    read E2B12_DIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$E2B12_DIR"
+    read BASEDIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$BASEDIR"
+
+    QS_MATLAB_INC_DIR="$PWD/../QScatSim/mat"
+
+    NC_SRC=`ls $BASEDIR/$REV/*.L2BC.nc`
+
+    cd "$BASEDIR/$REV"
+    # Extract orbit start and end-time
+    (
+        echo "addpath('$QS_MATLAB_INC_DIR');"
+        echo "qs_convert_netcdf('$NC_SRC', '$E2B12_DIR');"
+    ) | matlab -nodisplay -nojvm
+
+    RETVAL=$?
+    return $RETVAL
+)
+}
+
+#######################################################################
+# Do L2C processing
+function qs_l2c () {
+(
+    echo -n "Rev: "
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
+    read BASEDIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$BASEDIR"
+
+    cd "$BASEDIR/$REV"
+
+    CURL_DIV_CFG="makeCurlDivergence.rdf"
+    FILTERED_WINDS_CFG="makeFilteredWinds.rdf"
+
+    L2BC_FILE="`ls *.L2BC.nc`"
+    L2C_FILE="`ls qs_l2c*.nc`"
+
+cat <<EOF >> "$CURL_DIV_CFG"
+Usage: makeCurlDivergence commandFile
+filtered l2bc file                              = $L2C_FILE ! input/output netcdf file
+estimation window size                          = 3 ! size of the estimation window for curl divergence (odd > 1)
+minimum number of good points                   = 6 ! minimum number of good points needed for fitting
+vector field type                               = wind ! wind or stress
+output flag bit position                        = 14 ! position of the bad filtering flag bit 
+number of flag fields                           = 1 ! number of flags to be checked for good data
+flag 1 bit position                             = 15 ! flag 1 bit index to check starting from zero
+flag 1 bit value                                = 0 ! flag 1 bit value for good data
+EOF
+
+cat <<EOF >> "$FILTERED_WINDS_CFG"
+unfiltered l2bc file                            = $L2BC_FILE ! input netcdf file
+filtered l2bc file                              = $L2C_FILE ! output netcdf file
+smoothing window size                           = 3 ! size of the smoothing window
+minimum number of good points                   = 6 ! minimum number of good points needed for smoothing
+output flag bit position                        = 15 ! position of the bad filtering flag bit 
+number of flag fields                           = 2 ! number of flags to be checked for good data
+flag 1 bit position                             = 9 ! flag 1 bit index to check starting from zero
+flag 1 bit value                                = 0 ! flag 1 bit value for good data
+flag 2 bit position                             = 13 ! flag 2 bit index to check starting from zero
+flag 2 bit value                                = 0 ! flag 2 bit value for good data
+EOF
+
+    makeFilteredWinds "$FILTERED_WINDS_CFG"
+    RETVAL=$?
+
+    makeCurlDivergence "$CURL_DIV_CFG"
+    RETVAL=$(($RETVAL || $?))
+
+    return $RETVAL
+)
+}
+
+#######################################################################
+# Create md5 checksums
+function qs_build_md5s () {
+(
+    echo -n "Rev: "
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
+    read BASEDIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$BASEDIR"
+
+    cd "$BASEDIR/$REV"
+
+    RETVAL=0
+    for FILE in `ls qs_l2[bc]*.nc`; do
+        md5sum "$FILE" > "$FILE.md5"
+        RETVAL=$(($RETVAL || $?))
+    done
+
+    return $RETVAL
+)
+}
 
 #######################################################################
 # Clean the directories
@@ -879,6 +993,18 @@ function qs_reproc_process_command () {
         qs_l2b_hdf_to_netcdf 
         RETVAL=$?
         ;;
+    FIXUP)
+        qs_fixup
+        RETVAL=$?
+        ;;
+    L2C)
+        qs_l2c
+        RETVAL=$?
+        ;;
+    BUILD-MD5S)
+        qs_build_md5s
+        RETVAL=$?
+        ;;
     CLEAN)
         qs_reproc_clean
         RETVAL=$?
@@ -945,6 +1071,15 @@ function qs_reproc_execute_automated_cmd () {
     MAKE-ARRAYS)
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
         ;;
+    FIXUP)
+        INPUT="$REV\n$E2B12_DIR\n$OUTPUT_DIR\n"
+        ;;
+    L2C)
+        INPUT="$REV\n$OUTPUT_DIR\n"
+        ;;
+    BUILD-MD5S)
+        INPUT="$REV\n$OUTPUT_DIR\n"
+        ;;
     CLEAN)
         INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
         ;;
@@ -997,15 +1132,7 @@ function qs_reproc_by_rev () {
     if [[ $EXIT -ne 0 ]]; then
         return $EXIT
     fi
-    qs_reproc_execute_automated_cmd "$REV" "L2B-MEDIAN-FILTER GS"; EXIT=$?
-    if [[ $EXIT -ne 0 ]]; then
-        return $EXIT
-    fi
     qs_reproc_execute_automated_cmd "$REV" "L2B-MEDIAN-FILTER S3"; EXIT=$?
-    if [[ $EXIT -ne 0 ]]; then
-        return $EXIT
-    fi
-    qs_reproc_execute_automated_cmd "$REV" "L2B-TO-NETCDF GS"; EXIT=$?
     if [[ $EXIT -ne 0 ]]; then
         return $EXIT
     fi
@@ -1013,6 +1140,19 @@ function qs_reproc_by_rev () {
     if [[ $EXIT -ne 0 ]]; then
         return $EXIT
     fi
+    qs_reproc_execute_automated_cmd "$REV" "FIXUP"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
+    qs_reproc_execute_automated_cmd "$REV" "L2C"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
+    qs_reproc_execute_automated_cmd "$REV" "BUILD-MD5S"; EXIT=$?
+    if [[ $EXIT -ne 0 ]]; then
+        return $EXIT
+    fi
+
 )
 }
 
@@ -1093,7 +1233,7 @@ function qs_reproc_by_file () {
 
     lock "$CMD_LOCK" "$UNIQ"
     # Let ALL be a synonym for all actual processing
-    sed -i -e 's/ALL/STAGE	GENERATE	L1BHDF-TO-L1B QSCAT	L1B-TO-L2A	L2A-FIX-QS-COMPOSITES	L2A-TO-L2B	L2B-MEDIAN-FILTER GS	L2B-MEDIAN-FILTER S3	L2B-TO-NETCDF GS	L2B-TO-NETCDF S3/' "$CMD_FILE"
+    sed -i -e 's/ALL/STAGE	GENERATE	L1BHDF-TO-L1B QSCAT	L1B-TO-L2A L2A-FIX-QS-COMPOSITES	L2A-TO-L2B	L2B-MEDIAN-FILTER S3	L2B-TO-NETCDF S3 FIXUP	L2C	BUILD-MD5S/' "$CMD_FILE"
     unlock "$CMD_LOCK"
 
     while [[ -s "$CMD_FILE" ]]; do
