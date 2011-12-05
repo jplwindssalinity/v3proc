@@ -295,6 +295,12 @@ main(
     fprintf(stderr,"Error reading orbit elements from HDF file\n");
     exit(1);
   }
+  attr_orbit_period = 99.31;
+  if( attr_orbit_period < 70 ) {
+    fprintf(stderr,"Error: unexpected value for orbit period: %f in %s\n",
+      attr_orbit_period, hdf_file); 
+    exit(1);
+  }
   
   latlon_config orbit_config;
   
