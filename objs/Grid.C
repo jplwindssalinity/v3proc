@@ -131,24 +131,29 @@ Grid::SetEndTime(
             "Grid::SetEndTime: Grid end time is out of ephemeris range\n");
         exit(1);
     }
-
-    float ctd, atd;
-    if (ephemeris.GetSubtrackCoordinates(r, _start_position, _start_time,
-        _end_time, &ctd, &atd) == 0)
+    
+    if( algorithm == SUBTRACK )
     {
-        fprintf(stderr,
-            "Grid::SetEndTime: No subtrack coordinates for grid end time\n");
-        exit(1);
-    }
+	    float ctd, atd;
+    	if (ephemeris.GetSubtrackCoordinates(r, _start_position, _start_time,
+    	    _end_time, &ctd, &atd) == 0)
+	    {
+    	    fprintf(stderr,
+        	    "Grid::SetEndTime: No subtrack coordinates for grid end time\n");
+	        exit(1);
+    	}
 
-    _max_vati = (int) (atd/_alongtrack_res);    // virtual along track index.
+	    _max_vati = (int) (atd/_alongtrack_res);    // virtual along track index.
 
-    if (_max_vati < 0)
-    {
-        fprintf(stderr,
-            "Grid::SetEndTime: Grid ends before grid starts -> no output\n");
-    }
-
+    	if (_max_vati < 0)
+	    {
+    	    fprintf(stderr,
+        	    "Grid::SetEndTime: Grid ends before grid starts -> no output\n");
+	    }
+	} else if (algorithm == SOM ) {
+	  _max_vati = floor(1624.0 * 25.0 / _alongtrack_res + 0.5);
+	  printf("_max_vati: %d\n",_max_vati);
+	}
     return(1);
 }
 
@@ -761,8 +766,8 @@ Grid::Add(
        }
        if ((cti >= _crosstrack_bins) || (cti < 0))
 	 {
-	   fprintf(stderr, "Grid::Add: crosstrack index = %d out of range\n",
-		   cti);
+	   //fprintf(stderr, "Grid::Add: crosstrack index = %d out of range\n",
+		//   cti);
 	   return(0);
 	 }
 
