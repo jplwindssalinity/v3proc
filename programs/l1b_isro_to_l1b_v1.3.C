@@ -481,10 +481,20 @@ main(
 	  
 	  double time = (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base;
 	  double sc_pos[3], sc_vel[3];
-	  
+
 	  sc_pos[0] = Oat_x[ii]*1000; sc_vel[0] = Oat_vx[ii]*1000;
 	  sc_pos[1] = Oat_y[ii]*1000; sc_vel[1] = Oat_vy[ii]*1000;
 	  sc_pos[2] = Oat_z[ii]*1000; sc_vel[2] = Oat_vz[ii]*1000;
+      
+      
+      // 2-27-2012 AGF--- OAT velocity is the partial derivative of the 
+      // position w.r.t. time, not the total derivative.  Need to add the 
+      // term [omega z-hat] cross [sc_position] to the OAT velocity to
+      // construct the total time derivative of the OAT position.
+	  double omega = w_earth;  // rotation rate of earth
+	  
+	  sc_vel[0] -= omega * sc_pos[1];
+	  sc_vel[1] += omega * sc_pos[0];
 	  
 	  fwrite(&time,  sizeof(double),1,eph_fp);
 	  fwrite(&sc_pos,sizeof(double),3,eph_fp);
@@ -665,6 +675,7 @@ main(
       uint16 ICE_MASK    = uint16( 0xE000 ); // bits 13,14,15
       uint16 NEG_S0_MASK = uint16( 0x200  ); // bit 9
       uint16 ASC_MASK    = uint16( 0x1    ); // bit 0
+      uint16 FORE_MASK   = uint16( 0x4    ); // bit 2
       
       for( int i_pol = 0; i_pol < 2; ++i_pol ) {
         int n_scans  = ( i_pol == 0 ) ? 281 : 282;
@@ -728,11 +739,19 @@ main(
             int is_asc = 0;
             if( fp_flg[i_pol][scan_ind]&ASC_MASK ) is_asc = 1;
             
+            
+            
             // try to use sigma0 mapping, if commanded and it doesn't fail.
             if(!sigma0_map_file||!map_sigma0(&sigma0_map,i_pol,i_scan,0,is_asc,value,&value_mapped))
               value_mapped = value;
             
-            new_meas->scanAngle     = 0.0; // set in quadrant!
+            int is_fore = 0;
+            if( fp_flg[i_pol][scan_ind]&FORE_MASK ) is_fore = 1;            
+            if( is_fore )
+              new_meas->scanAngle     = 0.0;
+            else
+              new_meas->scanAngle     = 3.1459;
+              
             new_meas->measType      = (i_pol==0) ? Meas::HH_MEAS_TYPE : Meas::VV_MEAS_TYPE;
             new_meas->beamIdx       = i_pol;
             new_meas->value         = value_mapped;
@@ -831,7 +850,13 @@ main(
               new_meas->eastAzimuth    = (450.0*dtr - northAzimuth);
               if (new_meas->eastAzimuth >= two_pi) new_meas->eastAzimuth -= two_pi;         
 
-              new_meas->scanAngle     = 0.0; // set in quadrant!
+              int is_fore = 0;
+              if( slice_flg[i_pol][slice_ind]&FORE_MASK ) is_fore = 1;            
+              if( is_fore )
+                new_meas->scanAngle     = 0.0;
+              else
+                new_meas->scanAngle     = 3.1459;
+
               new_meas->measType      = (i_pol==0) ? Meas::HH_MEAS_TYPE : Meas::VV_MEAS_TYPE;
               new_meas->beamIdx       = i_pol;
               
@@ -842,6 +867,7 @@ main(
                 new_meas->azimuth_width = 30.0;
                 new_meas->range_width   = 68.0/12.0;
               }
+              new_meas->range_width = 7.0;
               
               // Get Land map value
               new_meas->landFlag = 0;
@@ -938,62 +964,62 @@ main(
 	
 	//--Overwrite ephem.dat using orbital elements since the OAT data
 	//--does not seem to be usable. 2012-02-14 AGF
-    Spacecraft    spacecraft;
-    SpacecraftSim spacecraft_sim;    
-	double attr_lon_dec_node;
-	double attr_orbit_period;
-	double attr_orbit_inc;
-	double attr_orbit_semi_major;
-	double attr_orbit_ecc;
-	double t_dec_node;
-
-	if( !read_orbit_elements_from_attr_os2( g_id, attr_lon_dec_node,
-      attr_orbit_period, attr_orbit_inc, attr_orbit_semi_major,
-      attr_orbit_ecc, t_dec_node) ) {
-    	fprintf(stderr,"Error reading orbit elements from HDF file\n");
-    	exit(1);
-    }
-    
-    spacecraft_sim.DefineOrbit( t_dec_node, 
-                                attr_orbit_semi_major, 
-                                attr_orbit_ecc, 
-                                attr_orbit_inc,
-                                attr_lon_dec_node, 
-                                0.0, 
-                                0.0 );
-                                
-    spacecraft_sim.LocationToOrbit( attr_lon_dec_node, 0.0, -1 );
-    spacecraft_sim.Initialize( t_dec_node );
-
-	// Create Ephemeris file from orbit elements
-    ETime  etime_base, etime_start, etime_end;
-    double time_base,  time_start,  time_end;
-    
-    etime_base.FromCodeB("1970-001T00:00:00.000");
-    time_base = (double)etime_base.GetSec() + (double)etime_base.GetMs()/1000;
-    
-    init_string( frame_time_str, 64 );
-    strcpy(frame_time_str,sst[0]);
-    etime_start.FromCodeB(frame_time_str);
-    time_start = (double)etime_start.GetSec() 
-               + (double)etime_start.GetMs()/1000 - time_base;
-    
-    init_string( frame_time_str, 64 );
-    strcpy(frame_time_str,sst[num_l1b_frames-1]);
-    etime_end.FromCodeB(frame_time_str);
-    time_end = (double)etime_end.GetSec() 
-             + (double)etime_end.GetMs()/1000 - time_base;
-
-	double t_ephem = time_start - 20;
-	
-	FILE *ephem_fp = fopen("ephem.dat","w");
-	while( t_ephem < time_end + 20 ) {
-	  spacecraft_sim.UpdateOrbit( t_ephem, &spacecraft );
-	  //ephem.GetOrbitState( t_ephem, EPHEMERIS_INTERP_ORDER, &spacecraft.orbitState );
-	  spacecraft.orbitState.Write(ephem_fp); 	  
-	  t_ephem += 1;
-	}
-	fclose(ephem_fp);	
+//     Spacecraft    spacecraft;
+//     SpacecraftSim spacecraft_sim;    
+// 	double attr_lon_dec_node;
+// 	double attr_orbit_period;
+// 	double attr_orbit_inc;
+// 	double attr_orbit_semi_major;
+// 	double attr_orbit_ecc;
+// 	double t_dec_node;
+// 
+// 	if( !read_orbit_elements_from_attr_os2( g_id, attr_lon_dec_node,
+//       attr_orbit_period, attr_orbit_inc, attr_orbit_semi_major,
+//       attr_orbit_ecc, t_dec_node) ) {
+//     	fprintf(stderr,"Error reading orbit elements from HDF file\n");
+//     	exit(1);
+//     }
+//     
+//     spacecraft_sim.DefineOrbit( t_dec_node, 
+//                                 attr_orbit_semi_major, 
+//                                 attr_orbit_ecc, 
+//                                 attr_orbit_inc,
+//                                 attr_lon_dec_node, 
+//                                 90.0, 
+//                                 0.0 );
+//                                 
+//     spacecraft_sim.LocationToOrbit( attr_lon_dec_node, 0.0, -1 );
+//     spacecraft_sim.Initialize( t_dec_node );
+// 
+// 	// Create Ephemeris file from orbit elements
+//     ETime  etime_base, etime_start, etime_end;
+//     double time_base,  time_start,  time_end;
+//     
+//     etime_base.FromCodeB("1970-001T00:00:00.000");
+//     time_base = (double)etime_base.GetSec() + (double)etime_base.GetMs()/1000;
+//     
+//     init_string( frame_time_str, 64 );
+//     strcpy(frame_time_str,sst[0]);
+//     etime_start.FromCodeB(frame_time_str);
+//     time_start = (double)etime_start.GetSec() 
+//                + (double)etime_start.GetMs()/1000 - time_base;
+//     
+//     init_string( frame_time_str, 64 );
+//     strcpy(frame_time_str,sst[num_l1b_frames-1]);
+//     etime_end.FromCodeB(frame_time_str);
+//     time_end = (double)etime_end.GetSec() 
+//              + (double)etime_end.GetMs()/1000 - time_base;
+// 
+// 	double t_ephem = time_start - 20;
+// 	
+// 	FILE *ephem_fp = fopen("ephem.dat","w");
+// 	while( t_ephem < time_end + 20 ) {
+// 	  spacecraft_sim.UpdateOrbit( t_ephem, &spacecraft );
+// 	  //ephem.GetOrbitState( t_ephem, EPHEMERIS_INTERP_ORDER, &spacecraft.orbitState );
+// 	  spacecraft.orbitState.Write(ephem_fp); 	  
+// 	  t_ephem += 1;
+// 	}
+// 	fclose(ephem_fp);	
 	
 	H5Gclose(g_id);
 	H5Fclose(h_id);
