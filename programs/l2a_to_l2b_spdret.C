@@ -1,3 +1,54 @@
+//==============================================================//
+// Copyright (C) 2012, California Institute of Technology.      //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
+
+//----------------------------------------------------------------------
+// NAME
+//    l2a_to_l2b_spdret
+//
+// SYNOPSIS
+//    l2a_to_l2b_spdret <sim_config_file>
+//
+// DESCRIPTION
+//    Retrieves wind speed using the nudge direction as the wind direction.
+//
+// OPTIONS
+//
+// OPERANDS
+//    The following operand is supported:
+//      <sim_config_file>  The sim_config_file needed listing
+//                         all input parameters, input files, and
+//                         output files.
+//
+// EXAMPLES
+//    An example of a command line is:
+//      % l2a_to_l2b_spdret sws1b.cfg
+//
+// ENVIRONMENT
+//    Not environment dependent.
+//
+// EXIT STATUS
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
+//
+// NOTES
+//    None.
+//
+// AUTHORS
+//    James N. Huddleston (James.N.Huddleston@jpl.nasa.gov)
+//    Alex Fore
+//----------------------------------------------------------------------
+
+//-----------------------//
+// Configuration Control //
+//-----------------------//
+
+static const char l2a_to_l2b_spdret_c[] =
+    "@(#) $Id$";
+
+
 //----------//
 // INCLUDES //
 //----------//
@@ -88,8 +139,6 @@ main( int    argc,
   
   const char* command     = no_path(argv[0]);
   const char* config_file = argv[1];
-  
-  printf("config file: %s\n",config_file);
 
   ConfigList config_list;
   if (! config_list.Read(config_file)) {
@@ -177,7 +226,6 @@ main( int    argc,
     
     l2a_to_l2b.nudgeField.InterpolatedWindVector( wvc->lonLat, wvc->nudgeWV );
     
-    
     float spdout;
     float objout;
     float delta_spd = 0.1;
@@ -203,13 +251,10 @@ main( int    argc,
     }
     
     wvc->selected = wvc->ambiguities.GetHead();
-    
-    if(wvc->ambiguities.NodeCount() != 1) printf("Ambigs !=1 !\n");
         
     l2b.frame.swath.Add(cti, ati, wvc);
     l2a_record_number++;
   }
-  printf("Done reading from L2A file\n");
   
   if ( !l2b.WriteHeader() || !l2b.WriteDataRec() ) {
     fprintf( stderr, "Error writing to L2B file\n" );
