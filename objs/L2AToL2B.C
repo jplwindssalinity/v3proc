@@ -1943,7 +1943,7 @@ L2AToL2B::ConvertAndWrite(
     
     { // Remove land/ice flagged meas in meas_list
       Meas* meas = meas_list->GetHead();
-      for( int c = 0; c < meas_list->NodeCount(); c++ ) {
+      while(meas) {
         if( meas->landFlag == 0 )
           meas = meas_list->GetNext();
         else {
