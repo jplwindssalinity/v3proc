@@ -193,8 +193,6 @@ main(
     //------------------------//
     // parse the command line //
     //------------------------//
-    printf("argc: %d\n",argc);
-    
     const char* command = no_path(argv[0]);
     if (argc < 6 || argc>8)
         usage(command, usage_array, 1);
