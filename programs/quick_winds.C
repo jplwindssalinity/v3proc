@@ -65,11 +65,12 @@
 //                     distance. A larger number yields more accurate 
 //                     stats and longer running time.
 // 
-//       [opt_c_band]  If optional operand is nonzero then C BAND
-//                     GMF is used/required
-//
 //       [opt_coast]   If second optional operand is nonzero then ambiguities
 //                     over land are simulated
+//
+//       [opt_spdonly]  If second optional operand is nonzero then we perform
+//                     speed-only retrieval using true direction.
+//
 // EXAMPLES
 //    An example of a command line is:
 //      % quick_winds ovwm.rdf  7 geomfile5kmres.txt metrics7mps5kmres.txt
@@ -176,7 +177,8 @@ template class std::map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<wind_speed>", "<geom_input_file>","<metrics_output_file>","<num_samples>","[opt_coast]",0};
+const char* usage_array[] = { "<sim_config_file>", "<wind_speed>", "<geom_input_file>","<metrics_output_file>","<num_samples>","[opt_coast]",
+"[opt_spdonly]",0};
 
 
 //--------------//
@@ -191,7 +193,8 @@ main(
     //------------------------//
     // parse the command line //
     //------------------------//
-
+    printf("argc: %d\n",argc);
+    
     const char* command = no_path(argv[0]);
     if (argc < 6 || argc>8)
         usage(command, usage_array, 1);
@@ -207,8 +210,13 @@ main(
     const char* out_file = argv[clidx++];
     int n=atoi(argv[clidx++]);
     bool coast=false;
-    if(argc==7) coast=(bool)atoi(argv[clidx++]);
-
+    if(argc>=7) coast=(bool)atoi(argv[clidx++]);
+    bool spd_only=false;
+    if(argc==8) spd_only=(bool)atoi(argv[clidx++]);
+    
+    if( coast ) printf("opt coast ON\n");
+    if( spd_only ) printf("opt speed only retrieval ON\n");
+    
     printf("Simulating %g m/s using %d samples\n",true_speed,n);
     fflush(stdout);
 
@@ -530,6 +538,30 @@ main(
         //-----------------
         WVC wvc;
         if(meas_list.NodeCount()>1){
+        
+          if( spd_only ) { // Speed only retrieval 
+          
+            float spdout;
+            float objout;
+            float delta_spd = 0.1;
+            float spd_start = 7.0;
+            float angle     = dir * rtd;
+            float prior_dir = 0;
+            int   do_interp = 1;
+
+            gmf.LineMaximize( &meas_list, spd_start, angle, &kp, delta_spd, 
+              do_interp, &spdout, &objout, prior_dir );
+          
+            float spderr=spdout - true_speed;
+            float direrr=0;
+          
+            speed_bias+=spderr;
+            speed_rms+=spderr*spderr;
+            dir_rms+=direrr*direrr;
+            retWindSpd[i] = spdout;
+        
+          } else { // Original functionality
+        
 	  if(opt_method==0) gmf.RetrieveWinds_GS(&meas_list,&kp,&wvc);
 	  else gmf.RetrieveWinds_BruteForce(&meas_list,&kp,&wvc);
 	  wvc.SortByObj();
@@ -549,6 +581,7 @@ main(
             zero_count ++;
             retWindSpd[i] = -1.0;
           }
+        } // End conditional for speed only retrieval
 
 	  //-------------------------
 	  // Accumulate error metrics
@@ -587,8 +620,8 @@ main(
         retWindSpdSd = sqrt(sum2/(n-zero_count)-retWindSpdMean*retWindSpdMean);
        // output metrics to file
       
-        fprintf(ofp,"%g %g %g %g %g %g %g %d\n",ctd,dir_rms,speed_rms,speed_bias,skill,
-                  retWindSpdMean,retWindSpdSd,zero_count);
+        fprintf(ofp,"%g %g %g %g %g %g %g %d %d\n",ctd,dir_rms,speed_rms,speed_bias,skill,
+                  retWindSpdMean,retWindSpdSd,zero_count, n );
       }
 
  
