@@ -29,7 +29,8 @@ L2AToL2B::L2AToL2B()
     useRandomInit(0), useNudgeStream(0), onePeakWidth(0.0), twoPeakSep(181.0),
     probThreshold(0.0), streamThreshold(0.0), useHurricaneNudgeField(0),
     hurricaneRadius(0), useSigma0Weights(0), sigma0WeightCorrLength(25.0), 
-    arrayNudgeFlag(0), arrayNudgeSpd(NULL),arrayNudgeDir(NULL)
+    arrayNudgeFlag(0), arrayNudgeSpd(NULL),arrayNudgeDir(NULL),
+    use_MLP_mapping(false), MLP_input_map_s0(NULL), MLP_input_map_vars0(NULL)
 {
     return;
 }
@@ -42,6 +43,8 @@ L2AToL2B::~L2AToL2B()
     arrayNudgeSpd=NULL;
     arrayNudgeDir=NULL;
   }
+  if( MLP_input_map_s0    != NULL ) delete [] MLP_input_map_s0;
+  if( MLP_input_map_vars0 != NULL ) delete [] MLP_input_map_vars0;
     return;
 }
 
@@ -2827,11 +2830,61 @@ void
     if(s0_n[c]>0){
       MLP_inpt_array[mean_idx[c]]=s0_mean[c]/s0_n[c];
       MLP_valid_array[mean_idx[c]]=true;
+      
+      if( use_MLP_mapping && MLP_input_map_ns0>0 && MLP_valid_array[mean_idx[c]] ) {
+        float value = 10*log10(MLP_inpt_array[mean_idx[c]]);
+        int idx     = floor((value-MLP_input_map_s0min)/MLP_input_map_ds0 + 0.5);
+        if( idx >= 0 && idx < MLP_input_map_ns0 ) {
+          MLP_inpt_array[mean_idx[c]] = pow(10.0,MLP_input_map_s0[c*MLP_input_map_ns0+idx]/10.0);          
+        }  
+      }
     }
     // populate valid variance arrays
     if(s0_n[c]>1){
       MLP_inpt_array[var_idx[c]]=(s0_var[c]-(s0_mean[c]*s0_mean[c])/s0_n[c])/(s0_n[c]-1);
       MLP_valid_array[var_idx[c]]=true;
+      
+      if( use_MLP_mapping && MLP_input_map_nvars0>0 && MLP_valid_array[var_idx[c]] ) {
+        float value = MLP_inpt_array[var_idx[c]];
+        int idx     = floor((value-MLP_input_map_vars0min)/MLP_input_map_dvars0 + 0.5);
+        MLP_inpt_array[var_idx[c]] = MLP_input_map_vars0[c*MLP_input_map_nvars0+idx];
+      }
+      
     }
   }
 }
+
+void L2AToL2B::ReadMLPMapping( char* filename ) {
+  use_MLP_mapping      = false;
+    
+  FILE* ifp = fopen(filename,"r");
+  if( !ifp ) 
+    return;
+  
+  fread( &MLP_input_map_s0min,    sizeof(float), 1, ifp );
+  fread( &MLP_input_map_ds0,      sizeof(float), 1, ifp );
+  fread( &MLP_input_map_ns0,      sizeof(int),   1, ifp );
+  fread( &MLP_input_map_vars0min, sizeof(float), 1, ifp );
+  fread( &MLP_input_map_dvars0,   sizeof(float), 1, ifp );
+  fread( &MLP_input_map_nvars0,   sizeof(int),   1, ifp );
+
+  if( MLP_input_map_ns0 > 0 ) {
+    MLP_input_map_s0 = new float[16*MLP_input_map_ns0];    
+    fread( &MLP_input_map_s0[0], sizeof(float), MLP_input_map_ns0*16, ifp );
+  }
+  if( MLP_input_map_nvars0 > 0 ) {
+    MLP_input_map_vars0 = new float[16*MLP_input_map_nvars0];    
+    fread( &MLP_input_map_vars0[0], sizeof(float), MLP_input_map_nvars0*16, ifp );
+  }
+  fclose(ifp);
+  use_MLP_mapping = true;
+  
+  fprintf(stdout,"s0:    min, step, ns0: %f %f %d\n",
+    MLP_input_map_s0min,MLP_input_map_ds0,MLP_input_map_ns0);
+  fprintf(stdout,"s0var: min, step, ns0: %f %f %d\n",
+    MLP_input_map_vars0min,MLP_input_map_dvars0,MLP_input_map_nvars0);
+  
+  return;
+}
+
+

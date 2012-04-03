@@ -15,7 +15,6 @@ static const char rcs_id_l2atol2b_h[] =
 #include "MLPData.h"
 #include "MLP.h"
 
-
 // Macro for quickly defining and iniatializing an array
 #define ALLOCATE_AND_ZERO(vartype, varname, numel) \
   vartype *varname = (vartype *)malloc(numel * sizeof(vartype)); for(int i=0;i<numel;i++) varname[i] = 0;
@@ -88,6 +87,7 @@ public:
     int  InitFilterAndFlush(L2B* l2b);
     void ComputeMLPInputs(L2A* l2a, MeasList* meas_list, WVC* wvc);
     int  GenSigma0Flags( MeasList* meas_list, GMF* gmf, WVC* wvc );
+    void ReadMLPMapping( char* filename);
     //------------------------------------------//
     // Routine for outputting the Nudge Field   //
     // wind vector                              //
@@ -187,6 +187,18 @@ public:
     int arrayNudgeNcti;
     float MLP_inpt_array[NUM_MLP_IO_TYPES];
     bool MLP_valid_array[NUM_MLP_IO_TYPES];
+    
+    // MLP input maps -- 2/28/2012 AGF
+    bool    use_MLP_mapping;
+    float   MLP_input_map_s0min;
+    float   MLP_input_map_ds0;
+    int     MLP_input_map_ns0;
+    float   MLP_input_map_vars0min;
+    float   MLP_input_map_dvars0;
+    int     MLP_input_map_nvars0;
+    
+    float*  MLP_input_map_s0;   
+    float*  MLP_input_map_vars0; 
 };
 
 

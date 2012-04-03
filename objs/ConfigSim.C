@@ -1703,6 +1703,13 @@ ConfigL2AToL2B(
   l2a_to_l2b->kprc.SetMean(0.0);
   l2a_to_l2b->kprc.SetSeed(get_seed(config_list, KPRC_SEED_KEYWORD,
 				    DEFAULT_KPRC_SEED));
+  
+  // Read in MLP input mapping file -- AGF 2/28/2012
+  config_list->DoNothingForMissingKeywords();
+  char* mlp_map_file = config_list->Get(MLP_INPUT_MAPPING_FILE_KEYWORD);
+  if( mlp_map_file ) l2a_to_l2b->ReadMLPMapping( mlp_map_file );
+  config_list->ExitForMissingKeywords(); 
+  
   return(1);
 }
 

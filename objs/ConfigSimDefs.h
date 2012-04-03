@@ -322,7 +322,7 @@ static const char rcs_id_configsimdefs_h[] =
 #define USE_SIGMA0_SPATIAL_WEIGHTS_KEYWORD     "USE_SIGMA0_SPATIAL_WEIGHTS"
 #define SSW_CORRELATION_LENGTH_KEYWORD         "SSW_CORRELATION_LENGTH"
 #define NEURAL_NET_ERR_EST_FILE                "NEURAL_NET_ERR_EST_FILE"
-
+#define MLP_INPUT_MAPPING_FILE_KEYWORD         "MLP_INPUT_MAPPING_FILE"
 
 //------------------//
 // Spacecraft State //
