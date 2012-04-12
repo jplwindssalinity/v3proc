@@ -134,7 +134,8 @@ PROGRAMS = \
 	make_simple_land_map \
 	l2b_to_netcdf \
 	l2b_hdf_to_netcdf \
-	l1b_isro_to_l1b
+	l1b_isro_to_l1b \
+	os2_l2b_to_netcdf
 #	l00_to_l1a
 #   check_l1b 
 #   nof_and_qual
@@ -266,6 +267,9 @@ l2b_to_netcdf: l2b_to_netcdf.C $(LIBS) $(EALIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(NETCDFLIBS) $(LDLIBS)
 
 l2b_hdf_to_netcdf: l2b_hdf_to_netcdf.C $(LIBS) $(EALIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(NETCDFLIBS) $(LDLIBS)
+
+os2_l2b_to_netcdf: os2_l2b_to_netcdf.C $(LIBS) $(EALIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(NETCDFLIBS) $(LDLIBS)
 
 %: %.C $(LIBS) $(EALIBS)

@@ -154,7 +154,8 @@ OBJS = \
 	Options.o \
 	Utils.o \
 	AscatL1bReader.o \
-	AttenMap.o
+	AttenMap.o \
+	NetCDF.o
 
 
 INCS = \
@@ -350,6 +351,7 @@ stirling4.o: stirling4.c function.h
 erf_cheb.o: erf_cheb.c function.h
 int_rn_exp.o: int_rn_exp.c function.h
 AscatL1bReader.o: AscatL1bReader.h
+NetCDF.o: NetCDF.C NetCDF.h
 
 
 
