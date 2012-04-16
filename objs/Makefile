@@ -155,7 +155,9 @@ OBJS = \
 	Utils.o \
 	AscatL1bReader.o \
 	AttenMap.o \
-	NetCDF.o
+	NetCDF.o \
+	NetCDF_Attr.o \
+	NetCDF_Var.o
 
 
 INCS = \
@@ -352,6 +354,8 @@ erf_cheb.o: erf_cheb.c function.h
 int_rn_exp.o: int_rn_exp.c function.h
 AscatL1bReader.o: AscatL1bReader.h
 NetCDF.o: NetCDF.C NetCDF.h
+NetCDF_Att.o: NetCDF_Attr.C NetCDF_Attr.h NetCDF.h
+NetCDF_Var.o: NetCDF_Var.C NetCDF_Var.h NetCDF_Attr.h NetCDF.h
 
 
 

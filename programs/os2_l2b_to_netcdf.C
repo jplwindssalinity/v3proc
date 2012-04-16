@@ -33,14 +33,11 @@ static const char rcs_id[] =
 //----------//
 
 #include "netcdf.h"
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <getopt.h>
 #include <mfhdf.h>
-#include <vector>
 
-#include "NetCDF.h"
+#include "NetCDF_Attr.h"
+#include "NetCDF_Var.h"
 #include "Misc.h"
 #include "L2B.h"
 #include "List.h"
@@ -49,9 +46,6 @@ static const char rcs_id[] =
 #include "BufferedList.C"
 #include "Tracking.h"
 #include "Tracking.C"
-#include "Constants.h"
-
-using namespace std;
 
 //--------//
 // MACROS //
@@ -100,60 +94,6 @@ using namespace std;
 
 #define BUILD_ID "v1_0_0:A"
 
-// Used to create a structure to define NetCDF variables
-#define DEF_VAR(var_, varid_, name_, type_, ndims_, dims_, nattrs_) {   \
-    var_[varid_].name = name_;                                          \
-    var_[varid_].type = type_;                                          \
-    var_[varid_].ndims = ndims_;                                        \
-    var_[varid_].dims = dims_;                                          \
-    var_[varid_].nattrs = nattrs_;                                      \
-    ERR((var_[varid_].attrs = (typeof var_[varid_].attrs)               \
-                malloc(var_[varid_].nattrs *                            \
-                    (sizeof *var_[varid_].attrs))) == NULL);            \
-}
-    
-// Used to create an structure to define an attribute for a NetCDF variable
-#define DEF_ATTR(var_, varid_, attid_, name_, size_,    \
-        type_, off_, val_) {                            \
-    var_[varid_].attrs[attid_].name = (name_);          \
-    var_[varid_].attrs[attid_].size = (size_);          \
-    var_[varid_].attrs[attid_].type = (type_);          \
-    var_[varid_].attrs[attid_].value.off_ = (val_);     \
-}
-
-// If you want to kill a standard attribute, use this macro
-#define SKIP_ATTR(var, varid, attr)   { \
-    var[varid].attrs[attr].name = NULL; \
-}
-
-// Builds a variable and defines its standard attributes
-#define DEF_VAR_STD_ATTRS(var, varid, name,         \
-        type, ndims, dims, nattrs, off, fill, min,  \
-        max, lname, std_name, units, scale)       { \
-    DEF_VAR((var), (varid), (name), (type),         \
-            (ndims), (dims), (nattrs));             \
-    DEF_ATTR((var), (varid), FILL_VALUE,            \
-            "_FillValue", 1, (type), off, (fill));  \
-    DEF_ATTR((var), (varid), VALID_MIN,             \
-            "valid_min", 1, (type), off, (min));    \
-    DEF_ATTR((var), (varid), VALID_MAX,             \
-            "valid_max", 1, (type), off, (max));    \
-    DEF_ATTR((var), (varid), LONG_NAME,             \
-            "long_name", 1, NC_CHAR, str, (lname)); \
-    DEF_ATTR((var), (varid), STD_NAME,              \
-            "standard_name", 1, NC_CHAR, str,       \
-            (std_name));                            \
-    DEF_ATTR((var), (varid), COORDINATES,           \
-            "coordinates", 1, NC_CHAR, str,         \
-            "lon lat");                             \
-    DEF_ATTR((var), (varid), UNITS, "units", 1,     \
-            NC_CHAR, str, units);                   \
-    DEF_ATTR((var), (varid), SCALE, "scale_factor", \
-            1, (type), off, (scale));               \
-}
-
-    
-const size_t NUM_FLAGS = 10;
 enum {
     SIGMA0_MASK               = 0x0001,
     AZIMUTH_DIV_MASK          = 0x0002,
@@ -167,7 +107,6 @@ enum {
     AVAILABLE_DATA_MASK       = 0x4000
 };
 
-const size_t NUM_EFLAGS = 4;
 enum {
     RAIN_CORR_NOT_APPL_MASK = 0x0001,
     NEG_WIND_SPEED_MASK     = 0x0002,
@@ -188,46 +127,6 @@ template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
 
 
-typedef enum {
-    TIME = 0,
-    LATITUDE,
-    LONGITUDE,
-    SEL_SPEED,
-    SEL_DIRECTION,
-    RAIN_IMPACT,
-    FLAGS,
-    EFLAGS,
-    NUDGE_SPEED,
-    NUDGE_DIRECTION,
-    WIND_SPEED_UNCORRECTED,
-    NUM_AMBIG,
-
-    first_extended_variable,
-
-    SEL_OBJ = first_extended_variable,
-    NUM_MEDFILT_AMBIG,
-    AMBIG_SPEED,
-    AMBIG_DIRECTION,
-    AMBIG_OBJ,
-    N_IN_FORE,
-    N_IN_AFT,
-    N_OUT_FORE,
-    N_OUT_AFT,
-    num_variables
-} variables;
-
-typedef enum {
-    FILL_VALUE = 0,
-    VALID_MIN,
-    VALID_MAX,
-    LONG_NAME,
-    STD_NAME,
-    COORDINATES,
-    UNITS,
-    SCALE,
-    num_standard_attrs
-} standard_attrs;
-
 typedef struct {
     const char *command;
     const char *l2b_file;
@@ -236,36 +135,12 @@ typedef struct {
     char extended;
 } l2b_to_netcdf_config;
 
-typedef struct {
-    const char *name;
-    nc_type type;
-    size_t size;
-    union {
-        float f;
-        float *pf;
-        int32 i;
-        int32 *pi;
-        int16 s;
-        int16 *ps;
-        unsigned char b;
-        unsigned char *pb;
-        const char *str;
-    } value;
-} attribute;
-
-typedef struct {
-    const char *name;
-    nc_type type;
-    int ndims;
-    int *dims;
-    int id;
-    int nattrs;
-    attribute *attrs;
-} netcdf_variable;
-
 int parse_commandline(int argc, char **argv, 
         l2b_to_netcdf_config *config);
 int set_global_attributes(int ncid);
+
+static int16_t flag_masks[] = {SIGMA0_MASK, AZIMUTH_DIV_MASK, COASTAL_MASK, ICE_EDGE_MASK, WIND_RETRIEVAL_MASK, HIGH_WIND_MASK, LOW_WIND_MASK, RAIN_IMPACT_UNUSABLE_MASK, RAIN_IMPACT_MASK, AVAILABLE_DATA_MASK};
+static int16_t eflag_masks[] = {RAIN_CORR_NOT_APPL_MASK, NEG_WIND_SPEED_MASK, ALL_AMBIG_CONTRIB_MASK, RAIN_CORR_LARGE_MASK};
 
 //--------------//
 // MAIN PROGRAM //
@@ -273,7 +148,6 @@ int set_global_attributes(int ncid);
 
 int main(int argc, char **argv) {
 
-    void *tmp;
     l2b_to_netcdf_config run_config;
     L2B l2b;
 
@@ -283,8 +157,9 @@ int main(int argc, char **argv) {
     /* Net CDF dimension information */
     int max_ambiguities;
     int cross_track_dim_id, along_track_dim_id, ambiguities_dim_id, time_strlen_dim_id;
-    int dimensions[3];
-    int time_dimensions[2];
+    size_t cross_track_dim_sz, along_track_dim_sz, time_strlen_dim_sz;
+    int dimensions[3], dimensions_sz[3];
+    int time_dimensions[2], time_dimensions_sz[2];
     size_t time_vara_length[2] = {1, 0};
 
     /* For populating Net CDF file */
@@ -328,14 +203,15 @@ int main(int argc, char **argv) {
     ERR(set_global_attributes(ncid) != 0);
 
     // Create the data dimensions
-    NCERR(nc_def_dim(ncid, "along_track", 
-                (size_t)l2b.frame.swath.GetAlongTrackBins(), 
+    along_track_dim_sz = (size_t)l2b.frame.swath.GetAlongTrackBins();
+    cross_track_dim_sz = (size_t)l2b.frame.swath.GetCrossTrackBins();
+    time_strlen_dim_sz = (size_t)strlen(time_format);
+
+    NCERR(nc_def_dim(ncid, "along_track", along_track_dim_sz,
                 &along_track_dim_id));
-    NCERR(nc_def_dim(ncid, "cross_track", 
-                (size_t)l2b.frame.swath.GetCrossTrackBins(), 
+    NCERR(nc_def_dim(ncid, "cross_track", cross_track_dim_sz,
                 &cross_track_dim_id));
-    NCERR(nc_def_dim(ncid, "time_strlength", 
-                (size_t)strlen(time_format), 
+    NCERR(nc_def_dim(ncid, "time_strlength", time_strlen_dim_sz,
                 &time_strlen_dim_id));
     if (run_config.extended) {
         NCERR(nc_def_dim(ncid, "ambiguities",
@@ -355,460 +231,215 @@ int main(int argc, char **argv) {
     dimensions[0] = along_track_dim_id;
     dimensions[1] = cross_track_dim_id;
     dimensions[2] = ambiguities_dim_id;
+    dimensions_sz[0] = along_track_dim_sz;
+    dimensions_sz[1] = cross_track_dim_sz;
+    dimensions_sz[2] = max_ambiguities;
 
     time_dimensions[0] = along_track_dim_id;
     time_dimensions[1] = time_strlen_dim_id;
+    time_dimensions_sz[0] = along_track_dim_sz;
+    time_dimensions_sz[1] = time_strlen_dim_sz;
 
-    netcdf_variable varlist[num_variables];
-   
-    DEF_VAR_STD_ATTRS(varlist, LATITUDE, "lat", NC_FLOAT, 2, dimensions,
-            num_standard_attrs, f, 0.0f, -90.0f, 90.0f, "latitude",
-            "latitude", "degrees_north", 1.0f);
-    SKIP_ATTR(varlist, LATITUDE, FILL_VALUE);
-    SKIP_ATTR(varlist, LATITUDE, COORDINATES);
-    SKIP_ATTR(varlist, LATITUDE, SCALE);
+    vector <NetCDF_Var_Base *> vars;
 
-    DEF_VAR_STD_ATTRS(varlist, LONGITUDE, "lon", NC_FLOAT, 2, dimensions,
-            num_standard_attrs, f, 0.0f, 0.0f, 360.0f, "longitude",
-            "longitude", "degrees_east", 1.0f);
-    SKIP_ATTR(varlist, LONGITUDE, FILL_VALUE);
-    SKIP_ATTR(varlist, LONGITUDE, COORDINATES);
-    SKIP_ATTR(varlist, LONGITUDE, SCALE);
+    // Define variables
+    NetCDF_Var<float> *lat_var = new NetCDF_Var<float>("lat", ncid, 2, dimensions, dimensions_sz);
+        float lat_min = -90.0f, lat_max = 90.0f;
+        lat_var->AddAttribute(new NetCDF_Attr<float>("valid_min", lat_min));
+        lat_var->AddAttribute(new NetCDF_Attr<float>("valid_max", lat_max));
+        lat_var->AddAttribute(new NetCDF_Attr<char>("long_name", "latitude"));
+        lat_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "latitude"));
+        lat_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees_north"));
+    NetCDF_Var<float> *lon_var = new NetCDF_Var<float>("lon", ncid, 2, dimensions, dimensions_sz);
+        float lon_min = 0.0f, lon_max = 360.0f;
+        lon_var->AddAttribute(new NetCDF_Attr<float>("valid_min", lon_min));
+        lon_var->AddAttribute(new NetCDF_Attr<float>("valid_max", lon_max));
+        lon_var->AddAttribute(new NetCDF_Attr<char>("long_name", "longitude"));
+        lon_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "longitude"));
+        lon_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees_east"));
+    NetCDF_Var<float> *retrieved_speed_var = new NetCDF_Var<float>("retrieved_wind_speed", ncid, 2, dimensions, dimensions_sz);
+        float retrieved_speed_fill = -9999.0f, retrieved_speed_min = 0.0f, retrieved_speed_max = 100.0f;
+        retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", retrieved_speed_fill));
+        retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_min", retrieved_speed_min));
+        retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_max", retrieved_speed_max));
+        retrieved_speed_var->AddAttribute(new NetCDF_Attr<char>("long_name", "equivalent neutral wind speed at 10 m"));
+        retrieved_speed_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_speed"));
+        retrieved_speed_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
+        retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        retrieved_speed_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<float> *retrieved_dir_var = new NetCDF_Var<float>("retrieved_wind_direction", ncid, 2, dimensions, dimensions_sz);
+        float retrieved_dir_fill = -9999.0f, retrieved_dir_min = 0.0f, retrieved_dir_max = 100.0f;
+        retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", retrieved_dir_fill));
+        retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_min", retrieved_dir_min));
+        retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_max", retrieved_dir_max));
+        retrieved_dir_var->AddAttribute(new NetCDF_Attr<char>("long_name", "equivalent neutral wind direction at 10 m"));
+        retrieved_dir_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_to_direction"));
+        retrieved_dir_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees"));
+        retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        retrieved_dir_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<float> *rain_impact_var = new NetCDF_Var<float>("rain_impact", ncid, 2, dimensions, dimensions_sz);
+        float rain_impact_fill = -9999.0f, rain_impact_min = 0.0f, rain_impact_max = 100.0f;
+        rain_impact_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", rain_impact_fill));
+        rain_impact_var->AddAttribute(new NetCDF_Attr<float>("valid_min", rain_impact_min));
+        rain_impact_var->AddAttribute(new NetCDF_Attr<float>("valid_max", rain_impact_max));
+        rain_impact_var->AddAttribute(new NetCDF_Attr<char>("long_name", "impact of rain upon wind vector retrieval"));
+        rain_impact_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        rain_impact_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        rain_impact_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<char> *time_var = new NetCDF_Var<char>("time", ncid, 2, time_dimensions, time_dimensions_sz);
+        time_var->AddAttribute(new NetCDF_Attr<char>("long_name", "date and time"));
+        time_var->AddAttribute(new NetCDF_Attr<char>("units", time_format));
+    NetCDF_Var<short> *flags_var = new NetCDF_Var<short>("flags", ncid, 2, dimensions, dimensions_sz);
+        short flags_fill = 0xFfff, flags_min = 0, flags_max = 32643;
+        flags_var->AddAttribute(new NetCDF_Attr<short>("_FillValue", flags_fill));
+        flags_var->AddAttribute(new NetCDF_Attr<short>("valid_min", flags_min));
+        flags_var->AddAttribute(new NetCDF_Attr<short>("valid_max", flags_max));
+        flags_var->AddAttribute(new NetCDF_Attr<char>("long_name", "wind vector cell quality flags"));
+        flags_var->AddAttribute(new NetCDF_Attr<short>("flag_masks", flag_masks, sizeof(flag_masks)/sizeof(flag_masks[0])));
+        flags_var->AddAttribute(new NetCDF_Attr<char>("flag_meanings", "adequate_sigma0_flag adequate_azimuth_diversity_flag coastal_flag ice_edge_flag wind_retrieval_flag high_wind_speed_flag low_wind_speed_flag rain_impact_flag_usable rain_impact_flag available_data_flag"));
+        flags_var->AddAttribute(new NetCDF_Attr<char>("units", "bit"));
+        flags_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<short> *eflags_var = new NetCDF_Var<short>("eflags", ncid, 2, dimensions, dimensions_sz);
+        short eflags_fill = 0xFfff, eflags_min = 0, eflags_max = 15;
+        eflags_var->AddAttribute(new NetCDF_Attr<short>("_FillValue", eflags_fill));
+        eflags_var->AddAttribute(new NetCDF_Attr<short>("valid_min", eflags_min));
+        eflags_var->AddAttribute(new NetCDF_Attr<short>("valid_max", eflags_max));
+        eflags_var->AddAttribute(new NetCDF_Attr<char>("long_name", "extended wind vector cell quality flags"));
+        eflags_var->AddAttribute(new NetCDF_Attr<short>("eflag_masks", eflag_masks, sizeof(eflag_masks)/sizeof(eflag_masks[0])));
+        eflags_var->AddAttribute(new NetCDF_Attr<char>("flag_meanings", "rain_correction_not_applied_flag correction_produced_negative_spd_flag all_ambiguities_contribute_to_nudging_flag large_rain_correction_flag"));
+        eflags_var->AddAttribute(new NetCDF_Attr<char>("units", "bit"));
+        eflags_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<float> *nudge_speed_var = new NetCDF_Var<float>("nudge_wind_speed", ncid, 2, dimensions, dimensions_sz);
+        float nudge_speed_fill = -9999.0f, nudge_speed_min = 0.0f, nudge_speed_max = 100.0f;
+        nudge_speed_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", nudge_speed_fill));
+        nudge_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_min", nudge_speed_min));
+        nudge_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_max", nudge_speed_max));
+        nudge_speed_var->AddAttribute(new NetCDF_Attr<char>("long_name", "model wind speed"));
+        nudge_speed_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_speed"));
+        nudge_speed_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
+        nudge_speed_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        nudge_speed_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<float> *nudge_dir_var = new NetCDF_Var<float>("nudge_wind_direction", ncid, 2, dimensions, dimensions_sz);
+        float nudge_dir_fill = -9999.0f, nudge_dir_min = 0.0f, nudge_dir_max = 360.0f;
+        nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", nudge_dir_fill));
+        nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_min", nudge_dir_min));
+        nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_max", nudge_dir_max));
+        nudge_dir_var->AddAttribute(new NetCDF_Attr<char>("long_name", "model wind direction"));
+        nudge_dir_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_to_direction"));
+        nudge_dir_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
+        nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        nudge_dir_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<float> *wind_speed_uncorr_var = new NetCDF_Var<float>("wind_speed_uncorrected", ncid, 2, dimensions, dimensions_sz);
+        float wind_speed_uncorr_fill = -9999.0f, wind_speed_uncorr_min = 0.0f, wind_speed_uncorr_max = 100.f;
+        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", wind_speed_uncorr_fill));
+        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("valid_min", wind_speed_uncorr_min));
+        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("valid_max", wind_speed_uncorr_max));
+        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<char>("long_name", "wind speed without rain correction"));
+        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_speed"));
+        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
+        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<unsigned char> *num_ambig_var = new NetCDF_Var<unsigned char>("num_ambiguities", ncid, 2, dimensions, dimensions_sz);
+        unsigned char num_ambig_fill = 0, num_ambig_min = 1, num_ambig_max = 4;
+        num_ambig_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_ambig_fill));
+        num_ambig_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", num_ambig_min));
+        num_ambig_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", num_ambig_max));
+        num_ambig_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of ambiguous wind " "directions found in point-wise wind retrieval prior to spatial filtering"));
+        num_ambig_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        num_ambig_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
 
-    DEF_VAR_STD_ATTRS(varlist, SEL_SPEED, "retrieved_wind_speed", NC_FLOAT, 2,
-            dimensions, num_standard_attrs, f, -9999.0f, 0.0f, 100.0f,
-            "equivalent neutral wind speed at 10 m", "wind_speed", "m s-1", 1.0f);
-
-    DEF_VAR_STD_ATTRS(varlist, SEL_DIRECTION, "retrieved_wind_direction",
-            NC_FLOAT, 2, dimensions, num_standard_attrs, f, -9999.0f, 0.0f,
-            360.0f, "equivalent neutral wind direction at 10 m",
-            "wind_to_direction", "degrees", 1.0f);
-   
-    DEF_VAR_STD_ATTRS(varlist, RAIN_IMPACT, "rain_impact", NC_FLOAT, 2,
-            dimensions, num_standard_attrs, f, -9999.0f, 0.0f, 100.0f,
-            "impact of rain upon wind vector retrieval", NULL, "1", 1.0f);
-    SKIP_ATTR(varlist, RAIN_IMPACT, STD_NAME);
-
-    DEF_VAR_STD_ATTRS(varlist, TIME, "time", NC_CHAR, 2, time_dimensions,
-            num_standard_attrs, str, NULL, NULL, NULL, "date and time",
-            NULL, time_format, NULL);
-    SKIP_ATTR(varlist, TIME, FILL_VALUE);
-    SKIP_ATTR(varlist, TIME, VALID_MIN);
-    SKIP_ATTR(varlist, TIME, VALID_MAX);
-    SKIP_ATTR(varlist, TIME, STD_NAME);
-    SKIP_ATTR(varlist, TIME, COORDINATES);
-    SKIP_ATTR(varlist, TIME, SCALE);
-
-    ERR((tmp = (int16 *) malloc(NUM_FLAGS * sizeof(int16))) == NULL);
-    {
-        int16 init_list[NUM_FLAGS] = {SIGMA0_MASK, AZIMUTH_DIV_MASK, COASTAL_MASK, 
-            ICE_EDGE_MASK, WIND_RETRIEVAL_MASK, HIGH_WIND_MASK, LOW_WIND_MASK, 
-            RAIN_IMPACT_UNUSABLE_MASK, RAIN_IMPACT_MASK, AVAILABLE_DATA_MASK};
-
-        ERR(memcpy(tmp, init_list, NUM_FLAGS* sizeof init_list[0]) == NULL);
-    }
-    DEF_VAR_STD_ATTRS(varlist, FLAGS, "flags", NC_SHORT, 2, dimensions,
-            num_standard_attrs + 2, s, 0xFfff, 0, 32643,
-            "wind vector cell quality flags", NULL, "bit", 1);
-    SKIP_ATTR(varlist, FLAGS, STD_NAME);
-    SKIP_ATTR(varlist, FLAGS, SCALE);
-    DEF_ATTR(varlist, FLAGS, num_standard_attrs + 0, "flag_masks", NUM_FLAGS,
-            varlist[FLAGS].type, ps, (int16 *)tmp);
-    DEF_ATTR(varlist, FLAGS, num_standard_attrs + 1, "flag_meanings", NUM_FLAGS,
-            NC_CHAR, str, "adequate_sigma0_flag "
-        "adequate_azimuth_diversity_flag coastal_flag ice_edge_flag "
-        "wind_retrieval_flag high_wind_speed_flag low_wind_speed_flag "
-        "rain_impact_flag_usable rain_impact_flag available_data_flag"
-    );
-
-    ERR((tmp = (int16 *) malloc(NUM_EFLAGS * sizeof(int16))) == NULL);
-    {
-        int16 init_list[NUM_EFLAGS] = {RAIN_CORR_NOT_APPL_MASK, NEG_WIND_SPEED_MASK, 
-            ALL_AMBIG_CONTRIB_MASK, RAIN_CORR_LARGE_MASK};
-
-        ERR(memcpy(tmp, init_list, NUM_EFLAGS* sizeof init_list[0]) == NULL);
-    }
-    DEF_VAR_STD_ATTRS(varlist, EFLAGS, "eflags", NC_SHORT, 2, dimensions,
-            num_standard_attrs + 2, s, 0xFfff, 0, 15,
-            "extended wind vector cell quality flags", NULL, "bit", 1);
-    SKIP_ATTR(varlist, EFLAGS, STD_NAME);
-    SKIP_ATTR(varlist, EFLAGS, SCALE);
-    DEF_ATTR(varlist, EFLAGS, num_standard_attrs + 0, "flag_masks", NUM_EFLAGS,
-            varlist[EFLAGS].type, ps, (int16 *)tmp);
-    DEF_ATTR(varlist, EFLAGS, num_standard_attrs + 1, "flag_meanings", NUM_EFLAGS,
-            NC_CHAR, str, "rain_correction_not_applied_flag "
-        "correction_produced_negative_spd_flag all_ambiguities_contribute_to_nudging_flag "
-        "large_rain_correction_flag"
-    );
-
-    DEF_VAR_STD_ATTRS(varlist, NUDGE_SPEED, "nudge_wind_speed", NC_FLOAT, 2, dimensions,
-            num_standard_attrs, f, -9999.0f, 0.0f, 100.0f, "model wind speed",
-            "wind_speed", "m s-1", 1.0f);
-             
-    DEF_VAR_STD_ATTRS(varlist, NUDGE_DIRECTION, "nudge_wind_direction", NC_FLOAT, 2,
-            dimensions, num_standard_attrs, f, -9999.0f, 0.0f, 360.0f,
-            "model wind direction", "wind_to_direction", "degrees", 1.0f);
-
-    DEF_VAR_STD_ATTRS(varlist, WIND_SPEED_UNCORRECTED, "wind_speed_uncorrected",
-            NC_FLOAT, 2, dimensions, num_standard_attrs, f, -9999.0f, 0.0f,
-            100.0f, "wind speed without rain correction", "wind_speed", "m s-1", 1.0f);
-
-    DEF_VAR_STD_ATTRS(varlist, NUM_AMBIG, "num_ambiguities", NC_BYTE, 2, dimensions,
-            num_standard_attrs, b, '\0', '\1', '\4', "number of ambiguous wind "
-            "directions found in point-wise wind retrieval prior to spatial filtering",
-            NULL, "1", 1);
-    SKIP_ATTR(varlist, NUM_AMBIG, STD_NAME);
-    SKIP_ATTR(varlist, NUM_AMBIG, SCALE);
 
     // Cross track wind speed bias
     // Atmospheric speed bias
 
-#if 0
+    vars.push_back(time_var);
+    vars.push_back(lat_var);
+    vars.push_back(lon_var);
+    vars.push_back(retrieved_speed_var);
+    vars.push_back(retrieved_dir_var);
+    vars.push_back(rain_impact_var);
+    vars.push_back(flags_var);
+    vars.push_back(eflags_var);
+    vars.push_back(nudge_speed_var);
+    vars.push_back(nudge_dir_var);
+    vars.push_back(wind_speed_uncorr_var);
+    vars.push_back(num_ambig_var);
+
     if (run_config.extended) { 
-        varlist[SEL_OBJ].name  = "wind_obj";
-        varlist[SEL_OBJ].type  = NC_FLOAT;
-        varlist[SEL_OBJ].ndims = 2;
-        varlist[SEL_OBJ].dims = dimensions; 
-        varlist[SEL_OBJ].nattrs = num_standard_attrs + 2;
-        ERR((varlist[SEL_OBJ].attrs = (typeof varlist[SEL_OBJ].attrs)
-                    malloc(varlist[SEL_OBJ].nattrs * 
-                        (sizeof *varlist[SEL_OBJ].attrs))) == NULL);
-    
-        varlist[SEL_OBJ].attrs[FILL_VALUE].name = "_FillValue";
-        varlist[SEL_OBJ].attrs[FILL_VALUE].size = 1;
-        varlist[SEL_OBJ].attrs[FILL_VALUE].type = varlist[SEL_OBJ].type;
-        varlist[SEL_OBJ].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
-        varlist[SEL_OBJ].attrs[VALID_MIN].name = "valid_min";
-        varlist[SEL_OBJ].attrs[VALID_MIN].size = 1;
-        varlist[SEL_OBJ].attrs[VALID_MIN].type = varlist[SEL_OBJ].type;
-        varlist[SEL_OBJ].attrs[VALID_MIN].value.f = 0.0f;
-        varlist[SEL_OBJ].attrs[VALID_MAX].name = "valid_max";
-        varlist[SEL_OBJ].attrs[VALID_MAX].size = 1;
-        varlist[SEL_OBJ].attrs[VALID_MAX].type = varlist[SEL_OBJ].type;
-        varlist[SEL_OBJ].attrs[VALID_MAX].value.f = 360.0f;
-        varlist[SEL_OBJ].attrs[LONG_NAME].name = "long_name";
-        varlist[SEL_OBJ].attrs[LONG_NAME].size = 1;
-        varlist[SEL_OBJ].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[SEL_OBJ].attrs[LONG_NAME].value.str = "selected wind objective function value";
-        varlist[SEL_OBJ].attrs[num_standard_attrs].name = "units";
-        varlist[SEL_OBJ].attrs[num_standard_attrs].size = 1;
-        varlist[SEL_OBJ].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[SEL_OBJ].attrs[num_standard_attrs].value.str = "1";
-        varlist[SEL_OBJ].attrs[num_standard_attrs + 1].name = "scale_factor";
-        varlist[SEL_OBJ].attrs[num_standard_attrs + 1].size = 1;
-        varlist[SEL_OBJ].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-        varlist[SEL_OBJ].attrs[num_standard_attrs + 1].value.f = 1.0f;
-
-        varlist[NUM_MEDFILT_AMBIG].name  = "num_ambiguities";
-        varlist[NUM_MEDFILT_AMBIG].type  = NC_BYTE;
-        varlist[NUM_MEDFILT_AMBIG].ndims = 2;
-        varlist[NUM_MEDFILT_AMBIG].dims = dimensions; 
-        varlist[NUM_MEDFILT_AMBIG].nattrs = num_standard_attrs + 1;
-        ERR((varlist[NUM_MEDFILT_AMBIG].attrs = (typeof varlist[NUM_MEDFILT_AMBIG].attrs)
-                    malloc(varlist[NUM_MEDFILT_AMBIG].nattrs * 
-                        (sizeof *varlist[NUM_MEDFILT_AMBIG].attrs))) == NULL);
-    
-        varlist[NUM_MEDFILT_AMBIG].attrs[FILL_VALUE].name = "_FillValue";
-        varlist[NUM_MEDFILT_AMBIG].attrs[FILL_VALUE].size = 1;
-        varlist[NUM_MEDFILT_AMBIG].attrs[FILL_VALUE].type = varlist[NUM_MEDFILT_AMBIG].type;
-        varlist[NUM_MEDFILT_AMBIG].attrs[FILL_VALUE].value.b = 0;
-        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MIN].name = "valid_min";
-        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MIN].size = 1;
-        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MIN].type = varlist[NUM_MEDFILT_AMBIG].type;
-        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MIN].value.b = 1;
-        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MAX].name = "valid_max";
-        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MAX].size = 1;
-        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MAX].type = varlist[NUM_MEDFILT_AMBIG].type;
-        varlist[NUM_MEDFILT_AMBIG].attrs[VALID_MAX].value.b = 0x04;
-        varlist[NUM_MEDFILT_AMBIG].attrs[LONG_NAME].name = "long_name";
-        varlist[NUM_MEDFILT_AMBIG].attrs[LONG_NAME].size = 1;
-        varlist[NUM_MEDFILT_AMBIG].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[NUM_MEDFILT_AMBIG].attrs[LONG_NAME].value.str = "number of ambiguities from wind retrieval after median filtering";
-        varlist[NUM_MEDFILT_AMBIG].attrs[num_standard_attrs].name = "units";
-        varlist[NUM_MEDFILT_AMBIG].attrs[num_standard_attrs].size = 1;
-        varlist[NUM_MEDFILT_AMBIG].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[NUM_MEDFILT_AMBIG].attrs[num_standard_attrs].value.str = "1";
- 
-        varlist[AMBIG_SPEED].name  = "ambiguity_speed";
-        varlist[AMBIG_SPEED].type  = NC_FLOAT;
-        varlist[AMBIG_SPEED].ndims = 3;
-        varlist[AMBIG_SPEED].dims = dimensions; 
-        varlist[AMBIG_SPEED].nattrs = num_standard_attrs + 2;
-        ERR((varlist[AMBIG_SPEED].attrs = (typeof varlist[AMBIG_SPEED].attrs)
-                    malloc(varlist[AMBIG_SPEED].nattrs * 
-                        (sizeof *varlist[AMBIG_SPEED].attrs))) == NULL);
-    
-        varlist[AMBIG_SPEED].attrs[FILL_VALUE].name = "_FillValue";
-        varlist[AMBIG_SPEED].attrs[FILL_VALUE].size = 1;
-        varlist[AMBIG_SPEED].attrs[FILL_VALUE].type = varlist[AMBIG_SPEED].type;
-        varlist[AMBIG_SPEED].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
-        varlist[AMBIG_SPEED].attrs[VALID_MIN].name = "valid_min";
-        varlist[AMBIG_SPEED].attrs[VALID_MIN].size = 1;
-        varlist[AMBIG_SPEED].attrs[VALID_MIN].type = varlist[AMBIG_SPEED].type;
-        varlist[AMBIG_SPEED].attrs[VALID_MIN].value.f = 0.0f;
-        varlist[AMBIG_SPEED].attrs[VALID_MAX].name = "valid_max";
-        varlist[AMBIG_SPEED].attrs[VALID_MAX].size = 1;
-        varlist[AMBIG_SPEED].attrs[VALID_MAX].type = varlist[AMBIG_SPEED].type;
-        varlist[AMBIG_SPEED].attrs[VALID_MAX].value.f = 100.0f;
-        varlist[AMBIG_SPEED].attrs[LONG_NAME].name = "long_name";
-        varlist[AMBIG_SPEED].attrs[LONG_NAME].size = 1;
-        varlist[AMBIG_SPEED].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[AMBIG_SPEED].attrs[LONG_NAME].value.str = "wind speed ambiguity";
-        varlist[AMBIG_SPEED].attrs[num_standard_attrs].name = "units";
-        varlist[AMBIG_SPEED].attrs[num_standard_attrs].size = 1;
-        varlist[AMBIG_SPEED].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[AMBIG_SPEED].attrs[num_standard_attrs].value.str = "m s-1";
-        varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].name = "scale_factor";
-        varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].size = 1;
-        varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-        varlist[AMBIG_SPEED].attrs[num_standard_attrs + 1].value.f = 1.0f;
-
-        varlist[AMBIG_DIRECTION].name  = "ambiguity_to_direction";
-        varlist[AMBIG_DIRECTION].type  = NC_FLOAT;
-        varlist[AMBIG_DIRECTION].ndims = 3;
-        varlist[AMBIG_DIRECTION].dims = dimensions; 
-        varlist[AMBIG_DIRECTION].nattrs = num_standard_attrs + 2;
-        ERR((varlist[AMBIG_DIRECTION].attrs = (typeof varlist[AMBIG_DIRECTION].attrs)
-                    malloc(varlist[AMBIG_DIRECTION].nattrs * 
-                        (sizeof *varlist[AMBIG_DIRECTION].attrs))) == NULL);
-    
-        varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].name = "_FillValue";
-        varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].size = 1;
-        varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].type = varlist[AMBIG_DIRECTION].type;
-        varlist[AMBIG_DIRECTION].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
-        varlist[AMBIG_DIRECTION].attrs[VALID_MIN].name = "valid_min";
-        varlist[AMBIG_DIRECTION].attrs[VALID_MIN].size = 1;
-        varlist[AMBIG_DIRECTION].attrs[VALID_MIN].type = varlist[AMBIG_DIRECTION].type;
-        varlist[AMBIG_DIRECTION].attrs[VALID_MIN].value.f = 0.0f;
-        varlist[AMBIG_DIRECTION].attrs[VALID_MAX].name = "valid_max";
-        varlist[AMBIG_DIRECTION].attrs[VALID_MAX].size = 1;
-        varlist[AMBIG_DIRECTION].attrs[VALID_MAX].type = varlist[AMBIG_DIRECTION].type;
-        varlist[AMBIG_DIRECTION].attrs[VALID_MAX].value.f = 360.0f;
-        varlist[AMBIG_DIRECTION].attrs[LONG_NAME].name = "long_name";
-        varlist[AMBIG_DIRECTION].attrs[LONG_NAME].size = 1;
-        varlist[AMBIG_DIRECTION].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[AMBIG_DIRECTION].attrs[LONG_NAME].value.str = "wind direction ambiguity";
-        varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].name = "units";
-        varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].size = 1;
-        varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[AMBIG_DIRECTION].attrs[num_standard_attrs].value.str = "degrees";
-        varlist[AMBIG_DIRECTION].attrs[num_standard_attrs + 1].name = "scale_factor";
-        varlist[AMBIG_DIRECTION].attrs[num_standard_attrs + 1].size = 1;
-        varlist[AMBIG_DIRECTION].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-        varlist[AMBIG_DIRECTION].attrs[num_standard_attrs + 1].value.f = 1.0f;
-                      
-        varlist[AMBIG_OBJ].name  = "ambiguity_obj";
-        varlist[AMBIG_OBJ].type  = NC_FLOAT;
-        varlist[AMBIG_OBJ].ndims = 3;
-        varlist[AMBIG_OBJ].dims = dimensions; 
-        varlist[AMBIG_OBJ].nattrs = num_standard_attrs + 2;
-        ERR((varlist[AMBIG_OBJ].attrs = (typeof varlist[AMBIG_OBJ].attrs)
-                    malloc(varlist[AMBIG_OBJ].nattrs * 
-                        (sizeof *varlist[AMBIG_OBJ].attrs))) == NULL);
-    
-        varlist[AMBIG_OBJ].attrs[FILL_VALUE].name = "_FillValue";
-        varlist[AMBIG_OBJ].attrs[FILL_VALUE].size = 1;
-        varlist[AMBIG_OBJ].attrs[FILL_VALUE].type = varlist[AMBIG_OBJ].type;
-        varlist[AMBIG_OBJ].attrs[FILL_VALUE].value.f = FILL(0.0f, -9999.0);
-        varlist[AMBIG_OBJ].attrs[VALID_MIN].name = "valid_min";
-        varlist[AMBIG_OBJ].attrs[VALID_MIN].size = 1;
-        varlist[AMBIG_OBJ].attrs[VALID_MIN].type = varlist[AMBIG_OBJ].type;
-        varlist[AMBIG_OBJ].attrs[VALID_MIN].value.f = 0.0f;
-        varlist[AMBIG_OBJ].attrs[VALID_MAX].name = "valid_max";
-        varlist[AMBIG_OBJ].attrs[VALID_MAX].size = 1;
-        varlist[AMBIG_OBJ].attrs[VALID_MAX].type = varlist[AMBIG_OBJ].type;
-        varlist[AMBIG_OBJ].attrs[VALID_MAX].value.f = 360.0f;
-        varlist[AMBIG_OBJ].attrs[LONG_NAME].name = "long_name";
-        varlist[AMBIG_OBJ].attrs[LONG_NAME].size = 1;
-        varlist[AMBIG_OBJ].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[AMBIG_OBJ].attrs[LONG_NAME].value.str = "wind ambiguity objective function value";
-        varlist[AMBIG_OBJ].attrs[num_standard_attrs].name = "units";
-        varlist[AMBIG_OBJ].attrs[num_standard_attrs].size = 1;
-        varlist[AMBIG_OBJ].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[AMBIG_OBJ].attrs[num_standard_attrs].value.str = "1";
-        varlist[AMBIG_OBJ].attrs[num_standard_attrs + 1].name = "scale_factor";
-        varlist[AMBIG_OBJ].attrs[num_standard_attrs + 1].size = 1;
-        varlist[AMBIG_OBJ].attrs[num_standard_attrs + 1].type = NC_FLOAT;
-        varlist[AMBIG_OBJ].attrs[num_standard_attrs + 1].value.f = 1.0f;
-
-        varlist[N_IN_FORE].name  = "number_in_fore";
-        varlist[N_IN_FORE].type  = NC_BYTE;
-        varlist[N_IN_FORE].ndims = 2;
-        varlist[N_IN_FORE].dims = dimensions; 
-        varlist[N_IN_FORE].nattrs = num_standard_attrs + 1;
-        ERR((varlist[N_IN_FORE].attrs = (typeof varlist[N_IN_FORE].attrs)
-                    malloc(varlist[N_IN_FORE].nattrs * 
-                        (sizeof *varlist[N_IN_FORE].attrs))) == NULL);
-    
-        varlist[N_IN_FORE].attrs[FILL_VALUE].name = "_FillValue";
-        varlist[N_IN_FORE].attrs[FILL_VALUE].size = 1;
-        varlist[N_IN_FORE].attrs[FILL_VALUE].type = varlist[N_IN_FORE].type;
-        varlist[N_IN_FORE].attrs[FILL_VALUE].value.b = 0;
-        varlist[N_IN_FORE].attrs[VALID_MIN].name = "valid_min";
-        varlist[N_IN_FORE].attrs[VALID_MIN].size = 1;
-        varlist[N_IN_FORE].attrs[VALID_MIN].type = varlist[N_IN_FORE].type;
-        varlist[N_IN_FORE].attrs[VALID_MIN].value.b = 0;
-        varlist[N_IN_FORE].attrs[VALID_MAX].name = "valid_max";
-        varlist[N_IN_FORE].attrs[VALID_MAX].size = 1;
-        varlist[N_IN_FORE].attrs[VALID_MAX].type = varlist[N_IN_FORE].type;
-        varlist[N_IN_FORE].attrs[VALID_MAX].value.b = 0xFf;
-        varlist[N_IN_FORE].attrs[LONG_NAME].name = "long_name";
-        varlist[N_IN_FORE].attrs[LONG_NAME].size = 1;
-        varlist[N_IN_FORE].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[N_IN_FORE].attrs[LONG_NAME].value.str = "number of inner forward looks in wind vector cell";
-        varlist[N_IN_FORE].attrs[num_standard_attrs].name = "units";
-        varlist[N_IN_FORE].attrs[num_standard_attrs].size = 1;
-        varlist[N_IN_FORE].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[N_IN_FORE].attrs[num_standard_attrs].value.str = "1";
-            
-        varlist[N_IN_AFT].name  = "number_in_aft";
-        varlist[N_IN_AFT].type  = NC_BYTE;
-        varlist[N_IN_AFT].ndims = 2;
-        varlist[N_IN_AFT].dims = dimensions; 
-        varlist[N_IN_AFT].nattrs = num_standard_attrs + 1;
-        ERR((varlist[N_IN_AFT].attrs = (typeof varlist[N_IN_AFT].attrs)
-                    malloc(varlist[N_IN_AFT].nattrs * 
-                        (sizeof *varlist[N_IN_AFT].attrs))) == NULL);
-    
-        varlist[N_IN_AFT].attrs[FILL_VALUE].name = "_FillValue";
-        varlist[N_IN_AFT].attrs[FILL_VALUE].size = 1;
-        varlist[N_IN_AFT].attrs[FILL_VALUE].type = varlist[N_IN_AFT].type;
-        varlist[N_IN_AFT].attrs[FILL_VALUE].value.b = 0;
-        varlist[N_IN_AFT].attrs[VALID_MIN].name = "valid_min";
-        varlist[N_IN_AFT].attrs[VALID_MIN].size = 1;
-        varlist[N_IN_AFT].attrs[VALID_MIN].type = varlist[N_IN_AFT].type;
-        varlist[N_IN_AFT].attrs[VALID_MIN].value.b = 0;
-        varlist[N_IN_AFT].attrs[VALID_MAX].name = "valid_max";
-        varlist[N_IN_AFT].attrs[VALID_MAX].size = 1;
-        varlist[N_IN_AFT].attrs[VALID_MAX].type = varlist[N_IN_AFT].type;
-        varlist[N_IN_AFT].attrs[VALID_MAX].value.b = 0xFf;
-        varlist[N_IN_AFT].attrs[LONG_NAME].name = "long_name";
-        varlist[N_IN_AFT].attrs[LONG_NAME].size = 1;
-        varlist[N_IN_AFT].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[N_IN_AFT].attrs[LONG_NAME].value.str = "number of inner aft looks in wind vector cell";
-        varlist[N_IN_AFT].attrs[num_standard_attrs].name = "units";
-        varlist[N_IN_AFT].attrs[num_standard_attrs].size = 1;
-        varlist[N_IN_AFT].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[N_IN_AFT].attrs[num_standard_attrs].value.str = "1";
-               
-        varlist[N_OUT_FORE].name  = "number_out_fore";
-        varlist[N_OUT_FORE].type  = NC_BYTE;
-        varlist[N_OUT_FORE].ndims = 2;
-        varlist[N_OUT_FORE].dims = dimensions; 
-        varlist[N_OUT_FORE].nattrs = num_standard_attrs + 1;
-        ERR((varlist[N_OUT_FORE].attrs = (typeof varlist[N_OUT_FORE].attrs)
-                    malloc(varlist[N_OUT_FORE].nattrs * 
-                        (sizeof *varlist[N_OUT_FORE].attrs))) == NULL);
-    
-        varlist[N_OUT_FORE].attrs[FILL_VALUE].name = "_FillValue";
-        varlist[N_OUT_FORE].attrs[FILL_VALUE].size = 1;
-        varlist[N_OUT_FORE].attrs[FILL_VALUE].type = varlist[N_OUT_FORE].type;
-        varlist[N_OUT_FORE].attrs[FILL_VALUE].value.b = 0;
-        varlist[N_OUT_FORE].attrs[VALID_MIN].name = "valid_min";
-        varlist[N_OUT_FORE].attrs[VALID_MIN].size = 1;
-        varlist[N_OUT_FORE].attrs[VALID_MIN].type = varlist[N_OUT_FORE].type;
-        varlist[N_OUT_FORE].attrs[VALID_MIN].value.b = 0;
-        varlist[N_OUT_FORE].attrs[VALID_MAX].name = "valid_max";
-        varlist[N_OUT_FORE].attrs[VALID_MAX].size = 1;
-        varlist[N_OUT_FORE].attrs[VALID_MAX].type = varlist[N_OUT_FORE].type;
-        varlist[N_OUT_FORE].attrs[VALID_MAX].value.b = 0xFf;
-        varlist[N_OUT_FORE].attrs[LONG_NAME].name = "long_name";
-        varlist[N_OUT_FORE].attrs[LONG_NAME].size = 1;
-        varlist[N_OUT_FORE].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[N_OUT_FORE].attrs[LONG_NAME].value.str = "number of outer forward looks in wind vector cell";
-        varlist[N_OUT_FORE].attrs[num_standard_attrs].name = "units";
-        varlist[N_OUT_FORE].attrs[num_standard_attrs].size = 1;
-        varlist[N_OUT_FORE].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[N_OUT_FORE].attrs[num_standard_attrs].value.str = "1";
-               
-        varlist[N_OUT_AFT].name  = "number_out_aft";
-        varlist[N_OUT_AFT].type  = NC_BYTE;
-        varlist[N_OUT_AFT].ndims = 2;
-        varlist[N_OUT_AFT].dims = dimensions; 
-        varlist[N_OUT_AFT].nattrs = num_standard_attrs + 1;
-        ERR((varlist[N_OUT_AFT].attrs = (typeof varlist[N_OUT_AFT].attrs)
-                    malloc(varlist[N_OUT_AFT].nattrs * 
-                        (sizeof *varlist[N_OUT_AFT].attrs))) == NULL);
-    
-        varlist[N_OUT_AFT].attrs[FILL_VALUE].name = "_FillValue";
-        varlist[N_OUT_AFT].attrs[FILL_VALUE].size = 1;
-        varlist[N_OUT_AFT].attrs[FILL_VALUE].type = varlist[N_OUT_AFT].type;
-        varlist[N_OUT_AFT].attrs[FILL_VALUE].value.b = 0;
-        varlist[N_OUT_AFT].attrs[VALID_MIN].name = "valid_min";
-        varlist[N_OUT_AFT].attrs[VALID_MIN].size = 1;
-        varlist[N_OUT_AFT].attrs[VALID_MIN].type = varlist[N_OUT_AFT].type;
-        varlist[N_OUT_AFT].attrs[VALID_MIN].value.b = 0;
-        varlist[N_OUT_AFT].attrs[VALID_MAX].name = "valid_max";
-        varlist[N_OUT_AFT].attrs[VALID_MAX].size = 1;
-        varlist[N_OUT_AFT].attrs[VALID_MAX].type = varlist[N_OUT_AFT].type;
-        varlist[N_OUT_AFT].attrs[VALID_MAX].value.b = 0xFf;
-        varlist[N_OUT_AFT].attrs[LONG_NAME].name = "long_name";
-        varlist[N_OUT_AFT].attrs[LONG_NAME].size = 1;
-        varlist[N_OUT_AFT].attrs[LONG_NAME].type = NC_CHAR;
-        varlist[N_OUT_AFT].attrs[LONG_NAME].value.str = "number of outer aft looks in wind vector cell";
-        varlist[N_OUT_AFT].attrs[num_standard_attrs].name = "units";
-        varlist[N_OUT_AFT].attrs[num_standard_attrs].size = 1;
-        varlist[N_OUT_AFT].attrs[num_standard_attrs].type = NC_CHAR;
-        varlist[N_OUT_AFT].attrs[num_standard_attrs].value.str = "1";
+        // TODO: capture the new values, fill, max, min,  and iterate deletes @ exit
+        vars.push_back(new NetCDF_Var<float>("wind_obj", ncid, 2, dimensions, dimensions_sz));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("long_name", "selected wind objective function value"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+        vars.push_back(new NetCDF_Var<unsigned char>("num_medfilt_ambiguities", ncid, 2, dimensions, dimensions_sz));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", uint8_t(0xFf)));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min",  uint8_t(0)));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max",  uint8_t(4)));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("long_name", "number of ambiguities from wind retrieval after median filtering"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+        vars.push_back(new NetCDF_Var<float>("ambiguity_speed", ncid, 3, dimensions, dimensions_sz));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("valid_max", 100.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("long_name", "wind speed ambiguity"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+        vars.push_back(new NetCDF_Var<float>("ambiguity_to_direction", ncid, 3, dimensions, dimensions_sz));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("long_name", "wind direction ambiguity"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("units", "degrees"));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+        vars.push_back(new NetCDF_Var<float>("ambiguity_obj", ncid, 3, dimensions, dimensions_sz));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("long_name", "wind ambiguity objective function value"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+            vars.back()->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+        vars.push_back(new NetCDF_Var<unsigned char>("number_in_fore", ncid, 3, dimensions, dimensions_sz));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", uint8_t(0xFf)));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min",  uint8_t(0)));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max",  uint8_t(0xFe)));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("long_name", "number of inner forward looks in wind vector cell"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+        vars.push_back(new NetCDF_Var<unsigned char>("number_in_aft", ncid, 3, dimensions, dimensions_sz));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", uint8_t(0xFf)));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min",  uint8_t(0)));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max",  uint8_t(0xFe)));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("long_name", "number of inner aft looks in wind vector cell"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+        vars.push_back(new NetCDF_Var<unsigned char>("number_out_fore", ncid, 3, dimensions, dimensions_sz));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", uint8_t(0xFf)));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min",  uint8_t(0)));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max",  uint8_t(0xFe)));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("long_name", "number of outer forward looks in wind vector cell"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+        vars.push_back(new NetCDF_Var<unsigned char>("number_out_aft", ncid, 3, dimensions, dimensions_sz));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", uint8_t(0xFf)));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min",  uint8_t(0)));
+            vars.back()->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max",  uint8_t(0xFe)));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("long_name", "number of outer aft looks in wind vector cell"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+            vars.back()->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     }
-#endif
 
-    for (int i = 0; i < (run_config.extended ? num_variables : 
-                first_extended_variable); i++) {
-        NCERR(nc_def_var(ncid, varlist[i].name, varlist[i].type,
-                   varlist[i].ndims, varlist[i].dims, &varlist[i].id));
-
-        for (int j = 0; j < varlist[i].nattrs; j++) {
-            attribute *attr = &varlist[i].attrs[j];
-            if (attr->name != NULL) {
-                switch (attr->type) {
-                    case NC_CHAR:
-                        NCERR(nc_put_att_text(ncid, varlist[i].id, attr->name,
-                                    strlen(attr->value.str), (attr->value.str)));
-                        break;
-                    case NC_SHORT:
-                        if (attr->size == 1) {
-                            NCERR(nc_put_att_short(ncid, varlist[i].id, attr->name, 
-                                        attr->type, (size_t)(1), &(attr->value.s)));
-                        } else {
-                            NCERR(nc_put_att_short(ncid, varlist[i].id, attr->name, 
-                                        attr->type, attr->size, attr->value.ps));
-                        }
-                        break;
-                    case NC_INT:
-                        if (attr->size == 1) {
-                            NCERR(nc_put_att_int(ncid, varlist[i].id, attr->name, 
-                                        attr->type, (size_t)(1), &(attr->value.i)));
-                        } else {
-                            NCERR(nc_put_att_int(ncid, varlist[i].id, attr->name, 
-                                        attr->type, attr->size, attr->value.pi));
-                        }
-                        break;
-                    case NC_FLOAT:
-                        if (attr->size == 1) {
-                            NCERR(nc_put_att_float(ncid, varlist[i].id, attr->name, 
-                                        attr->type, (size_t)(1), &(attr->value.f)));
-                        } else {
-                            NCERR(nc_put_att_float(ncid, varlist[i].id, attr->name, 
-                                        attr->type, attr->size, attr->value.pf));
-                        }
-                        break;
-                    case NC_BYTE:
-                        if (attr->size == 1) {
-                            NCERR(nc_put_att_uchar(ncid, varlist[i].id, attr->name, 
-                                        attr->type, (size_t)(1), &(attr->value.b)));
-                        } else {
-                            NCERR(nc_put_att_uchar(ncid, varlist[i].id, attr->name, 
-                                        attr->type, attr->size, attr->value.pb));
-                        }
-                        break;
-                    default:
-                        fprintf(stderr, "Incorrect attribute type: %d\n", 
-                                attr->type);
-                        exit(EXIT_FAILURE);
-                }
-            }
-        }
+    // Push definitions into NetCDF file
+    for(vector <NetCDF_Var_Base *>::iterator it = vars.begin(); it < vars.end(); it++) {
+        NCERR((*it)->Define());
+        NCERR((*it)->WriteAttributes());
     }
 
     // Write the header attributes
@@ -838,21 +469,20 @@ int main(int argc, char **argv) {
     time_vara_length[1] = strlen(time_format);
 
     int edges[2] = {0, 0};
-    edges[0] = l2b.frame.swath.GetAlongTrackBins(); 
-    edges[1] = l2b.frame.swath.GetCrossTrackBins();
+    edges[0] = along_track_dim_sz;
+    edges[1] = cross_track_dim_sz;
 
     /* Same sneakiness with idx as described above with dimensions */
-    for (idx[0] = 0; (int)idx[0] < l2b.frame.swath.GetAlongTrackBins(); idx[0]++) {
+    for (idx[0] = 0; idx[0] < along_track_dim_sz; idx[0]++) {
 
         time_idx[0] = idx[0];
 
-        for (idx[1] = 0; (int)idx[1] < l2b.frame.swath.GetCrossTrackBins(); idx[1]++) {
+        for (idx[1] = 0; idx[1] < cross_track_dim_sz; idx[1]++) {
 
             wvc = l2b.frame.swath.swath[idx[1]][idx[0]];
 
-            flags  = varlist[ FLAGS].attrs[FILL_VALUE].value.s;
-            eflags = varlist[EFLAGS].attrs[FILL_VALUE].value.s;
-
+            flags  = flags_fill;
+            eflags = eflags_fill;
 
             if (wvc != NULL && wvc->selected != NULL) {
 
@@ -887,17 +517,13 @@ int main(int argc, char **argv) {
                 lat = RAD_TO_DEG(wvc->lonLat.latitude);
                 lon = RAD_TO_DEG(wvc->lonLat.longitude);
 
-                NCERR(nc_put_var1_float(ncid, varlist[LATITUDE].id, idx, 
-                            &lat));
-                NCERR(nc_put_var1_float(ncid, varlist[LONGITUDE].id, idx, 
-                            &lon));
+                lat_var->SetData(idx, lat);
+                lon_var->SetData(idx, lon);
 
                 if ((wvc->rainCorrectedSpeed == -1) && (wvc->rainImpact == 0)) {
-                    NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
-                            &varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f));
+                    rain_impact_var->SetData(idx, rain_impact_fill);
                 } else {
-                    NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
-                            &wvc->rainImpact));
+                    rain_impact_var->SetData(idx, wvc->rainImpact);
                 }
 
                 if (IS_NOT_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
@@ -910,49 +536,41 @@ int main(int argc, char **argv) {
                         uncorr_speed = 0.0f;
                     }
 
-                    NCERR(nc_put_var1_float(ncid, 
-                        varlist[WIND_SPEED_UNCORRECTED].id, idx, 
-                        &uncorr_speed));
+                    wind_speed_uncorr_var->SetData(idx, uncorr_speed);
                 } 
 
-                if (wvc->selected->spd < 0.0f) {
-                    wvc->selected->spd = 0.0f;
-                } else if (wvc->selected->spd >= varlist[SEL_SPEED].attrs[VALID_MAX].value.f) {
-                    wvc->selected->spd = varlist[SEL_SPEED].attrs[VALID_MAX].value.f;
+                if (wvc->selected->spd < retrieved_speed_min) {
+                    wvc->selected->spd = retrieved_speed_min;
+                } else if (wvc->selected->spd >= retrieved_speed_max) {
+                    wvc->selected->spd = retrieved_speed_max;
                 }
 
-                NCERR(nc_put_var1_float(ncid, varlist[SEL_SPEED].id, idx, 
-                        &wvc->selected->spd));
+                retrieved_speed_var->SetData(idx, wvc->selected->spd);
 
                 if (IS_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
-                    NCERR(nc_put_var1_float(ncid, 
-                        varlist[WIND_SPEED_UNCORRECTED].id, idx, 
-                        &wvc->selected->spd));
+                    wind_speed_uncorr_var->SetData(idx, wvc->selected->spd);
                 }
 
                 conversion = 450.0f - (wvc->selected->dir)*180.0f/(float)(M_PI);
                 conversion = conversion - 360.0f*((int)(conversion/360.0f));
-                NCERR(nc_put_var1_float(ncid, varlist[SEL_DIRECTION].id, idx, 
-                            &conversion));
-                NCERR(nc_put_var1_short(ncid, varlist[FLAGS].id, idx, &flags));
-                NCERR(nc_put_var1_short(ncid, varlist[EFLAGS].id, idx, &eflags));
+                retrieved_dir_var->SetData(idx, conversion);
 
-                if (wvc->nudgeWV->spd <= varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f) {
-                    NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
-                            &wvc->nudgeWV->spd));
+                flags_var->SetData(idx, flags);
+                eflags_var->SetData(idx, eflags);
+
+                if (wvc->nudgeWV->spd <= nudge_speed_max) {
+                    nudge_speed_var->SetData(idx, wvc->nudgeWV->spd);
                 } else {
-                    NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
-                            &varlist[NUDGE_SPEED].attrs[VALID_MAX].value.f));
+                    nudge_speed_var->SetData(idx, nudge_speed_max);
                 }
 
                 conversion = 450.0f - (wvc->nudgeWV->dir)*180.0f/(float)(M_PI);
                 conversion = conversion - 360.0f*((int)(conversion/360.0f));
-                NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
-                            &conversion));
+                nudge_dir_var->SetData(idx, conversion);
 
-                NCERR(nc_put_var1(ncid, varlist[NUM_AMBIG].id, 
-                        idx, &wvc->numAmbiguities));
+                num_ambig_var->SetData(idx, wvc->numAmbiguities);
 
+#if 0
                 /* Extended variables */
                 if (run_config.extended) {
 
@@ -1002,34 +620,29 @@ int main(int argc, char **argv) {
                                     &varlist[AMBIG_OBJ].attrs[FILL_VALUE].value.f));
                     }
                 }    
+#endif
             } else {
             
                 /* Assumes these flags are initially set... */
                 bin_to_latlon(idx[0], idx[1], &orbit_config, &lat, &lon);
 
-                NCERR(nc_put_var1_float(ncid, varlist[LATITUDE].id, idx, &lat));
-                NCERR(nc_put_var1_float(ncid, varlist[LONGITUDE].id, idx, &lon));
+                lat_var->SetData(idx, lat);
+                lon_var->SetData(idx, lon);
 
-                NCERR(nc_put_var1_float(ncid, varlist[SEL_SPEED].id, idx, 
-                            &varlist[SEL_SPEED].attrs[FILL_VALUE].value.f));
-                NCERR(nc_put_var1_float(ncid, varlist[SEL_DIRECTION].id, idx, 
-                            &varlist[SEL_DIRECTION].attrs[FILL_VALUE].value.f));
-                NCERR(nc_put_var1_float(ncid, varlist[RAIN_IMPACT].id, idx, 
-                            &varlist[RAIN_IMPACT].attrs[FILL_VALUE].value.f));
-                NCERR(nc_put_var1_short(ncid, varlist[FLAGS].id, idx, &flags));
-                NCERR(nc_put_var1_short(ncid, varlist[EFLAGS].id, idx, &eflags));
+                retrieved_speed_var->SetData(idx, retrieved_speed_fill);
+                retrieved_dir_var->SetData(idx, retrieved_dir_fill);
+                rain_impact_var->SetData(idx, rain_impact_fill);
+                flags_var->SetData(idx, flags);
+                eflags_var->SetData(idx, flags);
 
-                NCERR(nc_put_var1_float(ncid, varlist[NUDGE_SPEED].id, idx, 
-                            &varlist[NUDGE_SPEED].attrs[FILL_VALUE].value.f));
-                NCERR(nc_put_var1_float(ncid, varlist[NUDGE_DIRECTION].id, idx, 
-                            &varlist[NUDGE_DIRECTION].attrs[FILL_VALUE].value.f));
+                nudge_speed_var->SetData(idx, nudge_speed_fill);
+                nudge_dir_var->SetData(idx, nudge_dir_fill);
 
-                NCERR(nc_put_var1_float(ncid, varlist[WIND_SPEED_UNCORRECTED].id, idx, 
-                            &varlist[WIND_SPEED_UNCORRECTED].attrs[FILL_VALUE].value.f));
+                wind_speed_uncorr_var->SetData(idx, wind_speed_uncorr_fill);
+                num_ambig_var->SetData(idx, num_ambig_fill);
 
-                NCERR(nc_put_var1(ncid, varlist[NUM_AMBIG].id, idx,
-                            &varlist[NUM_AMBIG].attrs[FILL_VALUE].value.b));
 
+#if 0
                 /* Extended variables */
                 if (run_config.extended) {
                     NCERR(nc_put_var1_float(ncid, varlist[SEL_OBJ].id, idx, 
@@ -1056,17 +669,27 @@ int main(int argc, char **argv) {
                                     &varlist[AMBIG_OBJ].attrs[FILL_VALUE].value.f));
                     }
                 }
+#endif
             }
         }
     }
 
+    for(vector <NetCDF_Var_Base *>::iterator it = vars.begin(); it < vars.end(); it++) {
+        NCERR((*it)->Write());
+    }
+
     NCERR(nc_close(ncid));
+
+    for (int i = vars.size() - 1; i >= 0; i--) {
+        delete vars[i];
+    }
 
     //----------------------//
     // close files and exit //
     //----------------------//
 
     l2b.Close();
+
     return(0);
 }
 
@@ -1127,31 +750,35 @@ int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
 
 int set_global_attributes(int ncid) {
 
-    vector <class NC_Attribute *> local_attributes;
+    vector <class NetCDF_Attr_Base *> local_attributes;
 
+    local_attributes.push_back(new NetCDF_Attr<char>("title", WAVE));
+    local_attributes.push_back(new NetCDF_Attr<char>("institution", "JPL"));
+    local_attributes.push_back(new NetCDF_Attr<char>("source", "ISRO Oceansat-2 SCAT"));
+    local_attributes.push_back(new NetCDF_Attr<char>("comment", WAVE));
+    local_attributes.push_back(new NetCDF_Attr<char>("history", WAVE));
 
-    local_attributes.push_back(new String_NC_Attribute("Conventions", "CF-1.5"));
-    local_attributes.push_back(new String_NC_Attribute("title", WAVE));
-    local_attributes.push_back(new String_NC_Attribute("institution", "JPL"));
-    local_attributes.push_back(new String_NC_Attribute("source", "ISRO Oceansat-2 SCAT"));
-    local_attributes.push_back(new String_NC_Attribute("history", WAVE));
-    local_attributes.push_back(new String_NC_Attribute("references", WAVE));
-    local_attributes.push_back(new String_NC_Attribute("comment", WAVE));
-
-    local_attributes.push_back(new String_NC_Attribute("data_format_type", "NetCDF Classic"));
-    local_attributes.push_back(new String_NC_Attribute("producer_agency", "NASA"));
-    local_attributes.push_back(new String_NC_Attribute("build_id", BUILD_ID));
-    local_attributes.push_back(new String_NC_Attribute("ProductionDateTime", WAVE));
-    local_attributes.push_back(new String_NC_Attribute("StartOrbitNumber", WAVE));
-    local_attributes.push_back(new String_NC_Attribute("StopOrbitNumber", WAVE));
-    local_attributes.push_back(new String_NC_Attribute("rev_number", WAVE));
-    local_attributes.push_back(new String_NC_Attribute("ancillary_data_descriptors", WAVE));
-    local_attributes.push_back(new Float_NC_Attribute("EquatorCrossingLongitude", -9999.0f));
-    local_attributes.push_back(new Float_NC_Attribute("orbit_inclination", -9999.0f));
-    local_attributes.push_back(new Float_NC_Attribute("rev_orbit_period", -9999.0f));
+    local_attributes.push_back(new NetCDF_Attr<char>("Conventions", "CF-1.5"));
+    local_attributes.push_back(new NetCDF_Attr<char>("data_format_type", "NetCDF Classic"));
+    local_attributes.push_back(new NetCDF_Attr<char>("producer_agency", "NASA"));
+    local_attributes.push_back(new NetCDF_Attr<char>("build_id", BUILD_ID));
+    local_attributes.push_back(new NetCDF_Attr<char>("ProductionDateTime", WAVE));
+    local_attributes.push_back(new NetCDF_Attr<char>("StartOrbitNumber", WAVE));
+    local_attributes.push_back(new NetCDF_Attr<char>("StopOrbitNumber", WAVE));
+    local_attributes.push_back(new NetCDF_Attr<char>("rev_number", WAVE));
+    local_attributes.push_back(new NetCDF_Attr<char>("ancillary_data_descriptors", WAVE));
+    local_attributes.push_back(new NetCDF_Attr<float>("EquatorCrossingLongitude", -9999.0f));
+    local_attributes.push_back(new NetCDF_Attr<float>("orbit_inclination", 98.28f));
+    local_attributes.push_back(new NetCDF_Attr<float>("rev_orbit_period", 5940.31f));
+    local_attributes.push_back(new NetCDF_Attr<char>("NetCDF_version_id", nc_inq_libvers()));
+    local_attributes.push_back(new NetCDF_Attr<char>("references", WAVE));
 
     for (unsigned int i = 0; i < local_attributes.size(); i++) {
         NCERR(local_attributes[i]->Write(ncid, NC_GLOBAL));
+    }
+
+    for (int i = local_attributes.size() - 1; i >= 0; i--) {
+        delete local_attributes[i];
     }
 
     return 0;

@@ -5,7 +5,7 @@
  * VERSION:
  *
  * File Name:     NetCDF.h
- * Creation Date: 11 Apr 2012
+ * Creation Date: 15 Apr 2012
  *
  * $Author$
  * $Date$
@@ -24,12 +24,10 @@
  * countries or providing access to foreign persons.
  ********************************************************************/
 
-#ifndef NETCDF_H_
-#define NETCDF_H_
+#ifndef NETCDF_H
+#define NETCDF_H
 
-#include <string>
-
-using namespace std;
+#include <netcdf.h>
 
 #define RAD_TO_DEG(x) ((x)*180.0f/M_PI)
 #define DEG_TO_RAD(x) ((x)*M_PI/180.0f)
@@ -40,42 +38,20 @@ do {            \
     x = NULL;   \
 } while(0)
 
-class NC_Attribute {
-public:
-    NC_Attribute(const char *name, size_t length) :
-        name(name), length(length) {};
-    virtual ~NC_Attribute() {};
-    int Write(int ncid, int varid);
+#define MALLOC(v, n) (v) = (typeof (v))malloc((n)*sizeof(*(v)))
 
-protected:
-    string name;
-    size_t length;
 
-private:
-    virtual int WriteAttr(int ncid, int varid) = 0;
-};
+// A helper function for mapping from C -> NetCDF variable types
+template<typename T> nc_type NetCDF_Type();
 
-class String_NC_Attribute : public NC_Attribute {
-public:
-    String_NC_Attribute(const char *name, const char *string);
-    ~String_NC_Attribute();
-
-private:
-    char *p;
-    int WriteAttr(int ncid, int varid);
-};
-
-class Float_NC_Attribute : public NC_Attribute {
-public:
-    Float_NC_Attribute(const char *name, const float *vals,
-            const size_t length = 1);
-    Float_NC_Attribute(const char *name, const float val);
-    ~Float_NC_Attribute();
-
-private:
-    float *p;
-    int WriteAttr(int ncid, int varid);
-};
+// Forward declaration of template specialization
+template <> nc_type NetCDF_Type<unsigned char>();
+template <> nc_type NetCDF_Type<signed char>();
+template <> nc_type NetCDF_Type<char>();
+template <> nc_type NetCDF_Type<short>();
+template <> nc_type NetCDF_Type<int>();
+template <> nc_type NetCDF_Type<float>();
+template <> nc_type NetCDF_Type<double>();
 
 // Really belongs in a different header
 typedef struct {
@@ -89,5 +65,6 @@ typedef struct {
 
 void bin_to_latlon(int at_ind, int ct_ind,
         const latlon_config *config, float *lat, float *lon);
+
 #endif
 

@@ -5,7 +5,7 @@
  * VERSION:
  *
  * File Name:     NetCDF.C
- * Creation Date: 11 Apr 2012
+ * Creation Date: 15 Apr 2012
  *
  * $Author$
  * $Date$
@@ -24,63 +24,24 @@
  * countries or providing access to foreign persons.
  ********************************************************************/
 
-static const char rcs_id[] =
-    "@(#) $Id$";
-
-#include <netcdf.h>
 #include <math.h>
-#include <string.h>
+#include <netcdf.h>
 
 #include "Constants.h"
 #include "NetCDF.h"
 
-using namespace std;
+// Type-specific instantiations for NetCDF_Type()
+template <> nc_type NetCDF_Type<unsigned char>() {return NC_BYTE;};
+template <> nc_type NetCDF_Type<signed char>() {return NC_BYTE;};
+template <> nc_type NetCDF_Type<char>() {return NC_CHAR;};
+template <> nc_type NetCDF_Type<short>() {return NC_SHORT;};
+template <> nc_type NetCDF_Type<int>() {return NC_INT;};
+template <> nc_type NetCDF_Type<float>() {return NC_FLOAT;};
+template <> nc_type NetCDF_Type<double>() {return NC_DOUBLE;};
 
-// Base class implementation specifics
-int NC_Attribute::Write(int ncid, int varid) {
-    return WriteAttr(ncid, varid);
-}
-
-// String_NC_Attribute implementation specifics
-String_NC_Attribute::String_NC_Attribute(const char *name, const char *string):
-    NC_Attribute(name, strlen(string)) {
-
-    p = strdup(string);
-}
-
-String_NC_Attribute::~String_NC_Attribute() {
-    FREE(p);
-}
-
-int String_NC_Attribute::WriteAttr(int ncid, int varid) {
-    return nc_put_att_text(ncid, varid, name.data(), length, p);
-}
-
-// Float NC_Attribute implementation specifics
-
-Float_NC_Attribute::Float_NC_Attribute(const char *name, const float *vals,
-        size_t length): NC_Attribute(name, length) {
-
-    p = (typeof p)malloc(length*sizeof(*p));
-
-    memcpy(p, vals, length*sizeof(*p));
-}
-
-Float_NC_Attribute::Float_NC_Attribute(const char *name, const float val): 
-    NC_Attribute(name, 1) {
-
-    p = (typeof p)malloc(sizeof(*p));
-    *p = val;
-}
-
-Float_NC_Attribute::~Float_NC_Attribute() {
-    FREE(p);
-}
-
-int Float_NC_Attribute::WriteAttr(int ncid, int varid) {
-    return nc_put_att_float(ncid, varid, name.data(), NC_FLOAT, length, p);
-}
-
+/*********************************************************************
+ * Helper functions
+ ********************************************************************/
 void bin_to_latlon(int at_ind, int ct_ind,
         const latlon_config *config, float *lat, float *lon) {
 
