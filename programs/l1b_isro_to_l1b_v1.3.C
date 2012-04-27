@@ -244,6 +244,8 @@ main(
     char*        sigma0_map_file = NULL;
     int          do_footprint    = 0;
     
+    float        s0_bias[2]      = {0,0};
+    
     ConfigList   config_list;
     AttenMap     attenmap;
     QSLandMap    qs_landmap;
@@ -267,6 +269,14 @@ main(
       }
       else if ( sw == "-fp" )
         do_footprint = 1;
+      else if ( sw == "-hhbias" ) {
+        ++optind;
+        s0_bias[0] = atof(argv[optind]);
+      }  
+      else if ( sw == "-vvbias" ) {
+        ++optind;
+        s0_bias[1] = atof(argv[optind]);
+      }  
       else {
         fprintf(stderr,"%s: Unknow option\n", command);
         exit(1);
@@ -699,7 +709,7 @@ main(
             Meas* new_meas = new Meas();
             
             double xf  = -120 + 0.000613 * double(fp_xf[i_pol][scan_ind]);
-            double s0  = -96  + 0.00147  * double(fp_s0[i_pol][scan_ind]);
+            double s0  = -96  + 0.00147  * double(fp_s0[i_pol][scan_ind]) + s0_bias[i_pol];
             double snr = -65  + 0.001547 * double(fp_snr[i_pol][scan_ind]);
             
             new_meas->XK      = pow(10.0,0.1*xf);
@@ -819,7 +829,7 @@ main(
               Meas* new_meas = new Meas();
 
               double xf  = -120 + 0.000613 * double(slice_xf[i_pol][slice_ind]);
-              double s0  = -96  + 0.00147  * double(slice_s0[i_pol][slice_ind]);
+              double s0  = -96  + 0.00147  * double(slice_s0[i_pol][slice_ind]) + s0_bias[i_pol];
               double snr = -65  + 0.001547 * double(slice_snr[i_pol][slice_ind]);
             
               new_meas->XK      = pow(10.0,0.1*xf);
