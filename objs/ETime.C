@@ -177,9 +177,20 @@ ETime::FromCodeB(
     time_string[17] = '\0';
     struct tm tm_time;
 
-    if (strptime(time_string, CODE_B_STRPTIME_FORMAT, &tm_time) == NULL)
-    	return(0);
+//    if (strptime(time_string, CODE_B_STRPTIME_FORMAT, &tm_time) == NULL)
+//    	return(0);
     	
+    // Required to handle at least one case of HH:MM:SS == 24:00:00 in OSCAT-2
+    // data
+    // taw - 02 May 2012
+    if (sscanf(time_string, "%d-%dT%d:%d:%d", &tm_time.tm_year, &tm_time.tm_yday,
+                &tm_time.tm_hour, &tm_time.tm_min, &tm_time.tm_sec) != 5) {
+        return(0);
+    }
+
+    tm_time.tm_yday += tm_time.tm_hour/24;
+    tm_time.tm_hour -= 24*(tm_time.tm_hour/24);
+
    	// strptime sets year day, but is too stupid
    	// to realize that corresponds precisely to a month and month day, so do that
    	// conversion here b/c those fields are needed later.
