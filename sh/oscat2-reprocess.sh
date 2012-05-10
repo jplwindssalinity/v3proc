@@ -106,34 +106,32 @@ cat <<_EOF
   OSCAT-2 Reprocessing
 ================================================================
 
- 0  QUIT
+ 0 QUIT
       Exit reprocessing
- 1  STAGE
+ 1 STAGE
       Stages data for a rev.
- 2  GENERATE
+ 2 GENERATE
       Generates the folder structure for the rev.
- 3  L1BHDF-TO-L1B
+ 3 L1BHDF-TO-L1B
       Converts the L1B HDF file to simulation L1B format
- 4  L1B-TO-L2A
+ 4 L1B-TO-L2A
       Performs L1B to L2A processing
- 5  L2A-FIX-ISRO-COMPOSITES
- 6  L2A-TO-L2B
+ 5 L2A-FIX-ISRO-COMPOSITES
+ 6 L2A-TO-L2B
       Performs L2A to L2B processing
- 7  L2B-MEDIAN-FILTER"
+ 7 L2B-MEDIAN-FILTER
       Applies the L2B median filtering
- 8  L2B-TO-NETCDF
+ 8 L2B-TO-NETCDF
       Converts the L2B file to NetCDF format
  9 LINK
       Symlink files in a directory structure
 10 MAKE-ARRAYS
       Extract arrays from dataset
-11 L2B-HDF-TO-NETCDF
-      Convert L2B HDF files to NetCDF
-12 FIXUP
-      Apply Matlab Fixups to NetCDF file
-13 BUILD-MD5S
+11 FIXUP
+      Apply bias correction
+12 BUILD-MD5S
       Create md5 checksums
-14 CLEAN
+13 CLEAN
       Removed unnecessary data files
 ================================================================
 
@@ -170,13 +168,11 @@ function os2_reproc_get_command() {
         ;;
     10) echo "MAKE-ARRAYS"
         ;;
-    11) echo "L2B-HDF-TO-NETCDF"
+    11) echo "FIXUP"
         ;;
-    12) echo "FIXUP"
+    12) echo "BUILD-MD5S"
         ;;
-    13) echo "BUILD-MD5S"
-        ;;
-    14) echo "CLEAN"
+    13) echo "CLEAN"
         ;;
     *)  echo "$COMMAND"
         ;;
@@ -185,115 +181,28 @@ function os2_reproc_get_command() {
 )
 }
 
-########################################################################
-## Download and extract existing L1B and L2B HDF files
-#function os2_reproc_stage () {
-#(
-#    echo -n "Rev: "
-#    read REV ; tty > /dev/null 2>&1; 
-#        [[ $? -eq 0 ]] || echo "$REV"
-#    echo -n "Rev log: "
-#    read REVLOG ; tty > /dev/null 2>&1; 
-#        [[ $? -eq 0 ]] || echo "$REVLOG"
-#    echo -n "L1B HDF Directory: "
-#    read DIR_QSL1B_HDF; tty > /dev/null 2>&1; 
-#        [[ $? -eq 0 ]] || echo "$DIR_QSL1B_HDF"
-#    echo -n "L2B HDF Directory: "
-#    read DIR_QSL2B_HDF; tty > /dev/null 2>&1;
-#        [[ $? -eq 0 ]] || echo "$DIR_QSL2B_HDF"
-#
-#    # We need a temporary directory to use as a target for wget.
-#    # This keeps .listing files from getting smashed
-#    TMP="./tmp"
-#    mkdir "$TMP" > /dev/null 2>&1
-#    TDIR=`mktemp -d "$TMP/XXXXXXXXXX"`
-#
-#    L1BURL="ftp://qL1B:data4me@podaac-old/data/L1B"
-#    #L2BURL="ftp://podaac-ftp.jpl.nasa.gov/allData/quikscat/L2B/" # 25km L2B
-#    L2BURL="ftp://podaac-ftp.jpl.nasa.gov/allData/quikscat/L2B12/" # 12.5km L2B
-#
-#    ID=`awk "/^$REV/" "$REVLOG"`
-#
-#    # Some REVs cross day boundaries.  I'm not sure which day the rev
-#    # file will land in, so just check in both days if this one does.
-#
-#    DATE1=`echo $ID | sed -e 's/  */ /g' | cut -f 2 -d \  `
-#
-#    YEAR1=`echo $DATE1 | sed -e 's/^\(.*\)-.*/\1/'`
-#    DAY1=`echo $DATE1 | sed -e 's/.*-0*\(.*\)T.*/\1/'`
-#
-#    # Play some games with `date` to get a "properly formatted" 
-#    # version of DATE1, then add one day to it to find the following
-#    # day
-#    DATE1=$(date --date="$YEAR1-01-01 +$(($DAY1 - 1))days")
-#    DATE2=$(date --date="$DATE1 +1days")
-#    
-#    YEAR2=$(date --date="$DATE2" +%Y)
-#    DAY2=$(date --date="$DATE2" +%j)
-#
-#    # Prepend zeros as necessary
-#    DAY1=$(date --date="$DATE1" +%j)
-#
-#    # See if there are any existing L1B HDF files associated to this rev
-#    ls "$DIR_QSL1B_HDF"/*"S1B$REV"* > /dev/null 2>&1
-#
-#    if [[ $? -ne 0 ]]; then
-#        # Gotta download the data files
-#  
-#        # L1B HDF File
-#        wget -nH -N --cut-dirs=4 -P "$TDIR" \
-#            "$L1BURL/$YEAR1/$DAY1/*S1B$REV*"
-#        ls "$TDIR"/*"S1B$REV"* > /dev/null 2>&1
-#
-#        if [[ $? -ne 0 ]]; then
-#            # Couldn't find the file in DATE1, try DATE2
-#            wget -nH -N --cut-dirs=4 -P "$TDIR" \
-#                "$L1BURL/$YEAR2/$DAY2/*S1B$REV*"
-#        fi
-#
-#        ls "$TDIR"/*"S1B$REV"* > /dev/null 2>&1
-#        if [[ $? -ne 0 ]]; then
-#            echo "ERROR: REV L1B HDF file not found"
-#            return 1
-#        fi
-#
-#        gunzip -f "$TDIR"/*"S1B$REV"*.gz
-#        mkdir "$DIR_QSL1B_HDF" > /dev/null 2>&1
-#        mv "$TDIR"/*"S1B$REV"* "$DIR_QSL1B_HDF/"
-#    fi
-#
-#
-#    # See if there are any existing L2B HDF files associated to this rev
-#    ls "$DIR_QSL2B_HDF"/*"S2B$REV"* > /dev/null 2>&1
-#    if [[ $? -ne 0 ]]; then
-#        # Gotta download the data files
-#  
-#        # L2B HDF File
-#        wget -nH -N --cut-dirs=4 -P "$TDIR" \
-#            "$L2BURL/$YEAR1/$DAY1/*S2B$REV*"
-#
-#        ls "$TDIR"/*"S2B$REV"* > /dev/null 2>&1
-#        if [[ $? -ne 0 ]]; then
-#            # Couldn't find the file in DATE1, try DATE2
-#            wget -nH -N --cut-dirs=4 -P "$TDIR" \
-#                "$L2BURL/$YEAR2/$DAY2/*S2B$REV*"
-#        fi
-#
-#        ls "$TDIR"/*"S2B$REV"* > /dev/null 2>&1
-#        if [[ $? -ne 0 ]]; then
-#            echo "ERROR: REV L2B HDF file not found"
-#            return 1
-#        fi
-#
-#        gunzip -f "$TDIR"/*"S2B$REV"*.gz
-#        mkdir "$DIR_QSL2B_HDF" > /dev/null 2>&1
-#        mv "$TDIR"/*"S2B$REV"* "$DIR_QSL2B_HDF/"
-#    fi
-#
-#    rm -rf "$TDIR"
-#    return 0
-#)
-#}
+#######################################################################
+# Download and extract existing L1B and L2B HDF files
+function os2_reproc_stage () {
+(
+    echo -n "Rev: "
+    read REV ; tty > /dev/null 2>&1; 
+        [[ $? -eq 0 ]] || echo "$REV"
+    echo -n "L1B HDF Directory: "
+    read DIR_OS2L1B_HDF; tty > /dev/null 2>&1; 
+        [[ $? -eq 0 ]] || echo "$DIR_OS2L1B_HDF"
+
+    L1B_H5_BASE_DIR=/u/potr-r1/fore/ISRO/L1B_v1.3_all
+
+    mkdir -p "$DIR_OS2L1B_HDF" > /dev/null 2>&1
+    cd "$DIR_OS2L1B_HDF"
+
+    FNAME=`echo $L1B_H5_BASE_DIR/S1L1B*_$REV.h5.gz`
+    gunzip -c $FNAME > `basename ${FNAME/.gz/}`
+
+    return 0
+)
+}
 
 #######################################################################
 # Generate the rev directory structure.
@@ -314,7 +223,7 @@ function os2_reproc_generate_directory_structure () {
     read TEMPLATE_FILE; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$TEMPLATE_FILE"
     
-    OS2_MATLAB_INC_DIR="./mat"
+    OS2_MATLAB_INC_DIR="/u/potr-r0/fore/ISRO/mat"
     
     L1B_HDF_FILE=`ls $DIR_OS2L1B_HDF/S1L1B*_${REV}.h5 | tail -n 1`
     
@@ -329,8 +238,8 @@ function os2_reproc_generate_directory_structure () {
     # Extract orbit start and end-time
     (
         echo "addpath('$OS2_MATLAB_INC_DIR');"
-        echo "QSL1B_Extract_Times('$L1B_HDF_FILE', '$L1B_TIMES_FILE');"
-    ) | matlab -nodisplay -nojvm
+        echo "OS2L1B_Extract_Times('$L1B_HDF_FILE', '$L1B_TIMES_FILE');"
+    ) | matlab-7.11 -nodisplay -nojvm
     RETVAL=$?
     
     SEC_YEAR=`head -1 $L1B_TIMES_FILE`
@@ -368,7 +277,7 @@ function os2_reproc_l1bhdf_to_l1b () {
 
     cd "$BASEDIR/$REV"
     
-    l1b_isro_to_l1b_v1.3 -c "${CONFIG_FILE}"
+    l1b_isro_to_l1b_v1.3 -c "${CONFIG_FILE}" -hhbias 0.5 -vvbias 0.6
     RETVAL=$?
 
     return $RETVAL
@@ -440,12 +349,12 @@ function os2_reproc_l2a_to_l2b () {
     cd "$BASEDIR/$REV"
     L2A_FNAME=`awk '/L2A_FILE/ { print $3 }' "$CONFIG_FILE"`
     
-    l2a_to_l2b "$CONFIG_FILE"
-    RETVAL=$?
-
     #mv "$L2A_FNAME" "$L2A_FNAME.orig"
     rm -f "${L2A_FNAME}"
     mv l2a_flagged.dat "$L2A_FNAME"
+
+    l2a_to_l2b "$CONFIG_FILE"
+    RETVAL=$?
 
     return $RETVAL
 )
@@ -494,14 +403,48 @@ function os2_reproc_l2b_to_netcdf () {
 
     cd "$BASEDIR/$REV"
     L1B_HDF_FNAME=`awk '/L1B_HDF_FILE/ {print $3}' $CONFIG_FILE`
-    L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ {print $3}' $CONFIG_FILE`
 
     INFILE=l2b.dat
-	OUTFILE=`basename ${L2B_HDF_FNAME/%\.CP12/.nc}`
+    # TODO Change this
+    OUTFILE=`basename "$L1B_HDF_FNAME"`
+    OUTFILE="${OUTFILE/h5/nc}"
+    OUTFILE="${OUTFILE/L1B/l2b}"
+    OUTFILE="${OUTFILE/S1/os2_}"
 
-    l2b_to_netcdf --l2bhdf "$L2B_HDF_FNAME" --l1bhdf "$L1B_HDF_FNAME" --l2bc "$OUTFILE"  --l2b "$INFILE"
+    os2_l2b_to_netcdf --l1bhdf "$L1B_HDF_FNAME" --nc "$OUTFILE"  --l2b "$INFILE"
     RETVAL=$?
 
+    return $RETVAL
+)
+}
+
+#######################################################################
+# Apply NetCDF fixup
+function os2_fixup () {
+(
+    echo -n "Rev: "
+    read REV; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$REV"
+    echo -n "Base directory: "
+    read BASEDIR; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$BASEDIR"
+
+    OS2_MATLAB_INC_DIR="/u/potr-r0/werne/QScatSim/mat"
+
+    cd "$BASEDIR/$REV"
+
+    OUTFILE=`basename "$L1B_HDF_FNAME"`
+    OUTFILE="${OUTFILE/h5/nc}"
+    OUTFILE="${OUTFILE/L1B/l2b}"
+    OUTFILE="${OUTFILE/S1/os2_}"
+
+    # Apply fixup
+    (
+        echo "addpath('$OS2_MATLAB_INC_DIR');"
+        echo "os2_netcdf_fixup('$OUTFILE');"
+    ) | matlab-7.11 -nodisplay
+    RETVAL=$?
+    
     return $RETVAL
 )
 }
@@ -572,34 +515,6 @@ function os2_reproc_make_arrays() {
 }
 
 #######################################################################
-# Apply NetCDF fixup
-function os2_fixup () {
-(
-    echo -n "Rev: "
-    read REV; tty > /dev/null 2>&1;
-        [[ $? -eq 0 ]] || echo "$REV"
-    read E2B12_DIR; tty > /dev/null 2>&1;
-        [[ $? -eq 0 ]] || echo "$E2B12_DIR"
-    read BASEDIR; tty > /dev/null 2>&1;
-        [[ $? -eq 0 ]] || echo "$BASEDIR"
-
-    QS_MATLAB_INC_DIR="$PWD/../QScatSim/mat"
-
-    NC_SRC=`ls $BASEDIR/$REV/*.L2BC.nc`
-
-    cd "$BASEDIR/$REV"
-    # Extract orbit start and end-time
-    (
-        echo "addpath('$QS_MATLAB_INC_DIR');"
-        echo "os2_convert_netcdf('$NC_SRC', '$E2B12_DIR');"
-    ) | matlab -nodisplay -nojvm
-
-    RETVAL=$?
-    return $RETVAL
-)
-}
-
-#######################################################################
 # Create md5 checksums
 function os2_build_md5s () {
 (
@@ -629,11 +544,8 @@ function os2_reproc_clean () {
     read REV; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$REV"
     echo -n "L1B HDF Directory: "
-    read DIR_QSL1B_HDF; tty > /dev/null 2>&1;
-        [[ $? -eq 0 ]] || echo "$DIR_QSL1B_HDF"
-    echo -n "L2B HDF Directory: "
-    read DIR_QSL2B_HDF; tty > /dev/null 2>&1;
-        [[ $? -eq 0 ]] || echo "$DIR_QSL2B_HDF"
+    read DIR_OS2L1B_HDF; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$DIR_OS2L1B_HDF"
     echo -n "Output Directory:  "
     read DIR_OUT_BASE; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$DIR_OUT_BASE"
@@ -655,33 +567,19 @@ function os2_reproc_clean () {
     L2A_FNAME=`awk '/L2A_FILE/ { print $3 }' "$CONFIG_FILE"`
     L2B_FNAME=`awk '/L2B_FILE/ { print $3 }' "$CONFIG_FILE"`
     L1B_HDF_FNAME=`awk '/L1B_HDF_FILE/ { print $3 }' "$CONFIG_FILE"`
-    L2B_HDF_FNAME=`awk '/L2B_HDF_FILE/ { print $3 }' "$CONFIG_FILE"`
 
     # Spoof switch with fallthrough
     if [[ $LEVEL -le 3 ]]; then
         rm -f \
             "nn_train.dat" \
-            "$L1B_HDF_FNAME" \
-            "$L2B_HDF_FNAME" \
             "$L1B_FNAME" \
-            "$L2A_FNAME.orig" \
-            l1bhdf_to_l1b_tmpfile \
             ephem.dat \
-            "l2b_flagged_S3.dat" \
-            "l2b_flagged_GS.dat" \
-            "l2b_flagged_TDV.dat" \
-            "l2b_flagged_GS_ext.nc" \
             "$L2A_FNAME"
     fi
-    if [[ $LEVEL -le 2 ]]; then
-        rm -f \
-            "tmp1.rdf" \
-            "tmp2.rdf" \
-            "tmp3.rdf" \
-            "nudge_tdv.dat" \
-            "*_GS.L2BC.nc" \
-            "*_TDV.L2BC.nc"
-    fi
+#    if [[ $LEVEL -le 2 ]]; then
+#        rm -f \
+#
+#    fi
     if [[ $LEVEL -le 1 ]]; then
         rm -f \
             "$L2B_FNAME"
@@ -739,16 +637,16 @@ function os2_reproc_process_command () {
         os2_reproc_l2b_to_netcdf
         RETVAL=$?
         ;;
+    FIXUP)
+        os2_fixup
+        RETVAL=$?
+        ;;
     LINK)
         os2_reproc_link
         RETVAL=$?
         ;;
     MAKE-ARRAYS)
         os2_reproc_make_arrays
-        RETVAL=$?
-        ;;
-    FIXUP)
-        os2_fixup
         RETVAL=$?
         ;;
     BUILD-MD5S)
@@ -783,10 +681,10 @@ function os2_reproc_execute_automated_cmd () {
 
     case "$CMD" in 
     STAGE)
-        INPUT="$REV\n$REVLOG\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n"
+        INPUT="$REV\n$L1B_HDF_DIR\n"
         ;;
     GENERATE)
-        INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n$GENERIC_CFG\n"
+        INPUT="$REV\n$L1B_HDF_DIR\n$OUTPUT_DIR\n$GENERIC_CFG\n"
         ;;
     L1BHDF-TO-L1B)
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
@@ -794,7 +692,7 @@ function os2_reproc_execute_automated_cmd () {
     L1B-TO-L2A)
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
         ;;
-    L2A-FIX-QS-COMPOSITES)
+    L2A-FIX-ISRO-COMPOSITES)
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
         ;;
     L2A-TO-L2B)
@@ -805,7 +703,10 @@ function os2_reproc_execute_automated_cmd () {
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
         ;;
     L2B-TO-NETCDF)
-        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
+        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
+        ;;
+    FIXUP)
+        INPUT="$REV\n$OUTPUT_DIR\n"
         ;;
     LINK)
         ARGS=`echo "$ARGS" | tr ' ' '\n'`
@@ -815,14 +716,8 @@ function os2_reproc_execute_automated_cmd () {
         ARGS="l2b_flagged_GS.dat"
         INPUT="$REV\n$OUTPUT_DIR\n$ARGS\n$CFG\n"
         ;;
-    L2B-HDF-TO-NETCDF)
-        INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n"
-        ;;
     MAKE-ARRAYS)
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
-        ;;
-    FIXUP)
-        INPUT="$REV\n$E2B12_DIR\n$OUTPUT_DIR\n"
         ;;
     L2C)
         INPUT="$REV\n$OUTPUT_DIR\n"
@@ -831,7 +726,7 @@ function os2_reproc_execute_automated_cmd () {
         INPUT="$REV\n$OUTPUT_DIR\n"
         ;;
     CLEAN)
-        INPUT="$REV\n$L1B_HDF_DIR\n$L2B_HDF_DIR\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
+        INPUT="$REV\n$L1B_HDF_DIR\n$OUTPUT_DIR\n$CFG\n$ARGS\n"
         ;;
     esac
 
@@ -883,10 +778,6 @@ function os2_reproc_by_rev () {
         return $EXIT
     fi
     os2_reproc_execute_automated_cmd "$REV" "L2B-TO-NETCDF S3"; EXIT=$?
-    if [[ $EXIT -ne 0 ]]; then
-        return $EXIT
-    fi
-    os2_reproc_execute_automated_cmd "$REV" "FIXUP"; EXIT=$?
     if [[ $EXIT -ne 0 ]]; then
         return $EXIT
     fi
@@ -975,7 +866,7 @@ function os2_reproc_by_file () {
 
     lock "$CMD_LOCK" "$UNIQ"
     # Let ALL be a synonym for all actual processing
-    sed -i -e 's/ALL/STAGE	GENERATE	L1BHDF-TO-L1B	L1B-TO-L2A L2A-FIX-ISRO-COMPOSITES	L2A-TO-L2B	L2B-MEDIAN-FILTER S3	L2B-TO-NETCDF S3 FIXUP	BUILD-MD5S/' "$CMD_FILE"
+    sed -i -e 's/ALL/STAGE	GENERATE	L1BHDF-TO-L1B	L1B-TO-L2A L2A-FIX-ISRO-COMPOSITES	L2A-TO-L2B	L2B-TO-NETCDF	MAKE-ARRAYS SEL MAKE-ARARYS NCEP	FIXUP/' "$CMD_FILE"
     unlock "$CMD_LOCK"
 
     while [[ -s "$CMD_FILE" ]]; do

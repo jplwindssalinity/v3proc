@@ -53,18 +53,5 @@ template <> nc_type NetCDF_Type<int>();
 template <> nc_type NetCDF_Type<float>();
 template <> nc_type NetCDF_Type<double>();
 
-// Really belongs in a different header
-typedef struct {
-    float lambda_0;
-    float inclination;
-    float rev_period;
-    int xt_steps;
-    double at_res;
-    double xt_res;
-} latlon_config;
-
-void bin_to_latlon(int at_ind, int ct_ind,
-        const latlon_config *config, float *lat, float *lon);
-
 #endif
 
