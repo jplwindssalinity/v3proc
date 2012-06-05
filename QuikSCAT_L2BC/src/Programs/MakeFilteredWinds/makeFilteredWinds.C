@@ -128,9 +128,18 @@ int main(int argc, char* argv[]){
 
   filtered_nc2b.put(L2BC_FILTERED_WIND_SPEED_KW,buffer);
 
+  // AHChau 6/5/12
+  // filter_speeds may have changed negative speeds to -9999 without changing
+  // the direction.  call make_dir_consistent_with_spd to also change directions
+  l2bc.make_dir_consistent_with_spd();
+
+
   // Get the final mask
 
   wind_dir_mask = ( wind_dir_mask && wind_speed_mask );
+
+  // AHChau 6/3/12.  Next line copies eflags from l2b to l2c file, before modifying.
+  l2bc.copy_eflags();
 
   // Update flag field given the mask field
 

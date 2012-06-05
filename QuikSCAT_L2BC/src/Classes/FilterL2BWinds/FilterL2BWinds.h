@@ -64,6 +64,11 @@ public:
 		    int output_bit_position       //!< bit to set if data was not smoothed
 		    );
 
+  //! AHChau 6/3/12.  Copy the eflags from the input file to the output file
+  void copy_eflags();
+  //! AHChau 6/5/12.  When speed is -9999, change direction to be -9999 as well
+  void make_dir_consistent_with_spd();
+
   // Data members
 
   NcError ncError; //!< netcdf error behavior

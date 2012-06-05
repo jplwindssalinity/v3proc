@@ -130,6 +130,12 @@ CurlDivergence::get_curl_divergence(Array<float, 2>& curl, //!< output curl,
   curl(all,col_range_low) = missing_data_value;
   curl(all,col_range_high) = missing_data_value;
 
+  // AHChau 6/3/12.  Add next 4 lines to initialize edges for div
+  div(row_range_low,all) = missing_data_value;
+  div(row_range_high,all) = missing_data_value;
+  div(all,col_range_low) = missing_data_value;
+  div(all,col_range_high) = missing_data_value;
+
   // Loop over all points
 
   for (int i = row_radius; i < nrows-row_radius; i++) {
@@ -215,15 +221,18 @@ CurlDivergence::load_sensitivity_matrix( Array<float, 2>& A,
   X.resize(max_good,2);
   Y.resize(max_good);
 
-  for( int i = icenter - row_radius; i <= icenter + row_radius; i++ ){
-    for( int j = jcenter - col_radius; j <= jcenter + col_radius; j++ ){
-      if( input_mask(i,j) == true ) { // Valid data
-	double dlat = lat(i,j) - lat(icenter,jcenter);
-	double dlon = lon(i,j) - lon(icenter,jcenter);
-	X(ngood,0) = dlon;
-	X(ngood,1) = dlat;
-	Y(ngood) = A(i,j) - A(icenter,jcenter);
-	ngood++;
+  // AHChau 6/3/12. Add the if statement to not report good values if the center value is invalid
+  if( input_mask(icenter,jcenter) ){
+    for( int i = icenter - row_radius; i <= icenter + row_radius; i++ ){
+      for( int j = jcenter - col_radius; j <= jcenter + col_radius; j++ ){
+	if( input_mask(i,j) == true ) { // Valid data
+	  double dlat = lat(i,j) - lat(icenter,jcenter);
+	  double dlon = lon(i,j) - lon(icenter,jcenter);
+	  X(ngood,0) = dlon;
+	  X(ngood,1) = dlat;
+	  Y(ngood) = A(i,j) - A(icenter,jcenter);
+	  ngood++;
+	}
       }
     }
   } 
@@ -244,7 +253,9 @@ CurlDivergence::get_curl_div_from_derivs(double lat, double A_phi, double A_thet
   double cos_lat = cos(lat);
   double rsin_lat_inv = 1./(earth_radius*cos_lat);
 
-  curl = rsin_lat_inv*(-sin_lat*A_phi + cos_lat*dA_phi_dlat - dA_theta_dlon);
+  // AHChau 6/3/12.  Change sign of curl (request from Svetla)
+  //curl = rsin_lat_inv*(-sin_lat*A_phi + cos_lat*dA_phi_dlat - dA_theta_dlon);
+  curl = -1.*rsin_lat_inv*(-sin_lat*A_phi + cos_lat*dA_phi_dlat - dA_theta_dlon);
   div = rsin_lat_inv*(-sin_lat*A_theta + cos_lat*dA_theta_dlat + dA_phi_dlon);
 }
 

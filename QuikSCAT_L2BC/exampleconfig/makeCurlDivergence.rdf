@@ -1,0 +1,8 @@
+filtered l2bc file                              = qs_l2c_44444_v3_200801010051.nc ! input/output netcdf file
+estimation window size                          = 3 ! size of the estimation window for curl divergence (odd > 1)
+minimum number of good points                   = 6 ! minimum number of good points needed for fitting
+vector field type                               = wind ! wind or stress
+output flag bit position                        = 13 ! position of the bad filtering flag bit 
+number of flag fields                           = 1 ! number of flags to be checked for good data
+flag 1 bit position                             = 14 ! flag 1 bit index to check starting from zero
+flag 1 bit value                                = 0 ! flag 1 bit value for good data

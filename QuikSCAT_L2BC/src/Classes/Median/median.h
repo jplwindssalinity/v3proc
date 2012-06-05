@@ -94,11 +94,14 @@ median(const blitz::Array<T, 2> & input_array, //!< Matrix to smooth (not change
         // select the good points to filter
         
         int good = 0;
-        for(n = i-rowRadius; n <= i+rowRadius; n++){
+	// AHChau 6/3/12, add this if statement, so that no filtering will be performed if the center value is not good.  
+	if( input_mask(i,j) ){ 
+	  for(n = i-rowRadius; n <= i+rowRadius; n++){
             for(m = j - colRadius; m <= j + colRadius; m++){
 	      if( input_mask(n,m) ) buffer[good++] = input_array(n,m);
             }
-        }
+	  }
+	}
 
         // Fill in the result
         

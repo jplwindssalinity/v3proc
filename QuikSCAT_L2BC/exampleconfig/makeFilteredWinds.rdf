@@ -1,0 +1,10 @@
+unfiltered l2bc file                            = qs_l2b_44444_v3_200801010051.nc ! input netcdf file
+filtered l2bc file                              = qs_l2c_44444_v3_200801010051.nc ! output netcdf file
+smoothing window size                           = 3 ! size of the smoothing window
+minimum number of good points                   = 6 ! minimum number of good points needed for smoothing
+output flag bit position                        = 14 ! position of the bad filtering flag bit 
+number of flag fields                           = 2 ! number of flags to be checked for good data
+flag 1 bit position                             = 9 ! flag 1 bit index to check starting from zero
+flag 1 bit value                                = 0 ! flag 1 bit value for good data
+flag 2 bit position                             = 13 ! flag 2 bit index to check starting from zero
+flag 2 bit value                                = 0 ! flag 2 bit value for good data

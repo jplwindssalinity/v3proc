@@ -117,7 +117,7 @@ FilterL2BWinds::filter_directions(int nsmooth, int min_good,
 
   // Recover some memory deleting unused arrays
 
-  buffer.free();
+  // buffer.free(); //AHChau 6/3/12, see below
 
   // Put the model directions back in, and convert to degrees
 
@@ -132,6 +132,12 @@ FilterL2BWinds::filter_directions(int nsmooth, int min_good,
 
   output_mask = ( input_mask && output_mask );
 
+  // AHChau 6/3/12. Add this so that values that were initially -9999 will remain -9999
+  //reread the original data 
+  input_nc2b.get(L2BC_WIND_DIR_KW,buffer);
+  wind_dir_smooth = where(buffer == L2BC_FLOAT_FILL_VALUE, L2BC_FLOAT_FILL_VALUE, wind_dir_smooth); 
+  buffer.free();
+  // AHChau 6/3/12
 }
 
 void 
@@ -201,6 +207,32 @@ FilterL2BWinds::filter_speeds(int nsmooth, int min_good,
 }
 
 void
+FilterL2BWinds::make_dir_consistent_with_spd(){
+  // AHChau 6/5/12.  This method is meant to look for places where speed has been set to -9999 
+  // and also set direction to -9999.  
+  // This works on the output file and should be called after filtering is done.
+
+  // open the output file
+  NC2Blitz output_nc2b(&filtered_ncFile);
+  
+  // get the speed field
+  Array<short, 2> filtered_wind_speed;
+  output_nc2b.get(L2BC_FILTERED_WIND_SPEED_KW, filtered_wind_speed);
+  
+  // get the direction field
+  Array<short,2> filtered_wind_direction;
+  output_nc2b.get(L2BC_FILTERED_WIND_DIR_KW, filtered_wind_direction);
+
+  // replace direction with -9999 when speed == -9999
+  filtered_wind_direction = where(abs(filtered_wind_speed-L2BC_FLOAT_FILL_VALUE)<0.1, L2BC_FLOAT_FILL_VALUE, filtered_wind_direction);
+  //filtered_wind_direction = where(filtered_wind_speed == L2BC_FLOAT_FILL_VALUE, L2BC_FLOAT_FILL_VALUE, filtered_wind_direction);
+  
+  // write it back out to the file
+  output_nc2b.put(L2BC_FILTERED_WIND_DIR_KW, filtered_wind_direction);
+  
+}
+
+void
 FilterL2BWinds::update_flags(Array<bool, 2>& output_mask, int output_bit_position) {
   //! Read the L2B flags
 
@@ -235,4 +267,22 @@ FilterL2BWinds::update_flags(Array<bool, 2>& output_mask, int output_bit_positio
 
   output_nc2b.put(L2BC_FILTERED_WVC_QUALITY_FLAG_KW,wvc_quality_flag);
 
+}
+
+
+void 
+FilterL2BWinds::copy_eflags(){
+  // AHChau 6/3/12.  Added this to copy the extended flags from the input file to the output file, before modifying them.
+
+  // open the input and output files
+  NC2Blitz input_nc2b(&unfiltered_ncFile);
+  NC2Blitz output_nc2b(&filtered_ncFile);
+
+  // get the input l2b eflag
+  Array<short, 2> wvc_l2b_eflag;
+  input_nc2b.get(L2BC_WVC_EXTENDED_FLAG_KW,wvc_l2b_eflag);
+  
+  // Write out the flag
+  output_nc2b.put(L2BC_FILTERED_WVC_QUALITY_FLAG_KW,wvc_l2b_eflag);
+  
 }
