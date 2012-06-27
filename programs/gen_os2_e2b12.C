@@ -233,27 +233,28 @@ main(
     int        argc,
     char*    argv[])
 {
-  const char*  command   = no_path(argv[0]);
-  char*        ecmwf_dir = NULL;
-  char*        hdf_file  = NULL;
-  char*        out_file  = NULL;
-  int          use_bigE  = 0;
+  const char*  command    = no_path(argv[0]);
+  char*        ecmwf_dir  = NULL;
+  char*        hdf_file   = NULL;
+  char*        out_file   = NULL;
+  char*        times_file = NULL;
+  int          use_bigE   = 0;
   
   int optind = 1;
   while ( (optind < argc) && (argv[optind][0]=='-') ) {
     std::string sw = argv[optind];
     
     if( sw == "-e" ) {
-      ++optind;
-      ecmwf_dir = argv[optind];
+      ecmwf_dir = argv[++optind];
     }
     else if( sw == "-i" ) {
-      ++optind;
-      hdf_file = argv[optind];
+      hdf_file = argv[++optind];
     }
     else if( sw == "-o" ) {
-      ++optind;
-      out_file = argv[optind];
+      out_file = argv[++optind];
+    }
+    else if( sw == "-t" ) {
+      times_file = argv[++optind];
     }
     else if( sw == "-bigE" ) {
       use_bigE = 1;
@@ -295,7 +296,7 @@ main(
     fprintf(stderr,"Error reading orbit elements from HDF file\n");
     exit(1);
   }
-  attr_orbit_period = 99.31;
+  attr_orbit_period = 99.46;
   if( attr_orbit_period < 70 ) {
     fprintf(stderr,"Error: unexpected value for orbit period: %f in %s\n",
       attr_orbit_period, hdf_file); 
@@ -320,6 +321,20 @@ main(
     exit(1);
   }	  
   
+  if( times_file ) {
+    FILE* ifp = fopen(times_file,"r");
+    
+    char line[100];
+    double orbit_period;
+    
+    fgets(line,100,ifp);
+    fgets(line,100,ifp);
+    orbit_period = atof(line);
+    fgets(code_B_range_beginning,CODE_B_TIME_LENGTH,ifp);
+    fclose(ifp);
+    //attr_orbit_period        = orbit_period;
+    //orbit_config.rev_period  = orbit_period * 60;
+  }
   printf("time_start: %s\n", code_B_range_beginning );
   
   ETime  etime_start, etime_curr;
