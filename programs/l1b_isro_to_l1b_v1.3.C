@@ -686,6 +686,7 @@ main(
       uint16 NEG_S0_MASK = uint16( 0x200  ); // bit 9
       uint16 ASC_MASK    = uint16( 0x1    ); // bit 0
       uint16 FORE_MASK   = uint16( 0x4    ); // bit 2
+      uint16 MIXED_MASK  = uint16( 0x100  ); // bit 8
       
       for( int i_pol = 0; i_pol < 2; ++i_pol ) {
         int n_scans  = ( i_pol == 0 ) ? 281 : 282;
@@ -779,9 +780,16 @@ main(
             new_meas->landFlag = 0;
             if( qs_landmap.IsLand(tmp_lon,tmp_lat,0) )  
               new_meas->landFlag += 1; // bit 0 for land
+
+            int is_mixed = 0;
+            if( fp_flg[i_pol][scan_ind]&MIXED_MASK ) {
+              if( tmp_lat*rtd > 50 || tmp_lat * rtd < - 60 ) {
+                is_mixed = 1;
+              }
+            }
 		  
 		    // Test for ice flag
-		    if( fp_flg[i_pol][scan_ind]&ICE_MASK )
+		    if( fp_flg[i_pol][scan_ind]&ICE_MASK || is_mixed )
 		      new_meas->landFlag += 2; // bit 1 for ice
 		      
 		    double sos = pow( 10.0, 0.1*(s0-snr) );
@@ -825,6 +833,16 @@ main(
               
               if( slice_flg[i_pol][slice_ind]&FLAG_MASK ) 
                 continue;
+
+              double tmp_lon = dtr*(  0+0.005515*double(slice_lon[i_pol][slice_ind]));
+              double tmp_lat = dtr*(-90+0.002757*double(slice_lat[i_pol][slice_ind]));
+
+              int is_mixed = 0;
+              if( slice_flg[i_pol][slice_ind]&MIXED_MASK ) {
+                if( tmp_lat*rtd > 50 || tmp_lat * rtd < - 60 ) {
+                  is_mixed = 1;
+                }
+              }
               
               Meas* new_meas = new Meas();
 
@@ -835,8 +853,6 @@ main(
               new_meas->XK      = pow(10.0,0.1*xf);
               new_meas->EnSlice = pow(10.0,0.1*(s0+xf-snr));
             
-              double tmp_lon = dtr*(  0+0.005515*double(slice_lon[i_pol][slice_ind]));
-              double tmp_lat = dtr*(-90+0.002757*double(slice_lat[i_pol][slice_ind]));
             
               // make longitude, latitude to be in range.
               if( tmp_lon < 0       ) tmp_lon += two_pi;
@@ -878,14 +894,14 @@ main(
                 new_meas->range_width   = 68.0/12.0;
               }
               new_meas->range_width = 7.0;
-              
+                            
               // Get Land map value
               new_meas->landFlag = 0;
               if( qs_landmap.IsLand(tmp_lon,tmp_lat,1) )  
                 new_meas->landFlag += 1; // bit 0 for land
 
               // Test for ice flag
-              if( slice_flg[i_pol][slice_ind]&ICE_MASK )
+              if( slice_flg[i_pol][slice_ind]&ICE_MASK || is_mixed )
 		        new_meas->landFlag += 2; // bit 1 for ice
 		      
               double slice_kpA = 0.0000154*double(slice_Kpa[i_pol][slice_ind]);
