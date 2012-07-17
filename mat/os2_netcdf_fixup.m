@@ -75,13 +75,13 @@ utc_time = java.lang.System.currentTimeMillis/1000/86400 + ...
     datenum(1970,1,1,0,0,0);
 utc_vec = datevec(utc_time);
 year = utc_vec(1);
-yday = floor(utc_time - datenum(year, 1, 1, 0, 0, 0) + 1);
-hour = utc_vec(4);
-mins = utc_vec(5);
-secs = utc_vec(6);
-exe_time = [n2s(year) '-' n2s(yday) 'T' n2s(hour) ':' n2s(mins) ...
-    ':' n2s(secs) '+0000'];
-history = [history exe_time ' ' getenv('USER') ' matlab -r ' func '(' nc_file ')' 10];
+yday = sprintf('%03d', floor(utc_time - datenum(year, 1, 1, 0, 0, 0) + 1));
+year = sprintf('%04d', year);
+hour = sprintf('%02d', utc_vec(4));
+mins = sprintf('%02d', utc_vec(5));
+secs = sprintf('%02d', floor(utc_vec(6)));
+exe_time = [year '-' yday 'T' hour ':' mins ':' secs '+0000'];
+history = [history exe_time ' ' getenv('USER') ' matlab -r ' func '(''' nc_file ''')' 10];
 netcdf.putAtt(ncid, GLOBAL, 'history', history);
 
 netcdf.endDef(ncid);
@@ -227,7 +227,11 @@ function base = basename(filepath)
 % Emulate the `basename` command
 
 splits = strfind(filepath, '/');
-base = filepath(splits(end) + 1:end);
+if (isempty(splits))
+    base = filepath;
+else
+    base = filepath(splits(end) + 1:end);
+end
 
 return
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,7 +241,11 @@ function base = dirname(filepath)
 % Emulate the `dirname` command
 
 splits = strfind(filepath, '/');
-base = filepath(1:splits(end));
+if (isempty(splits))
+    base = './';
+else
+    base = filepath(1:splits(end));
+end
 
 return
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

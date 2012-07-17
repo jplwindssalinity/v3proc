@@ -105,7 +105,7 @@ using namespace std;
 #define IS_NOT_SET(var, mask) (!IS_SET(var, mask))
 
 #define DATASET_TITLE "Oceansat-II Level 2B Ocean Wind Vectors in 12.5km slice composites"
-#define BUILD_ID "v1_0_0:B"
+#define BUILD_ID "v1_0_0:C"
 
 #define EPOCH "1999-001T00:00:00.000 UTC"
 

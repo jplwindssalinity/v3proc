@@ -34,4 +34,21 @@ function store-md5 () (
 }
 )
 
-find -L -name "qs_l2[bc]*.nc" | while read file; do store-md5 "$file"; done
+TYPE=`echo $1 | tr [A-Z] [a-z]`
+case $TYPE in
+    "qs"|"quikscat")
+        matchstr="qs_l2[bc]*.nc"
+        ;;
+    "os"|"oscat"|"os2"|"oscat2")
+        matchstr="os2_*.nc"
+        ;;
+    *)
+        matchstr=""
+        ;;
+esac
+
+if [ $matchstr ]; then    
+    find -L -name "$matchstr" | while read file; do store-md5 "$file"; done
+else
+    echo "Invalid input type <$1>"
+fi

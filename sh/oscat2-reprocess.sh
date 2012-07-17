@@ -411,7 +411,9 @@ function os2_reproc_l2b_to_netcdf () {
     OUTFILE="${OUTFILE/L1B/l2b}"
     OUTFILE="${OUTFILE/S1/os2_}"
 
-    os2_l2b_to_netcdf --l1bhdf "$L1B_HDF_FNAME" --nc "$OUTFILE"  --l2b "$INFILE"
+    TIMESFILE="/u/potr-r1/fore/ISRO/orb_ele/OS2_orb_ele_120716.dat"
+
+    os2_l2b_to_netcdf --l1bhdf "$L1B_HDF_FNAME" --nc "$OUTFILE"  --l2b "$INFILE" --times "$TIMESFILE"
     RETVAL=$?
 
     return $RETVAL
@@ -428,10 +430,15 @@ function os2_fixup () {
     echo -n "Base directory: "
     read BASEDIR; tty > /dev/null 2>&1;
         [[ $? -eq 0 ]] || echo "$BASEDIR"
+    echo -n "Config: "
+    read CONFIG_FILE; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$CONFIG_FILE"
+
 
     OS2_MATLAB_INC_DIR="/u/potr-r0/werne/QScatSim/mat"
 
     cd "$BASEDIR/$REV"
+    L1B_HDF_FNAME=`awk '/L1B_HDF_FILE/ {print $3}' $CONFIG_FILE`
 
     OUTFILE=`basename "$L1B_HDF_FNAME"`
     OUTFILE="${OUTFILE/h5/nc}"
@@ -706,7 +713,7 @@ function os2_reproc_execute_automated_cmd () {
         INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
         ;;
     FIXUP)
-        INPUT="$REV\n$OUTPUT_DIR\n"
+        INPUT="$REV\n$OUTPUT_DIR\n$CFG\n"
         ;;
     LINK)
         ARGS=`echo "$ARGS" | tr ' ' '\n'`
@@ -866,7 +873,7 @@ function os2_reproc_by_file () {
 
     lock "$CMD_LOCK" "$UNIQ"
     # Let ALL be a synonym for all actual processing
-    sed -i -e 's/ALL/STAGE	GENERATE	L1BHDF-TO-L1B	L1B-TO-L2A L2A-FIX-ISRO-COMPOSITES	L2A-TO-L2B	L2B-TO-NETCDF	MAKE-ARRAYS SEL MAKE-ARARYS NCEP	FIXUP/' "$CMD_FILE"
+    sed -i -e 's/ALL/STAGE,GENERATE,L1BHDF-TO-L1B,L1B-TO-L2A,L2A-FIX-ISRO-COMPOSITES,L2A-TO-L2B,L2B-TO-NETCDF,MAKE-ARRAYS SEL,MAKE-ARARYS NCEP,FIXUP/' "$CMD_FILE"
     unlock "$CMD_LOCK"
 
     while [[ -s "$CMD_FILE" ]]; do
@@ -875,9 +882,9 @@ function os2_reproc_by_file () {
         # This allows the logfiles to be overwritten after each command.
 
         # Try to deal with funny NFS no-mount bug...
-        # /u/potr-r0 is the NFS mount point for the 10 TB drive.
+        # /u/potr-r1 is the NFS mount point for the 21 TB drive.
         # Look for it, and if `ls` fails, then the NFS mount must be bad
-        ls '/u/potr-r0' > /dev/null 2>&1
+        ls '/u/potr-r1' > /dev/null 2>&1
         if [ $? -ne 0 ]; then
             echo "Possible NFS no-mount bug... sleeping"
             sleep 30
@@ -907,14 +914,14 @@ function os2_reproc_by_file () {
         # Get the corresponding line in the file
         # Pick off the revision, command, and subsequent commands
         CMD_LINE=`grep -m 1 "^$CMD" "$CMD_FILE"`
-        REV=`echo "$CMD_LINE" | cut -f 1`
-        CMD=`echo "$CMD_LINE" | cut -f 2`
-        NEXT_CMD_LINE=`echo "$CMD_LINE" | cut -f 3-`
+        REV=`echo "$CMD_LINE" | cut -f 1 -d,`
+        CMD=`echo "$CMD_LINE" | cut -f 2 -d,`
+        NEXT_CMD_LINE=`echo "$CMD_LINE" | cut -f 3- -d,`
 
         START=`date`
 
         # Log to the PROC_FILE
-        echo "$REV	$CMD	$UNIQ	$START" >> "$PROC_FILE"
+        echo "$REV,$CMD,$UNIQ,$START" >> "$PROC_FILE"
         unlock "$PROC_LOCK"
 
         # Delete the comamnd from the file so no one else tries 
@@ -941,7 +948,7 @@ function os2_reproc_by_file () {
             # to CMD_FILE)
   
             lock "$SUCCESS_LOCK" "$UNIQ"
-            echo "$REV	$CMD	$UNIQ	$START	$END	$RUNTIME" >> \
+            echo "$REV,$CMD,$UNIQ,$START,$END,$RUNTIME" >> \
                 "$SUCCESS_FILE"
             unlock "$SUCCESS_LOCK"
     
@@ -951,10 +958,10 @@ function os2_reproc_by_file () {
                 # reinsert them into the command file
                 if [[ -s "$CMD_FILE" ]]; then
                     # Use sed to prepend the command
-                    sed -i -e "1i$REV	$NEXT_CMD_LINE" "$CMD_FILE"
+                    sed -i -e "1i$REV,$NEXT_CMD_LINE" "$CMD_FILE"
                 else
                     # sed can't prepend to an empty file
-                    echo "$REV	$NEXT_CMD_LINE" >> "$CMD_FILE"
+                    echo "$REV,$NEXT_CMD_LINE" >> "$CMD_FILE"
                 fi
             fi
             unlock "$CMD_LOCK"
@@ -964,13 +971,13 @@ function os2_reproc_by_file () {
             # copy the process log file to a persistent file.
 
             lock "$ERR_LOCK" "$UNIQ"
-            echo "$REV	$CMD	$NEXT_CMD_LINE	$UNIQ	$START	$END	$RUNTIME" >> "$ERR_FILE"
+            echo "$REV,$CMD,$NEXT_CMD_LINE,$UNIQ,$START,$END,$RUNTIME" >> "$ERR_FILE"
             unlock "$ERR_LOCK"
         fi       
 
         # Remove the line from the processing file
         lock "$PROC_LOCK" "$UNIQ"
-        sed -i "/$REV	$CMD.*/d" "$PROC_FILE"
+        sed -i "/$REV,$CMD.*/d" "$PROC_FILE"
         unlock "$PROC_LOCK"
 
         # The last thing to do is handle the logfile.
