@@ -37,7 +37,9 @@ static const char rcs_id[] =
 #include <libgen.h>
 #include <netcdf.h>
 #include <getopt.h>
+#include <stdlib.h>
 #include <iostream>
+#include <fstream>
 #include <hdf5.h>
 #include <hdf5_hl.h>
 #include <sys/time.h>
@@ -66,7 +68,7 @@ using namespace std;
         perror("Error in " __FILE__ " @ " S(__LINE__)); \
         exit(EXIT_FAILURE); \
     }
-    
+
 #define NCERR(call) \
 { \
     int error; \
@@ -103,7 +105,7 @@ using namespace std;
 #define IS_NOT_SET(var, mask) (!IS_SET(var, mask))
 
 #define DATASET_TITLE "Oceansat-II Level 2B Ocean Wind Vectors in 12.5km slice composites"
-#define BUILD_ID "v1_0_0:A"
+#define BUILD_ID "v1_0_0:B"
 
 #define EPOCH "1999-001T00:00:00.000 UTC"
 
@@ -156,6 +158,7 @@ typedef struct {
     const char *l2b_file;
     const char *nc_file;
     const char *l1bhdf_file;
+    const char *times_file;
 } l2b_to_netcdf_config;
 
 typedef struct {
@@ -167,7 +170,7 @@ typedef struct {
     double xt_res;
 } latlon_config;
 
-static int parse_commandline(int argc, char **argv, 
+static int parse_commandline(int argc, char **argv,
         l2b_to_netcdf_config *config);
 static int set_global_attributes(int argc, char **argv,
         const l2b_to_netcdf_config *config, const L2B *l2b, int ncid);
@@ -178,13 +181,15 @@ static char * rtrim(char *str);
 static struct timeval str_to_timeval(const char *end);
 static double difftime(const struct timeval t1, const struct timeval t0);
 
-static struct timeval epoch = str_to_timeval(EPOCH);
+static struct timeval epoch;
 
 static int16_t flag_masks[] = {SIGMA0_MASK, AZIMUTH_DIV_MASK, COASTAL_MASK,
     ICE_EDGE_MASK, WIND_RETRIEVAL_MASK, HIGH_WIND_MASK, LOW_WIND_MASK,
     RAIN_IMPACT_UNUSABLE_MASK, RAIN_IMPACT_MASK, AVAILABLE_DATA_MASK};
 static int16_t eflag_masks[] = {RAIN_CORR_NOT_APPL_MASK, NEG_WIND_SPEED_MASK,
     ALL_AMBIG_CONTRIB_MASK, RAIN_CORR_LARGE_MASK};
+
+struct timeval rev_end_time, rev_start_time;
 
 //--------------//
 // MAIN PROGRAM //
@@ -212,7 +217,6 @@ int main(int argc, char **argv) {
     float lat, lon;
 
     // For generating time values
-    struct timeval rev_end_time, rev_start_time;
     double rev_length_time;
 
     // parse the command line
@@ -220,10 +224,17 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    // Define the local timezone to UTC so that mktime() doesn't try to
+    // apply DST rules
+    setenv("TZ", "UTC", 1);
+    tzset();
+
+    epoch = str_to_timeval(EPOCH);
+
     // open the input files
     ERR(l2b.OpenForReading(run_config.l2b_file) == 0);
 
-    ERR(l2b.ReadHeader() == 0); 
+    ERR(l2b.ReadHeader() == 0);
     ERR(l2b.ReadDataRec() == 0);
 
     l2b.header.version_id_major++;
@@ -234,7 +245,7 @@ int main(int argc, char **argv) {
 
     /* Here we're going to store a set of attributes, and a swath of
      * wind vector cell ambiguities.  The format of the swath is:
-     * a 2-dimensional matrix (cross-track x along_track); each 
+     * a 2-dimensional matrix (cross-track x along_track); each
      * point is a variable length array (ambiguities); each element
      * of the array is a (u,v) two-float compounddata type.
      */
@@ -430,46 +441,13 @@ int main(int argc, char **argv) {
     orbit_config.at_res = l2b.header.alongTrackResolution;
     orbit_config.xt_res = l2b.header.crossTrackResolution;
 
-    // Pick off first and last Scan_start_time
-    {
-        hid_t l1bhdf_id, science_group, start_times, dtype, dspace, elems;
-        size_t strsize;
-        hsize_t dims[2];
-        hsize_t coords[4] = {0, 0, 0, 0};
-        char *buffer;
-        HDFERR((l1bhdf_id = H5Fopen(run_config.l1bhdf_file, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0);
-        HDFERR((science_group = H5Gopen(l1bhdf_id, "science_data", H5P_DEFAULT)) < 0);
-        HDFERR((start_times = H5Dopen(science_group, "Scan_start_time", H5P_DEFAULT)) < 0);
-        HDFERR((dtype = H5Dget_type(start_times)) < 0);
-        HDFERR((strsize = H5Tget_size(dtype)) == 0);
-
-        HDFERR((dspace = H5Dget_space(start_times)) < 0);
-        HDFERR((elems = H5Scopy(dspace)) < 0);
-
-        HDFERR(H5Sget_simple_extent_dims(dspace, dims, NULL) < 0);
-        buffer = (char *)malloc(dims[1]*strsize*sizeof(buffer[0]));
-        coords[3] = dims[1] - 1;
-
-        HDFERR(H5Sselect_elements(elems, H5S_SELECT_SET, 2, coords) < 0);
-        HDFERR(H5Dread(start_times, dtype, H5S_ALL, elems, H5P_DEFAULT, buffer) < 0);
-
-        rev_start_time = str_to_timeval(buffer);
-        rev_end_time = str_to_timeval(buffer + strsize*coords[3]);
-        // Since the time data variable is *start* times, we need to add an
-        // extra scan to get the rev's end time
-        rev_length_time = difftime(rev_end_time, rev_start_time)*(dims[1] + 1)/dims[1];
-
-        HDFERR(H5Sclose(elems) < 0);
-        free(buffer);
-        HDFERR(H5Dclose(start_times) < 0);
-        HDFERR(H5Gclose(science_group) < 0);
-        HDFERR(H5Fclose(l1bhdf_id) < 0);
-    }
+    
+    rev_length_time = difftime(rev_end_time, rev_start_time)*(along_track_dim_sz + 1)/along_track_dim_sz;
 
     /* Same sneakiness with idx as described above with dimensions */
     for (idx[0] = 0; idx[0] < along_track_dim_sz; idx[0]++) {
         double this_time;
-       
+
         this_time = (idx[0] + 0.5)/along_track_dim_sz*rev_length_time + difftime(rev_start_time, epoch);
 
         time_var->SetData(idx, this_time);
@@ -485,7 +463,7 @@ int main(int argc, char **argv) {
 
                 /* FLAGS */
                 UNSET(flags, WIND_RETRIEVAL_MASK);
-                
+
                 UNSET_IF(flags, SIGMA0_MASK, IS_NOT_SET(wvc->qualFlag, L2B_QUAL_FLAG_ADQ_S0));
                 UNSET_IF(flags, AZIMUTH_DIV_MASK, IS_NOT_SET(wvc->qualFlag, L2B_QUAL_FLAG_ADQ_AZI_DIV));
                 UNSET_IF(flags, AVAILABLE_DATA_MASK, IS_NOT_SET(wvc->qualFlag, L2B_QUAL_FLAG_FOUR_FLAVOR));
@@ -495,7 +473,7 @@ int main(int argc, char **argv) {
 
                 UNSET_IF(flags, RAIN_IMPACT_UNUSABLE_MASK, IS_NOT_SET(wvc->rainFlagBits, RAIN_FLAG_UNUSABLE));
                 UNSET_IF(flags, RAIN_IMPACT_MASK, IS_NOT_SET(wvc->rainFlagBits, RAIN_FLAG_RAIN));
-                
+
                 UNSET_IF(flags, HIGH_WIND_MASK, wvc->selected->spd <= 30);
                 UNSET_IF(flags, LOW_WIND_MASK, wvc->selected->spd >= 3);
 
@@ -535,7 +513,7 @@ int main(int argc, char **argv) {
 
                     wind_speed_uncorr_var->SetData(idx, uncorr_speed);
                     atm_spd_bias_var->SetData(idx, wvc->speedBias);
-                } 
+                }
 
                 if (wvc->selected->spd < retrieved_speed_min) {
                     wvc->selected->spd = retrieved_speed_min;
@@ -572,7 +550,7 @@ int main(int argc, char **argv) {
                 num_ambig_var->SetData(idx, wvc->numAmbiguities);
 
             } else {
-            
+
                 /* Assumes these flags are initially set... */
                 bin_to_latlon(idx[0], idx[1], &orbit_config, &lat, &lon);
 
@@ -607,7 +585,7 @@ int main(int argc, char **argv) {
     for (int i = vars.size() - 1; i >= 0; i--) {
         delete vars[i];
     }
-    
+
     //----------------------//
     // close files and exit //
     //----------------------//
@@ -619,26 +597,28 @@ int main(int argc, char **argv) {
 
 static int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
 
-    const char* usage_array = "--l2b=<l2b file> --nc=<nc file> --l1bhdf=<l1b hdf source file>";
+    const char* usage_array = "--l2b=<l2b file> --nc=<nc file> --l1bhdf=<l1b hdf source file> --times=<times file>";
     int opt;
 
     /* Initialize configuration structure */
     config->command = no_path(argv[0]);
-    config->l2b_file = NULL;
-    config->nc_file = NULL;
+    config->l2b_file    = NULL;
+    config->nc_file     = NULL;
     config->l1bhdf_file = NULL;
+    config->times_file  = NULL;
 
-    struct option longopts[] = 
+    struct option longopts[] =
     {
         { "l2b",      required_argument, NULL, 'i'},
-        { "nc",     required_argument, NULL, 'o'},
+        { "nc",       required_argument, NULL, 'o'},
         { "l1bhdf",   required_argument, NULL, 's'},
+        { "times",    required_argument, NULL, 't'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "i:h:o:s:e", longopts, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "i:o:s:t:", longopts, NULL)) != -1) {
         switch (opt) {
-            case 'i': 
+            case 'i':
                 config->l2b_file = optarg;
                 break;
             case 'o':
@@ -647,12 +627,15 @@ static int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config
             case 's':
                 config->l1bhdf_file = optarg;
                 break;
+            case 't':
+                config->times_file = optarg;
+                break;
         }
 
     }
 
-    if (config->l2b_file == NULL || config->nc_file == NULL 
-            || config->l1bhdf_file == NULL) {
+    if (config->l2b_file == NULL || config->nc_file == NULL
+            || config->l1bhdf_file == NULL || config->times_file == NULL) {
 
         fprintf(stderr, "%s: %s\n", config->command, usage_array);
         return -1;
@@ -671,6 +654,9 @@ static int set_global_attributes(int argc, char **argv,
     time_t now;
     char *history;
 
+    ifstream times(cfg->times_file);
+    times.exceptions(ifstream::eofbit);
+
     // Compute history attribute string length
     whoami = getenv("LOGNAME");
     if (whoami != NULL) {
@@ -682,7 +668,7 @@ static int set_global_attributes(int argc, char **argv,
     history_len += 1;  // For final '\n'
 
     history = (typeof history)calloc(history_len, sizeof(*history));
-    
+
     // Insert date+time
     now = time(NULL);
     strftime(history, history_len, date_time_fmt, gmtime(&now));
@@ -702,7 +688,7 @@ static int set_global_attributes(int argc, char **argv,
 
     // Open HDF file
     hid_t l1bhdf_id, science_group;
-    char attribute[256];
+    char attribute[256], rev_number[32];
 
     HDFERR((l1bhdf_id = H5Fopen(cfg->l1bhdf_file, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0);
     HDFERR((science_group = H5Gopen(l1bhdf_id, "science_data", H5P_DEFAULT)) < 0);
@@ -725,7 +711,7 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("GranulePointer", basename(attribute)));
     strncpy(attribute, cfg->l1bhdf_file, ARRAY_LEN(attribute) - 1);
     global_attributes.push_back(new NetCDF_Attr<char>("InputPointer", basename(attribute)));
-    global_attributes.push_back(new NetCDF_Attr<char>("l2b_algorithm_descriptor", 
+    global_attributes.push_back(new NetCDF_Attr<char>("l2b_algorithm_descriptor",
                 "Uses QSCAT2012 GMF from Jet Propulsion Laboratory constructed using\n"
                 "data from the QuikSCAT instrument repointed to OceanSAT-2 incidence\n"
                 "angles.  Applies median filter technique for ambiguity removal.\n"
@@ -744,7 +730,9 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("PlatformLongName", "Oceansat II"));
     global_attributes.push_back(new NetCDF_Attr<char>("PlatformShortName", "OS2"));
 
-    read_attr_h5(science_group, "Revolution Number", attribute); attribute[5] = '\0';   // Separate starting & stop orbit #s
+    read_attr_h5(science_group, "Revolution Number", attribute);
+    strcpy(rev_number, attribute);
+    attribute[5] = '\0';   // Separate starting & stop orbit #s
     global_attributes.push_back(new NetCDF_Attr<char>("rev_number", rtrim(attribute)));
     global_attributes.push_back(new NetCDF_Attr<char>("StartOrbitNumber", rtrim(attribute)));
     global_attributes.push_back(new NetCDF_Attr<char>("StopOrbitNumber", rtrim(attribute + 6)));
@@ -759,29 +747,45 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("L1B_Processor_Version", rtrim(attribute)));
     read_attr_h5(science_group, "Ephemeris Type", attribute);
     global_attributes.push_back(new NetCDF_Attr<char>("Ephemeris_Type", rtrim(attribute)));
-    read_attr_h5(science_group, "Equator Crossing Date", attribute); DT_SPLIT(attribute);
-    global_attributes.push_back(new NetCDF_Attr<char>("EquatorCrossingDate", rtrim(DT_DATE(attribute))));
-    global_attributes.push_back(new NetCDF_Attr<char>("EquatorCrossingTime", rtrim(DT_TIME(attribute))));
     read_attr_h5(science_group, "L1B Actual Scans", attribute);
     global_attributes.push_back(new NetCDF_Attr<short>("L1B_Actual_Scans", (short)atoi(attribute)));
     read_attr_h5(science_group, "Production Date", attribute);  DT_SPLIT(attribute);
     global_attributes.push_back(new NetCDF_Attr<char>("L1BProductionDate", rtrim(DT_DATE(attribute))));
     global_attributes.push_back(new NetCDF_Attr<char>("L1BProductionTime", rtrim(DT_TIME(attribute))));
-    read_attr_h5(science_group, "Range Beginning Date", attribute); DT_SPLIT(attribute);
-    global_attributes.push_back(new NetCDF_Attr<char>("RangeBeginningDate", rtrim(DT_DATE(attribute))));
-    global_attributes.push_back(new NetCDF_Attr<char>("RangeBeginningTime", rtrim(DT_TIME(attribute))));
-    read_attr_h5(science_group, "Range Ending Date", attribute); DT_SPLIT(attribute);
-    global_attributes.push_back(new NetCDF_Attr<char>("RangeEndingDate", rtrim(DT_DATE(attribute))));
-    global_attributes.push_back(new NetCDF_Attr<char>("RangeEndingTime", rtrim(DT_TIME(attribute))));
 
-    read_attr_h5(science_group, "Equator Crossing Longitude", attribute);
-    global_attributes.push_back(new NetCDF_Attr<float>("Equator_Crossing_Longitude", atof(attribute)));
+    try {
+        char revno[32], orbit_start[32], orbit_stop[32], node_time[32], node_long[32], orb_per[32];
+
+        do {
+            times >> revno >> orbit_start >> orbit_stop >> node_time >> node_long >> orb_per;
+
+            if (strcmp(rev_number, revno) == 0) {
+                DT_SPLIT(orbit_start);
+                DT_SPLIT(orbit_stop);
+                DT_SPLIT(node_time);
+
+                rev_start_time = str_to_timeval(orbit_start);
+                rev_end_time   = str_to_timeval(orbit_stop);
+
+                global_attributes.push_back(new NetCDF_Attr<char>("EquatorCrossingDate", rtrim(DT_DATE(node_time))));
+                global_attributes.push_back(new NetCDF_Attr<char>("EquatorCrossingTime", rtrim(DT_TIME(node_time))));
+                global_attributes.push_back(new NetCDF_Attr<char>("RangeBeginningDate", rtrim(DT_DATE(orbit_start))));
+                global_attributes.push_back(new NetCDF_Attr<char>("RangeBeginningTime", rtrim(DT_TIME(orbit_start))));
+                global_attributes.push_back(new NetCDF_Attr<char>("RangeEndingDate", rtrim(DT_DATE(orbit_stop))));
+                global_attributes.push_back(new NetCDF_Attr<char>("RangeEndingTime", rtrim(DT_TIME(orbit_stop))));
+                global_attributes.push_back(new NetCDF_Attr<float>("Equator_Crossing_Longitude", atof(node_long)));
+                global_attributes.push_back(new NetCDF_Attr<float>("rev_orbit_period", atof(orb_per)));
+
+                break;
+            }
+        } while(true);
+    } catch (ifstream::failure e) {
+        cerr << "Reached end of file without finding " << rev_number << endl;
+        exit(-1);
+    }
+
     read_attr_h5(science_group, "Orbit Inclination", attribute);
     global_attributes.push_back(new NetCDF_Attr<float>("orbit_inclination", atof(attribute)));
-    read_attr_h5(science_group, "Orbit Period", attribute);
-    global_attributes.push_back(new NetCDF_Attr<float>("rev_orbit_period", atof(attribute)));
-    read_attr_h5(science_group, "Orbit Period", attribute);
-    global_attributes.push_back(new NetCDF_Attr<float>("rev_orbit_period", atof(attribute)));
     read_attr_h5(science_group, "Orbit Semi-major Axis", attribute);
     global_attributes.push_back(new NetCDF_Attr<float>("rev_orbit_semimajor_axis", atof(attribute)));
     read_attr_h5(science_group, "Orbit Eccentricity", attribute);
@@ -834,14 +838,14 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     const int    r_n_xt_bins = config->xt_steps;
     const double at_res = config->at_res;
     const double xt_res = config->xt_res;
-    
+
     // Modified for OS2 starting at north pole
     //lambda_0 = DEG_TO_RAD(config->lambda_0);
     double lambda_0 = config->lambda_0 + 180 + P2/(2*P1) * 360;
     if( lambda_0 > 360 ) lambda_0 -= 360;
     lambda_0 = DEG_TO_RAD(lambda_0);
-    
-    
+
+
     const double r_n_at_bins = 1624.0 * 25.0 / at_res;
     const double atrack_bin_const = two_pi/r_n_at_bins;
     const double xtrack_bin_const = xt_res/r1_earth;
@@ -865,12 +869,12 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     sin_phi_pp2 = sin_phi_pp*sin_phi_pp;
     sin_lambda_pp = sinf(lambda_pp);
     sin_lambda_pp2 = sin_lambda_pp*sin_lambda_pp;
-    
+
     Q = e2*sini*sini/(1 - e2);
     U = e2*cosi*cosi/(1 - e2);
 
     V1 = (1 - sin_phi_pp2/(1 - e2))*cosi*sin_lambda_pp;
-    V2 = (sini*sin_phi_pp*sqrtf((1 + Q*sin_lambda_pp2)*(1 - 
+    V2 = (sini*sin_phi_pp*sqrtf((1 + Q*sin_lambda_pp2)*(1 -
                     sin_phi_pp2) - U*sin_phi_pp2));
 
     V = (V1 - V2)/(1 - sin_phi_pp2*(1 + U));
@@ -878,13 +882,13 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     lambda_t = atan2f(V, cosf(lambda_pp));
     lambda = lambda_t - (P2/P1)*lambda_pp + lambda_0;
 
-    
-    lambda += (lambda < 0)       ?  two_pi : 
+
+    lambda += (lambda < 0)       ?  two_pi :
               (lambda >= two_pi) ? -two_pi :
                                     0.0f;
-    
-                                    
-    phi = atanf((tanf(lambda_pp)*cosf(lambda_t) - 
+
+
+    phi = atanf((tanf(lambda_pp)*cosf(lambda_t) -
                 cosf(inc)*sinf(lambda_t))/((1 - e2)*
                 sinf(inc)));
 
