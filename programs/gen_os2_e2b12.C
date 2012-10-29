@@ -233,12 +233,12 @@ main(
     int        argc,
     char*    argv[])
 {
-  const char*  command    = no_path(argv[0]);
-  char*        ecmwf_dir  = NULL;
-  char*        hdf_file   = NULL;
-  char*        out_file   = NULL;
-  char*        times_file = NULL;
-  int          use_bigE   = 0;
+  const char*  command     = no_path(argv[0]);
+  char*        ecmwf_dir   = NULL;
+  char*        hdf_file    = NULL;
+  char*        out_file    = NULL;
+  char*        orbele_file = NULL;
+  int          use_bigE    = 0;
   
   int optind = 1;
   while ( (optind < argc) && (argv[optind][0]=='-') ) {
@@ -254,7 +254,7 @@ main(
       out_file = argv[++optind];
     }
     else if( sw == "-t" ) {
-      times_file = argv[++optind];
+      orbele_file = argv[++optind];
     }
     else if( sw == "-bigE" ) {
       use_bigE = 1;
@@ -266,8 +266,8 @@ main(
     ++optind;
   }
   
-  if( ecmwf_dir == NULL || hdf_file == NULL || out_file == NULL ) {
-    fprintf( stderr, "%s: Must specify -e <ecmwf-dir>, -i <hdfile>, and -o <outfile>\n", command );
+  if( ecmwf_dir == NULL || hdf_file == NULL || out_file == NULL || orbele_file == NULL ) {
+    fprintf( stderr, "%s: Must specify -e <ecmwf-dir>, -i <hdfile>, -o <outfile> -t orb_ele files\n", command );
     exit(1);
   }
   
@@ -312,34 +312,39 @@ main(
   orbit_config.at_res      = 12.5;
   orbit_config.xt_res      = 12.5;
   
-  char attr_string[1024];  
-  char code_B_range_beginning[CODE_B_TIME_LENGTH];
+  char str_t_start[CODE_B_TIME_LENGTH];
+  char str_t_end[CODE_B_TIME_LENGTH];
+  char str_t_dec[CODE_B_TIME_LENGTH];
+  char str_revtag[12];
+  char this_revtag[12];
   
-  if( !init_string(code_B_range_beginning,CODE_B_TIME_LENGTH) || 
-	  !read_attr_h5( g_id, "Range Beginning Date", code_B_range_beginning ) ) {
-    fprintf( stderr, "Error reading Range Beginning Date\n");
+  
+  if( !init_string(this_revtag,12) || 
+      !read_attr_h5( g_id, "Revolution Number", this_revtag ) ) {
+    fprintf( stderr, "Error reading Revolution Number\n");
     exit(1);
-  }	  
+  }   
   
-  if( times_file ) {
-    FILE* ifp = fopen(times_file,"r");
-    
-    char line[100];
-    double orbit_period;
-    
+  //printf("This rev number: %s\n",this_revtag);
+  
+  FILE* ifp = fopen(orbele_file,"r");
+  char line[1024];
+  while(1) {
     fgets(line,100,ifp);
-    fgets(line,100,ifp);
-    orbit_period = atof(line);
-    fgets(code_B_range_beginning,CODE_B_TIME_LENGTH,ifp);
-    fclose(ifp);
-    //attr_orbit_period        = orbit_period;
-    //orbit_config.rev_period  = orbit_period * 60;
-  }
-  printf("time_start: %s\n", code_B_range_beginning );
+    //printf("line: %s\n",line);
+    sscanf(line,"%s %s %s %s %f %f",
+      str_revtag, str_t_start, str_t_end, str_t_dec,
+      &orbit_config.lambda_0, &orbit_config.rev_period );
+    orbit_config.rev_period *= 60;
+    if( feof(ifp) || strcmp(this_revtag,str_revtag)==0 ) break;
+  }  
+  fclose(ifp);
+  
+  printf("time_start: %s\n", str_t_start );
   
   ETime  etime_start, etime_curr;
   
-  etime_start.FromCodeB( code_B_range_beginning );
+  etime_start.FromCodeB( str_t_start );
   
   double t_start = etime_start.GetTime();
   
