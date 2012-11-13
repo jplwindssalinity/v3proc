@@ -66,9 +66,9 @@ int OS2XFix::FixIt( int i_pol, int i_slice, int i_scan, int i_frame,
     return(0);
   }
   // Check that we are in bounds of lookup table
-  if( i_slice < 0 || i_slice > _n_slices[i_pol] ||
-      i_scan  < 0 || i_scan  > _n_scans[i_pol]  ||
-      i_frame < 0 || i_frame > _n_frames[i_pol] ) {
+  if( i_slice < 0 || i_slice >= _n_slices[i_pol] ||
+      i_scan  < 0 || i_scan  >= _n_scans[i_pol]  ||
+      i_frame < 0 || i_frame >= _n_frames[i_pol] ) {
     return(0); // do nothing if out-of-bounds
   }  
   *xf  += _dx_table[i_pol][i_slice][i_scan][i_frame];
