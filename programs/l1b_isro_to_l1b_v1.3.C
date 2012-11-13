@@ -77,6 +77,7 @@ static const char rcs_id[] =
 #include "BufferedList.C"
 #include "SeaPac.h"
 #include "AttenMap.h"
+#include "OS2XFix.h"
 /* hdf5 include */
 #include "hdf5.h"
 
@@ -234,17 +235,18 @@ main(
     //-----------//
     // variables //
     //-----------//
-    const char*  command         = NULL;
-    char*        l1b_hdf_file    = NULL;
-    char*        output_file     = NULL;
-    char*        ephemeris_file  = NULL;
-    char*        config_file     = NULL;
-    char*        attenmap_file   = NULL;
-    char*        qslandmap_file  = NULL;
-    char*        sigma0_map_file = NULL;
-    int          do_footprint    = 0;
+    const char*  command            = NULL;
+    char*        l1b_hdf_file       = NULL;
+    char*        output_file        = NULL;
+    char*        ephemeris_file     = NULL;
+    char*        config_file        = NULL;
+    char*        attenmap_file      = NULL;
+    char*        qslandmap_file     = NULL;
+    char*        sigma0_map_file    = NULL;
+    char*        xfactor_table_file = NULL;
+    int          do_footprint       = 0;
     
-    float        s0_bias[2]      = {0,0};
+    float        s0_bias[2]         = {0,0};
     
     ConfigList   config_list;
     AttenMap     attenmap;
@@ -277,6 +279,10 @@ main(
         ++optind;
         s0_bias[1] = atof(argv[optind]);
       }  
+      else if ( sw == "-xf_table" ) {
+        ++optind;
+        xfactor_table_file = argv[optind];      
+      }  
       else {
         fprintf(stderr,"%s: Unknow option\n", command);
         exit(1);
@@ -284,7 +290,8 @@ main(
       ++optind;
     }
     
-    
+    OS2XFix os2xfix;
+    if( xfactor_table_file ) os2xfix.ReadTable(xfactor_table_file);
     
     Sigma0Mapping sigma0_map;
     
@@ -849,7 +856,10 @@ main(
               double xf  = -120 + 0.000613 * double(slice_xf[i_pol][slice_ind]);
               double s0  = -96  + 0.00147  * double(slice_s0[i_pol][slice_ind]) + s0_bias[i_pol];
               double snr = -65  + 0.001547 * double(slice_snr[i_pol][slice_ind]);
-            
+              
+              if( xfactor_table_file ) 
+                os2xfix.FixIt( i_pol, i_slice, i_scan, i_frame, &xf, &s0, &snr );
+              
               new_meas->XK      = pow(10.0,0.1*xf);
               new_meas->EnSlice = pow(10.0,0.1*(s0+xf-snr));
             
