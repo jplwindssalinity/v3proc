@@ -157,7 +157,8 @@ OBJS = \
 	AttenMap.o \
 	NetCDF.o \
 	NetCDF_Attr.o \
-	NetCDF_Var.o
+	NetCDF_Var.o \
+	OS2XFix.o
 
 
 INCS = \
