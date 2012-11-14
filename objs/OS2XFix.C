@@ -24,11 +24,14 @@ OS2XFix::~OS2XFix() {
 }
 
 int OS2XFix::ReadTable(const char* filename ) {
+  if( _table_read ) {
+    fprintf(stderr,"OS2XFix::ReadTable Table already read in!\n");
+    return(0);
+  }
   
   FILE* ifp = fopen( filename, "r" );
 
-  _dx_table.resize(2);
-  
+  _dx_table.resize(2);  
   // Table has outer beam adjustment first (VV)
   fread( &_n_slices[1], sizeof(int), 1, ifp );
   fread( &_n_scans[1],  sizeof(int), 1, ifp );
@@ -66,7 +69,8 @@ int OS2XFix::FixIt( int i_pol, int i_slice, int i_scan, int i_frame,
     return(0);
   }
   // Check that we are in bounds of lookup table
-  if( i_slice < 0 || i_slice >= _n_slices[i_pol] ||
+  if( i_pol   < 0 || i_pol   >= 2                ||
+      i_slice < 0 || i_slice >= _n_slices[i_pol] ||
       i_scan  < 0 || i_scan  >= _n_scans[i_pol]  ||
       i_frame < 0 || i_frame >= _n_frames[i_pol] ) {
     return(0); // do nothing if out-of-bounds
