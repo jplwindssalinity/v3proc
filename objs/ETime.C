@@ -188,6 +188,12 @@ ETime::FromCodeB(
         return(0);
     }
 
+    // tm_year is # of years since 1900
+    tm_time.tm_year -= 1900;
+    // tm_yday (\in [0, 365]) is # days since Jan 1, but the parsed value is the day
+    // number (\in [1, 366])
+    tm_time.tm_yday--;
+
     tm_time.tm_yday += tm_time.tm_hour/24;
     tm_time.tm_hour -= 24*(tm_time.tm_hour/24);
 
