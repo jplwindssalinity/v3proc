@@ -205,8 +205,11 @@ ETime::FromCodeB(
 	// tm_yday is complete elapsed days, but we need the day that we are currently in
 	// so add 1 to make that adjustment
    	int mday = tm_time.tm_yday + 1;
-   	if (tm_time.tm_year % 4 == 0)	// leap year
-   		d_in_m[1]++;
+   	
+   	int cal_year = tm_time.tm_year+1900;
+   	if( cal_year%400 == 0 || (cal_year%100 != 0 && cal_year%4 == 0 ) ) // leap year
+   	  d_in_m[1]++;
+   	
 	int m_i;
 	for (m_i = 0; m_i < 12 && mday > d_in_m[m_i]; m_i++)
 		mday -= d_in_m[m_i];
