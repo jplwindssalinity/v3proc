@@ -62,8 +62,7 @@ int OS2XFix::ReadTable(const char* filename ) {
   return(1);
 }
 
-int OS2XFix::FixIt( int i_pol, int i_slice, int i_scan, int i_frame, 
-  double* xf, double* s0, double* snr ) {
+int OS2XFix::FixIt( int i_pol, int i_slice, int i_scan, int i_frame, double* xf, double* s0 ) {
   if( !_table_read ) {
     fprintf(stderr,"OS2XFix::FixIt: Table not read yet!\n");
     return(0);

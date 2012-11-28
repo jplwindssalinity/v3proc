@@ -46,7 +46,7 @@ public:
 	//--------//
   
   int FixIt( int i_pol,  int i_slice, int i_scan, int i_frame, 
-             double* xf, double* s0, double* snr );
+             double* xf, double* s0 );
       
 protected:
 
