@@ -858,7 +858,7 @@ main(
               double snr = -65  + 0.001547 * double(slice_snr[i_pol][slice_ind]);
               
               if( xfactor_table_file ) 
-                os2xfix.FixIt( i_pol, i_slice, i_scan, i_frame, &xf, &s0, &snr );
+                os2xfix.FixIt( i_pol, i_slice, i_scan, i_frame, &xf, &s0 );
               
               new_meas->XK      = pow(10.0,0.1*xf);
               new_meas->EnSlice = pow(10.0,0.1*(s0+xf-snr));
