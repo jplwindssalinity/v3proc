@@ -77,6 +77,5 @@ int OS2XFix::FixIt( int i_pol, int i_slice, int i_scan, int i_frame,
   }  
   *xf  += _dx_table[i_pol][i_slice][i_scan][i_frame];
   *s0  -= _dx_table[i_pol][i_slice][i_scan][i_frame];
-  *snr -= _dx_table[i_pol][i_slice][i_scan][i_frame];
   return(1);
 }  
