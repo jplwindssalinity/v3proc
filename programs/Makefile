@@ -17,7 +17,7 @@ EALIBS =		../../lib/libEAData.a
 ifneq '$(shell uname -s)' 'Linux'
     EALIBS += /sw/lib/libtiff.a
 endif
-HDFLIBS =		-L/sw/lib -lmfhdf -ldf -ljpeg -lz -lhdf5 -lsz
+HDFLIBS =	-L/sw/lib -L/usr/lib64/hdf/ -lmfhdf -ldf -ljpeg -lz -lhdf5 -lsz
 NETCDFLIBS :=   -lnetcdf -lz -lm
 LIBS =			../../lib/libSim.a
 #OMITTED_LIBS = -lnsl -lsocket -lstdc++
