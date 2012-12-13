@@ -51,31 +51,38 @@ int main( int argc, char* argv[] )
   int output_file_entered    = 0;
   int satellite_tag_entered  = 0;
   
+  float latlim[2];
+  float lonlim[2];
+  
+  latlim[0] = -90;
+  latlim[1] = 90;
+  lonlim[0] = -180;
+  lonlim[1] = 180;
+  
   int optind = 1;
   while ( (optind < argc) && (argv[optind][0]=='-') )
   {
     std::string sw        = argv[optind];
     
-    if( sw == "-i" )
-    {
+    if( sw == "-i" ) {
       ++optind;
       l2a_input_file         = argv[optind];
       l2a_input_file_entered = 1;
-    }
-    else if( sw == "-o" )
-    {
+    } else if( sw == "-o" ) {
       ++optind;
       output_file         = argv[optind];
       output_file_entered = 1;
-    }
-    else if( sw == "-s" )
-    {
+    } else if( sw == "-s" ) {
       ++optind;
       satellite_tag         = argv[optind];
       satellite_tag_entered = 1;
-    }    
-    else
-    {
+    } else if( sw == "-latlim" ) {
+      latlim[0] = atof(argv[++optind]);
+      latlim[1] = atof(argv[++optind]);
+    } else if( sw == "-lonlim" ) {
+      lonlim[0] = atof(argv[++optind]);
+      lonlim[1] = atof(argv[++optind]);
+    } else {
       printf("%s: unknown option\n",command);
       return (1);
     }
@@ -140,6 +147,8 @@ int main( int argc, char* argv[] )
     double land_flag[NUM_BEAMS];
     double inc_ang[NUM_BEAMS];
     double along_beam_idx[NUM_BEAMS];
+    double lat[NUM_BEAMS];
+    double lon[NUM_BEAMS];
     
     // initialize these quantites
     for( int i_beam = 0; i_beam < NUM_BEAMS; ++i_beam )
@@ -150,6 +159,8 @@ int main( int argc, char* argv[] )
       land_flag[i_beam]      = 0;
       inc_ang[i_beam]        = 0;
       along_beam_idx[i_beam] = 0;
+      lat[i_beam]            = 0;
+      lon[i_beam]            = 0;
     } 
     
     // Loop over the # of measurements at this wvc.
@@ -162,6 +173,11 @@ int main( int argc, char* argv[] )
       land_flag[i_beam]      = land_flag[i_beam]      + m->landFlag;
       inc_ang[i_beam]        = inc_ang[i_beam]        + m->incidenceAngle;
       along_beam_idx[i_beam] = along_beam_idx[i_beam] + m->startSliceIdx;
+      
+      double alt,alon,alat;
+      m->centroid.GetAltLonGDLat( &alt, &alon, &alat );
+      lat[i_beam] += alat*rtd;
+      lon[i_beam] += alon*rtd;
     }
     
     // Compute averages and variance of sigma0.
@@ -174,14 +190,24 @@ int main( int argc, char* argv[] )
         land_flag[i_beam]      /= double( num_obs_beam[i_beam] );
         inc_ang[i_beam]        /= double( num_obs_beam[i_beam] );
         along_beam_idx[i_beam] /= double( num_obs_beam[i_beam] );
-
+        lat[i_beam]            /= double( num_obs_beam[i_beam] );
+        lon[i_beam]            /= double( num_obs_beam[i_beam] );
+        
         double var_sig0 = ( avg_sig0sq[i_beam] - pow(avg_sig0[i_beam],2) ) *
                           double( num_obs_beam[i_beam] ) / double( num_obs_beam[i_beam] - 1 );
         
-        fprintf(output_fp,"%d %d %8.5f %10.7f %20.17f %f %f\n",
+        if(lon[i_beam]>180) lon[i_beam] -= 360;
+        if(lon[i_beam]<=-180) lon[i_beam] += 360;
+        
+        if( lon[i_beam] >= lonlim[0] && lon[i_beam] <= lonlim[1] &&
+            lat[i_beam] >= latlim[0] && lat[i_beam] <= latlim[1] ) {
+        
+          fprintf(output_fp,"%d %d %8.5f %10.7f %20.17f %f %f %f %f\n",
                 i_beam, num_obs_beam[i_beam],
                 inc_ang[i_beam]*rtd, 10*log10(avg_sig0[i_beam]), 
-                var_sig0, land_flag[i_beam], along_beam_idx[i_beam] );
+                var_sig0, land_flag[i_beam], along_beam_idx[i_beam],
+                lat[i_beam], lon[i_beam] );
+          }      
       }
     }    
   }
