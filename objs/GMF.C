@@ -1905,6 +1905,7 @@ GMF::GetVariance(
         case Meas::HH_MEAS_TYPE:
         case Meas::VH_MEAS_TYPE:
         case Meas::HV_MEAS_TYPE:
+        case Meas::C_BAND_VV_MEAS_TYPE:
             if (! kp->GetVpc(meas, trial_sigma0, &vpc))
             {
                 fprintf(stderr, "GMF::GetVariance: Error computing Vpc\n");

@@ -2310,6 +2310,11 @@ ConfigGrid(
     if( config_list->GetInt(GRID_STARTS_SOUTH_POLE_KEYWORD, &grid_starts_south_pole) )
       grid->grid_starts_south_pole = grid_starts_south_pole;
     
+    // Added to populate KP using the observed STD of measurements (ASCAT style KP)
+    int composite_use_obs_kp;
+    if( config_list->GetInt(COMPOSITE_USE_OBS_KP_KEYWORD, &composite_use_obs_kp) )
+      grid->composite_use_obs_kp = composite_use_obs_kp;
+    
     config_list->ExitForMissingKeywords();
     
     return(1);

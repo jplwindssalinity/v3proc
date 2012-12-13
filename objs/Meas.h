@@ -78,7 +78,8 @@ public:
     //-------------//
     // compositing //
     //-------------//
-
+    int CompositeObsKP(MeasList* meas_list);
+    
     //--------------------------------------------------//
     // If N is nonzero we                               //
     // compositing N consecutive meas objects starting  //

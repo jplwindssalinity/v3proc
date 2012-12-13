@@ -30,7 +30,8 @@ Grid::Grid()
     _alongtrack_size(0.0), _crosstrack_bins(0), _alongtrack_bins(0),
     _start_time(0.0), _end_time(0.0), _max_vati(0), _ati_start(0),
     _ati_offset(0), _orbit_period(0.0), _grid(NULL),_writeIndices(false),
-    _indfp(NULL),_plotMode(false), grid_starts_north_pole(0), grid_starts_south_pole(0)
+    _indfp(NULL),_plotMode(false), grid_starts_north_pole(0), grid_starts_south_pole(0),
+    composite_use_obs_kp(0)
 {
     return;
 }
@@ -949,7 +950,25 @@ Grid::ShiftForward(
                 // each sublist is composited before output
                 offsetlist->MakeMeasList(fp, &spot_measList);
                 Meas* meas = new Meas;
-                if (! meas->Composite(&spot_measList))
+                
+                // AGF modified 12/10/2012 to add option for different composition method
+                if( ( composite_use_obs_kp && !meas->CompositeObsKP(&spot_measList)) ||
+                    !meas->Composite(&spot_measList) )
+                {
+                  delete meas;
+                }
+                else
+                {
+                  if (! l2a.frame.measList.Append(meas))
+                  {
+                      fprintf(stderr,
+                          "Grid::ShiftForward: Error forming list for output\n");
+                      delete meas;
+                      return(0);
+                  }                
+                }
+                                
+/*                if (! meas->Composite(&spot_measList))
                 {
                     //fprintf(stderr, "Grid::ShiftForward: Error compositing\n");
                     delete meas;
@@ -964,7 +983,7 @@ Grid::ShiftForward(
                       delete meas;
                       return(0);
                   }
-              }
+              } */
               spot_measList.FreeContents();
             }
 

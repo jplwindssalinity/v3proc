@@ -84,6 +84,7 @@ public:
         float overlapFactor;
         int grid_starts_north_pole;
         int grid_starts_south_pole;
+        int composite_use_obs_kp;
 protected:
 
 	// resolution and sizes are in km

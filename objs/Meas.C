@@ -54,6 +54,129 @@ Meas::~Meas()
     return;
 }
 
+int Meas::CompositeObsKP(MeasList* meas_list) {
+    double sum_Ps = 0.0;
+    double sum_Ps2 = 0.0;
+    double sum_XK = 0.0;
+    double sum_EnSlice = 0.0;
+    double sum_bandwidth = 0.0;
+    Vector3 sum_centroid(0.0,0.0,0.0);
+    double sum_incidenceAngle = 0.0;
+    double sum_xk2a = 0.0;
+    double sum_xkbwb = 0.0;
+    double sum_bw2c = 0.0;
+    double sum_cos_azi_X = 0.0;
+    double sum_sin_azi_X = 0.0;
+
+    int N = 0;
+    //
+    // Using X in place of Ps when compositing Kpc assumes that sigma0 is
+    // uniform across the composite cell area.  This assumption is used
+    // below because we sum X^2 instead of Ps^2.
+    // We actually use XK which subsumes the K-factor with X.
+    //
+
+    Meas* meas;
+    Meas* meas_start;
+
+    int min_slice_idx = meas_start->startSliceIdx;
+    landFlag = 0;
+    
+    int prev_slice_idx = -9999;
+    for (meas = meas_start; meas; meas = meas_list->GetNext())
+    {
+        //-------------------------------------------------//
+        // Ensure we do not composite over missing slices. // AGF 11/1/2010
+        //-------------------------------------------------// Assumes slice-ordered L1B file....
+        if( meas != meas_start && meas->startSliceIdx != prev_slice_idx + 1 ) {
+          fprintf(stderr,
+                  "Meas::Composite: Non-consecutive slices (start, prev, curr): %d %d %d\n",
+                  min_slice_idx, prev_slice_idx, meas->startSliceIdx );
+          return(0);
+        }
+        // Stupid HACK----------------------------------------------------------
+        // This assumes that there are an even number of slices, thus none of
+        // then have a relative slice index of zero.
+        // Either this or abandon the relative slice indexing throughout.
+        prev_slice_idx = meas->startSliceIdx;
+        if( prev_slice_idx == -1 ) prev_slice_idx = 0;
+        // End Stupid HACK------------------------------------------------------
+        
+        //-------------------------------------------//
+        // Don't composite HHVH or VVHV measurements //
+        //-------------------------------------------//
+
+        if (meas->measType == VV_HV_CORR_MEAS_TYPE ||
+            meas->measType == HH_VH_CORR_MEAS_TYPE)
+        {
+            return(0);
+        }
+
+        // Check for land--tourtured logic required since landFlag is signed!
+        if( meas->landFlag == 1 || meas->landFlag == 3 )
+          if( landFlag == 0 || landFlag == 2 )
+            landFlag += 1;
+        // Check for ice        
+        if( meas->landFlag == 2 || meas->landFlag == 3 )
+          if( landFlag == 0 || landFlag == 1 )
+            landFlag += 2;
+        
+        
+        sum_Ps += (double)meas->value * (double)meas->XK;
+        sum_Ps2+= pow((double)meas->value,2) * pow((double)meas->XK,2);
+        sum_XK += (double)meas->XK;
+        sum_EnSlice += (double)meas->EnSlice;
+        sum_bandwidth += (double)meas->bandwidth;
+        sum_centroid += meas->centroid;
+        sum_incidenceAngle += (double)meas->XK * (double)meas->incidenceAngle;
+        sum_sin_azi_X += (double)meas->XK * (double)sin( meas->eastAzimuth );
+        sum_cos_azi_X += (double)meas->XK * (double)cos( meas->eastAzimuth );
+        N++;
+    }
+
+    meas = meas_list->GetHead();
+
+    //---------------------------------------------------------------------         
+    // Form the composite measurement from appropriate combinations of the
+    // elements of each slice measurement in this composite cell.
+    //---------------------------------------------------------------------
+
+    value = sum_Ps / sum_XK;
+
+    XK = sum_XK;
+    EnSlice = sum_EnSlice;
+    bandwidth = sum_bandwidth;
+    txPulseWidth = meas->txPulseWidth;
+    outline.FreeContents();    // merged outlines not done yet
+    // Weighted average of centroids (weighted by XK)
+    //centroid = sum_centroid / sum_XK;
+    centroid = sum_centroid / double(N); //offical does not weight by X AGF 11/11/2010
+    // put centroid on surface
+    double alt, lon, lat;
+    centroid.GetAltLonGDLat(&alt, &lon, &lat);
+    centroid.SetAltLonGDLat(0.0, lon, lat);
+    measType = meas->measType;    // same for all slices
+    eastAzimuth  = atan2( sum_sin_azi_X / sum_XK , sum_cos_azi_X / sum_XK );
+    if( eastAzimuth < 0 ) eastAzimuth += two_pi;
+    
+    // Weighted average of incidence angles (weighted by XK)
+    incidenceAngle = sum_incidenceAngle / sum_XK;
+    beamIdx = meas->beamIdx;    // same for all slices
+    startSliceIdx = min_slice_idx;
+    scanAngle = meas->scanAngle;        // same for all slices (from same pulse)
+    numSlices = N;
+
+    //----------------------------//
+    // Compute KP from obs var    // (variance on mean)
+    //----------------------------//
+    double this_var_mean_s0 = (sum_Ps2 / sum_XK - pow(value,2))/(double)N;
+    
+    A = this_var_mean_s0 / pow( value, 2 );
+    B = 0;
+    C = 0;
+    return(1);
+}
+
 //-----------------//
 // Meas::Composite //
 //-----------------//
