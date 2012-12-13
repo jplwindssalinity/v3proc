@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 2009, California Institute of Technology.   	//
+// Copyright (C) 2009-2012, California Institute of Technology.	//
 // U.S. Government sponsorship acknowledged.					//
 //==============================================================//
 
@@ -52,14 +52,11 @@ template class TrackerBase<unsigned short>;
 template class std::list<string>;
 template class std::map<string,string,Options::ltstr>;
 
-int main( int argc, char* argv[] )
-{
-  const char* command = no_path(argv[0]);
+int main( int argc, char* argv[] ) {
+  const char* command            = no_path(argv[0]);
+  char*       ascat_szf_filename = NULL;
+  char*       config_filename    = NULL;
   
-  std::string ascat_szf_filename;
-  std::string config_filename;
-  
-  int szf_entered         = 0;
   int config_entered      = 0;
   int debug_level_entered = 0;
   int debug_level         = 0;
@@ -87,93 +84,69 @@ int main( int argc, char* argv[] )
   //------------------------//
   // parse the command line //
   //------------------------//
-
+  
+  const char* usage_string = "-c config_file.rdf [-d debug_level]\n";
+  
   int optind = 1;
-  while ( (optind < argc) && (argv[optind][0]=='-') )
-  {
-    std::string sw        = argv[optind];
-    if( sw == "-i" )      
-    { 
-      ++optind; 
-      szf_entered         = 1; 
-      ascat_szf_filename  = argv[optind]; 
-    }
-    else if( sw == "-c" ) 
-    { 
-      ++optind; 
-      config_entered  = 1; 
-      config_filename = argv[optind]; 
-    }
-    else if( sw == "-d" ) 
-    { 
-      ++optind; 
-      debug_level_entered = 1; 
-      debug_level         = atoi(argv[optind]); 
-    }
-    else   
-    {
+  while ( (optind < argc) && (argv[optind][0]=='-') ) {
+    std::string sw = argv[optind];
+    if( sw == "-c" )
+      config_filename = argv[++optind]; 
+    else if( sw == "-d" )
+      debug_level = atoi(argv[++optind]); 
+    else {
       printf("%s: unknown option %s\n",command,sw.c_str());
-      printf("Usage: %s -i ascat_pfs_szf_file -c config_file.rdf [-d debug_level]\n",command);
+      printf("Usage: %s %s\n",command,usage_string);
       return (1);
     }
     ++optind;
   }
   
-  
-  if( szf_entered == 0 || config_entered == 0  )
-  {
-    fprintf(stderr,"%s: ERROR Must specifiy ASCAT SZF file, and the config RDF filename!\n",
-            command);
-    printf("Usage: %s -i ascat_pfs_szf_file -c config_file.rdf [-d debug_level]\n",command);
+  if( !config_filename ) {
+    fprintf(stderr,"%s: ERROR Must specifiy config RDF filename!\n", command);
+    printf("Usage: %s %s\n",command,usage_string);
     return (1);
   }
-  
-  if( debug_level > 0 )
-  {
-    printf("input file:  %s\n", ascat_szf_filename.c_str() );
-    printf("config file: %s\n", config_filename.c_str() );
-  }
-  
   
   //---------------------//
   // read in config file //
   //---------------------//
   
   ConfigList config_list;
-  if (! config_list.Read(config_filename.c_str()))
-  {
-    fprintf(stderr, "%s: error reading sim config file %s\n",
-	        command, config_filename.c_str());
+  if (! config_list.Read(config_filename)) {
+    fprintf(stderr, "%s: error reading sim config file %s\n", command, config_filename);
     exit(1);
   }
   
-  if( ! ConfigL1B(&l1b, &config_list) )
-  {
+  // Check for L1B_SZF_FILE keyword
+  ascat_szf_filename = config_list.Get("L1B_SZF_FILE");
+  if (ascat_szf_filename == NULL) {
+    fprintf(stderr, "%s: config file must specify L1B_SZF_FILE\n", command);
+    exit(1);
+  }
+  printf("%s: Using l1b SZF file: %s\n", command, ascat_szf_filename);
+  
+  if( ! ConfigL1B(&l1b, &config_list) ) {
     fprintf(stderr, "%s: error setting L1B filename from config file %s\n",
-            command, config_filename.c_str());
+            command, config_filename);
     exit(1);
   }  
   
   // open ascat file
-  ierr = an_ascat_file.open( ascat_szf_filename.c_str(), &n_recs, &n_nodes );
-  if( ierr != 0 )
-  { 
-    fprintf(stderr, "%s: ERROR opening ascat szf file %s\n",command,
-            ascat_szf_filename.c_str()); 
-    return (1);
+  if( an_ascat_file.open( ascat_szf_filename, &n_recs, &n_nodes ) != 0 ) { 
+    fprintf(stderr, "%s: ERROR opening ascat szf file %s\n",command, ascat_szf_filename); 
+    exit(1);
   }
 
   // open L1B file for writing
-  if (! l1b.OpenForWriting())
-  {
+  if (! l1b.OpenForWriting()) {
     fprintf(stderr, "%s: ERROR opening L1B file %s for writing\n", command,
            l1b.GetOutputFilename());
-    return (1);
+    exit(1);
   } 
 
   
-  if( debug_level > 0 )
-  {
+  if( debug_level ) {
     printf("ASC NODE time:    %30.8f\n",an_ascat_file.asc_node_time*24*60*60+ascat_epoch_to_qscatsim_epoch);
     printf("ASC NODE s/c R:   %12.6f %12.6f %12.6f\n",an_ascat_file.sc_pos_x_asc_node,
                                                       an_ascat_file.sc_pos_y_asc_node,
@@ -190,14 +163,18 @@ int main( int argc, char* argv[] )
 //--Set up the orbit propagator for the ASCAT orbit.
   Spacecraft     spacecraft;
   SpacecraftSim  spacecraft_sim;
-
+  
+  double lon_asc_node = atan2( an_ascat_file.sc_pos_y_asc_node, an_ascat_file.sc_pos_x_asc_node);
+  
+  lon_asc_node *= dtr;
+  
 //--Ascat orbital elements are in the MPHR header in each SZF file.
   spacecraft_sim.DefineOrbit( an_ascat_file.asc_node_time*24*60*60
                               +ascat_epoch_to_qscatsim_epoch,       // epoch time                  [sec]
                               an_ascat_file.semi_major_axis*1e-3,   // semi-major axis             [km]
                               an_ascat_file.eccentricity,           // eccentricity                [--]
                               an_ascat_file.inclination,            // inclination                 [deg]
-                              an_ascat_file.ra_asc_node,            // longitude of ascending node [deg]
+                              lon_asc_node,            // longitude of ascending node [deg]
                               an_ascat_file.perigee_argument,       // argument of perigree        [deg]
                               an_ascat_file.mean_anomoly);          // mean anomoly at epoch       [deg]
   
@@ -224,8 +201,7 @@ int main( int argc, char* argv[] )
   spacecraft_sim.Initialize( an_ascat_file.asc_node_time * 24.0 * 60.0 * 60.0 
                            + ascat_epoch_to_qscatsim_epoch );
   
-  for( int i_rec = 0; i_rec < n_recs; ++i_rec )
-  {
+  for( int i_rec = 0; i_rec < n_recs; ++i_rec ) {
     // Flush whatever is in the spotList object.
     l1b.frame.spotList.FreeContents();
 
@@ -242,8 +218,7 @@ int main( int argc, char* argv[] )
     
     double record_time_sec = an_ascat_szf_node.tm * 24.0 * 60.0 * 60.0+ascat_epoch_to_qscatsim_epoch;
     
-    if( i_rec == 1 || i_rec == n_recs-1 )
-    {
+    if( i_rec == 1 || i_rec == n_recs-1 ) {
       ETime t_bound;
       char  time_inst_str[CODE_A_TIME_LENGTH];
       char  time_grid_str[CODE_A_TIME_LENGTH];
@@ -251,8 +226,7 @@ int main( int argc, char* argv[] )
       t_bound.SetTime( record_time_sec );
       t_bound.ToCodeA( &time_inst_str[0] );
       
-      if( i_rec == 1 )
-      {
+      if( i_rec == 1 ) {
         t_bound.SetTime(record_time_sec-5*60);
         t_bound.ToCodeA( &time_grid_str[0] );
         
@@ -260,9 +234,7 @@ int main( int argc, char* argv[] )
         
         fprintf( stdout, "INSTRUMENT_START_TIME = %s\n", time_inst_str );
         fprintf( stdout, "GRID_START_TIME       = %s\n", time_grid_str );
-      }
-      else
-      {
+      } else {
         t_bound.SetTime(record_time_sec+5*60);
         t_bound.ToCodeA( &time_grid_str[0] );
         
@@ -292,8 +264,7 @@ int main( int argc, char* argv[] )
     
     spacecraft.attitude.SetRPY( roll, pitch, yaw );
     
-    for( int i_beam = 0; i_beam < 6; ++i_beam )
-    {
+    for( int i_beam = 0; i_beam < 6; ++i_beam ) {
       MeasSpot* new_meas_spot = new MeasSpot();
       
       new_meas_spot->time         = record_time_sec;
@@ -314,10 +285,7 @@ int main( int argc, char* argv[] )
       SC_nadir = spacecraft.orbitState.rsat.Nadir();
       SC_nadir.GetAltLonGDLat( &sc_nadir_alt, &sc_nadir_lon, &sc_nadir_lat );
       
-      for( int i_node = 0; i_node < n_nodes; ++i_node )
-      {
-        Meas* new_meas = new Meas();
-        
+      for( int i_node = 0; i_node < n_nodes; ++i_node ) {        
         an_ascat_file.get_node( i_node, i_beam, &an_ascat_szf_node );
         
         // Check that inc angle is in range for given beam
@@ -325,12 +293,9 @@ int main( int argc, char* argv[] )
         //
         // EUMETSAT POLAR SYSTEM/MetOp Research Announcement of Opportunity
         // Scientific Exploitation of EPS Data & Products 9 June 2004
-        if( i_beam == 1 || i_beam == 4 ) // middle beams
-        {
-          if( an_ascat_szf_node.t0 < 25.0 || an_ascat_szf_node.t0 > 53.0 ) continue;
-        }
-        else  // forward or aft looking beams.
-        {
+        if( i_beam == 1 || i_beam == 4 ) { // middle beams
+          if( an_ascat_szf_node.t0 < 25.0 || an_ascat_szf_node.t0 > 55.0 ) continue;
+        } else  { // forward or aft looking beams.
           if( an_ascat_szf_node.t0 < 33.7 || an_ascat_szf_node.t0 > 64.0 ) continue;
         }
         // Check that this node does not have odd values in and on some flags.
@@ -343,24 +308,18 @@ int main( int argc, char* argv[] )
             an_ascat_szf_node.fgen2 == 3     )
           continue;        
 
-        if( an_ascat_szf_node.s0 > 30 )
-        {
+        if( an_ascat_szf_node.s0 > 30 ) {
           int dummy = 0; // break point for debugging...
         }
+
+        Meas* new_meas = new Meas();
         
         new_meas->value = pow( 10.0, 0.1 * an_ascat_szf_node.s0 ); // linear units for simga-0
-        
-        //new_meas->XK = 
-        //new_meas->EnSlice = 
-        //new_meas->bandwidth = 
-        //new_meas->txPulseWidth = 
-        
+                
         if( an_ascat_szf_node.fgen2 >= 2 )
           new_meas->landFlag = 1;
         else
           new_meas->landFlag = 0;
-        
-        //new_meas->outline = 
                 
         new_meas->centroid.SetAltLonGDLat( 0.0,
                                            an_ascat_szf_node.lon * dtr,
@@ -414,7 +373,7 @@ int main( int argc, char* argv[] )
         
         inc_deg = new_meas->incidenceAngle * rtd;
         
-        // these values are not totally refined; definitly there is some room for improvement...
+        // these values are not totally refined; definitely there is some room for improvement...
         // 12-9-2009 AGF
         n_looks = 2.89*pow(10,-4)*pow(inc_deg,3) 
                 - 2.11*pow(10,-2)*pow(inc_deg,2) 
@@ -426,6 +385,10 @@ int main( int argc, char* argv[] )
                       + 1.13*pow(10,1) - 2;
         
         sigma_nesz = pow(10,0.1*sigma_nesz_dB);
+
+        new_meas->XK = 1.0;
+        new_meas->EnSlice = new_meas->XK * sigma_nesz;
+
         
         new_meas->A = 1.0 + 1.0 / n_looks;
         new_meas->B = 2 * sigma_nesz / n_looks;
@@ -440,33 +403,28 @@ int main( int argc, char* argv[] )
       l1b.frame.spotList.Append(new_meas_spot);
     }
     
-    // write a data rec
-    if( ! l1b.WriteDataRec() )
-    {
+    // write data rec
+    if( ! l1b.WriteDataRec() ) {
       fprintf(stderr, "%s: writing to %s failed.\n", command, l1b.GetOutputFilename() );
-      return (1);
+      exit(1);
     }
   }
   
   l1b.Close();
   
   char* ephemeris_filename = config_list.Get(EPHEMERIS_FILE_KEYWORD);
-  if (ephemeris_filename == NULL)
-  {
-    fprintf(stderr, "%s: ERROR getting ephemeris filename from config file.\n",
-            command);
+  if (ephemeris_filename == NULL) {
+    fprintf(stderr, "%s: ERROR getting ephemeris filename from config file.\n", command);
+    exit(1);
   }
   // open ephem file for writing.
   FILE* eph_fp = fopen(ephemeris_filename, "w");
-  if (eph_fp == NULL)
-  {
-    fprintf(stderr, "%s: ERROR opening ephemeris file %s\n", command,
-            ephemeris_filename);
+  if (eph_fp == NULL) {
+    fprintf(stderr, "%s: ERROR opening ephemeris file %s\n", command,ephemeris_filename);
     exit(1);
   }  
   
-  spacecraft_sim.LocationToOrbit( sc_lon_asc_node*rtd, 
-                                  sc_lat_asc_node*rtd, 1 );
+  spacecraft_sim.LocationToOrbit( sc_lon_asc_node*rtd, sc_lat_asc_node*rtd, 1 );
   
   spacecraft_sim.Initialize( an_ascat_file.asc_node_time * 24.0 * 60.0 * 60.0 
                            + ascat_epoch_to_qscatsim_epoch );
@@ -476,8 +434,7 @@ int main( int argc, char* argv[] )
   int NUM_MIN = ceil( (grid_end_time.GetTime()-grid_start_time.GetTime())/60);
   
   // Add 20 min to both ends
-  for( int i_min = -20; i_min <= NUM_MIN+20; ++i_min ) 
-  {
+  for( int i_min = -20; i_min <= NUM_MIN+20; ++i_min )  {
     double curr_time_sec = grid_start_time.GetTime() + 60*double(i_min);
     
     spacecraft_sim.UpdateOrbit( curr_time_sec, &spacecraft );
