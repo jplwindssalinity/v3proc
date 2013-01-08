@@ -859,6 +859,15 @@ main(
               
               if( xfactor_table_file ) 
                 os2xfix.FixIt( i_pol, i_slice, i_scan, i_frame, &xf, &s0 );
+
+	      //put in incidence angle adjustment
+	      //if(i_pol==0){
+	      // xf-=0.147*(i_slice-3);
+	      // s0+=0.147*(i_slice-3);
+	      //}else{
+	      // xf-=0.0329*(i_slice-5);
+	      // s0+=0.0329*(i_slice-5);
+	      //}
               
               new_meas->XK      = pow(10.0,0.1*xf);
               new_meas->EnSlice = pow(10.0,0.1*(s0+xf-snr));
@@ -873,8 +882,20 @@ main(
               new_meas->centroid.SetAltLonGDLat( 0.0, tmp_lon, tmp_lat );
 
               // Set inc angle
-              new_meas->incidenceAngle = dtr*(46+0.0002451*double(slice_inc[i_pol][slice_ind]));    
-              
+	      if( xfactor_table_file ) {
+		//make all slices have same inc angle as high-gain slice
+		int HG_slice_ind;
+		if ( i_pol==1 ) {
+		  HG_slice_ind=5;
+		}else{
+		  HG_slice_ind=3;
+		}
+		new_meas->incidenceAngle = dtr*(46+0.0002451*double(slice_inc[i_pol][HG_slice_ind])); 
+	      }else{
+		//just populate each slice with inc angle from hdf 
+		new_meas->incidenceAngle = dtr*(46+0.0002451*double(slice_inc[i_pol][slice_ind]));    
+              }
+
               // Get attenuation map value
               float atten_dB = 0;
               if( use_atten_map )
