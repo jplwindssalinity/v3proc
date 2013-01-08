@@ -1017,67 +1017,7 @@ main(
       //if( i_frame % 32 == 0 ) printf("Wrote %d frames of %d\n", i_frame, num_l1b_frames);
     }
     // Close /science_data/ group.
-	
-	
-	//--Overwrite ephem.dat using orbital elements since the OAT data
-	//--does not seem to be usable. 2012-02-14 AGF
-//     Spacecraft    spacecraft;
-//     SpacecraftSim spacecraft_sim;    
-// 	double attr_lon_dec_node;
-// 	double attr_orbit_period;
-// 	double attr_orbit_inc;
-// 	double attr_orbit_semi_major;
-// 	double attr_orbit_ecc;
-// 	double t_dec_node;
-// 
-// 	if( !read_orbit_elements_from_attr_os2( g_id, attr_lon_dec_node,
-//       attr_orbit_period, attr_orbit_inc, attr_orbit_semi_major,
-//       attr_orbit_ecc, t_dec_node) ) {
-//     	fprintf(stderr,"Error reading orbit elements from HDF file\n");
-//     	exit(1);
-//     }
-//     
-//     spacecraft_sim.DefineOrbit( t_dec_node, 
-//                                 attr_orbit_semi_major, 
-//                                 attr_orbit_ecc, 
-//                                 attr_orbit_inc,
-//                                 attr_lon_dec_node, 
-//                                 90.0, 
-//                                 0.0 );
-//                                 
-//     spacecraft_sim.LocationToOrbit( attr_lon_dec_node, 0.0, -1 );
-//     spacecraft_sim.Initialize( t_dec_node );
-// 
-// 	// Create Ephemeris file from orbit elements
-//     ETime  etime_base, etime_start, etime_end;
-//     double time_base,  time_start,  time_end;
-//     
-//     etime_base.FromCodeB("1970-001T00:00:00.000");
-//     time_base = (double)etime_base.GetSec() + (double)etime_base.GetMs()/1000;
-//     
-//     init_string( frame_time_str, 64 );
-//     strcpy(frame_time_str,sst[0]);
-//     etime_start.FromCodeB(frame_time_str);
-//     time_start = (double)etime_start.GetSec() 
-//                + (double)etime_start.GetMs()/1000 - time_base;
-//     
-//     init_string( frame_time_str, 64 );
-//     strcpy(frame_time_str,sst[num_l1b_frames-1]);
-//     etime_end.FromCodeB(frame_time_str);
-//     time_end = (double)etime_end.GetSec() 
-//              + (double)etime_end.GetMs()/1000 - time_base;
-// 
-// 	double t_ephem = time_start - 20;
-// 	
-// 	FILE *ephem_fp = fopen("ephem.dat","w");
-// 	while( t_ephem < time_end + 20 ) {
-// 	  spacecraft_sim.UpdateOrbit( t_ephem, &spacecraft );
-// 	  //ephem.GetOrbitState( t_ephem, EPHEMERIS_INTERP_ORDER, &spacecraft.orbitState );
-// 	  spacecraft.orbitState.Write(ephem_fp); 	  
-// 	  t_ephem += 1;
-// 	}
-// 	fclose(ephem_fp);	
-	
+
 	H5Gclose(g_id);
 	H5Fclose(h_id);
 	
