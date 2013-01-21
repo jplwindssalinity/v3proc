@@ -802,7 +802,7 @@ function qs_l2c () {
     L2BC_FILE="`ls *.L2BC.nc`"
     L2C_FILE="`ls qs_l2c*.nc`"
 
-cat <<EOF >> "$CURL_DIV_CFG"
+cat <<EOF > "$CURL_DIV_CFG"
 Usage: makeCurlDivergence commandFile
 filtered l2bc file                              = $L2C_FILE ! input/output netcdf file
 estimation window size                          = 3 ! size of the estimation window for curl divergence (odd > 1)
@@ -814,7 +814,7 @@ flag 1 bit position                             = 15 ! flag 1 bit index to check
 flag 1 bit value                                = 0 ! flag 1 bit value for good data
 EOF
 
-cat <<EOF >> "$FILTERED_WINDS_CFG"
+cat <<EOF > "$FILTERED_WINDS_CFG"
 unfiltered l2bc file                            = $L2BC_FILE ! input netcdf file
 filtered l2bc file                              = $L2C_FILE ! output netcdf file
 smoothing window size                           = 3 ! size of the smoothing window

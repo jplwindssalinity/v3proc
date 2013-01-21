@@ -188,11 +188,14 @@ function os2_reproc_stage () {
     echo -n "Rev: "
     read REV ; tty > /dev/null 2>&1; 
         [[ $? -eq 0 ]] || echo "$REV"
+    echo -n "Year: "
+    read YEAR ; tty > /dev/null 2>&1;
+        [[ $? -eq 0 ]] || echo "$YEAR"
     echo -n "L1B HDF Directory: "
     read DIR_OS2L1B_HDF; tty > /dev/null 2>&1; 
         [[ $? -eq 0 ]] || echo "$DIR_OS2L1B_HDF"
 
-    L1B_H5_BASE_DIR=/u/potr-r1/fore/ISRO/L1B_v1.3_all
+    L1B_H5_BASE_DIR=/u/polecat-r0/fore/ISRO/L1B/$YEAR
 
     mkdir -p "$DIR_OS2L1B_HDF" > /dev/null 2>&1
     cd "$DIR_OS2L1B_HDF"
@@ -688,7 +691,8 @@ function os2_reproc_execute_automated_cmd () {
 
     case "$CMD" in 
     STAGE)
-        INPUT="$REV\n$L1B_HDF_DIR\n"
+        YEAR=2010
+        INPUT="$REV\n$YEAR\n$L1B_HDF_DIR\n"
         ;;
     GENERATE)
         INPUT="$REV\n$L1B_HDF_DIR\n$OUTPUT_DIR\n$GENERIC_CFG\n"
@@ -924,7 +928,7 @@ function os2_reproc_by_file () {
         echo "$REV,$CMD,$UNIQ,$START" >> "$PROC_FILE"
         unlock "$PROC_LOCK"
 
-        # Delete the comamnd from the file so no one else tries 
+        # Delete the command from the file so no one else tries 
         # to execute it
         sed -i "/$CMD_LINE/d" "$CMD_FILE"       
 
