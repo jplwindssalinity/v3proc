@@ -25,12 +25,14 @@
 Libraries and functions to process Oceansat-II Scatterometer wind data.
 '''
 
+import argparse
 import exceptions
 import fcntl
 import glob
 import inspect
 import logging
 import math
+import Queue
 import os
 import re
 import select
@@ -38,9 +40,14 @@ import shutil
 import socket
 import subprocess
 import sys
+import threading
 import time
 
+from multiprocessing.managers import SyncManager
+
 log = logging.getLogger(__name__)
+
+sys_log = logging.getLogger(__name__ + '.sys')
 
 # Default parameters
 _MATLAB_DIRS = ["/u/potr-r0/fore/ISRO/mat",
@@ -68,7 +75,7 @@ def callMatlab(*commands):
 
     # Add in the commands
     matstr += ''.join(commands)
-    
+
     # Call Matlab
     process = subprocess.Popen(['matlab-7.11', '-nodisplay'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -124,9 +131,10 @@ class OceanSAT2Rev(object):
             'l1b': "./L1B/",
             'l2b': "./L2B/",
             'log': "./log/",
-            'out': "./podaac/",
+            'out': "./outdir/",
+            'podaac': "./podaac/",
             'ecmwf': "/u/potr-r0/fore/ECMWF/nwp1/",
-            'work': "/tmp/"
+            'work': "/dev/shm/"
             }
 
     common_files = {'times': "/u/polecat-r0/fore/ISRO/orb_ele/{0}_orbit_ele/rev_tstart_teqa_long.txt",
@@ -150,7 +158,7 @@ class OceanSAT2Rev(object):
         self.year = str(year)
         self.rev = str(rev)
 
-        self._keep_log = keep_log
+        self.keep_log = keep_log
 
         # Create the file logger
         logdir = os.path.join(self.common_dirs['log'], self.year, self.rev)
@@ -177,12 +185,9 @@ class OceanSAT2Rev(object):
 
         logExit()
 
-
     def __del__(self):
-        self._handler.close()
-        if not self._keep_log:
-            os.remove(self._logfile)
-
+        if self._handler is not None:
+            self.teardown()
 
     def build(self):
         '''Build object configuration variables (call after changing an
@@ -192,6 +197,8 @@ class OceanSAT2Rev(object):
         # Define working and output directories
         self._work = {'/': os.path.join(self.common_dirs['work'], self.year,
             self.rev)}
+        self._podaac = os.path.join(self.common_dirs['podaac'], self.year,
+                self.rev, '')
         self._out = os.path.join(self.common_dirs['out'], self.year, self.rev,
                 '')
 
@@ -217,12 +224,18 @@ class OceanSAT2Rev(object):
                 p = [x.strip() for x in line.split('=')]
                 if len(p) == 2:
                     k,v = p
-                    if k in ['L2A_FILE', 'L2B_FILE']:
+                    if k in ['L1B_FILE', 'L2A_FILE', 'L2B_FILE', 'EPHEMERIS_FILE']:
                         self._files[k] = v
 
         # Cache working version of the file names
         for i,v in self._files.iteritems():
             self._work[i] = os.path.join(self._work['/'], v)
+
+        # Bias corrections per S. Jaruwatanadilok 16 Jan 2013
+        if self.rev <= "04796_04797":
+            self._vbias, self._hbias = "-0.2023", "0.0235"
+        else:
+            self._vbias, self._hbias = "0.3036", "0.5296"
 
         logExit()
 
@@ -249,7 +262,7 @@ class OceanSAT2Rev(object):
             closest_nwp = lines[-1].strip()
 
         nudge_file = self._get_nudgefield(closest_nwp)
-        
+
         # Create a "re.sub" filter to build this rev's .rdf
         cwd = os.getcwd() + '/'
         def xform(line):
@@ -277,15 +290,9 @@ class OceanSAT2Rev(object):
         logEntry()
         self._advertise("Converting L1B HDF")
 
-        # Bias corrections per S. Jaruwatanadilok 16 Jan 2013
-        if self.rev <= "04796_04797":
-            vbias, hbias = "-0.2023", "0.0235"
-        else:
-            vbias, hbias = "0.3036", "0.5296"
-
         logSubprocess(self._work['/'], "l1b_isro_to_l1b_v1.3", "-c",
-                self._files['cfg'], "-hhbias", hbias, "-vvbias", vbias,
-                '-xf_table', self.common_files['xfactor'])
+                self._files['cfg'], "-hhbias", self._hbias, "-vvbias",
+                self._vbias, '-xf_table', self.common_files['xfactor'])
 
         logExit()
 
@@ -296,7 +303,7 @@ class OceanSAT2Rev(object):
         self._advertise("Converting L1B")
         logSubprocess(self._work['/'], "l1b_to_l2a", self._files['cfg'])
         logExit()
-    
+
 
     def fix_isro_composites(self):
         '''Convert ISRO L2A composites.'''
@@ -322,7 +329,9 @@ class OceanSAT2Rev(object):
         self._advertise("Converting L2B")
         logSubprocess(self._work['/'], "os2_l2b_to_netcdf", "--l1bhdf",
                 self._files['l1bhdf'], "--nc", self._files['nc'], "--l2b",
-                self._files['L2B_FILE'], '--times', self._times)
+                self._files['L2B_FILE'], '--times', self._times, '--hhbias',
+                self._hbias, "--vvbias", self._vbias, '--xfact',
+                self.common_files['xfactor'])
 
         logExit()
 
@@ -352,8 +361,14 @@ class OceanSAT2Rev(object):
         '''Delete intermediate files.'''
         logEntry()
         self._advertise("Cleaning")
+
+        safe = ['md5', 'gz', 'cfg']
+
+        if (level >= 1):
+            safe.append('L2B_FILE')
+
         for i,v in self._files.iteritems():
-            if i not in ['md5', 'gz', 'cfg']:
+            if i not in safe:
                 try:
                     os.remove(self._work[i])
                 except exceptions.OSError as e:
@@ -373,6 +388,15 @@ class OceanSAT2Rev(object):
         shutil.rmtree(self._out, ignore_errors=True)
         shutil.copytree(self._work['/'], self._out)
         shutil.rmtree(self._work['/'], ignore_errors=True)
+
+        shutil.rmtree(self._podaac)
+        makedirs(self._podaac)
+
+        for f in ['gz', 'md5']:
+            src = os.path.join(self._out, self._files[f])
+            dst = os.path.join(self._podaac, self._files[f])
+            os.link(src, dst)
+
         logExit()
 
 
@@ -394,11 +418,21 @@ class OceanSAT2Rev(object):
         '''Print a string with rev and time info.'''
         print ' '.join([string, self.rev, time.strftime("%Y%jT%H%M%S")])
 
+
+    def teardown(self):
+        log.removeHandler(self._handler)
+        self._handler.close()
+        self._handler = None
+        shutil.rmtree(self._work['/'], ignore_errors=True)
+        if not self.keep_log:
+            os.remove(self._logfile)
+
+
     @classmethod
     def _get_nudgefield(cls, nudge):
         '''
         Return the filename for the closest nudge field file.
-        
+
         Keyword arguments:
         nudge -- the desired YYYYDDDHH (w/ 06 | HH)
         '''
@@ -448,10 +482,122 @@ class OceanSAT2Rev(object):
         logExit()
 
 
-def main():
+def make_server(addr=('', 10000), authkey=''):
+    class Server(SyncManager): pass
+
+    j = Queue.Queue()
+    l = threading.Lock()
+    Server.register('jobs', callable=lambda: j)
+    Server.register('log', callable=lambda: l)
+
+    return Server(addr, authkey)
+
+def log_call(log_call):
+    def doit(text):
+        log_call(text)
+        map(lambda x: x.flush(), log_call.__self__.handlers)
+    return doit
+
+class dummyServer():
+    def log(self):
+        return threading.Lock()
+
+def runjob(job, server=None):
+    year,revid = job
+    rev = OceanSAT2Rev(year=year, rev=revid)
+
+    if server is None:
+        server = dummyServer()
+
+    try:
+        print job
+        rev.process()
+        call_with_lock(log_call(sys_log.info), server.log(),
+                ': '.join([revid, 'success']))
+    except Exception as e:
+        rev.keep_log = True
+        call_with_lock(log_call(sys_log.error), server.log(),
+                ': '.join([revid, str(e)]))
+        # Deal with errno ENOSPC
+
+    rev.teardown()
+
+
+def runclient(addr=('', 10000)):
+    setup_logs()
+
+    server = make_server(addr=addr)
+    server.connect()
+    jobs_q = server.jobs()
+
+    while not jobs_q.empty():
+        job = jobs_q.get()
+        runjob(job, server)
+        jobs_q.task_done()
+
+
+def runserver(jobs, addr=('', 10000)):
+
+    server = make_server(addr=addr)
+
+    server.start()
+    jobs_q = server.jobs()
+
+    for c in jobs:
+        jobs_q.put(c)
+
+    jobs_q.join()
+    server.shutdown()
+
+
+def setup_logs():
+    class HostnameFilter(logging.Filter):
+        hostname = socket.gethostname()
+        def filter(self, record):
+            record.hostname = self.hostname
+            return True
+
+    handler = logging.FileHandler("./processing.log")
+    handler.setFormatter(logging.Formatter(
+        fmt="%(levelname)s %(hostname)s(%(process)d) %(asctime)s.%(msecs)03d %(message)s",
+        datefmt="%Y%jT%H:%M:%S"))
+    sys_log.addFilter(HostnameFilter())
+    sys_log.addHandler(handler)
+    sys_log.setLevel(logging.INFO)
+
+
+def call_with_lock(fcall, lock, text=''):
+    print "Logging"
+    lock.acquire()
+    fcall(text)
+    lock.release()
+
+
+def test():
     logging.basicConfig(level=logging.DEBUG)
     rev = OceanSATRev(year=2010, rev='03297_03298')
     rev.all()
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Process Oceansat-II Scatterometer Winds.')
+    parser.add_argument('--file', default=None, type=file, help='config file')
+    parser.add_argument('--server', help='server:port')
+    args = parser.parse_args()
+
+    host,port = args.server.split(':')
+    addr = (host, int(port))
+    print addr
+
+    if args.file is not None:
+        commands = []
+        for line in args.file:
+            x,y = line.strip().split()
+            commands.append((x,y))
+        runserver(jobs=commands, addr=addr)
+
+    else:
+        runclient(addr=addr)
 
 if __name__ == '__main__':
     main()
