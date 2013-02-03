@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 ######################################################################
 #
 # ORIGINAL AUTHOR: Thomas Werne
@@ -357,7 +357,7 @@ class OceanSAT2Rev(object):
 
         logExit()
 
-    def clean(self, level=1):
+    def clean(self, level=0):
         '''Delete intermediate files.'''
         logEntry()
         self._advertise("Cleaning")
@@ -387,9 +387,8 @@ class OceanSAT2Rev(object):
         self._advertise("Moving")
         shutil.rmtree(self._out, ignore_errors=True)
         shutil.copytree(self._work['/'], self._out)
-        shutil.rmtree(self._work['/'], ignore_errors=True)
 
-        shutil.rmtree(self._podaac)
+        shutil.rmtree(self._podaac, ignore_errors=True)
         makedirs(self._podaac)
 
         for f in ['gz', 'md5']:
