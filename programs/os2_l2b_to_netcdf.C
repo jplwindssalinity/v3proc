@@ -104,10 +104,12 @@ using namespace std;
 #define IS_SET(var, mask) ((var) & (mask))
 #define IS_NOT_SET(var, mask) (!IS_SET(var, mask))
 
-#define DATASET_TITLE "Oceansat-II Level 2B Ocean Wind Vectors in 12.5km slice composites"
-#define BUILD_ID "v1_0_0:C"
+#define DATASET_TITLE "Oceansat-II Level 2B Ocean Wind Vectors in 12.5km Slice Composites"
+#define BUILD_ID "v2_0_0:A"
+#define VERSION_ID "2"
 
-#define EPOCH "1999-001T00:00:00.000 UTC"
+#define EPOCH    "1999-001T00:00:00.000 UTC"
+#define EPOCH_CF "1999-1-1 0:0:0"
 
 // Used to separate date-time strings from YYYY-DDDTHH:MM:SS.sss into
 // {YYYY-DDD,HH:MM:SS.sss}
@@ -159,6 +161,10 @@ typedef struct {
     const char *nc_file;
     const char *l1bhdf_file;
     const char *times_file;
+    const char *xfact_table;
+    char *revtag;
+    float hpol_adj;
+    float vpol_adj;
 } l2b_to_netcdf_config;
 
 typedef struct {
@@ -307,7 +313,7 @@ int main(int argc, char **argv) {
         retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         retrieved_speed_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<float> *retrieved_dir_var = new NetCDF_Var<float>("retrieved_wind_direction", ncid, 2, dimensions, dimensions_sz);
-        float retrieved_dir_fill = -9999.0f, retrieved_dir_min = 0.0f, retrieved_dir_max = 100.0f;
+        float retrieved_dir_fill = -9999.0f, retrieved_dir_min = 0.0f, retrieved_dir_max = 360.0f;
         retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", retrieved_dir_fill));
         retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_min", retrieved_dir_min));
         retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_max", retrieved_dir_max));
@@ -327,7 +333,7 @@ int main(int argc, char **argv) {
         rain_impact_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<double> *time_var = new NetCDF_Var<double>("time", ncid, 1, dimensions, dimensions_sz);
         time_var->AddAttribute(new NetCDF_Attr<char>("long_name", "date and time"));
-        time_var->AddAttribute(new NetCDF_Attr<char>("units", "seconds since " EPOCH));
+        time_var->AddAttribute(new NetCDF_Attr<char>("units", "seconds since " EPOCH_CF));
     NetCDF_Var<short> *flags_var = new NetCDF_Var<short>("flags", ncid, 2, dimensions, dimensions_sz);
         short flags_fill = 0x7fff, flags_min = 0, flags_max = 32643;
         flags_var->AddAttribute(new NetCDF_Attr<short>("_FillValue", flags_fill));
@@ -379,7 +385,7 @@ int main(int argc, char **argv) {
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<float> *cross_track_bias_var = new NetCDF_Var<float>("cross_track_wind_speed_bias", ncid, 2, dimensions, dimensions_sz);
-        float cross_track_bias_fill = -9999.0f, cross_track_bias_min = 0.0f, cross_track_bias_max = 100.f;
+        float cross_track_bias_fill = -9999.0f, cross_track_bias_min = -100.0f, cross_track_bias_max = 100.f;
         cross_track_bias_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", cross_track_bias_fill));
         cross_track_bias_var->AddAttribute(new NetCDF_Attr<float>("valid_min", cross_track_bias_min));
         cross_track_bias_var->AddAttribute(new NetCDF_Attr<float>("valid_max", cross_track_bias_max));
@@ -388,7 +394,7 @@ int main(int argc, char **argv) {
         cross_track_bias_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         cross_track_bias_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<float> *atm_spd_bias_var = new NetCDF_Var<float>("atmospheric_speed_bias", ncid, 2, dimensions, dimensions_sz);
-        float atm_spd_bias_fill = -9999.0f, atm_spd_bias_min = 0.0f, atm_spd_bias_max = 100.f;
+        float atm_spd_bias_fill = -9999.0f, atm_spd_bias_min = -100.0f, atm_spd_bias_max = 100.f;
         atm_spd_bias_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", atm_spd_bias_fill));
         atm_spd_bias_var->AddAttribute(new NetCDF_Attr<float>("valid_min", atm_spd_bias_min));
         atm_spd_bias_var->AddAttribute(new NetCDF_Attr<float>("valid_max", atm_spd_bias_max));
@@ -592,12 +598,15 @@ int main(int argc, char **argv) {
 
     l2b.Close();
 
+    free(run_config.revtag);
+    run_config.revtag = NULL;
+
     return(0);
 }
 
 static int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
 
-    const char* usage_array = "--l2b=<l2b file> --nc=<nc file> --l1bhdf=<l1b hdf source file> --times=<times file>";
+    const char* usage_array = "--l2b=<l2b file> --nc=<nc file> --l1bhdf=<l1b hdf source file> --times=<times file> --xfact=<xfactor table> --hhbias=<hpol bias correction> --vvbias=<vpol bias correction>";
     int opt;
 
     /* Initialize configuration structure */
@@ -606,6 +615,10 @@ static int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config
     config->nc_file     = NULL;
     config->l1bhdf_file = NULL;
     config->times_file  = NULL;
+    config->hpol_adj    = -NAN;
+    config->vpol_adj    = -NAN;
+    config->xfact_table = NULL;
+    config->revtag      = NULL;
 
     struct option longopts[] =
     {
@@ -613,6 +626,10 @@ static int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config
         { "nc",       required_argument, NULL, 'o'},
         { "l1bhdf",   required_argument, NULL, 's'},
         { "times",    required_argument, NULL, 't'},
+        { "hhbias",   required_argument, NULL, 'h'},
+        { "vvbias",   required_argument, NULL, 'v'},
+        { "xfact",    required_argument, NULL, 'x'},
+        { "revtag",   required_argument, NULL, 'r'},
         {0, 0, 0, 0}
     };
 
@@ -630,12 +647,27 @@ static int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config
             case 't':
                 config->times_file = optarg;
                 break;
+            case 'h':
+                config->hpol_adj = atof(optarg);
+                break;
+            case 'v':
+                config->vpol_adj = atof(optarg);
+                break;
+            case 'x':
+                config->xfact_table = optarg;
+                break;
+            case 'r':
+                free(config->revtag);
+                config->revtag = strdup(optarg);
+                break;
         }
 
     }
 
     if (config->l2b_file == NULL || config->nc_file == NULL
-            || config->l1bhdf_file == NULL || config->times_file == NULL) {
+            || config->l1bhdf_file == NULL || config->times_file == NULL
+            || config->xfact_table == NULL || config->hpol_adj == -NAN
+            || config->vpol_adj == -NAN) {
 
         fprintf(stderr, "%s: %s\n", config->command, usage_array);
         return -1;
@@ -696,17 +728,29 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("title", DATASET_TITLE));
     global_attributes.push_back(new NetCDF_Attr<char>("institution", "JPL"));
     global_attributes.push_back(new NetCDF_Attr<char>("source", "Oceansat-II Scatterometer"));
-    global_attributes.push_back(new NetCDF_Attr<char>("comment", ""));
+    global_attributes.push_back(new NetCDF_Attr<char>("comment", "Oceansat-II Level 1B Data Processed to Winds Using QuikSCAT v3 Algorithms"));
     global_attributes.push_back(new NetCDF_Attr<char>("history", history));
+
+    // TODO
+    global_attributes.push_back(new NetCDF_Attr<float>("hpol_adj", cfg->hpol_adj));
+    global_attributes.push_back(new NetCDF_Attr<float>("vpol_adj", cfg->vpol_adj));
+    global_attributes.push_back(new NetCDF_Attr<char>("xfactor_adj_table", cfg->xfact_table));
 
     global_attributes.push_back(new NetCDF_Attr<char>("Conventions", "CF-1.5"));
     global_attributes.push_back(new NetCDF_Attr<char>("data_format_type", "NetCDF Classic"));
     global_attributes.push_back(new NetCDF_Attr<char>("producer_agency", "NASA"));
     global_attributes.push_back(new NetCDF_Attr<char>("build_id", BUILD_ID));
     global_attributes.push_back(new NetCDF_Attr<char>("ancillary_data_descriptors", ""));
+    global_attributes.push_back(new NetCDF_Attr<char>("processing_level", "L2B"));
+
+    char timestr[9];
+    strftime(timestr, sizeof(timestr), "%Y-%j", gmtime(&now));
+    global_attributes.push_back(new NetCDF_Attr<char>("creation_date", timestr));
+    strftime(timestr, sizeof(timestr), "%T", gmtime(&now));
+    global_attributes.push_back(new NetCDF_Attr<char>("creation_time", timestr));
 
     global_attributes.push_back(new NetCDF_Attr<char>("LongName", DATASET_TITLE));
-    global_attributes.push_back(new NetCDF_Attr<char>("ShortName", "OS2_OSCAT_LEVEL_2B_OWV_COMP_12"));
+    global_attributes.push_back(new NetCDF_Attr<char>("ShortName", "OS2_OSCAT_LEVEL_2B_OWV_COMP_12_V2"));
     strncpy(attribute, cfg->nc_file, ARRAY_LEN(attribute) - 1);
     global_attributes.push_back(new NetCDF_Attr<char>("GranulePointer", basename(attribute)));
     strncpy(attribute, cfg->l1bhdf_file, ARRAY_LEN(attribute) - 1);
@@ -727,10 +771,15 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("sigma0_granularity", "slice composites"));
     global_attributes.push_back(new NetCDF_Attr<char>("InstrumentShortName", "OSCAT"));
     global_attributes.push_back(new NetCDF_Attr<char>("PlatformType", "spacecraft"));
-    global_attributes.push_back(new NetCDF_Attr<char>("PlatformLongName", "Oceansat II"));
+    global_attributes.push_back(new NetCDF_Attr<char>("PlatformLongName", "Oceansat-2"));
     global_attributes.push_back(new NetCDF_Attr<char>("PlatformShortName", "OS2"));
 
-    read_attr_h5(science_group, "Revolution Number", attribute);
+    // Spoof rev number if available
+    if (cfg->revtag == NULL) {
+        read_attr_h5(science_group, "Revolution Number", attribute);
+    } else {
+        strcpy(attribute, cfg->revtag);
+    }
     strcpy(rev_number, attribute);
     attribute[5] = '\0';   // Separate starting & stop orbit #s
     global_attributes.push_back(new NetCDF_Attr<char>("rev_number", rtrim(attribute)));
@@ -740,8 +789,10 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<float>("cross_track_resolution", &l2b->header.crossTrackResolution));
     global_attributes.push_back(new NetCDF_Attr<float>("along_track_resolution", &l2b->header.alongTrackResolution));
     global_attributes.push_back(new NetCDF_Attr<int>("zero_index", &l2b->header.zeroIndex));
-    global_attributes.push_back(new NetCDF_Attr<int>("version_id_major", &l2b->header.version_id_major));
-    global_attributes.push_back(new NetCDF_Attr<int>("version_id_minor", &l2b->header.version_id_minor));
+    global_attributes.push_back(new NetCDF_Attr<char>("version_id", VERSION_ID));
+    // These are internal L2B version numbers---don't need to log these
+//    global_attributes.push_back(new NetCDF_Attr<int>("version_id_major", &l2b->header.version_id_major));
+//    global_attributes.push_back(new NetCDF_Attr<int>("version_id_minor", &l2b->header.version_id_minor));
 
     read_attr_h5(science_group, "Processor Version", attribute);
     global_attributes.push_back(new NetCDF_Attr<char>("L1B_Processor_Version", rtrim(attribute)));

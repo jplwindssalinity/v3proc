@@ -29,7 +29,6 @@ import argparse
 import exceptions
 import fcntl
 import glob
-import inspect
 import logging
 import math
 import Queue
@@ -53,19 +52,6 @@ sys_log = logging.getLogger(__name__ + '.sys')
 _MATLAB_DIRS = ["/u/potr-r0/fore/ISRO/mat",
         "/u/potr-r0/werne/quikscat/QScatSim/mat"]
 
-# We use explicitly log entry/exit procedures instead of using a decorator so
-# that ipython's introspection will give the right function signature
-
-def logEntry():
-    '''Add a function entrance to the logger.'''
-    name = inspect.stack()[1][3]
-    log.debug("Entering " + name + "()")
-
-
-def logExit():
-    '''Add a function exit to the logger.'''
-    name = inspect.stack()[1][3]
-    log.debug("Exiting  " + name + "()")
 
 def callMatlab(*commands):
     '''Execute a sequence of Matlab commands.'''
@@ -122,18 +108,14 @@ def logSubprocess(dir, *args):
 class OceanSAT2Rev(object):
     '''An object representing a single REV for Oceansat-2 Scatterometer.'''
 
-    # The function call sequence in a standard processing run
-    processing_sequence = ['stage', 'generate', 'l1bhdf_to_l1b', 'l1b_to_l2a',
-            'fix_isro_composites', 'l2a_to_l2b', 'l2b_to_netcdf',
-            'netcdf_fixup', 'podaac', 'clean', 'moveToOutput']
-
     common_dirs = {'hdf': "/u/polecat-r0/fore/ISRO/L1B",
             'l1b': "./L1B/",
             'l2b': "./L2B/",
             'log': "./log/",
             'out': "./outdir/",
             'podaac': "./podaac/",
-            'ecmwf': "/u/potr-r0/fore/ECMWF/nwp1/",
+            'ncep': "/u/potr-r0/fore/ECMWF/nwp1/",
+            'ecmwf': "/u/potr-r0/fore/ECMWF/nwp3/",
             'work': "/dev/shm/"
             }
 
@@ -145,7 +127,7 @@ class OceanSAT2Rev(object):
              }
 
 
-    def __init__(self, year, rev, keep_log=False):
+    def __init__(self, year, rev, revtag=None, keep_log=False, level=0):
         '''
         Create a REV object.
 
@@ -153,12 +135,18 @@ class OceanSAT2Rev(object):
         year -- the rev's year
         rev -- the rev number (NNNNN_NNNNN)
         keep_log -- after processing, don't delete the log file
+        level -- clean level
         '''
         # Make sure these objects are strings
+        if revtag is None:
+            revtag = rev
+
         self.year = str(year)
-        self.rev = str(rev)
+        self.file_rev = str(rev)
+        self.rev = str(revtag)
 
         self.keep_log = keep_log
+        self.level = level
 
         # Create the file logger
         logdir = os.path.join(self.common_dirs['log'], self.year, self.rev)
@@ -176,23 +164,20 @@ class OceanSAT2Rev(object):
             # Set minimum logging level
             log.setLevel(logging.INFO)
 
-        logEntry()
-
         self._dirs = {}
         self._files = {}
 
         self.build()
-
-        logExit()
 
     def __del__(self):
         if self._handler is not None:
             self.teardown()
 
     def build(self):
-        '''Build object configuration variables (call after changing an
-        attribute).'''
-        logEntry()
+        """Create rev-specific data structure information."""
+
+        # Build object configuration variables (call after changing an attribute
+        log.debug("Building")
 
         # Define working and output directories
         self._work = {'/': os.path.join(self.common_dirs['work'], self.year,
@@ -204,7 +189,12 @@ class OceanSAT2Rev(object):
 
         # Build the target NetCDF output file name based on the L1B HDF file
         self._locate_l1b_hdf()
-        self._files['l1bhdf'] = self._l1bhdf.split(os.path.sep)[-1]
+
+        # Overwrite self.file_rev w/ self.rev (for revs with wrong ID)
+        fn = self._l1bhdf.split(os.path.sep)[-1]
+        fn = fn[0:13] + self.rev + fn[24:]
+
+        self._files['l1bhdf'] = fn
         ncfile = self._files['l1bhdf']
         for old,new in [("h5$", "nc"), ("L1B", "l2b"), ("S1", "os2_")]:
             ncfile = re.sub(old, new, ncfile)
@@ -237,19 +227,22 @@ class OceanSAT2Rev(object):
         else:
             self._vbias, self._hbias = "0.3036", "0.5296"
 
-        logExit()
+    def process(self):
+        '''Run processing for a complete REV.'''
 
-    def stage(self):
-        '''Download and extract existing L1B and L2B HDF files.'''
-        logEntry()
+        log.info(80*'=')
+        log.info("Processing begun for %s", self.rev)
+        log.info(80*'=')
+
+        # Download and extract existing L1B and L2B HDF files
+        log.debug("Staging")
         self._advertise("Staging")
         makedirs(self._work['/'])
-        shutil.copy2(self._l1bhdf, self._work['/'])
-        logExit()
+        shutil.copy2(self._l1bhdf, os.path.join(self._work['/'],
+            self._files['l1bhdf']))
 
-    def generate(self):
-        '''Generate the rev directory structure.'''
-        logEntry()
+        # Generate the rev directory structure.
+        log.debug("Generating")
         self._advertise("Generating")
         # Extract orbit start and end time
         callMatlab("OS2L1B_Extract_Times('", self._work['l1bhdf'], "', '",
@@ -282,70 +275,47 @@ class OceanSAT2Rev(object):
                 for line in tmpl.readlines():
                     cfg.write(xform(line))
 
-        logExit()
-
-    def l1bhdf_to_l1b(self):
-        '''Convert L1B HDF files to local-format L1B.'''
-
-        logEntry()
+        # Convert L1B HDF files to local-format L1B.
+        log.debug("Converting L1B HDF")
         self._advertise("Converting L1B HDF")
 
         logSubprocess(self._work['/'], "l1b_isro_to_l1b_v1.3", "-c",
                 self._files['cfg'], "-hhbias", self._hbias, "-vvbias",
                 self._vbias, '-xf_table', self.common_files['xfactor'])
 
-        logExit()
-
-
-    def l1b_to_l2a(self):
-        '''Convert L1B to L2A.'''
-        logEntry()
+        # Convert L1B to L2A.
+        log.debug("Converting L1B")
         self._advertise("Converting L1B")
         logSubprocess(self._work['/'], "l1b_to_l2a", self._files['cfg'])
-        logExit()
 
-
-    def fix_isro_composites(self):
-        '''Convert ISRO L2A composites.'''
-        logEntry()
+        # Convert ISRO L2A composites.
+        log.debug("Converting ISRO L2A Composites")
         self._advertise("Converting L2A Composites")
         logSubprocess(self._work['/'], "l2a_fix_ISRO_composites", "-c",
                 self._files['cfg'], "-o", self._files['flagged'], "-kp")
 
-        logExit()
-
-    def l2a_to_l2b(self):
-        '''Convert L2A to L2B.'''
-        logEntry()
+        # Convert L2A to L2B.
+        log.debug("Converting L2A")
         self._advertise("Converting L2A")
         shutil.move(self._work['flagged'], self._work['L2A_FILE'])
         logSubprocess(self._work['/'], "l2a_to_l2b", self._files['cfg'])
 
-        logExit()
-
-    def l2b_to_netcdf(self):
-        '''Convert L2B to NetCDF.'''
-        logEntry()
+        # Convert L2B to NetCDF.
+        log.debug("Converting L2B")
         self._advertise("Converting L2B")
         logSubprocess(self._work['/'], "os2_l2b_to_netcdf", "--l1bhdf",
                 self._files['l1bhdf'], "--nc", self._files['nc'], "--l2b",
                 self._files['L2B_FILE'], '--times', self._times, '--hhbias',
                 self._hbias, "--vvbias", self._vbias, '--xfact',
-                self.common_files['xfactor'])
+                self.common_files['xfactor'], '--revtag', self.rev)
 
-        logExit()
-
-    def netcdf_fixup(self):
-        '''Apply rain bias correct and set up ancillary data descriptors.'''
-        logEntry()
+        # Apply rain bias correct and set up ancillary data descriptors.
+        log.debug("Fixing NC")
         self._advertise("Fixing NC")
         callMatlab("os2_netcdf_fixup('", self._work['nc'], "')")
 
-        logExit()
-
-    def podaac(self):
-        '''Finalize data creation for PO.DAAC.'''
-        logEntry()
+        # Finalize data creation for PO.DAAC.
+        log.debug("Finalizing")
         self._advertise("Finalizing")
         # Gzip the NetCDF file
         logSubprocess(self._work['/'], "gzip", "--best", self._files['nc'])
@@ -355,17 +325,18 @@ class OceanSAT2Rev(object):
             process = subprocess.call(['md5sum', self._files['gz']], stdout=fd,
                     cwd=self._work['/'])
 
-        logExit()
 
-    def clean(self, level=0):
-        '''Delete intermediate files.'''
-        logEntry()
+        # Delete intermediate files.
+        log.debug("Cleaning")
         self._advertise("Cleaning")
 
         safe = ['md5', 'gz', 'cfg']
 
-        if (level >= 1):
+        if (self.level >= 10):
             safe.append('L2B_FILE')
+
+        if (self.level >= 1):
+            safe.append('calctimes')
 
         for i,v in self._files.iteritems():
             if i not in safe:
@@ -379,11 +350,8 @@ class OceanSAT2Rev(object):
         except exceptions.OSError as e:
             sys.exc_clear()
 
-        logExit()
-
-    def moveToOutput(self):
-        '''Move generated files into output tree.'''
-        logEntry()
+        # Move generated files into output tree.
+        log.debug("Moving")
         self._advertise("Moving")
         shutil.rmtree(self._out, ignore_errors=True)
         shutil.copytree(self._work['/'], self._out)
@@ -395,23 +363,6 @@ class OceanSAT2Rev(object):
             src = os.path.join(self._out, self._files[f])
             dst = os.path.join(self._podaac, self._files[f])
             os.link(src, dst)
-
-        logExit()
-
-
-    def process(self):
-        '''Run processing for a complete REV.'''
-
-        log.info(80*'=')
-        log.info("Processing begun for %s", self.rev)
-        log.info(80*'=')
-
-        logEntry()
-        self._advertise("Processing")
-
-        [getattr(self, f)() for f in self.processing_sequence]
-
-        logExit()
 
     def _advertise(self, string):
         '''Print a string with rev and time info.'''
@@ -438,47 +389,51 @@ class OceanSAT2Rev(object):
         log.debug(nudge)
         dt = time.strptime(nudge, "%Y%j%H")
         dt = time.mktime(dt)
-        sign, delta = -1, 6
+
+        def _get_nudge_file(dt, path_id, prefix):
+            dt = time.localtime(dt)
+
+            nudge_filename = prefix + time.strftime("%Y%j%H", dt)
+            return os.path.join(cls.common_dirs[path_id], nudge_filename)
 
         def _get_ncep_file(dt):
             '''Create the corresponding SNWP1 filename.'''
-            dt = time.localtime(dt)
+            return _get_nudge_file(dt, 'ncep', 'SNWP1');
+        def _get_ecmwf_file(dt):
+            '''Create the corresponding SNWP3 filename.'''
+            return _get_nudge_file(dt, 'ecmwf', 'SNWP3');
 
-            ncep_filename = "SNWP1" + time.strftime("%Y%j%H", dt)
-            return os.path.join(cls.common_dirs['ecmwf'], ncep_filename)
+        ecmwf_file = _get_ecmwf_file(dt)
+        nudge_file = _get_ncep_file(dt)
 
-        # 201122718
-        while not os.path.exists(_get_ncep_file(dt)):
-            # As long as the file doesn't exist, we need to update dt:
-            # Example (w/ dt^ as the "target" time):
-            # dt <- dt + -6  (in hours) (== dt^ -6)
-            # dt <- dt + +12 (in hours) (== dt^ +6)
-            # dt <- dt + -18 (in hours) (== dt^ -12)
-            # dt <- dt + +24 (in hours) (== dt^ +12), ...
-            dt += sign*delta*60*60
-            sign *= -1
-            delta += 6
+        if not os.path.exists(nudge_file):
+            dt -= 6*60*60
+            nudge_file = _get_ncep_file(dt)
+            if not os.path.exists(nudge_file):
+                dt += 12*60*60
+                nudge_file = _get_ncep_file(dt)
+                if not os.path.exists(nudge_file):
+                    # Use ECMWF
+                    nudge_file = ecmwf_file
 
-        return _get_ncep_file(dt)
+        return nudge_file
 
 
     def _locate_l1b_hdf(self):
         '''Find this rev's L1B HDF file .'''
-        logEntry()
         # Build a glob search pattern for the L1B HDF file
         hdfdir = os.path.join(self.common_dirs['hdf'], self.year)
-        base = "S1L1B" + self.year + "???_" + self.rev + ".h5"
+        base = "S1L1B" + self.year + "???_" + self.file_rev + ".h5"
         pattern = os.path.join(hdfdir, base)
 
         # Look for it
         match = glob.glob(pattern)
         if match == []:
             # Oops, couldn't be found
-            log.error("Match not found for %s (%s)", pattern, self.rev)
+            log.error("Match not found for %s (%s)", pattern, self.file_rev)
             raise exceptions.IOError("No file matching " + pattern)
 
         self._l1bhdf = match[0]
-        logExit()
 
 
 def make_server(addr=('', 10000), authkey=''):
@@ -502,8 +457,12 @@ class dummyServer():
         return threading.Lock()
 
 def runjob(job, server=None):
-    year,revid = job
-    rev = OceanSAT2Rev(year=year, rev=revid)
+    if len(job) == 2:
+        year,revid = job
+        rev = OceanSAT2Rev(year=year, rev=revid, level=1)
+    else:
+        year,revid,revtag = job
+        rev = OceanSAT2Rev(year=year, rev=revid, revtag=revtag, level=1)
 
     if server is None:
         server = dummyServer()
@@ -556,7 +515,7 @@ def setup_logs():
             record.hostname = self.hostname
             return True
 
-    handler = logging.FileHandler("./processing.log")
+    handler = logging.FileHandler("/dev/shm/processing.log")
     handler.setFormatter(logging.Formatter(
         fmt="%(levelname)s %(hostname)s(%(process)d) %(asctime)s.%(msecs)03d %(message)s",
         datefmt="%Y%jT%H:%M:%S"))
@@ -575,7 +534,7 @@ def call_with_lock(fcall, lock, text=''):
 def test():
     logging.basicConfig(level=logging.DEBUG)
     rev = OceanSATRev(year=2010, rev='03297_03298')
-    rev.all()
+    rev.process()
 
 
 def main():
@@ -591,8 +550,8 @@ def main():
     if args.file is not None:
         commands = []
         for line in args.file:
-            x,y = line.strip().split()
-            commands.append((x,y))
+            cmd = tuple(line.strip().split())
+            commands.append(cmd)
         runserver(jobs=commands, addr=addr)
 
     else:
