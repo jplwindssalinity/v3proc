@@ -494,6 +494,7 @@ main(
             l2a_to_l2b.PopulateOneNudgeVector(&l2b,ci,ai,meas_list);
             
             if(wvc0->ambiguities.NodeCount() && wvc0->nudgeWV){ // compute diagnostic data
+	        WindVectorPlus* wvp1=wvc0->ambiguities.GetHead();
                 int nc = meas_list->NodeCount();
                 int* look_idx = new int[nc];
                 int nmeas[8]={0,0,0,0,0,0,0,0};
@@ -572,7 +573,8 @@ main(
                 for(int i=0;i<8;i++){
 		  fprintf(out_train_set_f, " %g %g %g",gmf_meanest[i],coschi_meanest[i],sinchi_meanest[i]);
 		}
-                fprintf(out_train_set_f,"\n");
+                
+                fprintf(out_train_set_f," %g \n",wvp1->spd);
                 delete look_idx;
             } // end compute diagnostic data
         } // end nudge by hand
