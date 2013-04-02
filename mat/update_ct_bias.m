@@ -10,8 +10,7 @@ ncputvar = @(ncid, name, val) netcdf.putVar(ncid, ...
 ncgetatt = @(ncid, var, name) netcdf.getAtt(ncid, ...
     netcdf.inqVarID(ncid, var), name);
 
-ncid = netcdf.open(nc_file, 'WRITE');
-netcdf.reDef(ncid);
+ncid = netcdf.open(ncfile, 'WRITE');
 
 %% Cross track speed bias
 spd = ncgetvar(ncid, 'retrieved_wind_speed');
@@ -47,8 +46,8 @@ flags = uint16(ncgetvar(ncid, 'flags'));
 % Unset the high & low wind speed bits for ALL retrievals
 flags = bitand(flags, bitcmp(bitor(2^10, 2^11), 16));
 % Then for valid retrievals, set the high/low wind speed bits
-flags(valid) = bitor(flags(valid), uint16((2^10)*(spd(valid) > 30)));
-flags(valid) = bitor(flags(valid), uint16((2^11)*(spd(valid) <  3)));
+flags(spd_valid) = bitor(flags(spd_valid), uint16((2^10)*(spd(spd_valid) > 30)));
+flags(spd_valid) = bitor(flags(spd_valid), uint16((2^11)*(spd(spd_valid) <  3)));
 ncputvar(ncid, 'flags', int16(flags));
 
 %% Close files
@@ -56,7 +55,6 @@ netcdf.close(ncid);
 
 
 return
-end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -364,6 +364,33 @@ class OceanSAT2Rev(object):
             dst = os.path.join(self._podaac, self._files[f])
             os.link(src, dst)
 
+    def update_ct_bias(self):
+
+        log.info(80*'=')
+        log.info("Processing begun for %s", self.rev)
+        log.info(80*'=')
+
+        logSubprocess(self._out, "gunzip", self._files['gz']);
+
+        callMatlab("update_ct_bias('", self._files['gz'], "', '",
+                "/home/werne/quikscat/QScatSim/mat/rel_bias_130212.mat", "')")
+
+        # Gzip the NetCDF file
+        logSubprocess(self._out, "gzip", "--best", self._files['nc'])
+
+        # Compute md5 sum
+        with open(os.path.join(self._out, self._files['md5']), 'w') as fd:
+            process = subprocess.call(['md5sum', self._files['gz']], stdout=fd,
+                    cwd=self._out)
+
+        shutil.rmtree(self._podaac, ignore_errors=True)
+        makedirs(self._podaac)
+
+        for f in ['gz', 'md5']:
+            src = os.path.join(self._out, self._files[f])
+            dst = os.path.join(self._podaac, self._files[f])
+            os.link(src, dst)
+
     def _advertise(self, string):
         '''Print a string with rev and time info.'''
         print ' '.join([string, self.rev, time.strftime("%Y%jT%H%M%S")])

@@ -44,7 +44,8 @@ ncgetatt = @(ncid, var, name) netcdf.getAtt(ncid, ...
 
 %% Define "Constants"
 global BIAS_FILE;
-BIAS_FILE = 'os2_rel_bias.mat';
+%BIAS_FILE = 'rel_bias_130212.mat';
+BIAS_FILE = 'os2_rel_bias.mat'; % Obsoleted 13 Feb 2012, TAW
 GLOBAL = netcdf.getConstant('GLOBAL');
 
 display(['Using ' nc_file]);
