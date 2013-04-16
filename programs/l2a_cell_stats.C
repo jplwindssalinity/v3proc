@@ -138,7 +138,7 @@ int main( int argc, char* argv[] )
     ++i_rec;
     MeasList* ml     = &(l2a.frame.measList);
     LonLat    lonlat = ml->AverageLonLat();
-        
+    
     //--Loop over the measlist and computes mean sigma0, var(sigma0),
     //-- And other stuff we may want.
     int    num_obs_beam[NUM_BEAMS];    
@@ -202,11 +202,11 @@ int main( int argc, char* argv[] )
         if( lon[i_beam] >= lonlim[0] && lon[i_beam] <= lonlim[1] &&
             lat[i_beam] >= latlim[0] && lat[i_beam] <= latlim[1] ) {
         
-          fprintf(output_fp,"%d %d %8.5f %10.7f %20.17f %f %f %f %f\n",
+          fprintf(output_fp,"%d %d %8.5f %10.7f %20.17f %f %f %f %f %d %d\n",
                 i_beam, num_obs_beam[i_beam],
                 inc_ang[i_beam]*rtd, 10*log10(avg_sig0[i_beam]), 
                 var_sig0, land_flag[i_beam], along_beam_idx[i_beam],
-                lat[i_beam], lon[i_beam] );
+                lat[i_beam], lon[i_beam], l2a.frame.cti, l2a.frame.ati );
           }      
       }
     }    
