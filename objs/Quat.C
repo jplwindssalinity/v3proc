@@ -10,6 +10,8 @@ static const char rcs_id_quat_c[] =
 #include <stdlib.h>
 #include <math.h>
 #include "Quat.h"
+#include "List.h"
+#include "List.C"
 #include "Vect.h"
 #include "Mat.h"
 
@@ -318,11 +320,11 @@ Quat::WriteAscii(
     return;
 }
 
-/*
+
 //------------------//
 // Quat::operator*= //
 //------------------//
-
+/*
 void
 Quat::operator*=(
     double  factor)
@@ -333,7 +335,7 @@ Quat::operator*=(
     w *= factor;
     return;
 }
-
+*/
 //-----------//
 // operator* //
 //-----------//
@@ -350,4 +352,154 @@ operator*(
     qp.z = q.w*p.z + q.z*p.w + q.x*p.y - q.y*p.x;
     return(qp);
 }
-*/
+
+
+void Quat::Power( double a ) {
+    
+    if( w==1 ) return;
+    double cosold=w;
+    double sinold=sqrt(x*x+y*y+z*z);
+    double angold;
+    if(cosold==0) 
+      angold=M_PI/2;
+    else 
+      angold=atan(sinold/cosold);
+    double cosnew=cos(angold*a);
+    double sinnew=sin(angold*a);
+    w=cosnew;
+    x=x*sinnew/sinold;
+    y=y*sinnew/sinold;
+    z=z*sinnew/sinold;
+}
+
+QuatRec::QuatRec() {
+    return;
+}
+
+QuatRec::~QuatRec() {
+    return;
+}
+
+int QuatRec::Read( FILE* inputfile ) {
+    
+    if(!inputfile) 
+      return(0);
+
+    if (fread(&time, sizeof(double), 1, inputfile) != 1)
+        return(0);
+    if (fread(&w, sizeof(double), 1, inputfile) != 1)
+        return(0);
+    if (fread(&x, sizeof(double), 1, inputfile) != 1)
+        return(0);
+    if (fread(&y, sizeof(double), 1, inputfile) != 1)
+        return(0);
+    if (fread(&z, sizeof(double), 1, inputfile) != 1)
+        return(0);
+    return(1);
+}
+
+int QuatRec::Write( FILE* outputfile ) {
+    if (fwrite(&time, sizeof(double), 1, outputfile) != 1)
+        return(0);
+    if (fwrite(&w, sizeof(double), 1, outputfile) != 1)
+        return(0);
+    if (fwrite(&x, sizeof(double), 1, outputfile) != 1)
+        return(0);
+    if (fwrite(&y, sizeof(double), 1, outputfile) != 1)
+        return(0);
+    if (fwrite(&z, sizeof(double), 1, outputfile) != 1)
+        return(0);
+    return(1);
+}
+
+QuatFile::QuatFile() {
+    return;
+}
+
+QuatFile::QuatFile(const char* filename) {
+    SetInputFile(filename);
+    SetMaxNodes(1000000);
+    return;
+}
+
+QuatFile::~QuatFile() {
+    CloseInputFile();
+    return;
+}
+
+int QuatFile::_GetBracketingQuatRecs( double time, QuatRec** quat1, QuatRec** quat2 ) {
+    // Shamelessly copied from Ephemeris object by AGF
+    // make sure there is data in the list (if there is any at all)
+    QuatRec* current_quat = GetCurrent();
+    if (current_quat == NULL)
+        current_quat = GetOrReadNext();
+
+    if (current_quat == NULL) return(0);
+
+    // search forward
+    while (current_quat && current_quat->time < time)
+        current_quat = GetOrReadNext();
+
+    if (current_quat == NULL) return(0);
+
+    // search backward
+    while (current_quat && current_quat->time > time)
+        current_quat = GetPrev();
+
+    if (current_quat == NULL) return(0);
+
+    QuatRec* next_quat = GetOrReadNext();
+
+    // check
+    if (next_quat == NULL) return(0);
+
+    // set quats
+    *quat1 = current_quat;
+    *quat2 = next_quat;
+    return(1);
+}
+
+int QuatFile::GetQuat( double time, Quat* quat ) {
+    // Obtain bracketing Quats from QuatFile
+    QuatRec* quat1;
+    QuatRec* quat2;
+    
+    if( _GetBracketingQuatRecs( time, &quat1, &quat2 ) == 0 ) {
+      fprintf(stderr,"Error: Can't find requested time %18.12g in QuatFile\n",time);
+      return(0);
+    }
+    
+    // Make sure they are normalized
+    quat1->Normalize();
+    quat2->Normalize();
+    
+    // multiply quat2 by quat1^-1
+    Quat quat1_inv;
+    quat1_inv.Set( quat1->x, quat1->y, quat1->z, quat1->w );
+    quat1_inv.Invert();
+    
+    Quat qtrans = (*quat2) * quat1_inv;
+    qtrans.Normalize();
+    
+    // Fix sign of quaternion if not right
+    if( qtrans.w < 0 ) {
+      qtrans.w *= -1; qtrans.x *= -1;
+      qtrans.y *= -1; qtrans.z *= -1;
+    }
+    
+    // Interpolation step for t in [t1,t2] interval (t-t1)/(t2-1)
+    double alpha = (time-quat1->time)/(quat2->time-quat1->time);
+    
+    // Compute qtrans^alpha
+    qtrans.Power( alpha );
+    
+    // Compute interpolated quaternion.
+    *quat = qtrans * (*quat1);
+    
+    // Fix sign of quaternion if not right
+    if( quat->w < 0 ) {
+      quat->w *= -1; quat->x *= -1;
+      quat->y *= -1; quat->z *= -1;
+    }
+    return(1);
+}

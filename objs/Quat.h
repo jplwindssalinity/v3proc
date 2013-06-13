@@ -16,6 +16,7 @@ static const char rcs_id_quat_h[] =
 
 #include "Vect.h"
 #include "Mat.h"
+#include "BufferedList.h"
 
 //======================================================================
 // CLASS
@@ -55,6 +56,8 @@ public:
     int     ApplyRotationTo(const Vect& vector, Vect* result);
     void    Scale(double factor);
     void    Product(const Quat& p, const Quat& q);
+    void    Power( double a );
+    
 
 /*
     void RotationFromFixedAngles(double rx, double ry, double rz);
@@ -64,7 +67,6 @@ public:
     //--------------//
     // input/output //
     //--------------//
-
     void  WriteAscii(const char* name, FILE* ofp = stdout);
     void  WriteAscii(FILE* ofp = stdout);
 
@@ -72,11 +74,55 @@ public:
     // the components //
     //----------------//
 
-protected:
+//protected:
     double  x;
     double  y;
     double  z;
     double  w;    // the scalar
 };
 
+
+// QuatRec class is Quat + time-tag and I/O
+class QuatRec : public Quat
+{
+public:
+    //--------------//
+    // construction //
+    //--------------//
+    QuatRec();
+    ~QuatRec();
+    
+    int   Read(FILE* inputfile);
+    int   Write(FILE* outputfile );
+    
+//protected:
+    double time;
+};
+
+// QuatFile is to QuatRec as Ephermeris is to OrbitState
+class QuatFile : public BufferedList<QuatRec>
+{
+public:
+
+    //--------------//
+    // construction //
+    //--------------//
+
+    QuatFile();
+    QuatFile(const char* filename );
+    ~QuatFile();
+    
+    // Interpolation
+    
+    int GetQuat( double time, Quat* quat );
+    
+protected:
+
+    int _GetBracketingQuatRecs( double time, QuatRec** quat1, QuatRec** quat2 );
+    
+    //-----------//
+    // variables //
+    //-----------//
+
+};
 #endif
