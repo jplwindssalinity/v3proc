@@ -14,6 +14,7 @@ static const char rcs_id_quat_c[] =
 #include "List.C"
 #include "Vect.h"
 #include "Mat.h"
+#include "Attitude.h"
 
 //======//
 // Quat //
@@ -370,6 +371,14 @@ void Quat::Power( double a ) {
     x=x*sinnew/sinold;
     y=y*sinnew/sinold;
     z=z*sinnew/sinold;
+}
+
+void Quat::GetAttitude( Attitude* attitude ) {
+    float phi   = atan2( 2*(w*x+y*z), 1-2*(x*x+y*y));
+    float theta = asin(  2*(w*y-z*x));
+    float psi   = atan2( 2*(w*z+x*y), 1-2*(y*y+z*z));
+    // Yaw, Pitch, Roll (ZYX) order of rotations
+    attitude->Set( phi, theta, psi, 3, 2, 1 );
 }
 
 QuatRec::QuatRec() {

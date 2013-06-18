@@ -17,6 +17,7 @@ static const char rcs_id_quat_h[] =
 #include "Vect.h"
 #include "Mat.h"
 #include "BufferedList.h"
+#include "Attitude.h"
 
 //======================================================================
 // CLASS
@@ -57,7 +58,7 @@ public:
     void    Scale(double factor);
     void    Product(const Quat& p, const Quat& q);
     void    Power( double a );
-    
+    void    GetAttitude( Attitude* attitude );
 
 /*
     void RotationFromFixedAngles(double rx, double ry, double rz);
