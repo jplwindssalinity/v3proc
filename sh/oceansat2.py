@@ -359,10 +359,10 @@ class OceanSAT2Rev(object):
         shutil.rmtree(self._podaac, ignore_errors=True)
         makedirs(self._podaac)
 
-        for f in ['gz', 'md5']:
-            src = os.path.join(self._out, self._files[f])
-            dst = os.path.join(self._podaac, self._files[f])
-            os.link(src, dst)
+#        for f in ['gz', 'md5']:
+#            src = os.path.join(self._out, self._files[f])
+#            dst = os.path.join(self._podaac, self._files[f])
+#            os.link(src, dst)
 
     def update_ct_bias(self):
 

@@ -215,9 +215,15 @@ function qs_reproc_stage () {
     mkdir "$TMP" > /dev/null 2>&1
     TDIR=`mktemp -d "$TMP/XXXXXXXXXX"`
 
-    L1BURL="ftp://qL1B:data4me@podaac-old/data/L1B"
-    #L2BURL="ftp://podaac-ftp.jpl.nasa.gov/allData/quikscat/L2B/" # 25km L2B
-    L2BURL="ftp://podaac-ftp.jpl.nasa.gov/allData/quikscat/L2B12/" # 12.5km L2B
+# For reprocessing 1999-2009
+#    L1BURL="ftp://qL1B:data4me@podaac-old/data/L1B"
+#    #L2BURL="ftp://podaac-ftp.jpl.nasa.gov/allData/quikscat/L2B/" # 25km L2B
+#    L2BURL="ftp://podaac-ftp.jpl.nasa.gov/allData/quikscat/L2B12/" # 12.5km L2B
+
+# For reprocessing 2013
+    L1BURL="/u/potr-r1/fore/QS_spinning_2013/L1B"
+    L2BURL="/u/potr-r1/fore/QS_spinning_2013/L2B_HDF"
+# END
 
     ID=`awk "/^$REV/" "$REVLOG"`
 
@@ -248,23 +254,30 @@ function qs_reproc_stage () {
         # Gotta download the data files
   
         # L1B HDF File
-        wget -nH -N --cut-dirs=4 -P "$TDIR" \
-            "$L1BURL/$YEAR1/$DAY1/*S1B$REV*"
+# For 1999-2009
+#        wget -nH -N --cut-dirs=4 -P "$TDIR" \
+#            "$L1BURL/$YEAR1/$DAY1/*S1B$REV*"
+#
+#        if [[ $? -ne 0 ]]; then
+#            # Couldn't find the file in DATE1, try DATE2
+#            wget -nH -N --cut-dirs=4 -P "$TDIR" \
+#                "$L1BURL/$YEAR2/$DAY2/*S1B$REV*"
+#        fi
+#
+#        gunzip -f "$TDIR"/*"S1B$REV"*.gz
+
+# For 2013
+        cp "$L1BURL/"*"S1B$REV"* "$TDIR"
         ls "$TDIR"/*"S1B$REV"* > /dev/null 2>&1
 
-        if [[ $? -ne 0 ]]; then
-            # Couldn't find the file in DATE1, try DATE2
-            wget -nH -N --cut-dirs=4 -P "$TDIR" \
-                "$L1BURL/$YEAR2/$DAY2/*S1B$REV*"
-        fi
 
         ls "$TDIR"/*"S1B$REV"* > /dev/null 2>&1
         if [[ $? -ne 0 ]]; then
             echo "ERROR: REV L1B HDF file not found"
             return 1
         fi
+# END
 
-        gunzip -f "$TDIR"/*"S1B$REV"*.gz
         mkdir "$DIR_QSL1B_HDF" > /dev/null 2>&1
         mv "$TDIR"/*"S1B$REV"* "$DIR_QSL1B_HDF/"
     fi
@@ -276,15 +289,22 @@ function qs_reproc_stage () {
         # Gotta download the data files
   
         # L2B HDF File
-        wget -nH -N --cut-dirs=4 -P "$TDIR" \
-            "$L2BURL/$YEAR1/$DAY1/*S2B$REV*"
+# For 1999-2009
+#        wget -nH -N --cut-dirs=4 -P "$TDIR" \
+#            "$L2BURL/$YEAR1/$DAY1/*S2B$REV*"
+#        ls "$TDIR"/*"S2B$REV"* > /dev/null 2>&1
+#        if [[ $? -ne 0 ]]; then
+#            # Couldn't find the file in DATE1, try DATE2
+#            wget -nH -N --cut-dirs=4 -P "$TDIR" \
+#                "$L2BURL/$YEAR2/$DAY2/*S2B$REV*"
+#        fi
+#
+#        gunzip -f "$TDIR"/*"S2B$REV"*.gz
 
-        ls "$TDIR"/*"S2B$REV"* > /dev/null 2>&1
-        if [[ $? -ne 0 ]]; then
-            # Couldn't find the file in DATE1, try DATE2
-            wget -nH -N --cut-dirs=4 -P "$TDIR" \
-                "$L2BURL/$YEAR2/$DAY2/*S2B$REV*"
-        fi
+
+# For 2013
+        cp "$L2BURL/"*"S2B$REV"* "$TDIR"
+# END
 
         ls "$TDIR"/*"S2B$REV"* > /dev/null 2>&1
         if [[ $? -ne 0 ]]; then
@@ -292,7 +312,6 @@ function qs_reproc_stage () {
             return 1
         fi
 
-        gunzip -f "$TDIR"/*"S2B$REV"*.gz
         mkdir "$DIR_QSL2B_HDF" > /dev/null 2>&1
         mv "$TDIR"/*"S2B$REV"* "$DIR_QSL2B_HDF/"
     fi
@@ -341,7 +360,7 @@ function qs_reproc_generate_directory_structure () {
     (
         echo "addpath('$QS_MATLAB_INC_DIR');"
         echo "QSL1B_Extract_Times('$L1B_HDF_FILE', '$L1B_TIMES_FILE');"
-    ) | matlab -nodisplay -nojvm
+    ) | matlab-7.11 -nodisplay -nojvm
     RETVAL=$?
     
     SEC_YEAR=`head -1 $L1B_TIMES_FILE`
@@ -351,7 +370,12 @@ function qs_reproc_generate_directory_structure () {
     NCEP_FILENAME_STR='SNWP1'$CLOSEST_NWP_STR
 #    NCEP_FILENAME_STR='SNWP3'$CLOSEST_NWP_STR
     
-    ICE_FILENAME_STR='NRT_ICEM'${CLOSEST_NWP_STR:0:7}
+# For 1999-2009
+#    ICE_FILENAME_STR='NRT_ICEM'${CLOSEST_NWP_STR:0:7}
+
+# For 2013
+    ICE_FILENAME_STR='NRT_ICEM2009'${CLOSEST_NWP_STR:4:7}
+# END
     
     CONFIG_FILE=$SIM_DIR/'QS.rdf'
     
@@ -676,7 +700,7 @@ function qs_reproc_tdv() {
         echo "addpath('$QS_MATLAB_INC_DIR');"
         echo "addpath('$QS_MATLAB_INC_DIR/minFunc');"
         echo "run_tdv_qs_l2bnc('$BASEDIR/$REV/$NCFILE', '$BASEDIR/$REV/$DATFILE');"
-    ) | matlab -nodisplay -nojvm
+    ) | matlab-7.11 -nodisplay -nojvm
     RETVAL=$(($RETVAL || $?))
 
     return $RETVAL
@@ -720,7 +744,7 @@ function qs_reproc_make_arrays() {
         echo "addpath('$QS_MATLAB_INC_DIR');"
         echo "addpath('$QS_MATLAB_INC_DIR/minFunc');"
         echo "run_tdv_qs_l2bnc('$BASEDIR/$REV/$NCFILE', '$BASEDIR/$REV/$DATFILE');"
-    ) | matlab -nodisplay -nojvm
+    ) | matlab-7.11 -nodisplay -nojvm
     RETVAL=$(($RETVAL || $?))
 
     return $RETVAL
@@ -777,7 +801,7 @@ function qs_fixup () {
     (
         echo "addpath('$QS_MATLAB_INC_DIR');"
         echo "qs_convert_netcdf('$NC_SRC', '$E2B12_DIR');"
-    ) | matlab -nodisplay -nojvm
+    ) | matlab-7.11 -nodisplay -nojvm
 
     RETVAL=$?
     return $RETVAL
