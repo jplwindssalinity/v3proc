@@ -274,7 +274,7 @@ main(
 
     fseek(ifp,packet_off+GPS2UTC_OFF+NHEAD-1,SEEK_SET);
     fread( &gps2utc, sizeof(short), 1, ifp );
-    SWAP_VAR( quat[3], short );
+    SWAP_VAR( gps2utc, short );
 
     double time = double(tt0); //+ double(tt1)/255.0;
     time       += double(gps2utc) + gps_time_base - sim_time_base;
@@ -313,7 +313,7 @@ main(
     m[0][0] = xscvel_geod % xscvel_geoc;
     m[0][1] = xscvel_geod % yscvel_geoc;
     m[0][2] = xscvel_geod % zscvel_geoc;
-
+    
     m[1][0] = yscvel_geod % xscvel_geoc;
     m[1][1] = yscvel_geod % yscvel_geoc;
     m[1][2] = yscvel_geod % zscvel_geoc;
@@ -334,8 +334,12 @@ main(
 //           q_geoc_to_geod.w, q_geoc_to_geod.x, 
 //           q_geoc_to_geod.y, q_geoc_to_geod.z );
     
-    Quat q_att_geoc( (double)quat[0], (double)quat[1], (double)quat[2], (double)quat[3] );
+    
+    // contructor wants x,y,z,w order (different from QuatFile and GSE data...).
+    Quat q_att_geoc( (double)quat[1], (double)quat[2], (double)quat[3], (double)quat[0] );
     Quat q_all = q_geoc_to_geod * q_att_geoc;
+    
+    q_all.Normalize();
     
     double out_pos[3], out_vel[3];
     for( int ii=0;ii<3;++ii) {
@@ -352,7 +356,7 @@ main(
     fwrite(&(q_all.x),sizeof(double),1,ofp_q);
     fwrite(&(q_all.y),sizeof(double),1,ofp_q);
     fwrite(&(q_all.z),sizeof(double),1,ofp_q);
-
+    
     fwrite(&time,sizeof(double),1,ofp_qc);
     fwrite(&(q_att_geoc.w),sizeof(double),1,ofp_qc);
     fwrite(&(q_att_geoc.x),sizeof(double),1,ofp_qc);
