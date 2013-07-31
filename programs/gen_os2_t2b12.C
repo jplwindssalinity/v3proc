@@ -1,3 +1,4 @@
+
 //----------//
 // INCLUDES //
 //----------//
@@ -51,6 +52,23 @@ template class std::map<string,string,Options::ltstr>;
 #define RAD_TO_DEG(x) ((x)*180.0f/M_PI)
 #define DEG_TO_RAD(x) ((x)*M_PI/180.0f)
 
+
+typedef struct {
+    float lambda_0;
+    float inclination;
+    float rev_period;
+    int xt_steps;
+    double at_res;
+    double xt_res;
+} latlon_config;
+
+int init_string( char* string, int length )
+{
+	for( int ii = 0; ii < length; ++ii )
+	  string[ii] = NULL;
+	return(1);
+}
+
 int read_SDS_h5( hid_t obj_id, char* sds_name, void* data_buffer )
 {
     hid_t sds_id = H5Dopen1(obj_id,sds_name);
@@ -79,39 +97,150 @@ int read_attr_h5( hid_t obj_id, char* attr_name, void* data_buffer )
 	return(1);
 }
 
+int determine_n_scans( hid_t obj_id ) {
+  hid_t sds_id = H5Dopen1(obj_id,"Scan_number");
+  if( sds_id < 0 ) return(0);
+  hid_t space_id = H5Dget_space(sds_id);
+  hsize_t dims[2], maxdims[2];
+  hsize_t n_dims = H5Sget_simple_extent_dims( space_id, &dims[0], &maxdims[0] );
+  if( n_dims == 0 ) return(0);
+  return(dims[0]);
+}
 
+int read_orbit_elements_from_attr_os2( hid_t obj_id, double &lon_asc_node,
+      double &orbit_period, double &orbit_inc, double &orbit_semi_major,
+      double &orbit_ecc, double &t_asc_node )
+{
+    char attr_string[1024];
+  	char attr_asc_node_t_str[CODE_B_TIME_LENGTH];
+  	
+	read_attr_h5( obj_id, "Equator Crossing Longitude", attr_string );
+	lon_asc_node = atof( attr_string );
+	
+	read_attr_h5( obj_id, "Orbit Period", attr_string );
+	orbit_period = atof( attr_string );
+	
+	read_attr_h5( obj_id, "Orbit Inclination", attr_string );
+	orbit_inc = atof( attr_string );
+	
+	read_attr_h5( obj_id, "Orbit Semi-major Axis", attr_string );
+	orbit_semi_major = atof( attr_string );
+	
+	read_attr_h5( obj_id, "Orbit Eccentricity", attr_string );
+	orbit_ecc = atof( attr_string );
+	
+	read_attr_h5( obj_id, "Equator Crossing Date", attr_string );
+    ETime eTime_asc_node;
+    eTime_asc_node.FromCodeB( attr_string );
+	
+	ETime etime;
+	etime.FromCodeB("1970-001T00:00:00.000");
+	double time_base = (double)etime.GetSec() + (double)etime.GetMs()/1000;	
+    
+    t_asc_node = (double)eTime_asc_node.GetSec() 
+	+ (double)eTime_asc_node.GetMs()/1000 - time_base;
+	
+	return(1);
+} 
+
+
+void bin_to_latlon(int at_ind, int ct_ind,
+        const latlon_config *config, float *lat, float *lon) {
+
+    /* Utilizes e2, r1_earth from Constants.h */
+    const static double P1 = 60*1440.0f;
+
+    const static double P2 = config->rev_period;
+    const double inc = DEG_TO_RAD(config->inclination);
+    const int    r_n_xt_bins = config->xt_steps;
+    const double at_res = config->at_res;
+    const double xt_res = config->xt_res;
+    
+    // Modified for OS2 starting at north pole
+    //lambda_0 = DEG_TO_RAD(config->lambda_0);
+    double lambda_0 = config->lambda_0 + 180 + P2/(2*P1) * 360;
+    if( lambda_0 > 360 ) lambda_0 -= 360;
+    lambda_0 = DEG_TO_RAD(lambda_0);
+    
+    
+    const double r_n_at_bins = 1624.0 * 25.0 / at_res;
+    const double atrack_bin_const = two_pi/r_n_at_bins;
+    const double xtrack_bin_const = xt_res/r1_earth;
+
+    double lambda, lambda_t, lambda_pp;
+    double phi, phi_pp;
+    double Q, U, V, V1, V2;
+
+    double sin_phi_pp, sin_lambda_pp;
+    double sin_phi_pp2, sin_lambda_pp2;
+    double sini, cosi;
+
+    sini = sinf(inc);
+    cosi = cosf(inc);
+    // Modified for OS2 starting at north pole
+    //lambda_pp = (at_ind + 0.5)*atrack_bin_const - pi_over_two;
+    lambda_pp = (at_ind + 0.5)*atrack_bin_const - pi_over_two + pi;
+    phi_pp = -(ct_ind - (r_n_xt_bins/2 - 0.5))*xtrack_bin_const;
+
+    sin_phi_pp = sinf(phi_pp);
+    sin_phi_pp2 = sin_phi_pp*sin_phi_pp;
+    sin_lambda_pp = sinf(lambda_pp);
+    sin_lambda_pp2 = sin_lambda_pp*sin_lambda_pp;
+    
+    Q = e2*sini*sini/(1 - e2);
+    U = e2*cosi*cosi/(1 - e2);
+
+    V1 = (1 - sin_phi_pp2/(1 - e2))*cosi*sin_lambda_pp;
+    V2 = (sini*sin_phi_pp*sqrtf((1 + Q*sin_lambda_pp2)*(1 - 
+                    sin_phi_pp2) - U*sin_phi_pp2));
+
+    V = (V1 - V2)/(1 - sin_phi_pp2*(1 + U));
+
+    lambda_t = atan2f(V, cosf(lambda_pp));
+    lambda = lambda_t - (P2/P1)*lambda_pp + lambda_0;
+
+    
+    lambda += (lambda < 0)       ?  two_pi : 
+              (lambda >= two_pi) ? -two_pi :
+                                    0.0f;
+    
+                                    
+    phi = atanf((tanf(lambda_pp)*cosf(lambda_t) - 
+                cosf(inc)*sinf(lambda_t))/((1 - e2)*
+                sinf(inc)));
+
+    *lon = lambda;
+    *lat = phi;
+}
 int
 main(
     int        argc,
     char*    argv[])
 {
-  const char*  command   = no_path(argv[0]);
-  char*        e2b12file = NULL;
-  char*        hdf_file  = NULL;
-  char*        out_file  = NULL;
+  const char*  command     = no_path(argv[0]);
+  char*        hdf_file    = NULL;
+  char*        out_file    = NULL;
+  char*        orbele_file = NULL;
   
   int optind = 1;
   while ( (optind < argc) && (argv[optind][0]=='-') ) {
     std::string sw = argv[optind];
     
-    if( sw == "-e" ) {
-      ++optind;
-      e2b12file = argv[optind];
-    } else if ( sw == "-o" ) {
-      ++optind;
-      out_file = argv[optind];
-    } else if ( sw == "-i" ) {
-      ++optind;
-      hdf_file = argv[optind];
+    if( sw == "-i" ) {
+      hdf_file = argv[++optind];
+    } else if( sw == "-o" ) {
+      out_file = argv[++optind];
+    } else if( sw == "-t" ) {
+      orbele_file = argv[++optind];
     } else {
-      fprintf(stderr,"%s: Unknown option\n", command);
+      fprintf(stderr,"%s: Unknow option\n", command);
       exit(1);
     }
     ++optind;
   }
   
-  if( e2b12file==NULL || hdf_file==NULL || out_file==NULL ) {
-    fprintf(stderr,"%s: Must specify: -i <l1bfile> -o <outfile> -e <e2b12file>\n",command);
+  if( hdf_file == NULL || out_file == NULL || orbele_file == NULL ) {
+    fprintf( stderr, "%s: Must specify -i <hdfile>, -o <outfile> -t orb_ele files\n", command );
     exit(1);
   }
   
@@ -127,19 +256,89 @@ main(
     exit(1);
   }
 
+  double attr_lon_asc_node;
+  double attr_orbit_period;
+  double attr_orbit_inc;
+  double attr_orbit_semi_major;
+  double attr_orbit_ecc;
+  double t_asc_node;
+
+  if( !read_orbit_elements_from_attr_os2( g_id, attr_lon_asc_node,
+      attr_orbit_period, attr_orbit_inc, attr_orbit_semi_major,
+      attr_orbit_ecc, t_asc_node) ) {
+    fprintf(stderr,"Error reading orbit elements from HDF file\n");
+    exit(1);
+  }
+  attr_orbit_period = 99.46;
+  if( attr_orbit_period < 70 ) {
+    fprintf(stderr,"Error: unexpected value for orbit period: %f in %s\n",
+      attr_orbit_period, hdf_file); 
+    exit(1);
+  }
+  
+  latlon_config orbit_config;
+  
+  orbit_config.lambda_0    = attr_lon_asc_node;
+  orbit_config.inclination = attr_orbit_inc;
+  orbit_config.rev_period  = attr_orbit_period * 60;
+  orbit_config.xt_steps    = 152;
+  orbit_config.at_res      = 12.5;
+  orbit_config.xt_res      = 12.5;
+  
+  char str_t_start[CODE_B_TIME_LENGTH];
+  char str_t_end[CODE_B_TIME_LENGTH];
+  char str_t_dec[CODE_B_TIME_LENGTH];
+  char str_revtag[12];
+  char this_revtag[12];
+  
+  
+  if( !init_string(this_revtag,12) || 
+      !read_attr_h5( g_id, "Revolution Number", this_revtag ) ) {
+    fprintf( stderr, "Error reading Revolution Number\n");
+    exit(1);
+  }   
+  
+  //printf("This rev number: %s\n",this_revtag);
+  
+  FILE* ifp = fopen(orbele_file,"r");
+  char line[1024];
+  while(1) {
+    fgets(line,100,ifp);
+    //printf("line: %s\n",line);
+    sscanf(line,"%s %s %s %s %f %f",
+      str_revtag, str_t_start, str_t_end, str_t_dec,
+      &orbit_config.lambda_0, &orbit_config.rev_period );
+    orbit_config.rev_period *= 60;
+    if( feof(ifp) || strcmp(this_revtag,str_revtag)==0 ) break;
+  }  
+  fclose(ifp);
+  
+  printf("time_start: %s\n", str_t_start );
+  
+  
   char n_scans_attr[5];
   if( !read_attr_h5( g_id, "L1B Actual Scans", &n_scans_attr ) ) {
     fprintf(stderr,"Error obtaining # of L1B Frames from HDF file!\n");
     exit(1);
   }    
-  int num_l1b_frames = atoi( n_scans_attr );
+  int     num_l1b_frames = atoi( n_scans_attr );
+  hsize_t num_l1b_frames2 = determine_n_scans( g_id );
+  
+  if( num_l1b_frames2!=num_l1b_frames) { 
+    printf("Attribute n_scans==%d; array size==%d\n",num_l1b_frames,num_l1b_frames2);
+    num_l1b_frames = num_l1b_frames2;
+  }  
+  
   printf("n scans: %d\n",num_l1b_frames);
   
 
   vector< vector<uint16> > fp_lat(2);
   vector< vector<uint16> > fp_lon(2);
   vector< vector<uint16> > fp_tb(2);
-    
+  
+  
+  
+  
   for( int i_pol = 0; i_pol < 2; ++i_pol ) {
     int n_scans  = ( i_pol == 0 ) ? 281 : 282;
     fp_lat[i_pol].resize( num_l1b_frames * n_scans );
@@ -158,7 +357,7 @@ main(
   }
   H5Gclose(g_id);
   H5Fclose(h_id);
-  
+
   // Compute lat, lon bounding box for each L1B frame, this greatly speeds up processing
   vector< float > min_lat(num_l1b_frames);
   vector< float > max_lat(num_l1b_frames);
@@ -181,37 +380,25 @@ main(
       max_lon[i_frame] = (tmp_lon>max_lon[i_frame]) ? tmp_lon : max_lon[i_frame];
     }
   }
-  
-  
-  int e2bsize[2];
-  FILE* ifp = fopen( e2b12file, "r" );  
-  fseek( ifp, 0, SEEK_END );
-  int file_size = ftell( ifp );
 
-  
-  if ( file_size == 7899136 ) { // has [3248][152] size arrays
-    e2bsize[0] = 3248;
-    e2bsize[1] = 152;
-  } else if( file_size == 1974784 ) {// has [1624][76] size arrays
-    e2bsize[0] = 1624;
-    e2bsize[1] = 76;  
-  } else {
-    fprintf(stderr,"Incorrect E2B file size, %d.\n",file_size);
-    exit(1);
+  vector<float> e2b_lon(3248*152);
+  vector<float> e2b_lat(3248*152);
+  vector<float> tb_v(3248*152);
+  vector<float> tb_h(3248*152);
+
+  // compute L2B grid locations...
+  for ( int ati = 0; ati < 3248; ++ati ) {
+    for (int cti = 0; cti < 152; ++cti ) {
+      int e2b_ind = cti + ati*152;
+      float wvc_lat, wvc_lon;
+      bin_to_latlon( ati, cti, &orbit_config, &wvc_lat, &wvc_lon );
+      
+      e2b_lon[e2b_ind] = RAD_TO_DEG(wvc_lon);
+      e2b_lat[e2b_ind] = RAD_TO_DEG(wvc_lat);
+    }
   }
   
-  printf("E2B size: %d %d\n",e2bsize[0],e2bsize[1]);
-  
-  vector<float> e2b_lon(e2bsize[0]*e2bsize[1]);
-  vector<float> e2b_lat(e2bsize[0]*e2bsize[1]);
-  vector<float> tb_v(e2bsize[0]*e2bsize[1]);
-  vector<float> tb_h(e2bsize[0]*e2bsize[1]);
-
-  fseek( ifp, 0, SEEK_SET );  
-  fread( &e2b_lat[0], sizeof(float), e2bsize[0]*e2bsize[1], ifp );
-  fread( &e2b_lon[0], sizeof(float), e2bsize[0]*e2bsize[1], ifp );
-  fclose(ifp);
-  
+  // Average Noise brightness temperatures onto L2B grid
   double half_beam_size[2];
   
   half_beam_size[0] = sqrt( 27*45 ) / 111 / 2;
@@ -220,10 +407,10 @@ main(
   int    scan_ind;
   double dlat, dlon, tmp_lat, tmp_lon;
   
-  for( int ati = 0; ati < e2bsize[0]; ++ati ) {
+  for( int ati = 0; ati < 3248; ++ati ) {
     if ( ati % 128 == 0 ) printf("ati: %d\n",ati);
-    for( int cti = 0; cti < e2bsize[1]; ++cti ) {
-      int e2b_ind = cti + ati*e2bsize[1];
+    for( int cti = 0; cti < 152; ++cti ) {
+      int e2b_ind = cti + ati*152;
       
       double sum_tb[2] = {0,0};
       int   cnts_tb[2] = {0,0};
@@ -276,10 +463,12 @@ main(
   }  
   
   FILE* ofp = fopen(out_file,"w");
-  fwrite( &e2b_lat[0], sizeof(float), e2bsize[0]*e2bsize[1], ofp );
-  fwrite( &e2b_lon[0], sizeof(float), e2bsize[0]*e2bsize[1], ofp );
-  fwrite( &tb_v[0],    sizeof(float), e2bsize[0]*e2bsize[1], ofp );
-  fwrite( &tb_h[0],    sizeof(float), e2bsize[0]*e2bsize[1], ofp );
+  fwrite( &e2b_lat[0], sizeof(float), 3248*152, ofp );
+  fwrite( &e2b_lon[0], sizeof(float), 3248*152, ofp );
+  fwrite( &tb_v[0],    sizeof(float), 3248*152, ofp );
+  fwrite( &tb_h[0],    sizeof(float), 3248*152, ofp );
   fclose(ofp);
   return(0);
 }
+
+

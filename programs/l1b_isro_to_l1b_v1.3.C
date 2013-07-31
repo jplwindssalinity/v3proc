@@ -148,6 +148,16 @@ int init_string( char* string, int length )
 	return(1);
 }
 
+int determine_n_scans( hid_t obj_id ) {
+  hid_t sds_id = H5Dopen1(obj_id,"Scan_number");
+  if( sds_id < 0 ) return(0);
+  hid_t space_id = H5Dget_space(sds_id);
+  hsize_t dims[2], maxdims[2];
+  hsize_t n_dims = H5Sget_simple_extent_dims( space_id, &dims[0], &maxdims[0] );
+  if( n_dims == 0 ) return(0);
+  return(dims[0]);
+}
+
 int read_orbit_elements_from_attr_os2( hid_t obj_id, double &lon_asc_node,
       double &orbit_period, double &orbit_inc, double &orbit_semi_major,
       double &orbit_ecc, double &t_asc_node )
@@ -226,7 +236,7 @@ int map_sigma0( Sigma0Mapping* sigma0_map,
 //--------------//
 // MAIN PROGRAM //
 //--------------//
- 
+
 int
 main(
     int        argc,
@@ -508,19 +518,19 @@ main(
       // position w.r.t. time, not the total derivative.  Need to add the 
       // term [omega z-hat] cross [sc_position] to the OAT velocity to
       // construct the total time derivative of the OAT position.
-	  double omega = w_earth;  // rotation rate of earth
-	  
-	  sc_vel[0] -= omega * sc_pos[1];
-	  sc_vel[1] += omega * sc_pos[0];
-	  
-	  fwrite(&time,  sizeof(double),1,eph_fp);
-	  fwrite(&sc_pos,sizeof(double),3,eph_fp);
-	  fwrite(&sc_vel,sizeof(double),3,eph_fp);
-	  
-	  //printf("ii: %d; %f\n",ii,time);
-	}
-	fclose(eph_fp);
-	
+      double omega = w_earth;  // rotation rate of earth
+      
+      sc_vel[0] -= omega * sc_pos[1];
+      sc_vel[1] += omega * sc_pos[0];
+      
+      fwrite(&time,  sizeof(double),1,eph_fp);
+      fwrite(&sc_pos,sizeof(double),3,eph_fp);
+      fwrite(&sc_vel,sizeof(double),3,eph_fp);
+      
+      //printf("ii: %d; %f\n",ii,time);
+    }
+    fclose(eph_fp);
+
     g_id = H5Gopen( h_id, "science_data", H5P_DEFAULT );
     if( g_id < 0 ) {
       fprintf(stderr,"ERROR opening /science_data group in file %s.\n",l1b_hdf_file);
@@ -533,7 +543,13 @@ main(
       exit(1);
     }
     
-    int num_l1b_frames = atoi( n_scans_attr );
+    int     num_l1b_frames = atoi( n_scans_attr );
+    hsize_t num_l1b_frames2 = determine_n_scans( g_id );
+    
+    if( num_l1b_frames2!=num_l1b_frames) { 
+      printf("Attribute n_scans==%d; array size==%d\n",num_l1b_frames,num_l1b_frames2);
+      num_l1b_frames = num_l1b_frames2;
+    }  
     printf("n scans: %d\n",num_l1b_frames);
     
     // Footprint datasets
@@ -650,9 +666,9 @@ main(
       }
     }
     
-	char frame_time_str[64];	
-	char sst[num_l1b_frames][22];
-	read_SDS_h5(g_id,"Scan_start_time",&sst[0]);
+    char frame_time_str[64];	
+    char sst[num_l1b_frames][22];
+    read_SDS_h5(g_id,"Scan_start_time",&sst[0]);
     
     Ephemeris ephem( ephemeris_file, 10000 );
     
@@ -794,42 +810,42 @@ main(
                 is_mixed = 1;
               }
             }
-		  
-		    // Test for ice flag
-		    if( fp_flg[i_pol][scan_ind]&ICE_MASK || is_mixed )
-		      new_meas->landFlag += 2; // bit 1 for ice
-		      
-		    double sos = pow( 10.0, 0.1*(s0-snr) );
-		    
-		    double kprs2 = 0.0;
-		    if ( use_kprs && !kp.GetKprs2(new_meas, &kprs2)) {
-		      fprintf(stderr, "%s: Error computing Kprs2\n",command);
-		      exit(1);
-		    }
-		    
-		    double kpri2 = 0.0;
-		    if( use_kpri && !kp.GetKpri2( &kpri2) ) {
-		      fprintf(stderr,"%s: Error computing Kpri2\n",command);
-		      exit(1);
-		    }
 
-		    double kpr2     = 1 + kprs2 + kpri2;
-		    
-		    double kpA = 0.0000154*double(fp_Kpa[i_pol][scan_ind]);
-		    double kpB = 0.0000154*double(fp_Kpb[i_pol][scan_ind]);
-		    double kpC = 0.0000154*double(fp_Kpc[i_pol][scan_ind]);
-		    
-		    double kp_alpha = (1+kpA) * kpr2;
-		    double kp_beta  =     kpB * kpr2 * sos;
-		    double kp_gamma =     kpC * kpr2 * sos * sos;
-		    
-		    // Set kp alpha, beta, gamma and correct for attenuation
-		    new_meas->A = 1 + ( kp_alpha - 1 ) * atten_lin * atten_lin;
-		    new_meas->B = kp_beta              * atten_lin * atten_lin;
-		    new_meas->C = kp_gamma             * atten_lin * atten_lin;           
-		    
-		    // Stick this meas in the measSpot
-		    new_meas_spot->Append(new_meas);
+            // Test for ice flag
+            if( fp_flg[i_pol][scan_ind]&ICE_MASK || is_mixed )
+              new_meas->landFlag += 2; // bit 1 for ice
+              
+            double sos = pow( 10.0, 0.1*(s0-snr) );
+            
+            double kprs2 = 0.0;
+            if ( use_kprs && !kp.GetKprs2(new_meas, &kprs2)) {
+              fprintf(stderr, "%s: Error computing Kprs2\n",command);
+              exit(1);
+            }
+            
+            double kpri2 = 0.0;
+            if( use_kpri && !kp.GetKpri2( &kpri2) ) {
+              fprintf(stderr,"%s: Error computing Kpri2\n",command);
+              exit(1);
+            }
+
+            double kpr2     = 1 + kprs2 + kpri2;
+            
+            double kpA = 0.0000154*double(fp_Kpa[i_pol][scan_ind]);
+            double kpB = 0.0000154*double(fp_Kpb[i_pol][scan_ind]);
+            double kpC = 0.0000154*double(fp_Kpc[i_pol][scan_ind]);
+            
+            double kp_alpha = (1+kpA) * kpr2;
+            double kp_beta  =     kpB * kpr2 * sos;
+            double kp_gamma =     kpC * kpr2 * sos * sos;
+            
+            // Set kp alpha, beta, gamma and correct for attenuation
+            new_meas->A = 1 + ( kp_alpha - 1 ) * atten_lin * atten_lin;
+            new_meas->B = kp_beta              * atten_lin * atten_lin;
+            new_meas->C = kp_gamma             * atten_lin * atten_lin;           
+            
+            // Stick this meas in the measSpot
+            new_meas_spot->Append(new_meas);
           } else {
             
             for( int i_slice = 0; i_slice < n_slices; ++i_slice ) {
@@ -857,18 +873,16 @@ main(
               double s0  = -96  + 0.00147  * double(slice_s0[i_pol][slice_ind]) + s0_bias[i_pol];
               double snr = -65  + 0.001547 * double(slice_snr[i_pol][slice_ind]);
               
-              if( xfactor_table_file ) 
+              // Set inc angle
+              if( xfactor_table_file ) { 
                 os2xfix.FixIt( i_pol, i_slice, i_scan, i_frame, &xf, &s0 );
+                // If using xfactor table, set all incidence angles to be the same
+                int HG_slice_ind = ( i_pol == 0 ) ? 3 : 5;
+                new_meas->incidenceAngle = dtr*(46+0.0002451*double(slice_inc[i_pol][HG_slice_ind])); 
+              } else {
+                new_meas->incidenceAngle = dtr*(46+0.0002451*double(slice_inc[i_pol][slice_ind]));    
+              }
 
-	      //put in incidence angle adjustment
-	      //if(i_pol==0){
-	      // xf-=0.147*(i_slice-3);
-	      // s0+=0.147*(i_slice-3);
-	      //}else{
-	      // xf-=0.0329*(i_slice-5);
-	      // s0+=0.0329*(i_slice-5);
-	      //}
-              
               new_meas->XK      = pow(10.0,0.1*xf);
               new_meas->EnSlice = pow(10.0,0.1*(s0+xf-snr));
             
@@ -880,22 +894,7 @@ main(
               if( tmp_lat >  pi/2   ) tmp_lat  =  pi/2;
             
               new_meas->centroid.SetAltLonGDLat( 0.0, tmp_lon, tmp_lat );
-
-              // Set inc angle
-	      if( xfactor_table_file ) {
-		//make all slices have same inc angle as high-gain slice
-		int HG_slice_ind;
-		if ( i_pol==1 ) {
-		  HG_slice_ind=5;
-		}else{
-		  HG_slice_ind=3;
-		}
-		new_meas->incidenceAngle = dtr*(46+0.0002451*double(slice_inc[i_pol][HG_slice_ind])); 
-	      }else{
-		//just populate each slice with inc angle from hdf 
-		new_meas->incidenceAngle = dtr*(46+0.0002451*double(slice_inc[i_pol][slice_ind]));    
-              }
-
+              
               // Get attenuation map value
               float atten_dB = 0;
               if( use_atten_map )
