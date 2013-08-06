@@ -5,30 +5,19 @@
 
 //----------------------------------------------------------------------
 // NAME
-//    generate_rgc
+//    RS_GSE_to_ephem_quat.C
 //
 // SYNOPSIS
-//    generate_rgc_from_ephem_quat_files [ -cf -s rev ] <config_file> <RGC_base>
+//    RS_GSE_to_ephem_quat -i GSE_file -e ephem.dat -q quats.dat
 //
 // DESCRIPTION
-//    Generates a set of Receiver Gate Constants for each beam based
-//    upon the parameters in the simulation configuration file.
+//    Extracts ephem and quaternion records from a GSE file
 //
 // OPTIONS
-//      [ -c ]  Clean the constants.
-//      [ -f ]  Make the range fixed over azimuth.
-//      [ -s i ] start with rev i in ephem / quat files
 //
 // OPERANDS
-//    The following operands are supported:
-//      <config_file>  The config_file needed listing
-//                     all input parameters.
-//
-//      <RGC_base>     The RGC output base.
 //
 // EXAMPLES
-//    An example of a command line is:
-//      % generate_constants sws1b.cfg rgc.dat
 //
 // ENVIRONMENT
 //    Not environment dependent.
