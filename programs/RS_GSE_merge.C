@@ -110,14 +110,16 @@ int main( int argc, char* argv[] ) {
   
   std::list< GSE_TT_FILE_IDX > gse_tt_idx_list;
   
+  size_t total_gse_packets=0;
+  
   for( size_t ifile=0;ifile<infiles.size();++ifile) {
     ifps[ifile] = fopen(infiles[ifile].c_str(),"r");
     
     // Scan through file
     fseek(ifps[ifile],0,SEEK_END);
-    long int n_packets = ftell(ifps[ifile]) / PACKET_SIZE;
+    size_t n_packets = ftell(ifps[ifile]) / PACKET_SIZE;
     
-    for( int ipacket=0;ipacket<n_packets;++ipacket) {
+    for( size_t ipacket=0;ipacket<n_packets;++ipacket) {
       int   gps_tt;
       long int packet_off = ipacket*PACKET_SIZE;
       fseek(ifps[ifile],packet_off+TT0_OFF+NHEAD-1,SEEK_SET);
@@ -130,12 +132,14 @@ int main( int argc, char* argv[] ) {
       this_gse_tt_file_idx.ifp    = ifps[ifile];
       gse_tt_idx_list.push_back( this_gse_tt_file_idx );
     }
+    total_gse_packets += n_packets;
+    
+    // Sort and remove duplicates
+    gse_tt_idx_list.sort( &compare );
+    gse_tt_idx_list.unique( &same );
   }
   
-  printf("Total GSE packets: %zd\n",gse_tt_idx_list.size());  
-  // Sort them and remove duplicates
-  gse_tt_idx_list.sort( &compare );
-  gse_tt_idx_list.unique( &same );
+  printf("Total GSE packets: %zd\n",total_gse_packets);  
   printf("Unique GSE packets: %zd\n",gse_tt_idx_list.size());
   
   // Write out unique GSE packets in all files
