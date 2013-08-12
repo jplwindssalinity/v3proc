@@ -53,9 +53,9 @@ static const char rcs_id[] =
 const char usage_string[] = "-i <ASCII file with list of gse files> -o <outfile>";
 
 struct GSE_TT_FILE_IDX {
-  int   gps_tt;
-  int   idx;
-  FILE* ifp;
+  int    gps_tt;
+  size_t off;
+  FILE*  ifp;
 };
 
 bool compare( const GSE_TT_FILE_IDX &gse_tt_idx0, const GSE_TT_FILE_IDX &gse_tt_idx1 ) {
@@ -115,25 +115,39 @@ int main( int argc, char* argv[] ) {
   for( size_t ifile=0;ifile<infiles.size();++ifile) {
     ifps[ifile] = fopen(infiles[ifile].c_str(),"r");
     
-    // Scan through file
     fseek(ifps[ifile],0,SEEK_END);
-    size_t n_packets = ftell(ifps[ifile]) / PACKET_SIZE;
+    size_t file_size = ftell(ifps[ifile]);
+    size_t this_off  = 0;
     
-    for( size_t ipacket=0;ipacket<n_packets;++ipacket) {
-      int   gps_tt;
-      long int packet_off = ipacket*PACKET_SIZE;
-      fseek(ifps[ifile],packet_off+TT0_OFF+NHEAD-1,SEEK_SET);
-      fread( &gps_tt, sizeof(int), 1, ifps[ifile] ); 
-      SWAP_VAR( gps_tt, int );
+    // Scan through file
+    while( this_off+PACKET_SIZE <= file_size ) {
+      char first_four_bytes[4];
       
-      GSE_TT_FILE_IDX this_gse_tt_file_idx;
-      this_gse_tt_file_idx.gps_tt = gps_tt;
-      this_gse_tt_file_idx.idx    = ipacket;
-      this_gse_tt_file_idx.ifp    = ifps[ifile];
-      gse_tt_idx_list.push_back( this_gse_tt_file_idx );
-    }
-    total_gse_packets += n_packets;
-    
+      fseek(ifps[ifile],this_off,SEEK_SET);
+      fread(&first_four_bytes,sizeof(char),4,ifps[ifile]);
+      
+      // Check if this is a valid GSE packet starting at this byte offset
+      if( first_four_bytes[0]==35 && first_four_bytes[3]==6 ) {
+        // if valid, get gps time-tag for sorting and extracting unique packets.
+        int gps_tt;
+        fseek(ifps[ifile],this_off+TT0_OFF+NHEAD-1,SEEK_SET);
+        fread( &gps_tt, sizeof(int), 1, ifps[ifile] ); 
+        SWAP_VAR( gps_tt, int );
+        
+        // Add to list of packets
+        GSE_TT_FILE_IDX this_gse_tt_file_idx;
+        this_gse_tt_file_idx.gps_tt = gps_tt;
+        this_gse_tt_file_idx.off    = this_off;
+        this_gse_tt_file_idx.ifp    = ifps[ifile];
+        gse_tt_idx_list.push_back( this_gse_tt_file_idx );
+        
+        total_gse_packets += 1;
+        this_off          += PACKET_SIZE;
+      } else {
+        // shift one byte and try again.
+        this_off++;
+      }
+    }    
     // Sort and remove duplicates
     gse_tt_idx_list.sort( &compare );
     gse_tt_idx_list.unique( &same );
@@ -147,9 +161,8 @@ int main( int argc, char* argv[] ) {
   
   for( std::list<GSE_TT_FILE_IDX>::iterator it=gse_tt_idx_list.begin();
        it != gse_tt_idx_list.end(); ++it) {
-    char gse_packet[PACKET_SIZE];
-    long int packet_off = it->idx*PACKET_SIZE;
-    fseek(it->ifp,packet_off,SEEK_SET);
+    char gse_packet[PACKET_SIZE];    
+    fseek(it->ifp,it->off,SEEK_SET);
     fread(&gse_packet,sizeof(char),PACKET_SIZE,it->ifp);
     fwrite(&gse_packet,sizeof(char),PACKET_SIZE,ofp);
   }
