@@ -127,6 +127,9 @@ int main( int argc, char* argv[] ) {
       fread(&first_four_bytes,sizeof(char),4,ifps[ifile]);
       
       // Check if this is a valid GSE packet starting at this byte offset
+      // See Document 50305D, Table 8.1.1-1 Primary EHS protocol header format
+      // Byte 0 indicates version of EHS protocol and project ID
+      // Byte 3 indicates content of EHS protocol data (GSE==6).
       if( first_four_bytes[0]==35 && first_four_bytes[3]==6 ) {
         // if valid, get gps time-tag for sorting and extracting unique packets.
         int gps_tt;
