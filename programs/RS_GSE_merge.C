@@ -42,6 +42,7 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <unistd.h>
 #include <vector>
+#include <algorithm>
 #include <list>
 #include <string>
 #include "SwapEndian.h"
@@ -49,6 +50,7 @@ static const char rcs_id[] =
 #define PACKET_SIZE  526
 #define NHEAD        9
 #define TT0_OFF      40
+#define GPS2UTC_OFF  444
 
 const char usage_string[] = "-i <ASCII file with list of gse files> -o <outfile>";
 
@@ -108,7 +110,7 @@ int main( int argc, char* argv[] ) {
   
   //printf("%d\n",infiles.size());
   
-  std::list< GSE_TT_FILE_IDX > gse_tt_idx_list;
+  std::vector< GSE_TT_FILE_IDX > gse_tt_idx_list;
   
   size_t total_gse_packets=0;
   
@@ -126,16 +128,24 @@ int main( int argc, char* argv[] ) {
       fseek(ifps[ifile],this_off,SEEK_SET);
       fread(&first_four_bytes,sizeof(char),4,ifps[ifile]);
       
+      int gps_tt;
+      fseek(ifps[ifile],this_off+TT0_OFF+NHEAD-1,SEEK_SET);
+      fread( &gps_tt, sizeof(int), 1, ifps[ifile] ); 
+      SWAP_VAR( gps_tt, int );
+      
+      short gps2utc;
+      fseek(ifps[ifile],this_off+GPS2UTC_OFF+NHEAD-1,SEEK_SET);
+      fread( &gps2utc, sizeof(short), 1, ifps[ifile] );
+      SWAP_VAR( gps2utc, short );
+      
       // Check if this is a valid GSE packet starting at this byte offset
       // See Document 50305D, Table 8.1.1-1 Primary EHS protocol header format
       // Byte 0 indicates version of EHS protocol and project ID
       // Byte 3 indicates content of EHS protocol data (GSE==6).
-      if( first_four_bytes[0]==35 && first_four_bytes[3]==6 ) {
+      if( first_four_bytes[0]==35 && first_four_bytes[3]==6  &&
+          gps_tt>0 && gps2utc < 0) {
         // if valid, get gps time-tag for sorting and extracting unique packets.
-        int gps_tt;
-        fseek(ifps[ifile],this_off+TT0_OFF+NHEAD-1,SEEK_SET);
-        fread( &gps_tt, sizeof(int), 1, ifps[ifile] ); 
-        SWAP_VAR( gps_tt, int );
+        
         
         // Add to list of packets
         GSE_TT_FILE_IDX this_gse_tt_file_idx;
@@ -150,11 +160,16 @@ int main( int argc, char* argv[] ) {
         // shift one byte and try again.
         this_off++;
       }
-    }    
-    // Sort and remove duplicates
-    gse_tt_idx_list.sort( &compare );
-    gse_tt_idx_list.unique( &same );
+    }
   }
+  
+  std::vector<GSE_TT_FILE_IDX>::iterator it;
+  
+  // Sort and remove duplicates
+  std::stable_sort( gse_tt_idx_list.begin(), gse_tt_idx_list.end(), compare );
+  it = std::unique( gse_tt_idx_list.begin(), gse_tt_idx_list.end(), same );
+  
+  gse_tt_idx_list.resize( std::distance(gse_tt_idx_list.begin(),it) );
   
   printf("Total GSE packets: %zd\n",total_gse_packets);  
   printf("Unique GSE packets: %zd\n",gse_tt_idx_list.size());
@@ -162,8 +177,7 @@ int main( int argc, char* argv[] ) {
   // Write out unique GSE packets in all files
   FILE* ofp = fopen(outfile,"w");
   
-  for( std::list<GSE_TT_FILE_IDX>::iterator it=gse_tt_idx_list.begin();
-       it != gse_tt_idx_list.end(); ++it) {
+  for( it=gse_tt_idx_list.begin(); it != gse_tt_idx_list.end(); ++it) {
     char gse_packet[PACKET_SIZE];    
     fseek(it->ifp,it->off,SEEK_SET);
     fread(&gse_packet,sizeof(char),PACKET_SIZE,it->ifp);
