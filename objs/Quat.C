@@ -294,6 +294,68 @@ Quat::QuatFromRotMat(
 }
 */
 
+void Quat::QuatFromMatrix( double* matrix ) {
+    
+    double R00 = matrix[0];
+    double R01 = matrix[1];
+    double R02 = matrix[2];
+    double R10 = matrix[3+0];
+    double R11 = matrix[3+1];
+    double R12 = matrix[3+2];
+    double R20 = matrix[6+0];
+    double R21 = matrix[6+1];
+    double R22 = matrix[6+2];
+    
+    double tmp, T = R00 + R11 + R22;    // trace
+    double maxPivot = fmax((fmax(R00, R11)), (fmax(R22, T)));
+
+    if (maxPivot == R00)
+    {
+        // x is largest
+        x = sqrt(0.25 * (1.0 + 2.0 * R00 - T));
+        tmp = 1.0 / (4.0 * x);
+        y = (R01 + R10) * tmp;
+        z = (R02 + R20) * tmp;
+        w = (R12 - R21) * tmp;
+    }
+
+    if (maxPivot == R11)
+    {
+        // y is largest
+        y = sqrt(0.25 * (1.0 + 2.0 * R11 - T));
+        tmp = 1.0 / (4.0 * y);
+        x = (R01 + R10) * tmp;
+        z = (R12 + R21) * tmp;
+        w = (R20 - R02) * tmp;
+    }
+
+    if (maxPivot == R22)
+    {
+        // z is largest
+        z = sqrt(0.25 * (1.0 + 2.0 * R22 - T));
+        tmp = 1.0 / (4.0 * z);
+        x = (R02 + R20) * tmp;
+        y = (R12 + R21) * tmp;
+        w = (R01 - R10) * tmp;
+    }
+
+    if (maxPivot == T)
+    {
+        // w is largest
+        w = sqrt(0.25 * (1.0 + T));
+        tmp = 1.0 / (4.0 * w);
+        x = (R12 - R21) * tmp;
+        y = (R20 - R02) * tmp;
+        z = (R01 - R10) * tmp;
+    }
+
+    // make rotation shortest by negating q if w < 0
+    if (w < 0.0)
+        *this *= -1;    // q = q * (-1)
+
+    return;
+}
+
 //------------------//
 // Quat::WriteAscii //
 //------------------//
@@ -325,7 +387,6 @@ Quat::WriteAscii(
 //------------------//
 // Quat::operator*= //
 //------------------//
-/*
 void
 Quat::operator*=(
     double  factor)
@@ -336,27 +397,24 @@ Quat::operator*=(
     w *= factor;
     return;
 }
-*/
+
 //-----------//
 // operator* //
 //-----------//
-
-Quat
-operator*(
-    const Quat  q,
-    const Quat  p)
+Quat 
+Quat::operator*(Quat q2) 
 {
-    Quat qp;
-    qp.w = q.w*p.w - q.x*p.x - q.y*p.y - q.z*p.z;
-    qp.x = q.w*p.x + q.x*p.w + q.y*p.z - q.z*p.y;
-    qp.y = q.w*p.y + q.y*p.w + q.z*p.x - q.x*p.z;
-    qp.z = q.w*p.z + q.z*p.w + q.x*p.y - q.y*p.x;
-    return(qp);
+    Quat result;
+    result.w = w*q2.w - x*q2.x - y*q2.y - z*q2.z;
+    result.x = w*q2.x + x*q2.w + y*q2.z - z*q2.y;
+    result.y = w*q2.y + y*q2.w + z*q2.x - x*q2.z;
+    result.z = w*q2.z + z*q2.w + x*q2.y - y*q2.x;
+    return(result);
 }
 
-
-void Quat::Power( double a ) {
-    
+void 
+Quat::Power( double a ) 
+{    
     if( w==1 ) return;
     double cosold=w;
     double sinold=sqrt(x*x+y*y+z*z);
@@ -425,9 +483,9 @@ QuatFile::QuatFile() {
     return;
 }
 
-QuatFile::QuatFile(const char* filename) {
+QuatFile::QuatFile(const char* filename,unsigned int  max_states) {
     SetInputFile(filename);
-    SetMaxNodes(1000000);
+    SetMaxNodes(max_states);
     return;
 }
 

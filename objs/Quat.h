@@ -18,6 +18,7 @@ static const char rcs_id_quat_h[] =
 #include "Mat.h"
 #include "BufferedList.h"
 #include "Attitude.h"
+#include "Matrix3.h"
 
 //======================================================================
 // CLASS
@@ -59,7 +60,12 @@ public:
     void    Product(const Quat& p, const Quat& q);
     void    Power( double a );
     void    GetAttitude( Attitude* attitude );
-
+    
+    void QuatFromMatrix( double* matrix );
+    
+    Quat operator*(Quat q2);
+    void operator*=(double factor);
+    
 /*
     void RotationFromFixedAngles(double rx, double ry, double rz);
     void QuatFromRotMat(const Matrix& R);
@@ -110,7 +116,7 @@ public:
     //--------------//
 
     QuatFile();
-    QuatFile(const char* filename );
+    QuatFile(const char* filename, unsigned int max_states );
     ~QuatFile();
     
     // Interpolation
