@@ -43,11 +43,11 @@ static const char rcs_id[] =
 #include <unistd.h>
 #include <vector>
 #include <algorithm>
-#include <list>
 #include <string>
 #include "SwapEndian.h"
 
 #define PACKET_SIZE  526
+#define HEADER_BYTES 39
 #define NHEAD        9
 #define TT0_OFF      40
 #define GPS2UTC_OFF  444
@@ -123,10 +123,14 @@ int main( int argc, char* argv[] ) {
     
     // Scan through file
     while( this_off+PACKET_SIZE <= file_size ) {
-      char first_four_bytes[4];
+      unsigned char gse_headers[HEADER_BYTES];
       
       fseek(ifps[ifile],this_off,SEEK_SET);
-      fread(&first_four_bytes,sizeof(char),4,ifps[ifile]);
+      fread(&gse_headers,sizeof(unsigned char),HEADER_BYTES,ifps[ifile]);
+      
+      // Extract packet length header, should always be PACKET_SIZE-HEADER_BYTES
+      // Table 8.6.3.1-1 in Document 50305D
+      short packet_length = (short)gse_headers[36]*256 + (short)gse_headers[37];
       
       int gps_tt;
       fseek(ifps[ifile],this_off+TT0_OFF+NHEAD-1,SEEK_SET);
@@ -142,11 +146,9 @@ int main( int argc, char* argv[] ) {
       // See Document 50305D, Table 8.1.1-1 Primary EHS protocol header format
       // Byte 0 indicates version of EHS protocol and project ID
       // Byte 3 indicates content of EHS protocol data (GSE==6).
-      if( first_four_bytes[0]==35 && first_four_bytes[3]==6  &&
+      if( gse_headers[0]==35 && gse_headers[3]==6  && 
+          packet_length==PACKET_SIZE-HEADER_BYTES &&
           gps_tt>0 && gps2utc < 0) {
-        // if valid, get gps time-tag for sorting and extracting unique packets.
-        
-        
         // Add to list of packets
         GSE_TT_FILE_IDX this_gse_tt_file_idx;
         this_gse_tt_file_idx.gps_tt = gps_tt;
@@ -165,25 +167,24 @@ int main( int argc, char* argv[] ) {
   
   std::vector<GSE_TT_FILE_IDX>::iterator it;
   
-  // Sort and remove duplicates
-  std::stable_sort( gse_tt_idx_list.begin(), gse_tt_idx_list.end(), compare );
-  it = std::unique( gse_tt_idx_list.begin(), gse_tt_idx_list.end(), same );
+  // Sort and remove duplicates 
+  // (http://www.cplusplus.com/reference/algorithm/)
+  std::sort(        gse_tt_idx_list.begin(), gse_tt_idx_list.end(), compare );
+  it = std::unique( gse_tt_idx_list.begin(), gse_tt_idx_list.end(), same    );
   
   gse_tt_idx_list.resize( std::distance(gse_tt_idx_list.begin(),it) );
   
-  printf("Total GSE packets: %zd\n",total_gse_packets);  
+  printf("Total GSE packets: %zd\n",total_gse_packets);
   printf("Unique GSE packets: %zd\n",gse_tt_idx_list.size());
   
   // Write out unique GSE packets in all files
   FILE* ofp = fopen(outfile,"w");
-  
   for( it=gse_tt_idx_list.begin(); it != gse_tt_idx_list.end(); ++it) {
-    char gse_packet[PACKET_SIZE];    
+    char gse_packet[PACKET_SIZE];
     fseek(it->ifp,it->off,SEEK_SET);
     fread(&gse_packet,sizeof(char),PACKET_SIZE,it->ifp);
     fwrite(&gse_packet,sizeof(char),PACKET_SIZE,ofp);
   }
-  
   fclose(ofp);
   
   for( size_t ifile=0;ifile<infiles.size();++ifile) {
