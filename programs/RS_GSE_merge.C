@@ -97,10 +97,10 @@ int main( int argc, char* argv[] ) {
   std::vector< std::string > infiles;
   
   FILE* ifp = fopen(listfile,"r");
-  while( !feof(ifp) ) {
-    char line[1024];
-    fscanf( ifp, "%s", line );
-    std::string this_infile = line;
+  char line[1024], filename[1023];
+  while(fgets(line,sizeof(line),ifp)!=NULL) {
+    sscanf( line, "%s", filename );
+    std::string this_infile = filename;
     infiles.push_back( this_infile );
     //printf("%s\n",this_infile.c_str());
   }
@@ -163,6 +163,7 @@ int main( int argc, char* argv[] ) {
         this_off++;
       }
     }
+    //printf("%s: GSE packets: %zd\n",infiles[ifile].c_str(),total_gse_packets);
   }
   
   std::vector<GSE_TT_FILE_IDX>::iterator it;
