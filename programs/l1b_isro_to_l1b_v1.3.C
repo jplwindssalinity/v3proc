@@ -574,6 +574,7 @@ main(
     vector< vector<uint16> > slice_snr(2);
     vector< vector<uint16> > slice_xf(2);
     vector< vector<uint16> > slice_azi(2);
+    vector< vector<uint16> > slice_ant_azi(2);
     vector< vector<uint16> > slice_inc(2);
     vector< vector<uint16> > slice_s0(2);
     vector< vector<uint16> > slice_flg(2);
@@ -634,6 +635,7 @@ main(
         slice_snr[i_pol].resize( num_l1b_frames * n_scans * n_slices );
         slice_xf[i_pol].resize(  num_l1b_frames * n_scans * n_slices );
         slice_azi[i_pol].resize( num_l1b_frames * n_scans * n_slices );
+        slice_ant_azi[i_pol].resize( num_l1b_frames * n_scans * n_slices );
         slice_inc[i_pol].resize( num_l1b_frames * n_scans * n_slices );
         slice_s0[i_pol].resize(  num_l1b_frames * n_scans * n_slices );
         slice_flg[i_pol].resize( num_l1b_frames * n_scans * n_slices );
@@ -647,6 +649,7 @@ main(
           !read_SDS_h5( g_id, "Inner_beam_slice_SNR",             &slice_snr[0][0] ) ||
           !read_SDS_h5( g_id, "Inner_beam_slice_Xfactor",         &slice_xf[0][0]  ) ||
           !read_SDS_h5( g_id, "Inner_beam_slice_azimuth_angle",   &slice_azi[0][0] ) ||
+          !read_SDS_h5( g_id, "Inner_beam_slice_antenna_azimuth_angle",   &slice_ant_azi[0][0] ) ||
           !read_SDS_h5( g_id, "Inner_beam_slice_incidence_angle", &slice_inc[0][0] ) ||
           !read_SDS_h5( g_id, "Inner_beam_slice_sigma0",          &slice_s0[0][0]  ) ||
           !read_SDS_h5( g_id, "Inner_beam_slice_sigma0_flag",     &slice_flg[0][0] ) ||
@@ -658,6 +661,7 @@ main(
           !read_SDS_h5( g_id, "Outer_beam_slice_SNR",             &slice_snr[1][0] ) ||
           !read_SDS_h5( g_id, "Outer_beam_slice_Xfactor",         &slice_xf[1][0]  ) ||
           !read_SDS_h5( g_id, "Outer_beam_slice_azimuth_angle",   &slice_azi[1][0] ) ||
+          !read_SDS_h5( g_id, "Outer_beam_slice_antenna_azimuth_angle",   &slice_ant_azi[1][0] ) ||
           !read_SDS_h5( g_id, "Outer_beam_slice_incidence_angle", &slice_inc[1][0] ) ||
           !read_SDS_h5( g_id, "Outer_beam_slice_sigma0",          &slice_s0[1][0]  ) ||
           !read_SDS_h5( g_id, "Outer_beam_slice_sigma0_flag",     &slice_flg[1][0] ) ) {
@@ -905,14 +909,14 @@ main(
               float northAzimuth       = dtr*0.005515*double(slice_azi[i_pol][slice_ind]);
               new_meas->eastAzimuth    = (450.0*dtr - northAzimuth);
               if (new_meas->eastAzimuth >= two_pi) new_meas->eastAzimuth -= two_pi;         
-
+              
+              float ant_azi = dtr*0.005515*double(slice_ant_azi[i_pol][slice_ind]);
+              
               int is_fore = 0;
               if( slice_flg[i_pol][slice_ind]&FORE_MASK ) is_fore = 1;            
-              if( is_fore )
-                new_meas->scanAngle     = 0.0;
-              else
-                new_meas->scanAngle     = 3.1459;
 
+              new_meas->scanAngle = ant_azi;
+              
               new_meas->measType      = (i_pol==0) ? Meas::HH_MEAS_TYPE : Meas::VV_MEAS_TYPE;
               new_meas->beamIdx       = i_pol;
               
