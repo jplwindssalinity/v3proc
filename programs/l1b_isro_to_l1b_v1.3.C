@@ -910,7 +910,11 @@ main(
               new_meas->eastAzimuth    = (450.0*dtr - northAzimuth);
               if (new_meas->eastAzimuth >= two_pi) new_meas->eastAzimuth -= two_pi;         
               
-              float ant_azi = dtr*0.005515*double(slice_ant_azi[i_pol][slice_ind]);
+              float ant_azi = dtr*(0.00643000*double(slice_ant_azi[i_pol][slice_ind])-60);
+              
+              ant_azi -= 20*dtr; // correct for flown -20 deg yaw offset.
+              
+              if(ant_azi<0) ant_azi += two_pi;
               
               int is_fore = 0;
               if( slice_flg[i_pol][slice_ind]&FORE_MASK ) is_fore = 1;            
