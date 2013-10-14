@@ -27,6 +27,7 @@
 #ifndef NETCDF_H
 #define NETCDF_H
 
+#include <stdlib.h>
 #include <netcdf.h>
 
 #define RAD_TO_DEG(x) ((x)*180.0f/M_PI)

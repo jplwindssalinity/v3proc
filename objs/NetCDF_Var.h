@@ -28,6 +28,7 @@
 #define NETCDF_VARIABLE_H
 
 #include <netcdf.h>
+#include <string.h>
 #include <string>
 #include <vector>
 
