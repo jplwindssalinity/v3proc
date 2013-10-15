@@ -58,6 +58,7 @@ static const char rcs_id[] =
 #include "GenericGeom.h"
 #include "Quat.h"
 #include "SwapEndian.h"
+#include "sofa.h"
 
 //-----------//
 // TEMPLATES //
@@ -276,10 +277,50 @@ main(
     
     // Still need to adjust for epoch for the GSE inertial reference frame!
     // EarthPosition objects use kilometers, kilometers / second units.
+    
+    // Compute Julian Date from sim time-tag
+    ETime t_now;
+    t_now.SetTime(time);
+    
+    char t_now_str[CODE_A_TIME_LENGTH];
+    t_now.ToCodeA(t_now_str);
+    
+    // Compute year, month, day, ...etc
+    int   year  = atoi( strtok( &t_now_str[0], "-"  ) );
+    int   month = atoi( strtok( NULL,          "-"  ) );
+    int   day   = atoi( strtok( NULL,          "T"  ) );
+    int   hour  = atoi( strtok( NULL,          ":"  ) );
+    int   min   = atoi( strtok( NULL,          ":"  ) );
+    float sec   = atof( strtok( NULL,          "\0" ) );
+    
+    double dj0, djm;
+    iauCal2jd( year, month, day, &dj0, &djm );
+    
+    djm+= ( (double)hour + (double)min/60 + sec/60/60 )/24.0;
+    
+    double rb[3][3], rp[3][3], rbp[3][3];
+    
+    iauBp00( dj0, djm, rb, rp, rbp );
+    
+    // Rotate from J2000 mean equator and equinox to mean equator and
+    // equinox of date
+    double rot_pos[3], j2k_pos[3];
+    double rot_vel[3], j2k_vel[3];
+    
+    for( int ii=0;ii<3;++ii) {
+      j2k_pos[ii] = pos[ii];
+      j2k_vel[ii] = vel[ii];
+    }
+    
+    // Use IAU subroutines to do the matrix vector mulitplication
+    iauRxp( rp, j2k_pos, rot_pos );
+    iauRxp( rp, j2k_vel, rot_vel );
+    
+    // Set the ECI coordinates at mean of date
     EarthPosition rsat;
     Vector3       vsat;
-    rsat.Set( (double)pos[0]*1E-3, (double)pos[1]*1E-3, (double)pos[2]*1E-3 );
-    vsat.Set( (double)vel[0]*1E-3, (double)vel[1]*1E-3, (double)vel[2]*1E-3 );
+    rsat.Set( rot_pos[0]*1E-3, rot_pos[1]*1E-3, rot_pos[2]*1E-3 );
+    vsat.Set( rot_vel[0]*1E-3, rot_vel[1]*1E-3, rot_vel[2]*1E-3 );
     
     Vector3 xscvel_geoc, yscvel_geoc, zscvel_geoc;
     Vector3 xscvel_geod, yscvel_geod, zscvel_geod;
