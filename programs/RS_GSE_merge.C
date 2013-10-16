@@ -45,6 +45,7 @@ static const char rcs_id[] =
 #include <algorithm>
 #include <string>
 #include "SwapEndian.h"
+#include "ETime.h"
 
 #define PACKET_SIZE  526
 #define HEADER_BYTES 39
@@ -52,7 +53,7 @@ static const char rcs_id[] =
 #define TT0_OFF      40
 #define GPS2UTC_OFF  444
 
-const char usage_string[] = "-i <ASCII file with list of gse files> -o <outfile>";
+const char usage_string[] = "-i <ASCII file with list of gse files> -o <outfile> OR -od <outdir>";
 
 struct GSE_TT_FILE_IDX {
   int    gps_tt;
@@ -73,6 +74,7 @@ int main( int argc, char* argv[] ) {
   
   const char* command  = argv[0];
   char*       outfile  = NULL;
+  char*       outdir   = NULL;
   char*       listfile = NULL;
   
   int optind = 1;
@@ -82,14 +84,17 @@ int main( int argc, char* argv[] ) {
       listfile=argv[++optind];
     } else if ( sw=="-o" ) {
       outfile=argv[++optind];
+    } else if ( sw=="-od" ) {
+      outdir=argv[++optind];
     } else {
       fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
       exit(1);
     }
     ++optind;
   }
-  
-  if( !listfile || !outfile ) {
+
+  // Only one of outfile and outdir may be commanded
+  if( !listfile || ( !outfile == !outdir ) ) {
     fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
     exit(1);
   }
@@ -178,6 +183,52 @@ int main( int argc, char* argv[] ) {
   printf("Total GSE packets: %zd\n",total_gse_packets);
   printf("Unique GSE packets: %zd\n",gse_tt_idx_list.size());
   
+  // Determine time strings for 1st, last GSE packet in file, and current UTC time.
+  ETime etime;
+  etime.FromCodeB("1970-001T00:00:00.000");
+  double sim_time_base = (double)etime.GetSec() + (double)etime.GetMs()/1000;
+  
+  etime.FromCodeB("1980-006T00:00:00.000");
+  double gps_time_base = (double)etime.GetSec() + (double)etime.GetMs()/1000;
+  
+  short gps2utc;
+  
+  // get iterator to first element in vector
+  it = gse_tt_idx_list.begin();
+  fseek(it->ifp,it->off+GPS2UTC_OFF+NHEAD-1,SEEK_SET);
+  fread( &gps2utc, sizeof(short), 1, it->ifp );
+  SWAP_VAR( gps2utc, short );
+  
+  double t_start = (double)(it->gps_tt+gps2utc) + gps_time_base - sim_time_base;
+  
+  // get iterator to last element in vector
+  it = gse_tt_idx_list.end(); --it;
+  fseek(it->ifp,it->off+GPS2UTC_OFF+NHEAD-1,SEEK_SET);
+  fread( &gps2utc, sizeof(short), 1, it->ifp );
+  SWAP_VAR( gps2utc, short );
+  double t_end = (double)(it->gps_tt+gps2utc) + gps_time_base - sim_time_base;
+  
+  char str_t_start[BLOCK_B_TIME_LENGTH];
+  char str_t_end[BLOCK_B_TIME_LENGTH];
+  char str_t_now[BLOCK_B_TIME_LENGTH];
+  
+  etime.SetTime(t_start);
+  etime.ToBlockB(str_t_start);
+
+  etime.SetTime(t_end);
+  etime.ToBlockB(str_t_end);
+
+  etime.CurrentTime();
+  etime.ToBlockB(str_t_now);
+  
+//   printf("%s to %s; %s\n",str_t_start,str_t_end,str_t_now);
+  
+  // Generate the output file name dynmaically if only supplied the output directory
+  if ( outdir ) {
+    outfile = new char[1024];
+    sprintf(outfile,"%s/RS_GSE_%s-%s.%s",outdir,str_t_start,str_t_end,str_t_now);
+  }
+  
   // Write out unique GSE packets in all files
   FILE* ofp = fopen(outfile,"w");
   for( it=gse_tt_idx_list.begin(); it != gse_tt_idx_list.end(); ++it) {
@@ -191,6 +242,8 @@ int main( int argc, char* argv[] ) {
   for( size_t ifile=0;ifile<infiles.size();++ifile) {
     fclose(ifps[ifile]);
   }
+  
+  if ( outdir != NULL ) delete[] outfile;
   
   return(0);
 };
