@@ -12,7 +12,7 @@
 //
 // DESCRIPTION
 //    Extracts ephem and quaternion records from a GSE file
-//
+//    
 // OPTIONS
 //
 // OPERANDS
@@ -29,6 +29,15 @@
 //
 // NOTES
 //    None.
+//    We are using the J2000 ECI positions and veclocities in the GSE file.
+//    We need to convert them to ECI at the mean of date from J2000, which is
+//    only the precession corrections.
+//
+//    We use the attitude records in the GSE file, and they are in a geocentric
+//    local velocity frame (LVLH).
+//
+//    This program uses the IAU/SOFA C functions to compute the J2000 to mean
+//    of date precession.
 //
 // AUTHOR
 //    Alex Fore
@@ -56,6 +65,7 @@ static const char rcs_id[] =
 #include "BufferedList.C"
 #include "EarthPosition.h"
 #include "GenericGeom.h"
+#include "Ephemeris.h"
 #include "Quat.h"
 #include "SwapEndian.h"
 #include "sofa.h"
@@ -64,6 +74,8 @@ static const char rcs_id[] =
 // TEMPLATES //
 //-----------//
 template class List<EarthPosition>;
+template class List<OrbitState>;
+template class BufferedList<OrbitState>;
 template class BufferedList<QuatRec>;
 template class List<QuatRec>;
 //-----------//
@@ -144,14 +156,14 @@ main(
     } else if ( sw=="-q" ) {
       out_quat_file=argv[++optind];
     } else {
-      fprintf(stderr,"%s: %s\n",command,&usage_string);
+      fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
       exit(1);
     }
     ++optind;
   }
   
   if( !gse_file || !out_ephem_file || !out_quat_file ) {
-    fprintf(stderr,"%s: %s\n",command,&usage_string);
+    fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
     exit(1);
   }
   
@@ -295,11 +307,10 @@ main(
     
     double dj0, djm;
     iauCal2jd( year, month, day, &dj0, &djm );
-    
     djm+= ( (double)hour + (double)min/60 + sec/60/60 )/24.0;
     
+    // Compute the precession matrix from J2000 to mean of date.
     double rb[3][3], rp[3][3], rbp[3][3];
-    
     iauBp00( dj0, djm, rb, rp, rbp );
     
     // Rotate from J2000 mean equator and equinox to mean equator and
@@ -316,17 +327,20 @@ main(
     iauRxp( rp, j2k_pos, rot_pos );
     iauRxp( rp, j2k_vel, rot_vel );
     
-    // Set the ECI coordinates at mean of date
-    EarthPosition rsat;
-    Vector3       vsat;
-    rsat.Set( rot_pos[0]*1E-3, rot_pos[1]*1E-3, rot_pos[2]*1E-3 );
-    vsat.Set( rot_vel[0]*1E-3, rot_vel[1]*1E-3, rot_vel[2]*1E-3 );
+    // Set the ECI coordinates at mean of date in orbit state object
+    OrbitState orbit_state;
+    orbit_state.time = time;
+    orbit_state.rsat.Set( rot_pos[0]*1E-3, rot_pos[1]*1E-3, rot_pos[2]*1E-3 );
+    orbit_state.vsat.Set( rot_vel[0]*1E-3, rot_vel[1]*1E-3, rot_vel[2]*1E-3 );
     
     Vector3 xscvel_geoc, yscvel_geoc, zscvel_geoc;
     Vector3 xscvel_geod, yscvel_geod, zscvel_geod;
     
-    velocity_frame_geocentric( rsat, vsat, &xscvel_geoc, &yscvel_geoc, &zscvel_geoc, time );
-    velocity_frame_geodetic(   rsat, vsat, &xscvel_geod, &yscvel_geod, &zscvel_geod, time );
+    velocity_frame_geocentric( orbit_state.rsat, orbit_state.vsat, 
+                               &xscvel_geoc, &yscvel_geoc, &zscvel_geoc, time );
+    
+    velocity_frame_geodetic( orbit_state.rsat, orbit_state.vsat, 
+                             &xscvel_geod, &yscvel_geod, &zscvel_geod, time );
     
     // Make them unit vectors
     xscvel_geoc.Scale(1.0);
@@ -368,36 +382,18 @@ main(
     // contructor wants x,y,z,w order (different from QuatFile and GSE data...).
     Quat q_att_geoc( (double)quat[1], (double)quat[2], (double)quat[3], (double)quat[0] );
     Quat q_all = q_geoc_to_geod * q_att_geoc;
-    
     q_all.Normalize();
     
-    double out_pos[3], out_vel[3];
-    for( int ii=0;ii<3;++ii) {
-      out_pos[ii] = pos[ii];
-      out_vel[ii] = vel[ii];
-    }
+    QuatRec quat_rec_geod( q_all,      time );
+    QuatRec quat_rec_geoc( q_att_geoc, time );
     
-    fwrite(&time,sizeof(double),1,ofp_e);
-    fwrite(&out_pos[0],sizeof(double),3,ofp_e);
-    fwrite(&out_vel[0],sizeof(double),3,ofp_e);
-    
-    fwrite(&time,sizeof(double),1,ofp_q);
-    fwrite(&(q_all.w),sizeof(double),1,ofp_q);
-    fwrite(&(q_all.x),sizeof(double),1,ofp_q);
-    fwrite(&(q_all.y),sizeof(double),1,ofp_q);
-    fwrite(&(q_all.z),sizeof(double),1,ofp_q);
-    
-    fwrite(&time,sizeof(double),1,ofp_qc);
-    fwrite(&(q_att_geoc.w),sizeof(double),1,ofp_qc);
-    fwrite(&(q_att_geoc.x),sizeof(double),1,ofp_qc);
-    fwrite(&(q_att_geoc.y),sizeof(double),1,ofp_qc);
-    fwrite(&(q_att_geoc.z),sizeof(double),1,ofp_qc);
+    orbit_state.Write( ofp_e );
+    quat_rec_geod.Write( ofp_q );
+    quat_rec_geoc.Write( ofp_qc );
   }
-  
   fclose(ifp);
   fclose(ofp_e);
   fclose(ofp_q);
-  
   return(0);
 }
 
