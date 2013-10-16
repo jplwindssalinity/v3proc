@@ -65,6 +65,7 @@ static const char rcs_id[] = "@(#) $Id$";
 #include "BufferedList.C"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "AccurateGeom.h"
 
 //-----------//
 // TEMPLATES //
@@ -326,8 +327,17 @@ int main( int argc, char* argv[] ) {
     //------------------------------//
     // start at an equator crossing //
     //------------------------------//
+    double start_time;
+    if( start_rev == -1 ) {
+      // use last node-to-node orbit in ephem / quat files
+      start_time = asc_node_times[asc_node_times.size()-2];
+    } else if ( start_rev< asc_node_times.size()-1) {
+      start_time = asc_node_times[start_rev];
+    } else {
+      fprintf(stderr,"Error: bad value for start_rev\n");
+      exit(1);
+    }
 
-    double start_time = asc_node_times[start_rev];
     qscat.cds.SetEqxTime(start_time);
 
     //------------//
@@ -355,12 +365,12 @@ int main( int argc, char* argv[] ) {
 
       // addition of 0.5 centers on orbit_step
       double time = start_time + orbit_step_size * ((double)orbit_step + 0.5);
-
+      qscat.cds.SetTime(time);
+      
       //-----------------------//
       // locate the spacecraft //
       //-----------------------//
       spacecraft_sim.UpdateOrbit(time, &spacecraft);
-      qscat.cds.SetTime( time );
 
       //---Modified to use input ephem and quaterion file------------
       // Overwrite spacecraft attitude and orbitstate with that
@@ -499,7 +509,8 @@ int main( int argc, char* argv[] ) {
             qscat.cds.rxGateDelayDn, rx_gate_delay_fdn, &(qscat.cds.txDopplerDn));
           qscat.ses.CmdTxDopplerDn(qscat.cds.txDopplerDn);
         } else {
-          qscat.IdealCommandedDoppler(&spacecraft,NULL);
+          // 1 means to use spacecraft attitude to compute Doppler
+          qscat.IdealCommandedDoppler(&spacecraft,NULL,1);
         }
       
         // Make the slices for this pulse and geolocate them
@@ -512,22 +523,26 @@ int main( int argc, char* argv[] ) {
           // Set the measurement type for each meas
           Beam* beam     = qscat.GetCurrentBeam();
           meas->measType = PolToMeasType(beam->polarization);
-        
-          Vector3 look_vector=meas->centroid - meas_spot.scOrbitState.rsat;
-          double range = look_vector.Magnitude();
-        
+          
           // Compute the Xfactor...
-          float this_X;
-          qscat_sim.ComputeXfactor( &spacecraft, &qscat, meas, &this_X );
-        
+          float this_X, this_X_int;
+          //qscat_sim.ComputeXfactor( &spacecraft, &qscat, meas, &this_X );
+          
+          IntegrateSlice( &spacecraft, &qscat, meas, qscat_sim.numLookStepsPerSlice,
+                          qscat_sim.azimuthIntegrationRange, 
+                          qscat_sim.azimuthStepSize, 
+                          qscat_sim.rangeGateClipping, &this_X_int );
+          
+          // Remove peak gain from X_int
+          this_X_int /= (beam->peakGain * beam->peakGain);
+          
           // Compute the Kfactor...
-        
+          
           // Stick in output arrays
           int abs_idx;
           rel_to_abs_idx( meas->startSliceIdx, num_slices, &abs_idx );
-          X_table[beam_idx][orbit_step][azimuth_step][abs_idx] = this_X;
+          X_table[beam_idx][orbit_step][azimuth_step][abs_idx] = this_X_int;
           K_table[beam_idx][orbit_step][azimuth_step][abs_idx] = this_X;
-        
 //           fprintf(stdout,"%d %d %d %d %f %f %f\n", beam_idx, orbstep, encoder,
 //             meas->startSliceIdx, 10*log10(this_X), qscat.ses.txDoppler, 
 //             qscat.sas.antenna.txCenterAzimuthAngle );
@@ -544,6 +559,7 @@ int main( int argc, char* argv[] ) {
     int n_azi_step = AZIMUTH_STEPS;
     fwrite(&n_orb_step,sizeof(int),1,ofp);
     fwrite(&n_azi_step,sizeof(int),1,ofp);
+    fwrite(&num_slices,sizeof(int),1,ofp);
     fwrite(&K_table[0][0][0][0],sizeof(float),2*ORBIT_STEPS*AZIMUTH_STEPS*num_slices,ofp);
     fclose(ofp);
   }
@@ -554,6 +570,7 @@ int main( int argc, char* argv[] ) {
     int n_azi_step = AZIMUTH_STEPS;
     fwrite(&n_orb_step,sizeof(int),1,ofp);
     fwrite(&n_azi_step,sizeof(int),1,ofp);
+    fwrite(&num_slices,sizeof(int),1,ofp);
     fwrite(&X_table[0][0][0][0],sizeof(float),2*ORBIT_STEPS*AZIMUTH_STEPS*num_slices,ofp);
     fclose(ofp);
   }

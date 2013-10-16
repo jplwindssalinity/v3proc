@@ -44,6 +44,7 @@
 // AUTHOR
 //    James N. Huddleston / Alex Fore
 //    hudd@casket.jpl.nasa.gov
+//    alexander.fore@jpl.nasa.gov
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -60,6 +61,7 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <unistd.h>
 #include <vector>
+#include <nlopt.hpp>
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "Quat.h"
@@ -147,163 +149,86 @@ int opt_clean = 0;
 // MAIN PROGRAM //
 //--------------//
 
-void cost_function( double* rtt,
-                    double* cp,
-                    double  amp,
-                    double  off,
-                    double* J ) {
+// structure used for extra data needed for objective function and
+// contraints.
+typedef struct {
+  double rtt[RANGE_AZIMUTH_STEPS];
+  double cp[RANGE_AZIMUTH_STEPS];
+  double rgc_min;
+  double rgc_max;
+} MyFuncData;
+
+// objective function
+double myfunc( unsigned n, const double* x, double* grad, void* data ) {
+  double      off    = x[0];
+  double      amp    = x[1];
+  MyFuncData* mydata = (MyFuncData *) data;
+  
   double this_cost = 0;
   for( int ii=0;ii<RANGE_AZIMUTH_STEPS;++ii) {
-    double residual = amp*cp[ii]+off-rtt[ii];
+    double residual = amp*mydata->cp[ii]+off-mydata->rtt[ii];
     double weight   = 1.0;
     this_cost      += weight * residual * residual;
   }
-  *J = this_cost;
+  return(this_cost);
 }
 
-int line_search(  double* rtt,
-                  double  rgc_limit,
-                  double* cp,
-                  double  x_init,
-                  double  delta,
-                  int     interp,
-                  double* x_final,
-                  double* J_final ) {
-  
-  int min_found = 0;
-  int do_interp = 0;
-  int do_center = 1;
-  int do_plus   = 1;
-  int do_minus  = 1;
-  
-  double x_center, x_plus, x_minus;
-  double J_center, J_plus, J_minus;
-  
-  x_center = x_init;
-  
-  double amp, off;
-  
-  int iterations = 0;
-  while ( !min_found && iterations < 10000 ) {
-    if( do_center ) {
-      amp = rgc_limit * x_center;
-      off = rgc_limit * (1-fabs(x_center));
-      cost_function( rtt, cp, amp, off, &J_center );
-    }
-    if( do_minus ) {
-      x_minus = x_center - delta;
-      if( x_minus < 0 ) x_minus = 0;
-      amp = rgc_limit * x_minus;
-      off = rgc_limit * (1-fabs(x_minus));
-      cost_function( rtt, cp, amp, off, &J_minus );    
-    }
-    if( do_plus ) {
-      x_plus = x_center + delta;
-      if( x_plus > 1 ) x_plus = 1;
-      amp = rgc_limit * x_plus;
-      off = rgc_limit * (1-fabs(x_plus));
-      cost_function( rtt, cp, amp, off, &J_plus );    
-    }
-    
-    min_found = 1;
-    do_interp = 1;
-    
-    if( J_plus < J_center && J_plus < J_minus ) {
-      min_found = 0;
-      J_minus  = J_center;
-      x_minus  = x_center;
-      J_center = J_plus;
-      x_center = x_plus;
-      
-      if( x_plus >= 1 ) {
-        x_center  = 1;
-        min_found = 1;
-        do_interp = 0;
-      }
-      do_minus  = 0;
-      do_center = 0;
-      do_plus   = 1;
-    }
-
-    if( J_minus < J_center && J_minus < J_plus ) {
-      min_found = 0;
-      J_plus   = J_center;
-      x_plus   = x_center;
-      J_center = J_minus;
-      x_center = x_minus;
-      
-      if( x_minus <= 0 ) {
-        x_center  = 0;
-        min_found = 1;
-        do_interp = 0;
-      }
-      do_minus  = 1;
-      do_center = 0;
-      do_plus   = 0;
-    }
-    ++iterations;
-  }
-
-  // Taylor series fit about extrema
-  double dJ_dx   = (J_plus-J_minus)/(2*delta);
-  double d2J_dx2 = (J_plus+J_minus-2*J_center)/(delta*delta);
-  double x_off   =  -dJ_dx / d2J_dx2;
-  
-  if( interp && do_interp && d2J_dx2 != 0.0 && 
-      x_center + x_off >= 0 && x_center + x_off <= 1 ) {
-    // Solve for extrema of 2nd order Taylor series
-    *x_final = x_center + x_off; 
-    *J_final = J_center + dJ_dx * x_off + d2J_dx2 * x_off * x_off / 2.0;
-  } else {
-    *x_final = x_center;
-    *J_final = J_center;
-  }
-  return(iterations);
+// contrains the range gate to be closed at 5.95 millisec
+double mycontraint_max( unsigned n, const double* x, double* grad, void* data ) {
+  double      off    = x[0];
+  double      amp    = x[1];
+  MyFuncData* mydata = (MyFuncData *) data;
+  return((amp+off)-mydata->rgc_max);
 }
 
-int fit_rtt( double* rtt,     // Actual round-trip-time [ms]
-             double  rgc_limit,
-             double  amp0,    // from uncontrained fit
-             double  pha0,    // from uncontrained fit
-             double  off0,    // from uncontrained fit
-             double* amp1,    // contrained fit amp
-             double* off1 ) { // constrained fit constant
-             
-  double cp[RANGE_AZIMUTH_STEPS];
+// contrains the range gate to open 0.05 millisec after end of nadir return
+double mycontraint_min( unsigned n, const double* x, double* grad, void* data ) {
+  double      off    = x[0];
+  double      amp    = x[1];
+  MyFuncData* mydata = (MyFuncData *) data;
+  return(mydata->rgc_min-(off-amp));
+}
+
+int fit_rtt_nlopt( double* rtt,     // Actual round-trip-time [ms]
+                   double  rgc_min,
+                   double  rgc_max,
+                   double  amp0,    // from uncontrained fit
+                   double  pha0,    // from uncontrained fit
+                   double  off0,    // from uncontrained fit
+                   double* amp1,    // contrained fit amp
+                   double* off1 ) { // constrained fit constant
   
-  // Check if inside valid solution region
-  if( off0+amp0 <= rgc_limit ) {
-    *amp1 = amp0;
-    *off1 = off0;
-    return(1);
-  }
+  nlopt::opt opt(nlopt::LN_COBYLA,2);
   
-  // Outside valid solution region, find best solution on boundary
-  for(int ii=0;ii<RANGE_AZIMUTH_STEPS;++ii) {
+  MyFuncData myfunc_data;
+  myfunc_data.rgc_min = rgc_min;
+  myfunc_data.rgc_max = rgc_max;
+  
+  for( int ii=0;ii<RANGE_AZIMUTH_STEPS;++ii) {
     double this_azi = two_pi * (double)ii / (double)RANGE_AZIMUTH_STEPS;
-    cp[ii] = cos( this_azi + pha0 );
+    myfunc_data.rtt[ii] = rtt[ii];
+    myfunc_data.cp[ii]  = cos( this_azi + pha0 );
   }
   
-  double x_init = 0.1;
-  double x_coarse, x_fine;
-  double J_coarse, J_fine;
+  opt.set_min_objective(         myfunc,          &myfunc_data      );
+  opt.add_inequality_constraint( mycontraint_max, &myfunc_data, 1e-4);
+  opt.add_inequality_constraint( mycontraint_min, &myfunc_data, 1e-4);  
+  opt.set_xtol_rel(1e-5);
   
-  double delta_coarse = 1E-4;
-  double delta_fine   = 1E-7;
+  std::vector<double> x(2);
   
-  int iter_coarse = line_search( rtt, rgc_limit, &cp[0], x_init, 
-                                 delta_coarse, (int)0, &x_coarse, &J_coarse );
+  x[0] = (rgc_max+rgc_min)/2;
+  x[1] = 0;
+  
+  double minf;
+  nlopt::result result = opt.optimize(x, minf);
+  
+  *off1 = x[0];
+  *amp1 = x[1];
 
-
-  int iter_fine = line_search( rtt, rgc_limit, &cp[0], x_coarse, 
-                               delta_fine,   (int)0, &x_fine,   &J_fine   );
-
-  double amp_fine   = rgc_limit * x_fine;
-  double off_fine   = rgc_limit * (1-fabs(x_fine));
-  
-  *amp1 = amp_fine;
-  *off1 = off_fine;
-  
+//   printf("rgc_min, rgc_max: %f %f %d\n",rgc_min,rgc_max,result);
+//   printf("off0 amp0: %f %f\n",off0,amp0);  
+//   printf("off1 amp1: %f %f\n",*off1,*amp1);
   return(1);
 }
 
@@ -321,14 +246,16 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    char*       out_rtt_table = NULL;
-    char*       config_file   = NULL;
-    char*       ephem_file    = NULL;
-    char*       quat_file     = NULL;
-    char*       rgc_base      = NULL;
+    char*       out_rtt_table  = NULL;
+    char*       config_file    = NULL;
+    char*       ephem_file     = NULL;
+    char*       quat_file      = NULL;
+    char*       rgc_base       = NULL;
+    char*       nadir_rtt_file = NULL;
     
     double rgc_limit = -1;
     int    start_rev = 0;
+    int    clip_nadir = 0;
     
     int optind = 1;
     while( (optind < argc) && (argv[optind][0]=='-') ) {
@@ -347,6 +274,10 @@ main(
         ephem_file = argv[++optind];
       } else if( sw == "-q" ) {
         quat_file = argv[++optind];
+      } else if( sw == "-nadir_clip" ) {
+        clip_nadir = 1;
+      } else if( sw == "-nadir_rtt_file" ) {
+        nadir_rtt_file = argv[++optind];
       } else {
         fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
         exit(1);
@@ -519,8 +450,16 @@ main(
       fwrite(&tmp,sizeof(int),1,ofp_rtt_table);
       tmp = RANGE_AZIMUTH_STEPS;
       fwrite(&tmp,sizeof(int),1,ofp_rtt_table);
+      
     }
-
+    
+    FILE* ofp_nadir_rtt = NULL;
+    if( nadir_rtt_file ) {
+      ofp_nadir_rtt = fopen(nadir_rtt_file,"w");
+      int tmp = RANGE_ORBIT_STEPS;
+      fwrite(&tmp,sizeof(int),1,ofp_nadir_rtt);
+    }
+    
     
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
@@ -561,18 +500,17 @@ main(
         //------------------------------//
         // start at an equator crossing //
         //------------------------------//
-
-//        double start_time =
-//            spacecraft_sim.FindNextArgOfLatTime(spacecraft_sim.GetEpoch(),
-//            EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-
-        // Check that there is enough ephem data for a whole rev.
-        if( start_rev >= (int)asc_node_times.size()-1 ) {
-          fprintf(stderr,"need more ephem data or start_rev too big\n");
+        double start_time;
+        if( start_rev == -1 ) {
+          // use last node-to-node orbit in ephem / quat files
+          start_time = asc_node_times[asc_node_times.size()-2];
+        } else if ( start_rev< asc_node_times.size()-1) {
+          start_time = asc_node_times[start_rev];
+        } else {
+          fprintf(stderr,"Error: bad value for start_rev\n");
           exit(1);
         }
-        
-        double start_time = asc_node_times[start_rev];
+
         qscat.cds.SetEqxTime(start_time);
 
         //------------//
@@ -635,6 +573,17 @@ main(
             //----------------------//
             
             double rtt[RANGE_AZIMUTH_STEPS];
+                        
+            double sc_alt, sc_lon, sc_lat;
+            spacecraft.orbitState.rsat.GetAltLonGDLat(&sc_alt,&sc_lon,&sc_lat);
+            
+            double nadir_rtt = 2.0*sc_alt/speed_light_kps;
+            
+            if(nadir_rtt_file&&beam_idx==0) fwrite(&nadir_rtt,sizeof(double),1,ofp_nadir_rtt);
+            
+            // last portion of nadir return at this time + 0.05 milli-sec 
+            // for buffer -- 9/23/2013 AGF
+            double t_nadir_end = ( nadir_rtt + qscat.ses.txPulseWidth ) * S_TO_MS + 0.05 + 0.2;
             
             for (int azimuth_step = 0; azimuth_step < RANGE_AZIMUTH_STEPS;
                 azimuth_step++)
@@ -721,6 +670,7 @@ main(
                 // (not using IdealRtt because IdealRtt zeros the attitude)
                 rtt[azimuth_step] = ( qti.roundTripTime + T_GRID +
                     T_RC) * S_TO_MS;
+                
             }
             
             if(out_rtt_table) fwrite(&rtt,sizeof(double),RANGE_AZIMUTH_STEPS,ofp_rtt_table);
@@ -731,10 +681,13 @@ main(
 
             double a, p, c;
             azimuth_fit(RANGE_AZIMUTH_STEPS, rtt, &a, &p, &c);
-
-            if(rgc_limit>0) {
+            
+            if(rgc_limit>0 || clip_nadir) {
               double a1, c1;
-              fit_rtt( &rtt[0], rgc_limit, a, p, c, &a1, &c1 );
+              double rgc_min = (clip_nadir)  ? t_nadir_end : 0;
+              double rgc_max = (rgc_limit>0) ? rgc_limit   : 1000000;
+              
+              fit_rtt_nlopt( &rtt[0], rgc_min, rgc_max, a, p, c, &a1, &c1 );
               a = a1;
               c = c1;
             }
@@ -782,7 +735,7 @@ main(
     }
     
     if(out_rtt_table)  fclose(ofp_rtt_table);
-
+    if( nadir_rtt_file ) fclose(ofp_nadir_rtt);
 
     //----------------//
     // free the array //

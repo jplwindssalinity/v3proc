@@ -401,15 +401,21 @@ main(
             exit(1);
         }
 
-        //------------------------------//
-        // start at an equator crossing //
-        //------------------------------//
+       //------------------------------//
+       // start at an equator crossing //
+       //------------------------------//
+       double start_time;
+       if( start_rev == -1 ) {
+         // use last node-to-node orbit in ephem / quat files
+         start_time = asc_node_times[asc_node_times.size()-2];
+       } else if ( start_rev< asc_node_times.size()-1) {
+         start_time = asc_node_times[start_rev];
+       } else {
+         fprintf(stderr,"Error: bad value for start_rev\n");
+         exit(1);
+       }
 
-//        double start_time =
-//            spacecraft_sim.FindNextArgOfLatTime(spacecraft_sim.GetEpoch(),
-//                EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-        double start_time = asc_node_times[start_rev];
-        qscat.cds.SetEqxTime(start_time);
+       qscat.cds.SetEqxTime(start_time);
 
         //------------//
         // initialize //
@@ -440,15 +446,15 @@ main(
             //--------------------//
 
             // addition of 0.5 centers on orbit_step
-            double time = start_time +
-                orbit_step_size * ((double)orbit_step + 0.5);
+            double time = start_time + orbit_step_size * ((double)orbit_step + 0.5);
 
             //-----------------------//
             // locate the spacecraft //
             //-----------------------//
 
             spacecraft_sim.UpdateOrbit(time, &spacecraft);
-
+            qscat.cds.SetTime( time );
+            
             //------------------------------------------------//
             // if the bias is requested, set the attitude too //
             //------------------------------------------------//
@@ -588,9 +594,8 @@ main(
                 // determine the encoder value to use in the algorithm //
                 //-----------------------------------------------------//
 
-                unsigned short encoder =
-                    qscat.sas.AzimuthToEncoder(cds_azimuth);
-
+                unsigned short encoder = qscat.sas.AzimuthToEncoder(cds_azimuth);
+                unsigned short orbstep = qscat.cds.SetAndGetOrbitStep();
                 //------------------------------//
                 // calculate receiver gate info //
                 //------------------------------//
@@ -598,24 +603,33 @@ main(
                 CdsBeamInfo* cds_beam_info = qscat.GetCurrentCdsBeamInfo();
                 unsigned char rx_gate_delay_dn;
                 float rx_gate_delay_fdn;
-                range_tracker->GetRxGateDelay(orbit_step, encoder,
+                range_tracker->GetRxGateDelay(orbstep, encoder,
                     cds_beam_info->rxGateWidthDn, qscat.cds.txPulseWidthDn,
                     &rx_gate_delay_dn, &rx_gate_delay_fdn);
                 // set it with the exact value to eliminate quant. effects
                 qscat.ses.CmdRxGateDelayFdn(rx_gate_delay_fdn);
 
+                //-------------------//
+                // coordinate system //
+                //-------------------//
+
+                antenna_frame_to_gc = AntennaFrameToGC(orbit_state, attitude,
+                    antenna, qscat.sas.antenna.txCenterAzimuthAngle);
+
+                if (! GetPeakSpatialResponse2(&antenna_frame_to_gc,
+                    &spacecraft, beam, antenna->spinRate, &look, &azimuth))
+                {
+                    fprintf(stderr,
+                        "%s: error finding peak spatial response\n", command);
+                    exit(1);
+                }
+                vector.SphericalSet(1.0, look, azimuth);
+                
                 //--------------------------------//
                 // calculate corrective frequency //
                 //--------------------------------//
-//                qscat.IdealCommandedDoppler(&spacecraft, NULL, 1); // 1 means to use spacecraft attitude to compute Doppler
-              
-                qscat.ses.CmdTxDopplerEu(0.0);
-                do {
-                  qscat.TargetInfo(&antenna_frame_to_gc, &spacecraft, vector, &qti);
-                  float freq = qscat.ses.txDoppler + qti.basebandFreq;
-                  qscat.ses.CmdTxDopplerEu(freq);
-                } while (fabs(qti.basebandFreq) > 1.0 );
-                
+                // 1 means to use spacecraft attitude to compute Doppler
+                qscat.IdealCommandedDoppler(&spacecraft, NULL, 1); 
                 
                 // constants are used to calculate the actual Doppler
                 // frequency to correct for, but IdealCommandedDoppler
