@@ -443,6 +443,16 @@ QuatRec::QuatRec() {
     return;
 }
 
+QuatRec::QuatRec( Quat quat, double t ) {
+    w = quat.w;
+    x = quat.x;
+    y = quat.y;
+    z = quat.z;
+    time = t;
+    return;
+}
+
+
 QuatRec::~QuatRec() {
     return;
 }

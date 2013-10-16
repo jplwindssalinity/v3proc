@@ -97,6 +97,7 @@ public:
     // construction //
     //--------------//
     QuatRec();
+    QuatRec( Quat quat, double t );
     ~QuatRec();
     
     int   Read(FILE* inputfile);
