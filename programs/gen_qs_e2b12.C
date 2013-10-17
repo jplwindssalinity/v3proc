@@ -279,6 +279,7 @@ main(
   char*        hdf_file  = NULL;
   char*        out_file  = NULL;
   int          use_bigE  = 0;
+  int          use_ncep  = 0;
   
   int optind = 1;
   while ( (optind < argc) && (argv[optind][0]=='-') ) {
@@ -298,6 +299,9 @@ main(
     }
     else if( sw == "-bigE" ) {
       use_bigE = 1;
+    }    
+    else if( sw == "-ncep" ) {
+      use_ncep = 1;
     }    
     else {
       fprintf(stderr,"%s: Unknow option\n", command);
@@ -487,16 +491,20 @@ main(
       }
     }
     
+    char nwp_char = '3';
+    if( use_ncep ) nwp_char = '1';
+    
     if( use_bigE ) { 
       // use big endian filenames
-      sprintf( ecmwf_file_1, "%s/SNWP3%4.4d%3.3d%2.2d", ecmwf_dir, year_1, doy_1, hour_1 );
-      sprintf( ecmwf_file_2, "%s/SNWP3%4.4d%3.3d%2.2d", ecmwf_dir, year_2, doy_2, hour_2 );    
+      sprintf( ecmwf_file_1, "%s/SNWP%c%4.4d%3.3d%2.2d", ecmwf_dir, nwp_char, year_1, doy_1, hour_1 );
+      sprintf( ecmwf_file_2, "%s/SNWP%c%4.4d%3.3d%2.2d", ecmwf_dir, nwp_char, year_2, doy_2, hour_2 );    
     }
     else {
       // use little endian filnames
-      sprintf( ecmwf_file_1, "%s/SNWP3%4.4d%3.3d%2.2d.swap", ecmwf_dir, year_1, doy_1, hour_1 );
-      sprintf( ecmwf_file_2, "%s/SNWP3%4.4d%3.3d%2.2d.swap", ecmwf_dir, year_2, doy_2, hour_2 );
+      sprintf( ecmwf_file_1, "%s/SNWP%c%4.4d%3.3d%2.2d.swap", ecmwf_dir, nwp_char, year_1, doy_1, hour_1 );
+      sprintf( ecmwf_file_2, "%s/SNWP%c%4.4d%3.3d%2.2d.swap", ecmwf_dir, nwp_char, year_2, doy_2, hour_2 );
     }
+
     
     // Test if need to load new files.
     if( strcmp( ecmwf_file_1, ecmwf_file_1_last ) != 0 ||
