@@ -362,6 +362,13 @@ Matrix3::Show(
     return;
 }
 
+double Matrix3::Get( int i, int j ) const {
+  if( i<0 || i>2 || j<0 || j>2 ) {
+    return(0.0);
+  }
+  return(_m[i][j]);
+}
+
 //=========//
 // Vector3 //
 //=========//

@@ -64,7 +64,9 @@ public:
     void Identity();
     int  Inverse();
     void Show(char *name = (char*)NULL);
-
+    
+    double Get( int i, int j ) const;
+    
 protected:
 
     //-----------//
