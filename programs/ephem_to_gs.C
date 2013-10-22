@@ -160,6 +160,7 @@ main(
 
     double last_time = 0.0;
     ETime beginning_date, production_date;
+    char output_file[1024];
 
     do
     {
@@ -187,7 +188,6 @@ main(
             char production_block_b[BLOCK_B_TIME_LENGTH];
             production_date.ToBlockB(production_block_b);
 
-            char output_file[1024];
             sprintf(output_file, "SW_SEPHG%s.%s", beginning_block_b,
                 production_block_b);
 
@@ -240,32 +240,32 @@ main(
     fseek(ofp, 0, SEEK_SET);
 
     fprintf(ofp, "num_header_records            = 21                                           ;\r\n");
-    fprintf(ofp, "LongName                      = SeaWinds GPS Ephemeris Data                  ;\r\n");
+    fprintf(ofp, "LongName                      = ISS GPS Ephemeris Data                       ;\r\n");
     fprintf(ofp, "ShortName                     = SWSEPHG                                      ;\r\n");
     fprintf(ofp, "producer_agency               = NASA                                         ;\r\n");
     fprintf(ofp, "producer_institution          = JPL                                          ;\r\n");
-    fprintf(ofp, "project_id                    = QuikSCAT                                     ;\r\n");
+    fprintf(ofp, "project_id                    = RapidSCAT                                    ;\r\n");
     fprintf(ofp, "data_format_type              = BINARY                                       ;\r\n");
-    fprintf(ofp, "GranulePointer                = QS_SEPHG20002090602.20002090823              ;\r\n");
-    fprintf(ofp, "InputPointer                  = qst20000727080447p01hk2.dat                  ;\r\n");
+    fprintf(ofp, "GranulePointer                = %-45.45s;\r\n",output_file);
+    fprintf(ofp, "InputPointer                  = %-45.45s;\r\n",no_path(ephem_file));
     fprintf(ofp, "sis_id                        = 686-644-15/1998-08-24                        ;\r\n");
     fprintf(ofp, "build_id                      = 2.3.2/2000-04-07                             ;\r\n");
 
     char beginning_code_b[CODE_B_TIME_LENGTH];
     beginning_date.ToCodeB(beginning_code_b);
     beginning_code_b[8] = '\0';
-    fprintf(ofp, "RangeBeginningDate            = %s                                     ;\r\n", beginning_code_b);
-    fprintf(ofp, "RangeBeginningTime            = %s                                 ;\r\n", beginning_code_b + 9);
+    fprintf(ofp, "RangeBeginningDate            = %-45.45s;\r\n", beginning_code_b);
+    fprintf(ofp, "RangeBeginningTime            = %-45.45s;\r\n", beginning_code_b + 9);
 
     char ending_code_b[CODE_B_TIME_LENGTH];
     ending_date.ToCodeB(ending_code_b);
     ending_code_b[8] = '\0';
-    fprintf(ofp, "RangeEndingDate               = %s                                     ;\r\n", ending_code_b);
-    fprintf(ofp, "RangeEndingTime               = %s                                 ;\r\n", ending_code_b + 9);
+    fprintf(ofp, "RangeEndingDate               = %-45.45s;\r\n", ending_code_b);
+    fprintf(ofp, "RangeEndingTime               = %-45.45s;\r\n", ending_code_b + 9);
 
     char production_code_b[CODE_B_TIME_LENGTH];
     production_date.ToCodeB(production_code_b);
-    fprintf(ofp, "ProductionDateTime            = %s                        ;\r\n", production_code_b);
+    fprintf(ofp, "ProductionDateTime            = %-45.45s;\r\n", production_code_b);
     fprintf(ofp, "ephemeris_type                = GPS                                          ;\r\n");
     fprintf(ofp, "num_data_records              = %-45d;\r\n",
         num_data_records);
