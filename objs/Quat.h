@@ -14,11 +14,9 @@
 static const char rcs_id_quat_h[] =
     "@(#) $Id$";
 
-#include "Vect.h"
-#include "Mat.h"
+#include "Matrix3.h"
 #include "BufferedList.h"
 #include "Attitude.h"
-#include "Matrix3.h"
 
 //======================================================================
 // CLASS
@@ -38,7 +36,7 @@ public:
 
     Quat();
     Quat(double x, double y, double z, double w);
-    Quat(const Vect& axis, const double angle);
+    Quat(const Vector3& axis, const double angle);
     ~Quat();
 
     void  Set(double x, double y, double z, double w);
@@ -52,16 +50,17 @@ public:
     void  Invert();
 
     double  Norm() const;
-    void    SetUsingAxisAndRotation(const Vect& axis,
+    void    SetUsingAxisAndRotation(const Vector3& axis,
                 const double angle);
-    int     RotMat(Mat& mat);
-    int     ApplyRotationTo(const Vect& vector, Vect* result);
+    int     RotMat(Matrix3* mat);
+    int     ApplyRotationTo(const Vector3& vector, Vector3* result);
     void    Scale(double factor);
     void    Product(const Quat& p, const Quat& q);
     void    Power( double a );
     void    GetAttitude( Attitude* attitude );
+    void    GetAttitudeGS( Attitude* attitude );
     
-    void QuatFromMatrix( double* matrix );
+    void QuatFromMatrix( const Matrix3& matrix );
     
     Quat operator*(Quat q2);
     void operator*=(double factor);

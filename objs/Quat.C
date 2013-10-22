@@ -10,10 +10,9 @@ static const char rcs_id_quat_c[] =
 #include <stdlib.h>
 #include <math.h>
 #include "Quat.h"
+#include "Matrix3.h"
 #include "List.h"
 #include "List.C"
-#include "Vect.h"
-#include "Mat.h"
 #include "Attitude.h"
 
 //======//
@@ -39,8 +38,8 @@ Quat::Quat(
 
 // specify an axis and rotation angle
 Quat::Quat(
-    const Vect&   axis,
-    const double  angle)
+    const Vector3& axis,
+    const double   angle)
 {
     SetUsingAxisAndRotation(axis, angle);
     return;
@@ -133,18 +132,18 @@ Quat::Norm() const
 
 void
 Quat::SetUsingAxisAndRotation(
-    const Vect&   axis,
-    const double  angle)
+    const Vector3& axis,
+    const double   angle)
 {
-    Vect axiscopy(axis);
-    axiscopy.SetMagnitude(1.0);
+    Vector3 axiscopy(axis);
+    axiscopy /= axiscopy.Magnitude();
 
     double half_angle = angle / 2.0;
     double sint = sin(half_angle);
 
-    x = axiscopy.FastGet(0) * sint;
-    y = axiscopy.FastGet(1) * sint;
-    z = axiscopy.FastGet(2) * sint;
+    x = axiscopy.Get(0) * sint;
+    y = axiscopy.Get(1) * sint;
+    z = axiscopy.Get(2) * sint;
     w = cos(half_angle);
 
     Normalize();
@@ -158,25 +157,25 @@ Quat::SetUsingAxisAndRotation(
 // the quat better be a unit quat!
 
 int
-Quat::RotMat(
-    Mat&  matrix)
+Quat::RotMat( Matrix3* mat )
 {
-    if (! matrix._Allocate(3, 3)) {
-        return(0);
-    }
-
-    matrix.FastSet(0, 0, 1.0 - 2.0 * (y*y + z*z));
-    matrix.FastSet(0, 1, 2.0 * (x*y - w*z));
-    matrix.FastSet(0, 2, 2.0 * (x*z + w*y));
-
-    matrix.FastSet(1, 0, 2.0 * (x*y + w*z));
-    matrix.FastSet(1, 1, 1.0 - 2.0 * (x*x + z*z));
-    matrix.FastSet(1, 2, 2.0 * (y*z - w*x));
-
-    matrix.FastSet(2, 0, 2.0 * (x*z - w*y));
-    matrix.FastSet(2, 1, 2.0 * (y*z + w*x));
-    matrix.FastSet(2, 2, 1.0 - 2.0 * (x*x + y*y));
-
+    double x11 = 1.0 - 2.0 * (y*y + z*z);
+    double x12 = 2.0 * (x*y - w*z);
+    double x13 = 2.0 * (x*z + w*y);
+    
+    double x21 = 2.0 * (x*y + w*z);
+    double x22 = 1.0 - 2.0 * (x*x + z*z);
+    double x23 = 2.0 * (y*z - w*x);
+    
+    double x31 = 2.0 * (x*z - w*y);
+    double x32 = 2.0 * (y*z + w*x);
+    double x33 = 1.0 - 2.0 * (x*x + y*y);
+    
+    Vector3 r1( x11, x12, x13 );
+    Vector3 r2( x21, x22, x23 );
+    Vector3 r3( x31, x32, x33 );
+    
+    mat->Rowset( r1, r2, r3 );
     return(1);
 }
 
@@ -188,16 +187,12 @@ Quat::RotMat(
 
 int
 Quat::ApplyRotationTo(
-    const Vect&  input_vector,
-    Vect*        output_vector)
+    const Vector3&  input_vector,
+    Vector3*        output_vector)
 {
-    Mat m(3, 3);
-    if (! RotMat(m)) {
-        return(0);
-    }
-    if (! output_vector->Product(m, input_vector)) {
-        return(0);
-    }
+    Matrix3 m;
+    RotMat(&m);
+    *output_vector = m * input_vector;
     return(1);
 }
 
@@ -294,17 +289,19 @@ Quat::QuatFromRotMat(
 }
 */
 
-void Quat::QuatFromMatrix( double* matrix ) {
+void Quat::QuatFromMatrix( const Matrix3& mat ) {
     
-    double R00 = matrix[0];
-    double R01 = matrix[1];
-    double R02 = matrix[2];
-    double R10 = matrix[3+0];
-    double R11 = matrix[3+1];
-    double R12 = matrix[3+2];
-    double R20 = matrix[6+0];
-    double R21 = matrix[6+1];
-    double R22 = matrix[6+2];
+    double R00 = mat.Get( 0, 0 );
+    double R01 = mat.Get( 0, 1 );
+    double R02 = mat.Get( 0, 2 );
+
+    double R10 = mat.Get( 1, 0 );
+    double R11 = mat.Get( 1, 1 );
+    double R12 = mat.Get( 1, 2 );
+
+    double R20 = mat.Get( 2, 0 );
+    double R21 = mat.Get( 2, 1 );
+    double R22 = mat.Get( 2, 2 );
     
     double tmp, T = R00 + R11 + R22;    // trace
     double maxPivot = fmax((fmax(R00, R11)), (fmax(R22, T)));
@@ -438,6 +435,41 @@ void Quat::GetAttitude( Attitude* attitude ) {
     // Yaw, Pitch, Roll (ZYX) order of rotations
     attitude->Set( phi, theta, psi, 3, 2, 1 );
 }
+
+void Quat::GetAttitudeGS( Attitude* attitude ) {
+    
+    Matrix3 rot_mat;
+    RotMat(&rot_mat);
+    
+    double r11 = rot_mat.Get(0,0);
+    double r12 = rot_mat.Get(0,1);
+    double r13 = rot_mat.Get(0,2);
+
+    double r21 = rot_mat.Get(1,0);
+    double r22 = rot_mat.Get(1,1);
+    double r23 = rot_mat.Get(1,2);
+
+    double r31 = rot_mat.Get(2,0);
+    double r32 = rot_mat.Get(2,1);
+    double r33 = rot_mat.Get(2,2);
+    
+    double sr = -r23;
+    double cr = sqrt( r21*r21 + r22*r22 );
+    double roll = atan2( sr, cr );
+    
+    double pitch, yaw;
+    
+    if(cr!=0) {
+      pitch = atan2(r13/cr,r33/cr);
+      yaw   = atan2(r21/cr,r22/cr);
+    } else {
+      yaw   = 0;
+      pitch = atan2( r12/sr, r11 );
+    }
+    // Force GS order of rotations: [ Y R P ]
+    attitude->Set( (float)roll, (float)pitch, (float)yaw, 3, 1, 2 );
+}
+
 
 QuatRec::QuatRec() {
     return;
