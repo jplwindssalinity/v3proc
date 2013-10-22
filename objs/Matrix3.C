@@ -369,6 +369,31 @@ double Matrix3::Get( int i, int j ) const {
   return(_m[i][j]);
 }
 
+int Matrix3::Get( int i, int j, double* value ) const {
+  if( i<0 || i>2 || j<0 || j>2 ) {
+    return(0);
+  }
+  *value = _m[i][j];
+  return(1);
+  
+}
+
+void Matrix3::Get( double* x11, double* x12, double* x13,
+                   double* x21, double* x22, double* x23,
+                   double* x31, double* x32, double* x33 ) const {
+  *x11 = _m[0][0];
+  *x12 = _m[0][1];
+  *x13 = _m[0][2];
+
+  *x21 = _m[1][0];
+  *x22 = _m[1][1];
+  *x23 = _m[1][2];
+
+  *x31 = _m[2][0];
+  *x32 = _m[2][1];
+  *x33 = _m[2][2];
+}
+
 //=========//
 // Vector3 //
 //=========//
