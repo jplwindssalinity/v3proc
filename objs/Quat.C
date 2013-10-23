@@ -157,8 +157,7 @@ Quat::SetUsingAxisAndRotation(
 // the quat better be a unit quat!
 
 int
-Quat::RotMat( Matrix3* mat )
-{
+Quat::RotMat( Matrix3* mat ) const {
     double x11 = 1.0 - 2.0 * (y*y + z*z);
     double x12 = 2.0 * (x*y - w*z);
     double x13 = 2.0 * (x*z + w*y);
@@ -188,8 +187,7 @@ Quat::RotMat( Matrix3* mat )
 int
 Quat::ApplyRotationTo(
     const Vector3&  input_vector,
-    Vector3*        output_vector)
-{
+    Vector3*        output_vector) const {
     Matrix3 m;
     RotMat(&m);
     *output_vector = m * input_vector;
@@ -428,7 +426,7 @@ Quat::Power( double a )
     z=z*sinnew/sinold;
 }
 
-void Quat::GetAttitude( Attitude* attitude ) {
+void Quat::GetAttitude( Attitude* attitude ) const {
     float phi   = atan2( 2*(w*x+y*z), 1-2*(x*x+y*y));
     float theta = asin(  2*(w*y-z*x));
     float psi   = atan2( 2*(w*z+x*y), 1-2*(y*y+z*z));
@@ -436,7 +434,7 @@ void Quat::GetAttitude( Attitude* attitude ) {
     attitude->Set( phi, theta, psi, 3, 2, 1 );
 }
 
-void Quat::GetAttitudeGS( Attitude* attitude ) {
+void Quat::GetAttitudeGS( Attitude* attitude ) const {
     
     Matrix3 rot_mat;
     RotMat(&rot_mat);

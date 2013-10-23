@@ -52,13 +52,13 @@ public:
     double  Norm() const;
     void    SetUsingAxisAndRotation(const Vector3& axis,
                 const double angle);
-    int     RotMat(Matrix3* mat);
-    int     ApplyRotationTo(const Vector3& vector, Vector3* result);
+    int     RotMat(Matrix3* mat) const;
+    int     ApplyRotationTo(const Vector3& vector, Vector3* result) const;
     void    Scale(double factor);
     void    Product(const Quat& p, const Quat& q);
     void    Power( double a );
-    void    GetAttitude( Attitude* attitude );
-    void    GetAttitudeGS( Attitude* attitude );
+    void    GetAttitude( Attitude* attitude ) const;
+    void    GetAttitudeGS( Attitude* attitude ) const;
     
     void QuatFromMatrix( const Matrix3& matrix );
     
