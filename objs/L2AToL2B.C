@@ -30,7 +30,8 @@ L2AToL2B::L2AToL2B()
     probThreshold(0.0), streamThreshold(0.0), useHurricaneNudgeField(0),
     hurricaneRadius(0), useSigma0Weights(0), sigma0WeightCorrLength(25.0), 
     arrayNudgeFlag(0), arrayNudgeSpd(NULL),arrayNudgeDir(NULL),
-    use_MLP_mapping(false), MLP_input_map_s0(NULL), MLP_input_map_vars0(NULL)
+    use_MLP_mapping(false), MLP_input_map_s0(NULL), MLP_input_map_vars0(NULL),
+    do_coastal_processing(0)
 {
     return;
 }
@@ -1821,7 +1822,11 @@ L2AToL2B::GenSigma0Flags( MeasList* meas_list, GMF *gmf, WVC* wvc ) {
     // Check for land
     if( meas->landFlag == 1 || meas->landFlag == 3 )
       landFound = 1;
-
+    
+    // Check if any slices in this composite had a non-zero land fraction
+    if( do_coastal_processing && meas->bandwidth > 0 )
+      landFound = 1;
+    
     // Check for ice      
     if( meas->landFlag == 2 || meas->landFlag == 3 )
       iceFound = 1;

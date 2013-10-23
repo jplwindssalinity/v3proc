@@ -338,6 +338,7 @@ Meas::Composite(
     return(1);
 }
 
+
 //-------------//
 // Meas::Write //
 //-------------//
@@ -1428,6 +1429,167 @@ int32        pulseIndex)   // index of the pulses (max of 100)
     return(1);
 }
 
+#define COAST_NXSTEPS 10
+#define COAST_NYSTEPS 100
+
+int MeasSpot::ComputeLandFraction( LandMap*   lmap,
+                                   QSLandMap* qs_lmap,
+                                   Antenna*   ant,
+                                   float      freq_shift ) {
+  //printf("Length MeasSpot: %d\n",NodeCount());
+  
+  if( NodeCount() == 0 ) return(1);
+  
+  // compute slice center footprint location
+  Meas* center_meas[2];
+  int   slice_idx[2] = {-10,10};
+  
+  Meas* first_meas = GetHead();
+  
+  for( Meas* this_meas=GetHead(); this_meas; this_meas=GetNext() ) {
+    if( this_meas->startSliceIdx<0 && this_meas->startSliceIdx>slice_idx[0] ) {
+      slice_idx[0]   = this_meas->startSliceIdx;
+      center_meas[0] = this_meas;
+    } else if ( this_meas->startSliceIdx>0 && this_meas->startSliceIdx<slice_idx[1]) {
+      slice_idx[1]   = this_meas->startSliceIdx;
+      center_meas[1] = this_meas;    
+    }
+  }
+  
+  EarthPosition spot_centroid;
+  spot_centroid = center_meas[0]->centroid 
+                + ( center_meas[1]->centroid - center_meas[0]->centroid )
+                * ( (float)0 - (float)slice_idx[0] ) 
+                / ( (float)slice_idx[1]-(float)slice_idx[0] );
+  
+  Vector3 look = spot_centroid - scOrbitState.rsat;
+  float   rtt  = 2*look.Magnitude()/speed_light_kps;
+  
+  //printf("rtt: %f\n",rtt);
+  
+  look = look/look.Magnitude();
+  ant->SetTxCenterAzimuthAngle( first_meas->scanAngle );
+
+  // Compute Axes of SpotFrame 
+  CoordinateSwitch gc_to_antenna;
+  gc_to_antenna = AntennaFrameToGC( &scOrbitState,
+                                    &scAttitude, 
+                                    ant,
+                                    ant->txCenterAzimuthAngle);
+  gc_to_antenna = gc_to_antenna.ReverseDirection();
+  
+  // Compute Coordinate Switch from Spot Frame to GC
+  Vector3 zvec0 = spot_centroid.Normal();
+  Vector3 yvec0 = zvec0 & look;  yvec0 = yvec0 / yvec0.Magnitude();
+  Vector3 xvec0 = yvec0 & zvec0; xvec0 = xvec0 / xvec0.Magnitude();
+  
+  Vector3 b[2];
+  b[0] = spot_centroid + xvec0 + yvec0; 
+  b[1] = spot_centroid - xvec0 + yvec0;
+  
+  // compute baseband frequency of each point
+  float bbf[2];
+  for(int k=0;k<2;k++)
+    bbf[k] = NominalQuikScatBaseBandFreq(b[k]);
+  
+  float bbfcent = NominalQuikScatBaseBandFreq(spot_centroid);
+  
+  // find another point on equi-freq line with centroid
+  float   dbbfdx0 = ( bbf[0] - bbf[1] ) / 2.0;
+  Vector3 p2      = b[1] + xvec0*((bbfcent-bbf[1])/dbbfdx0);
+  
+  // now set up spot frame Coordinate Switch
+  // (yvec lies along iso-frequency lines)
+  Vector3 zvec = zvec0;
+  Vector3 yvec = p2-spot_centroid; yvec = yvec / yvec.Magnitude();
+  Vector3 xvec = yvec & zvec;      xvec = xvec / xvec.Magnitude();
+  
+  CoordinateSwitch gc_to_spotframe(xvec,yvec,zvec);
+  
+  // estimate dtheta in antenna poitning due to observed frequency_shift
+  Vector3 antenna_look0 = gc_to_antenna.Forward(spot_centroid - scOrbitState.rsat);
+
+  double theta0,phi0,range0;
+  antenna_look0.SphericalGet(&range0,&theta0,&phi0);
+  
+  Vector3 spot_centroid_adj = xvec0*(freq_shift/dbbfdx0) + spot_centroid;
+  Vector3 antenna_look1     = gc_to_antenna.Forward(spot_centroid_adj - scOrbitState.rsat);
+
+  double theta1,phi1,range1;
+  antenna_look1.SphericalGet(&range1,&theta1,&phi1);
+
+  float dtheta = theta1 - theta0;
+  if( freq_shift==0 ) dtheta = 0;
+  
+  // Loop over Meas in this MeasSpot
+  for( Meas* meas = GetHead(); meas; meas = GetNext() ) {
+    // Only compute land fraction for coastal slices
+    double lon,lat,alt;
+    meas->centroid.GetAltLonGDLat(&alt,&lon,&lat);
+    // If not near the coast, set land fraction to zero or one
+    // depending on other land flag method.
+    int qs_lmap_bits;
+    qs_lmap_bits = qs_lmap->IsLand( lon, lat, -1 );
+    if (qs_lmap_bits==0||qs_lmap_bits==255)  {
+      if( meas->landFlag==1 || meas->landFlag==3 ) {
+        meas->bandwidth = 1;
+      } else {
+        meas->bandwidth = 0;
+      }
+      continue;
+    }
+    
+    float  sum     = 0;
+    float  landsum = 0;
+    float  bbf0    = NominalQuikScatBaseBandFreq(meas->centroid);
+    float  bbf1    = NominalQuikScatBaseBandFreq(meas->centroid+xvec*0.1);
+    float  bw      = meas->bandwidth;
+    float  dbbfdx  = (bbf1-bbf0)/0.1;
+    float  xmin    = -fabs((bw/2)/dbbfdx);
+    float  xmax    =  fabs((bw/2)/dbbfdx);
+    float  ymin    = -50;
+    float  ymax    =  50;
+    int    nxsteps = COAST_NXSTEPS;
+    int    nysteps = COAST_NYSTEPS;
+    double dx      = (xmax-xmin)/nxsteps;
+    double dy      = (ymax-ymin)/nysteps;
+    
+    CoordinateSwitch spotframe_to_gc = gc_to_spotframe.ReverseDirection();
+    
+    for(int ix=0;ix<nxsteps;ix++){
+      for(int iy=0;iy<nysteps;iy++){
+        float x = xmin + dx/2 + dx*ix;
+        float y = ymin + dy/2 + dy*iy;
+
+        Vector3 pspot(x,y,0);
+        EarthPosition p = spotframe_to_gc.Forward(pspot) + meas->centroid;
+        
+        //p.GetAltLonGDLat(&alt,&lon,&lat);
+        
+        lon = atan2( p.GetY(), p.GetX() );
+        lat = atan( tan( asin( p.GetZ() / p.Magnitude() ) ) / (1-e2) );
+        
+        if( lon < 0 ) lon += two_pi;
+
+        Vector3 antenna_look = gc_to_antenna.Forward(p - scOrbitState.rsat);
+        
+        double theta,phi,range,g2;
+        antenna_look.SphericalGet(&range,&theta,&phi);
+        if( !ant->beam[meas->beamIdx].GetPowerGainProduct(theta+dtheta,
+                                                          phi,
+                                                          rtt,
+                                                          ant->spinRate,
+                                                          &g2)) g2=0.0;
+         float dW = g2*dx*dy / (range*range*range*range);
+         sum     += dW;
+         landsum += lmap->IsLand(lon,lat) ? dW : 0;
+      } // iy loop
+    }   // ix loop
+    meas->bandwidth = landsum / sum; // Use EnSlice to hold land fraction values
+  } // loop over Meas in MeasSpot
+  return(1);
+}
+
 //==============//
 // MeasSpotList //
 //==============//
@@ -1531,8 +1693,6 @@ MeasSpotList::Read(
 }
 
 
-#define COAST_NXSTEPS 20
-#define COAST_NYSTEPS 120
 
 //----------------------------//
 // MeasSpotList::UnpackL1BHdfCoastal //

@@ -1708,8 +1708,12 @@ ConfigL2AToL2B(
   config_list->DoNothingForMissingKeywords();
   char* mlp_map_file = config_list->Get(MLP_INPUT_MAPPING_FILE_KEYWORD);
   if( mlp_map_file ) l2a_to_l2b->ReadMLPMapping( mlp_map_file );
-  config_list->ExitForMissingKeywords(); 
   
+  int do_coastal_processing = 0;
+  if( config_list->GetInt(DO_COASTAL_PROCESSING_KEYWORD, &do_coastal_processing) )
+    l2a_to_l2b->do_coastal_processing = do_coastal_processing;
+
+  config_list->ExitForMissingKeywords(); 
   return(1);
 }
 

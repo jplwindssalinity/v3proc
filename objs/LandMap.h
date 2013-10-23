@@ -45,7 +45,8 @@ public:
 
     int  IsLand(float lon, float lat);
     int  IsLand(LonLat* lon_lat);
-
+    int  IsCoastal(float lon, float lat, float thresh);
+    
 protected:
 
     int  IsLandUSGS(float lon, float lat);
@@ -69,10 +70,10 @@ protected:
     int              _mapLatDim;
     int              _mapLonDim;
     int              _usemap;
-    float            _lat_start;
-    float            _lon_start;
-    float            _lonResolution;
-    float            _latResolution;
+    double           _lat_start;
+    double           _lon_start;
+    double           _lonResolution;
+    double           _latResolution;
     int landmap_type;  // 0 = LandMap, 1= SimpleLandMap, 2= USGS Landuse map
 };
 

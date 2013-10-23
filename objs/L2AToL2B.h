@@ -149,7 +149,10 @@ public:
     WindVectorField  nudgeVctrField;
     float            nudgeThresholds[2];
     float            streamThreshold;
-
+    
+    // for coastal processing
+    int do_coastal_processing;
+    
     //----------------------------------------------//
     // Auxiliary Variables For Hurricane Processing //
     //----------------------------------------------//

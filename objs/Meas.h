@@ -79,6 +79,7 @@ public:
     // compositing //
     //-------------//
     int CompositeObsKP(MeasList* meas_list);
+    int Composite_Coastal(MeasList* meas_list);
     
     //--------------------------------------------------//
     // If N is nonzero we                               //
@@ -292,7 +293,11 @@ public:
                       int32       hdfIndex,    // index in the HDF
                       int32       pulseIndex); //index of the pulses(100)
 
- 
+    int ComputeLandFraction( LandMap* lmap,
+                             QSLandMap* qs_lmap,
+                             Antenna* ant,
+                             float    freq_shift );
+    
 	//-----------//
 	// variables //
 	//-----------//
