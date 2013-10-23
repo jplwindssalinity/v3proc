@@ -314,6 +314,29 @@ Matrix3::Inverse()
     return(1);
 }
 
+int Matrix3::Set( int i, int j, double value ) {
+  if( i<0 || i>2 || j<0 || j >2 )
+    return(0);
+  _m[i][j] = value;
+  return(1);
+}
+
+void Matrix3::Set( double x11, double x12, double x13,
+                   double x21, double x22, double x23,
+                   double x31, double x32, double x33 ) {
+  _m[0][0] = x11;
+  _m[0][1] = x12;
+  _m[0][2] = x13;
+
+  _m[1][0] = x21;
+  _m[1][1] = x22;
+  _m[1][2] = x23;
+
+  _m[2][0] = x31;
+  _m[2][1] = x32;
+  _m[2][2] = x33;
+}
+
 //---------------//
 // Matrix3::Show //
 //---------------//

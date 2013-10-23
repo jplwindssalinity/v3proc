@@ -65,6 +65,11 @@ public:
     int  Inverse();
     void Show(char *name = (char*)NULL);
     
+    int  Set( int i, int j, double value );
+    void Set( double x11, double x12, double x13,
+              double x21, double x22, double x23,
+              double x31, double x32, double x33 );
+    
     double Get( int i, int j ) const;
     int    Get( int i, int j, double* value ) const;
     void   Get( double* x11, double* x12, double* x13, 
