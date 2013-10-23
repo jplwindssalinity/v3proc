@@ -352,19 +352,19 @@ main(
     zscvel_geod.Scale(1.0);
     
     // m Transforms from geocentric to geodetic local reference frames
-    double m[3][3];
+    double m11 = xscvel_geod % xscvel_geoc;
+    double m12 = xscvel_geod % yscvel_geoc;
+    double m13 = xscvel_geod % zscvel_geoc;
     
-    m[0][0] = xscvel_geod % xscvel_geoc;
-    m[0][1] = xscvel_geod % yscvel_geoc;
-    m[0][2] = xscvel_geod % zscvel_geoc;
+    double m21 = yscvel_geod % xscvel_geoc;
+    double m22 = yscvel_geod % yscvel_geoc;
+    double m23 = yscvel_geod % zscvel_geoc;
     
-    m[1][0] = yscvel_geod % xscvel_geoc;
-    m[1][1] = yscvel_geod % yscvel_geoc;
-    m[1][2] = yscvel_geod % zscvel_geoc;
+    double m31 = zscvel_geod % xscvel_geoc;
+    double m32 = zscvel_geod % yscvel_geoc;
+    double m33 = zscvel_geod % zscvel_geoc;
     
-    m[2][0] = zscvel_geod % xscvel_geoc;
-    m[2][1] = zscvel_geod % yscvel_geoc;
-    m[2][2] = zscvel_geod % zscvel_geoc;
+    Matrix3 m( m11, m12, m13, m21, m22, m23, m31, m32, m33 );
     
 //    printf("matrix: \n");
 //    for( int ii=0;ii<3;++ii) {
@@ -372,7 +372,7 @@ main(
 //    }
     
     Quat q_geoc_to_geod;
-    q_geoc_to_geod.QuatFromMatrix( &m[0][0] );
+    q_geoc_to_geod.QuatFromMatrix( m );
     
 //    printf("Quat: %f %f %f %f\n",
 //           q_geoc_to_geod.w, q_geoc_to_geod.x, 
