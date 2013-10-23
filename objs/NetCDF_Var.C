@@ -26,6 +26,7 @@
 
 #include <netcdf.h>
 #include <strings.h>
+#include <stdlib.h>
 
 #include "NetCDF_Var.h"
 
