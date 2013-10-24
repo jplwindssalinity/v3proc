@@ -270,7 +270,7 @@ main(
     beginning_date.ToCodeB(beginning_code_b);
     beginning_code_b[8] = '\0';
     fprintf(ofp, "RangeBeginningDate            = %-45.45s;\r\n", beginning_code_b);
-    fprintf(ofp, "RangeBeginningTime            = %s-45.45s;\r\n", beginning_code_b + 9);
+    fprintf(ofp, "RangeBeginningTime            = %-45.45s;\r\n", beginning_code_b + 9);
 
     char ending_code_b[CODE_B_TIME_LENGTH];
     ending_date.ToCodeB(ending_code_b);
