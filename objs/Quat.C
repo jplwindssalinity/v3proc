@@ -170,11 +170,7 @@ Quat::RotMat( Matrix3* mat ) const {
     double x32 = 2.0 * (y*z + w*x);
     double x33 = 1.0 - 2.0 * (x*x + y*y);
     
-    Vector3 r1( x11, x12, x13 );
-    Vector3 r2( x21, x22, x23 );
-    Vector3 r3( x31, x32, x33 );
-    
-    mat->Rowset( r1, r2, r3 );
+    mat->Set( x11, x12, x13, x21, x22, x23, x31, x32, x33 );
     return(1);
 }
 
@@ -223,65 +219,6 @@ Quat::RotationFromFixedAngles(
     R(2,2) = cos(ry)*cos(rx);
 
     this->QuatFromRotMat(R);
-
-    return;
-}
-
-//----------------------//
-// Quat::QuatFromRotMat //
-//----------------------//
-// determines rotation matrix corresponding to unit quaternion
-
-void
-Quat::QuatFromRotMat(
-    const Mat&  R)
-{
-    double tmp, T = R(0,0) + R(1,1) + R(2,2);    // trace
-    double maxPivot = MAX((MAX(R(0,0), R(1,1))), (MAX(R(2,2), T)));
-
-    if (maxPivot == R(0,0))
-    {
-        // x is largest
-        x = sqrt(0.25 * (1.0 + 2.0 * R(0,0) - T));
-        tmp = 1.0 / (4.0 * x);
-        y = (R(0,1) + R(1,0)) * tmp;
-        z = (R(0,2) + R(2,0)) * tmp;
-        w = (R(1,2) - R(2,1)) * tmp;
-    }
-
-    if (maxPivot == R(1,1))
-    {
-        // y is largest
-        y = sqrt(0.25 * (1.0 + 2.0 * R(1,1) - T));
-        tmp = 1.0 / (4.0 * y);
-        x = (R(0,1) + R(1,0)) * tmp;
-        z = (R(1,2) + R(2,1)) * tmp;
-        w = (R(2,0) - R(0,2)) * tmp;
-    }
-
-    if (maxPivot == R(2,2))
-    {
-        // z is largest
-        z = sqrt(0.25 * (1.0 + 2.0 * R(2,2) - T));
-        tmp = 1.0 / (4.0 * z);
-        x = (R(0,2) + R(2,0)) * tmp;
-        y = (R(1,2) + R(2,1)) * tmp;
-        w = (R(0,1) - R(1,0)) * tmp;
-    }
-
-    if (maxPivot == T)
-    {
-        // w is largest
-        w = sqrt(0.25 * (1.0 + T));
-        tmp = 1.0 / (4.0 * w);
-        x = (R(1,2) - R(2,1)) * tmp;
-        y = (R(2,0) - R(0,2)) * tmp;
-        z = (R(0,1) - R(1,0)) * tmp;
-    }
-
-    // make rotation shortest by negating q if w < 0
-    if (w < 0.0)
-        *this *= -1;    // q = q * (-1)
 
     return;
 }
