@@ -125,21 +125,20 @@ main(
   QSIceMap     qs_icemap;
    
   int transform_kp = 0;
+  int do_footprint = 0;
   int optind       = 1;
   while ( (optind < argc) && (argv[optind][0]=='-') ) {
     std::string sw = argv[optind];
     
     if( sw == "-c" ) {
-      ++optind;
-      config_file = argv[optind];
-    } 
-    else if ( sw == "-o" ) {
-      ++optind;
-      l2a_flagged_file = argv[optind];
-    }
-    else if ( sw == "-kp" )
+      config_file = argv[++optind];
+    } else if ( sw == "-o" ) {
+      l2a_flagged_file = argv[++optind];
+    } else if ( sw == "-kp" ) {
       transform_kp = 1;
-    else {
+    } else if ( sw == "-fp" ) {
+      do_footprint = 1;
+    } else {
       fprintf(stderr,"%s: Unknow option\n", command);
       exit(1);
     }
@@ -271,8 +270,11 @@ main(
       // Set landFlag on centroids of composites;
       int old_flag = meas->landFlag;
       
+      // using flagging_mode == 0 for footprints, 1 for slice composites
+      int flagging_mode = (!do_footprint) ? 1 : 0;
+      
       meas->landFlag = 0;
-      if( qs_landmap.IsLand( lon, lat, 1 ) )
+      if( qs_landmap.IsLand( lon, lat, flagging_mode ) )
         meas->landFlag += 1;
       
       if( old_flag == 2 || old_flag == 3 ) 
