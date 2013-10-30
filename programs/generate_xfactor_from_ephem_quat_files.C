@@ -66,6 +66,7 @@ static const char rcs_id[] = "@(#) $Id$";
 #include "Tracking.h"
 #include "Tracking.C"
 #include "AccurateGeom.h"
+#include "XTable.h"
 
 //-----------//
 // TEMPLATES //
@@ -97,7 +98,7 @@ template class std::map<string,string,Options::ltstr>;
 //-----------//
 
 #define ORBIT_STEPS    32
-#define AZIMUTH_STEPS  36    // used for fitting
+#define AZIMUTH_STEPS  36
 
 //--------//
 // MACROS //
@@ -119,7 +120,7 @@ template class std::map<string,string,Options::ltstr>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char usage_string[] = "-c config_file -e ephem_file -q quats_file <-out_xfactor_file xfactor_file> <-out_kfactor_file kfactor_file> <-s start_rev>";
+const char usage_string[] = "-c config_file -e ephem_file -q quats_file -o xfactor_file <-s start_rev> <-fbb spot_bbshift.dat>";
 
 //--------------//
 // MAIN PROGRAM //
@@ -131,19 +132,17 @@ int main( int argc, char* argv[] ) {
   //------------------------//
 
   const char* command = no_path(argv[0]);
-  char*       out_kfactor_file = NULL;
   char*       out_xfactor_file = NULL;
   char*       config_file      = NULL;
   char*       ephem_file       = NULL;
   char*       quat_file        = NULL;
+  char*       fbbshift_file    = NULL;
   int         start_rev        = 0;
   
   int optind    = 1;
   while( (optind < argc) && (argv[optind][0]=='-') ) {
     std::string sw = argv[optind];
-    if( sw == "-out_kfactor_file" ) {
-      out_kfactor_file = argv[++optind];
-    } else if( sw == "-out_xfactor_file" ) {
+    if( sw == "-o" ) {
       out_xfactor_file = argv[++optind];
     } else if( sw == "-c" ) {
       config_file = argv[++optind];
@@ -151,8 +150,10 @@ int main( int argc, char* argv[] ) {
       ephem_file = argv[++optind];
     } else if( sw == "-q" ) {
       quat_file = argv[++optind];
-    } else if( sw == "-start_rev" ) {
+    } else if( sw == "-s" ) {
       start_rev = atoi(argv[++optind]);
+    } else if( sw == "-fbb" ) {
+      fbbshift_file = argv[++optind];
     } else {
       fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
       exit(1);
@@ -160,11 +161,8 @@ int main( int argc, char* argv[] ) {
     ++optind;
   }
 
-  // Must specify one of "-out_kfactor_file" or "-out_xfactor_file"
-  int no_outfiles = 0;
-  if( !out_kfactor_file && !out_xfactor_file) no_outfiles = 1;
-
-  if(!config_file || !ephem_file || !quat_file || no_outfiles ) {
+  // Must specify "-out_xfactor_file"
+  if( !config_file || !ephem_file || !quat_file || !out_xfactor_file ) {
     fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
     exit(1);
   }
@@ -256,10 +254,13 @@ int main( int argc, char* argv[] ) {
   double orbit_step_size   = orbit_period / (double)ORBIT_STEPS;
   double azimuth_step_size = two_pi / (double)AZIMUTH_STEPS;
   int    num_slices        = qscat.ses.GetTotalSliceCount();
-
-  float X_table[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS][AZIMUTH_STEPS][num_slices];
-  float K_table[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS][AZIMUTH_STEPS][num_slices];
-
+  
+  float fbb_shift[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS][AZIMUTH_STEPS];
+  
+  XTable x_table( NUMBER_OF_QSCAT_BEAMS, AZIMUTH_STEPS, ORBIT_STEPS, 
+                  qscat.ses.scienceSlicesPerSpot, qscat.ses.guardSlicesPerSide, 
+                  qscat.ses.scienceSliceBandwidth, qscat.ses.guardSliceBandwidth );
+  
   //----------------------------//
   // select encoder information //
   //----------------------------//
@@ -512,7 +513,15 @@ int main( int argc, char* argv[] ) {
           // 1 means to use spacecraft attitude to compute Doppler
           qscat.IdealCommandedDoppler(&spacecraft,NULL,1);
         }
-      
+        
+        // Call Qscat::TargetInfo() again to get base-band frequency shift
+        if (! qscat.TargetInfo(&antenna_frame_to_gc, &spacecraft, vector, &qti)) {
+          fprintf(stderr, "%s: error finding round trip time\n", command);
+          exit(1);
+        }
+        
+        fbb_shift[beam_idx][orbit_step][azimuth_step] = qti.basebandFreq;
+        
         // Make the slices for this pulse and geolocate them
         MeasSpot meas_spot;
         qscat.MakeSlices(&meas_spot);
@@ -535,44 +544,50 @@ int main( int argc, char* argv[] ) {
           
           // Remove peak gain from X_int
           this_X_int /= (beam->peakGain * beam->peakGain);
-          
-          // Compute the Kfactor...
-          
+
+          fprintf(stdout,"%d %d %d %d %f %f %f\n", beam_idx, orbit_step, azimuth_step,
+             meas->startSliceIdx, 10*log10(this_X_int), qscat.ses.txDoppler, 
+             qscat.sas.antenna.txCenterAzimuthAngle );
+
           // Stick in output arrays
           int abs_idx;
           rel_to_abs_idx( meas->startSliceIdx, num_slices, &abs_idx );
-          X_table[beam_idx][orbit_step][azimuth_step][abs_idx] = this_X_int;
-          K_table[beam_idx][orbit_step][azimuth_step][abs_idx] = this_X;
-//           fprintf(stdout,"%d %d %d %d %f %f %f\n", beam_idx, orbstep, encoder,
-//             meas->startSliceIdx, 10*log10(this_X), qscat.ses.txDoppler, 
-//             qscat.sas.antenna.txCenterAzimuthAngle );
+          float orbit_position = ((double)(orbit_step)+0.5)/(double)ORBIT_STEPS;
+          
+          if(!x_table.AddEntry( this_X_int, beam_idx, azimuth, orbit_position, abs_idx)) {
+            fprintf(stderr,"%s: Error adding to Xtable: %d %f %f %d\n", 
+                    command, beam_idx, azimuth, orbit_position, abs_idx );
+            exit(1);
+          }
         }
-//         fprintf(stdout,"\n");
       }
     }
   }
-
-  // write em out
-  if( out_kfactor_file ) {
-    FILE* ofp = fopen(out_kfactor_file,"w");
-    int n_orb_step = ORBIT_STEPS;
-    int n_azi_step = AZIMUTH_STEPS;
-    fwrite(&n_orb_step,sizeof(int),1,ofp);
-    fwrite(&n_azi_step,sizeof(int),1,ofp);
-    fwrite(&num_slices,sizeof(int),1,ofp);
-    fwrite(&K_table[0][0][0][0],sizeof(float),2*ORBIT_STEPS*AZIMUTH_STEPS*num_slices,ofp);
-    fclose(ofp);
+  
+  if( fbbshift_file ) {
+    FILE* ofp = fopen(fbbshift_file,"w");
+    if( ofp==NULL ) {
+      fprintf(stderr,"%s: Error opening base-band freq shift file: %s\n",command,fbbshift_file);
+      fclose(ofp);
+    } else {
+      int n_beams = NUMBER_OF_QSCAT_BEAMS;
+      int n_orb   = ORBIT_STEPS;
+      int n_azi   = AZIMUTH_STEPS;
+      
+      size_t out_size = n_beams*n_orb*n_azi;
+      if( fwrite(&n_beams,sizeof(int),1,ofp) != 1 ||
+          fwrite(&n_orb,sizeof(int),1,ofp)   != 1 ||
+          fwrite(&n_azi,sizeof(int),1,ofp)   != 1 ||
+          fwrite(&fbb_shift[0][0][0],sizeof(float),out_size,ofp) != out_size ) {
+        fprintf(stderr,"%s: Error writing base-band freqs to file: %s\n",command,fbbshift_file);
+      }
+      fclose(ofp);
+    }
   }
-
-  if( out_xfactor_file ) {
-    FILE* ofp = fopen(out_xfactor_file,"w");
-    int n_orb_step = ORBIT_STEPS;
-    int n_azi_step = AZIMUTH_STEPS;
-    fwrite(&n_orb_step,sizeof(int),1,ofp);
-    fwrite(&n_azi_step,sizeof(int),1,ofp);
-    fwrite(&num_slices,sizeof(int),1,ofp);
-    fwrite(&X_table[0][0][0][0],sizeof(float),2*ORBIT_STEPS*AZIMUTH_STEPS*num_slices,ofp);
-    fclose(ofp);
+  
+  if(!x_table.SetFilename(out_xfactor_file) || !x_table.Write() ) {
+    fprintf(stderr,"%s: Error writing XTable to: %s\n", command, out_xfactor_file );
+    exit(1);
   }
   return (0);
 }
