@@ -6,12 +6,12 @@
 static const char rcs_id_XTable_c[] =
     "@(#) $Id$";
 
-#include <fcntl.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>
 #include <stdlib.h>
+#include <malloc.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "XTable.h"
 #include "Constants.h"
 #include "Misc.h"
@@ -35,6 +35,8 @@ XTable::XTable()
 XTable::XTable(int num_beams, int num_azimuths, int num_orbit_positions,
                int num_science_slices, int num_guard_slices_each_side,
                float science_bandwidth, float guard_bandwidth) {
+    _filename = NULL;
+    _value    = NULL;
     numBeams = num_beams;
     numAzimuthBins = num_azimuths;
     numOrbitPositionBins = num_orbit_positions;
