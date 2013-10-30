@@ -545,9 +545,9 @@ int main( int argc, char* argv[] ) {
           // Remove peak gain from X_int
           this_X_int /= (beam->peakGain * beam->peakGain);
 
-          fprintf(stdout,"%d %d %d %d %f %f %f\n", beam_idx, orbit_step, azimuth_step,
-             meas->startSliceIdx, 10*log10(this_X_int), qscat.ses.txDoppler, 
-             qscat.sas.antenna.txCenterAzimuthAngle );
+//           fprintf(stdout,"%d %d %d %d %f %f %f\n", beam_idx, orbit_step, azimuth_step,
+//              meas->startSliceIdx, 10*log10(this_X_int), qscat.ses.txDoppler, 
+//              qscat.sas.antenna.txCenterAzimuthAngle );
 
           // Stick in output arrays
           int abs_idx;
