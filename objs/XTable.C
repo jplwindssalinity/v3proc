@@ -37,6 +37,7 @@ XTable::XTable(int num_beams, int num_azimuths, int num_orbit_positions,
                float science_bandwidth, float guard_bandwidth) {
     _filename = NULL;
     _value    = NULL;
+    _empty    = NULL;
     numBeams = num_beams;
     numAzimuthBins = num_azimuths;
     numOrbitPositionBins = num_orbit_positions;
