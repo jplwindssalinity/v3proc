@@ -37,7 +37,7 @@
 #    alexander.fore@jpl.nasa.gov
 #----------------------------------------------------------------------
 
-rcs_id = "$Id:"
+rcs_id = "$Id$"
 
 from optparse import OptionParser
 import struct
