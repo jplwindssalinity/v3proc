@@ -146,6 +146,8 @@ main(
   char*       out_ephem_file = NULL;
   char*       out_quat_file  = NULL;
   
+  int print_curr_leap_secs = 0;
+  
   int optind = 1;
   while ( (optind < argc) && (argv[optind][0]=='-') ) {
     std::string sw = argv[optind];
@@ -155,6 +157,8 @@ main(
       out_ephem_file=argv[++optind];
     } else if ( sw=="-q" ) {
       out_quat_file=argv[++optind];
+    } else if ( sw=="-l" ) {
+      print_curr_leap_secs=1;
     } else {
       fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
       exit(1);
@@ -280,6 +284,10 @@ main(
 
     double time = double(tt0); //+ double(tt1)/255.0;
     time       += double(gps2utc) + gps_time_base - sim_time_base;
+    
+    if( print_curr_leap_secs && it == gse_tt_idx_list.begin() ) {
+      printf("Current number of GPS leap secs: %d\n",-gps2utc);
+    }
     
     // Convert to meters, meters / second from feet, feet / second.
     for( int ii=0;ii<3;++ii) {
