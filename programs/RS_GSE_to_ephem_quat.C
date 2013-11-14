@@ -30,8 +30,7 @@
 // NOTES
 //    None.
 //    We are using the J2000 ECI positions and veclocities in the GSE file.
-//    We need to convert them to ECI at the mean of date from J2000, which is
-//    only the precession corrections.
+//    We need to convert them to Earth Centered Earth Fixed Coordinates.
 //
 //    We use the attitude records in the GSE file, and they are in a geocentric
 //    local velocity frame (LVLH).
@@ -295,7 +294,6 @@ main(
       vel[ii] *= 0.3048;
     }
     
-    // Still need to adjust for epoch for the GSE inertial reference frame!
     // EarthPosition objects use kilometers, kilometers / second units.
     
     // Compute Julian Date from sim time-tag
@@ -315,7 +313,11 @@ main(
     
     double dj0, djm;
     iauCal2jd( year, month, day, &dj0, &djm );
-    djm+= ( (double)hour + (double)min/60 + sec/60/60 )/24.0;
+    djm += ( (double)hour + (double)min/60 + sec/60/60 )/24.0;
+    
+    // 100 * 10 ^ -6 arcsecond errors in GHA due to not
+    // including dUT (current UT-UTC).
+    double gha = iauGst00a( dj0, djm, dj0, djm );
     
     // Compute the precession matrix from J2000 to mean of date.
     double rb[3][3], rp[3][3], rbp[3][3];
@@ -335,11 +337,21 @@ main(
     iauRxp( rp, j2k_pos, rot_pos );
     iauRxp( rp, j2k_vel, rot_vel );
     
-    // Set the ECI coordinates at mean of date in orbit state object
+    // Rotate about Z-axis by GHA radians
+    double ecef_pos[3], ecef_vel[3];
+    ecef_pos[0] = rot_pos[0]*cos(gha) + rot_pos[1]*sin(gha);
+    ecef_pos[1] =-rot_pos[0]*sin(gha) + rot_pos[1]*cos(gha);
+    ecef_pos[2] = rot_pos[2];
+
+    ecef_vel[0] = rot_vel[0]*cos(gha) + rot_vel[1]*sin(gha);
+    ecef_vel[1] =-rot_vel[0]*sin(gha) + rot_vel[1]*cos(gha);
+    ecef_vel[2] = rot_vel[2];
+    
+    // Set the ECEF coordinates in orbit state object
     OrbitState orbit_state;
     orbit_state.time = time;
-    orbit_state.rsat.Set( rot_pos[0]*1E-3, rot_pos[1]*1E-3, rot_pos[2]*1E-3 );
-    orbit_state.vsat.Set( rot_vel[0]*1E-3, rot_vel[1]*1E-3, rot_vel[2]*1E-3 );
+    orbit_state.rsat.Set( ecef_pos[0]*1E-3, ecef_pos[1]*1E-3, ecef_pos[2]*1E-3 );
+    orbit_state.vsat.Set( ecef_vel[0]*1E-3, ecef_vel[1]*1E-3, ecef_vel[2]*1E-3 );
     
     Vector3 xscvel_geoc, yscvel_geoc, zscvel_geoc;
     Vector3 xscvel_geod, yscvel_geod, zscvel_geod;
