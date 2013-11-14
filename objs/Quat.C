@@ -395,8 +395,8 @@ void Quat::GetAttitudeGS( Attitude* attitude ) const {
     double pitch, yaw;
     
     if(cr!=0) {
-      pitch = atan2(r13/cr,r33/cr);
-      yaw   = atan2(r21/cr,r22/cr);
+      pitch = atan2(r13,r33);
+      yaw   = atan2(r21,r22);
     } else {
       yaw   = 0;
       pitch = atan2( r12/sr, r11 );
