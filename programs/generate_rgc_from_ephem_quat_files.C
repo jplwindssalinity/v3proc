@@ -262,7 +262,7 @@ main(
       std::string sw = argv[optind];
       if( sw == "-out_table" ) {
         out_rtt_table = argv[++optind];
-      } else if( sw == "-start_rev" ) {
+      } else if( sw == "-s" ) {
         start_rev = atoi(argv[++optind]);
       } else if( sw == "-out_base" ) {
         rgc_base = argv[++optind];
@@ -559,7 +559,7 @@ main(
             quats.GetQuat( time, &this_quat );
             
             // Convert to attitude angles and overwrite those in spacecraft object
-            this_quat.GetAttitude( &(spacecraft.attitude) );
+            this_quat.GetAttitudeGS( &(spacecraft.attitude) );
             
             //spacecraft.attitude.SetPitch(spacecraft.attitude.GetPitch()-3*dtr);
             

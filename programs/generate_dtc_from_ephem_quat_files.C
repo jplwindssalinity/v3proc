@@ -124,7 +124,7 @@ template class std::map<string,string,Options::ltstr>;
 
 int opt_bias = 0;
 
-const char usage_string[] = "-c config_file -e ephem.dat -q quats.dat -outbase outbase [-out_table out_dts_table] [-az_shift shift1 shift2] [-el_shift shift1 shift2]";
+const char usage_string[] = "-c config_file -e ephem.dat -q quats.dat -out_base outbase [-out_table out_dts_table] [-az_shift shift1 shift2] [-el_shift shift1 shift2]";
 
 //--------------//
 // MAIN PROGRAM //
@@ -155,7 +155,7 @@ main(
       std::string sw = argv[optind];
       if( sw == "-out_table" ) {
         out_dts_table = argv[++optind];
-      } else if( sw == "-start_rev" ) {
+      } else if( sw == "-s" ) {
         start_rev = atoi(argv[++optind]);
       } else if( sw == "-az_shift" ) {
         az_shift[0] = dtr*atof(argv[++optind]);
@@ -318,6 +318,11 @@ main(
     //double orbit_period = spacecraft_sim.GetPeriod();
     double orbit_step_size = orbit_period / (double)DOPPLER_ORBIT_STEPS;
     double azimuth_step_size = two_pi / (double)DOPPLER_AZIMUTH_STEPS;
+    unsigned int orbit_ticks_per_orbit =
+        (unsigned int)(orbit_period * ORBIT_TICKS_PER_SECOND + 0.5);
+    printf("%s %d\n", ORBIT_TICKS_PER_ORBIT_KEYWORD, orbit_ticks_per_orbit);
+    qscat.cds.CmdOrbitTicksPerOrbit(orbit_ticks_per_orbit);
+
 
     //----------------------------//
     // select encoder information //
@@ -473,7 +478,7 @@ main(
             quats.GetQuat( time, &this_quat );
             
             // Convert to attitude angles and overwrite those in spacecraft object
-            this_quat.GetAttitude( &(spacecraft.attitude) );
+            this_quat.GetAttitudeGS( &(spacecraft.attitude) );
             
             //spacecraft.attitude.SetPitch(spacecraft.attitude.GetPitch()-3*dtr);
             
