@@ -388,18 +388,27 @@ void Quat::GetAttitudeGS( Attitude* attitude ) const {
     double r32 = rot_mat.Get(2,1);
     double r33 = rot_mat.Get(2,2);
     
-    double sr = -r23;
-    double cr = sqrt( r21*r21 + r22*r22 );
-    double roll = atan2( sr, cr );
+    // Two estimators for the cosine of roll angle
+    double cr1 = sqrt( r21*r21 + r22*r22 );
+    double cr2 = sqrt( r13*r13 + r33*r33 );
+    double sr  = -r23;
+    
+    double roll = atan2( sr, cr1 );
     
     double pitch, yaw;
     
-    if(cr!=0) {
-      pitch = atan2(r13,r33);
-      yaw   = atan2(r21,r22);
-    } else {
+    // Check if degenerate (roll = +/- 90 ).
+    // Three different tests are mathematically the same,
+    // but may differ due to round-off.
+    int degen = 0; 
+    if( cr1==0 || cr2==0 || fabs(sr)==1 ) degen = 1;
+    
+    if(degen) {
       yaw   = 0;
       pitch = atan2( r12/sr, r11 );
+    } else {
+      yaw   = atan2(r21,r22);
+      pitch = atan2(r13,r33);
     }
     // Force GS order of rotations: [ Y R P ]
     attitude->Set( (float)roll, (float)pitch, (float)yaw, 3, 1, 2 );
