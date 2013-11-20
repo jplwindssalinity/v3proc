@@ -106,7 +106,7 @@ velocity_frame_geodetic(
     {
         fprintf(stderr,
         "Error: velocity_frame_geodetic could not convert input position\n");
-        exit(1);
+        return(0);
     }
     EarthPosition rnadir;
     rnadir.SetAltLonGDLat(0.0, nadir_lon, nadir_gd_lat);
