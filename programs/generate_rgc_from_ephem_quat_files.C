@@ -253,8 +253,8 @@ main(
     char*       rgc_base       = NULL;
     char*       nadir_rtt_file = NULL;
     
-    double rgc_limit = -1;
-    int    start_rev = 0;
+    double rgc_limit  = -1;
+    int    start_rev  = 0;
     int    clip_nadir = 0;
     
     int optind = 1;
@@ -278,6 +278,8 @@ main(
         clip_nadir = 1;
       } else if( sw == "-nadir_rtt_file" ) {
         nadir_rtt_file = argv[++optind];
+      } else if( sw == "-f" ) {
+        opt_fixed = 1;
       } else {
         fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
         exit(1);
@@ -393,19 +395,29 @@ main(
       prev_os = this_os;
     }
     
-    double orbit_period = 0;
-    for( size_t ii=0;ii<asc_node_times.size()-1; ++ii) 
-      orbit_period += asc_node_times[ii+1]-asc_node_times[ii];
-    
-    orbit_period /= double(asc_node_times.size()-1);
-    
-    printf("orbit_period: %f, revs used: %zd\n",orbit_period,asc_node_times.size()-1);
-    
     //------------//
     // initialize //
     //------------//
 
-    //double orbit_period = spacecraft_sim.GetPeriod();
+    //------------------------------//
+    // start at an equator crossing //
+    //------------------------------//
+    double start_time, orbit_period;
+    if( start_rev == -1 ) {
+      // use last node-to-node orbit in ephem / quat files
+      start_time = asc_node_times[asc_node_times.size()-2];
+      orbit_period = asc_node_times[asc_node_times.size()-1]-asc_node_times[asc_node_times.size()-2];
+    } else if ( start_rev< asc_node_times.size()-1) {
+      start_time = asc_node_times[start_rev];
+      orbit_period = asc_node_times[start_rev+1]-asc_node_times[start_rev];
+    } else {
+      fprintf(stderr,"Error: bad value for start_rev\n");
+      exit(1);
+    }
+    printf("orbit_period: %f\n",orbit_period);
+
+
+    
     double orbit_step_size = orbit_period / (double)RANGE_ORBIT_STEPS;
     double azimuth_step_size = two_pi / (double)RANGE_AZIMUTH_STEPS;
     unsigned int orbit_ticks_per_orbit =
@@ -495,20 +507,6 @@ main(
         {
             fprintf(stderr, "%s: error allocating range tracker\n", command);
             exit(1);
-        }
-
-        //------------------------------//
-        // start at an equator crossing //
-        //------------------------------//
-        double start_time;
-        if( start_rev == -1 ) {
-          // use last node-to-node orbit in ephem / quat files
-          start_time = asc_node_times[asc_node_times.size()-2];
-        } else if ( start_rev< asc_node_times.size()-1) {
-          start_time = asc_node_times[start_rev];
-        } else {
-          fprintf(stderr,"Error: bad value for start_rev\n");
-          exit(1);
         }
 
         qscat.cds.SetEqxTime(start_time);
@@ -682,21 +680,27 @@ main(
             double a, p, c;
             azimuth_fit(RANGE_AZIMUTH_STEPS, rtt, &a, &p, &c);
             
-            if(rgc_limit>0 || clip_nadir) {
-              double a1, c1;
-              double rgc_min = (clip_nadir)  ? t_nadir_end : 0;
-              double rgc_max = (rgc_limit>0) ? rgc_limit   : 1000000;
-              
-              fit_rtt_nlopt( &rtt[0], rgc_min, rgc_max, a, p, c, &a1, &c1 );
-              a = a1;
-              c = c1;
-            }
-
             if (opt_fixed) {
                 // zero the amplitude and the phase
                 a = 0.0;
                 p = 0.0;
             }
+            
+            if(rgc_limit>0 || clip_nadir) {
+              double a1, c1;
+              double rgc_min = (clip_nadir)  ? t_nadir_end : 0;
+              double rgc_max = (rgc_limit>0) ? rgc_limit   : 1000000;
+              
+              if(!opt_fixed) {
+                fit_rtt_nlopt( &rtt[0], rgc_min, rgc_max, a, p, c, &a1, &c1 );
+                a = a1;
+                c = c1;
+              } else {
+                if( c > rgc_max ) c = rgc_max;
+                if( c < rgc_min ) c = rgc_min;
+              }
+            }
+
             
             *(*(terms + orbit_step) + 0) = a;
             *(*(terms + orbit_step) + 1) = p;

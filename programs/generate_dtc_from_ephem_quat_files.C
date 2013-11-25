@@ -300,13 +300,22 @@ main(
       prev_os = this_os;
     }
     
-    double orbit_period = 0;
-    for( size_t ii=0;ii<asc_node_times.size()-1; ++ii) 
-      orbit_period += asc_node_times[ii+1]-asc_node_times[ii];
-    
-    orbit_period /= double(asc_node_times.size()-1);
-    
-    printf("orbit_period: %f, revs used: %zd\n",orbit_period,asc_node_times.size()-1);
+    //------------------------------//
+    // start at an equator crossing //
+    //------------------------------//
+    double start_time, orbit_period;
+    if( start_rev == -1 ) {
+      // use last node-to-node orbit in ephem / quat files
+      start_time = asc_node_times[asc_node_times.size()-2];
+      orbit_period = asc_node_times[asc_node_times.size()-1]-asc_node_times[asc_node_times.size()-2];
+    } else if ( start_rev< asc_node_times.size()-1) {
+      start_time = asc_node_times[start_rev];
+      orbit_period = asc_node_times[start_rev+1]-asc_node_times[start_rev];
+    } else {
+      fprintf(stderr,"Error: bad value for start_rev\n");
+      exit(1);
+    }
+    printf("orbit_period: %f\n",orbit_period);
 
     //-----------//
     // variables //
@@ -405,20 +414,6 @@ main(
             fprintf(stderr, "%s: error allocating Doppler tracker\n", command);
             exit(1);
         }
-
-       //------------------------------//
-       // start at an equator crossing //
-       //------------------------------//
-       double start_time;
-       if( start_rev == -1 ) {
-         // use last node-to-node orbit in ephem / quat files
-         start_time = asc_node_times[asc_node_times.size()-2];
-       } else if ( start_rev< asc_node_times.size()-1) {
-         start_time = asc_node_times[start_rev];
-       } else {
-         fprintf(stderr,"Error: bad value for start_rev\n");
-         exit(1);
-       }
 
        qscat.cds.SetEqxTime(start_time);
 

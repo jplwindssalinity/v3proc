@@ -236,13 +236,22 @@ int main( int argc, char* argv[] ) {
     prev_os = this_os;
   }
 
-  // Compute orbit period from average difference of consecutive ascending node times
-  double orbit_period = 0;
-  for( size_t ii=0;ii<asc_node_times.size()-1; ++ii) 
-    orbit_period += asc_node_times[ii+1]-asc_node_times[ii];
-
-  orbit_period /= double(asc_node_times.size()-1);
-  //     printf("orbit_period: %f, revs used: %zd\n",orbit_period,asc_node_times.size()-1);
+  //------------------------------//
+  // start at an equator crossing //
+  //------------------------------//
+  double start_time, orbit_period;
+  if( start_rev == -1 ) {
+    // use last node-to-node orbit in ephem / quat files
+    start_time = asc_node_times[asc_node_times.size()-2];
+    orbit_period = asc_node_times[asc_node_times.size()-1]-asc_node_times[asc_node_times.size()-2];
+  } else if ( start_rev< asc_node_times.size()-1) {
+    start_time = asc_node_times[start_rev];
+    orbit_period = asc_node_times[start_rev+1]-asc_node_times[start_rev];
+  } else {
+    fprintf(stderr,"Error: bad value for start_rev\n");
+    exit(1);
+  }
+  printf("orbit_period: %f\n",orbit_period);
 
   //-----------//
   // variables //
@@ -253,6 +262,11 @@ int main( int argc, char* argv[] ) {
 
   double orbit_step_size   = orbit_period / (double)ORBIT_STEPS;
   double azimuth_step_size = two_pi / (double)AZIMUTH_STEPS;
+  unsigned int orbit_ticks_per_orbit =
+    (unsigned int)(orbit_period * ORBIT_TICKS_PER_SECOND + 0.5);
+  printf("%s %d\n", ORBIT_TICKS_PER_ORBIT_KEYWORD, orbit_ticks_per_orbit);
+  qscat.cds.CmdOrbitTicksPerOrbit(orbit_ticks_per_orbit);
+  
   int    num_slices        = qscat.ses.GetTotalSliceCount();
   
   float fbb_shift[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS][AZIMUTH_STEPS];
@@ -325,20 +339,6 @@ int main( int argc, char* argv[] ) {
     DopplerTracker* doppler_tracker = &(cds_beam_info->dopplerTracker);
     RangeTracker*   range_tracker   = &(cds_beam_info->rangeTracker);
 
-    //------------------------------//
-    // start at an equator crossing //
-    //------------------------------//
-    double start_time;
-    if( start_rev == -1 ) {
-      // use last node-to-node orbit in ephem / quat files
-      start_time = asc_node_times[asc_node_times.size()-2];
-    } else if ( start_rev< asc_node_times.size()-1) {
-      start_time = asc_node_times[start_rev];
-    } else {
-      fprintf(stderr,"Error: bad value for start_rev\n");
-      exit(1);
-    }
-
     qscat.cds.SetEqxTime(start_time);
 
     //------------//
@@ -365,7 +365,8 @@ int main( int argc, char* argv[] ) {
       //--------------------//
 
       // addition of 0.5 centers on orbit_step
-      double time = start_time + orbit_step_size * ((double)orbit_step + 0.5);
+      // double time = start_time + orbit_step_size * ((double)orbit_step + 0.5);
+      double time = start_time + orbit_step_size * ((double)orbit_step);
       qscat.cds.SetTime(time);
       
       //-----------------------//
@@ -382,11 +383,11 @@ int main( int argc, char* argv[] ) {
       quats.GetQuat( time, &this_quat );
   
       // Convert to attitude angles and overwrite those in spacecraft object
-      this_quat.GetAttitude( &(spacecraft.attitude) );
+      this_quat.GetAttitudeGS( &(spacecraft.attitude) );
   
       // For adding extra pitch offsets for ISS/RapidSCAT
       //spacecraft.attitude.SetPitch(spacecraft.attitude.GetPitch()-3*dtr);
-  
+      
       // Interpolate ephem and overwrite that in spacecraft object
       ephem.GetOrbitState( time, EPHEMERIS_INTERP_ORDER, &(spacecraft.orbitState) );
       //--------------------------------------------------------------
@@ -494,7 +495,7 @@ int main( int argc, char* argv[] ) {
             cds_beam_info->rxGateWidthDn, qscat.cds.txPulseWidthDn,
             &(qscat.cds.rxGateDelayDn), &rx_gate_delay_fdn );
           qscat.ses.CmdRxGateDelayDn(qscat.cds.rxGateDelayDn);
-          //qscat.ses.CmdRxGateDelayFdn(rx_gate_delay_fdn);
+//           qscat.ses.CmdRxGateDelayFdn(rx_gate_delay_fdn);
         } else {
           // ideal delay
           float rtt   = qscat.IdealRtt(&spacecraft, 1);
@@ -526,7 +527,7 @@ int main( int argc, char* argv[] ) {
         MeasSpot meas_spot;
         qscat.MakeSlices(&meas_spot);
         qscat.LocateSliceCentroids(&spacecraft,&meas_spot);
-            
+        
         // Loop over slices and compute the X-factors
         for( Meas* meas = meas_spot.GetHead(); meas; meas = meas_spot.GetNext() ) {
           // Set the measurement type for each meas
@@ -545,14 +546,14 @@ int main( int argc, char* argv[] ) {
           // Remove peak gain from X_int
           this_X_int /= (beam->peakGain * beam->peakGain);
 
-//           fprintf(stdout,"%d %d %d %d %f %f %f\n", beam_idx, orbit_step, azimuth_step,
+//           fprintf(stdout,"%d %d %d %d %f %f %f\n", beam_idx, orbstep, encoder,
 //              meas->startSliceIdx, 10*log10(this_X_int), qscat.ses.txDoppler, 
 //              qscat.sas.antenna.txCenterAzimuthAngle );
 
           // Stick in output arrays
           int abs_idx;
           rel_to_abs_idx( meas->startSliceIdx, num_slices, &abs_idx );
-          float orbit_position = ((double)(orbit_step)+0.5)/(double)ORBIT_STEPS;
+          float orbit_position = (float)qscat.cds.OrbitFraction();
           
           if(!x_table.AddEntry( this_X_int, beam_idx, azimuth, orbit_position, abs_idx)) {
             fprintf(stderr,"%s: Error adding to Xtable: %d %f %f %d\n", 
