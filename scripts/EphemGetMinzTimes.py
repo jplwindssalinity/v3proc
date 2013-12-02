@@ -47,8 +47,14 @@ import pdb
 import array
 
 parser = OptionParser()
-parser.add_option( "-f", "--file", dest="ephemfile", help="Ephemeris File", metavar="ephemfile")
+parser.add_option( "-f", "--file", 
+                   action="store", type="string", dest="ephemfile")
 (options, args) = parser.parse_args()
+
+
+if not options.ephemfile or not os.path.isfile(options.ephemfile):
+  print '%s does not exist' % options.ephemfile
+  exit(1)
 
 ephem_size = os.path.getsize( options.ephemfile )
 n_ephem = ephem_size/(7.0*8.0)
@@ -66,8 +72,12 @@ posz = array.array('d')
 velx = array.array('d')
 vely = array.array('d')
 velz = array.array('d')
+try:
+  ifp = open(options.ephemfile,"rb")
+except IOError:
+   print 'Error opening file %s' % options.ephemfile
+   exit(1)
 
-ifp = open(options.ephemfile,"rb")
 for ii in range(0,n_ephem):
   time.fromfile(ifp,1)
   posx.fromfile(ifp,1)
