@@ -48,4 +48,8 @@ def read_packet_tt(gsefile):
   ifp.close()
   return(utc_tt)
 
-  
+# def detect_version( gsefile ):
+#   
+#   import struct
+#   
+#   return 0

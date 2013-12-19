@@ -53,25 +53,20 @@
 #----------------------------------------------------------------------
 
 rcs_id = "$Id$"
+QSCATSIM_PY_DIR='/home/fore/qscatsim/QScatSim/py'
+
+import sys
+if not QSCATSIM_PY_DIR in sys.path:
+  sys.path.append(QSCATSIM_PY_DIR)
 
 from optparse import OptionParser
 import rdf
 import datetime
 import numpy
 import pdb
-import sys
 import os
 import subprocess
-
-# Functions
-def date_time_from_sim( sim_tt ):
-  return(datetime.datetime(1970,1,1)+datetime.timedelta(0,sim_tt))
-
-def ToCodeB( dt ):
-  millisecs = round(dt.microsecond/1000.0)
-  dt_out = dt + datetime.timedelta(0,0,millisecs*1000-dt.microsecond)
-  string = dt_out.strftime('%Y-%jT%H:%M:%S') + '.%3.3d' % millisecs
-  return(string)
+import time_funcs
 
 def GenRevList(config_file):
   if not config_file or not os.path.isfile(config_file):
@@ -80,11 +75,13 @@ def GenRevList(config_file):
   
   try:
     rdf_data = rdf.parse(config_file)
-    rev_no_ref   = rdf_data["REV_NO_REF"]
-    tt_ref       = rdf_data["TIME_TAG_REF"]
-    period_guess = rdf_data["PERIOD_GUESS"]
-    revlist      = rdf_data["REVLIST"]
-    minz_dir     = rdf_data["MINZ_TIMES_DIR"]
+    rev_no_ref     = rdf_data["REV_NO_REF"]
+    tt_ref         = rdf_data["TIME_TAG_REF"]
+    period_guess   = rdf_data["PERIOD_GUESS"]
+    delta_asc_long = rdf_data["DELTA_ASC_LONG"]
+    revlist        = rdf_data["REVLIST"]
+    minz_dir       = rdf_data["MINZ_TIMES_DIR"]
+    node_long_dir  = rdf_data["ASC_NODE_LONGS_DIR"]
   except KeyError:
     print>>sys.stderr, 'Required keywords not found in rdf file: %s\n' % config_file
     return 0
@@ -102,6 +99,16 @@ def GenRevList(config_file):
   # Load rev min z times
   minz_tt = numpy.loadtxt( tmpfile, delimiter=' ', usecols=(0,) )
   
+  # Do the same for asc node crossings
+  subprocess.call('cat %s/asc_node_longs_* | sort | uniq > %s' % 
+                 ( node_long_dir, tmpfile ),shell=True)
+  
+  # Load rev min z times
+  nodes = numpy.loadtxt( tmpfile, delimiter=',', usecols=(0,1) )
+  node_times = nodes[:,0]
+  node_longs = nodes[:,1]
+  
+  
   # Delete tempfile
   subprocess.call('rm -f %s' % tmpfile,shell=True)
   
@@ -116,12 +123,24 @@ def GenRevList(config_file):
     else:
       this_tt_end  = this_tt_start + period_guess
     
-    rev_no_ref = this_rev_no
-    tt_ref     = this_tt_start
+    try:
+      node_mask = numpy.logical_and(node_times>this_tt_start,node_times<this_tt_end)
+      time_node = node_times[node_mask][0]
+      long_node = node_longs[node_mask][0]
+    except IndexError:
+      time_node = this_tt_start + 0.25 * period_guess
+      long_node = long_node_ref + (this_rev_no-rev_no_ref) * delta_asc_long
+      while long_node >= 180: long_node -= 360.0
+      while long_node < -180: long_node += 360.0
     
-    ofp.write( '%5.5d,%f,%f,%s,%s\n' % ( this_rev_no, this_tt_start, this_tt_end, 
-                                         ToCodeB(date_time_from_sim(this_tt_start)),
-                                         ToCodeB(date_time_from_sim(this_tt_end))))
+    rev_no_ref    = this_rev_no
+    tt_ref        = this_tt_start
+    long_node_ref = long_node
+    
+    ofp.write( '%5.5d,%f,%f,%s,%s,%f\n' % ( this_rev_no, this_tt_start, this_tt_end, 
+               time_funcs.ToCodeB(time_funcs.date_time_from_sim(this_tt_start)),
+               time_funcs.ToCodeB(time_funcs.date_time_from_sim(this_tt_end)),
+               long_node))
   ofp.close()
   return 1
 

@@ -58,9 +58,11 @@ def GSEGapReport( config_file ):
     return 0
   
   try:
-    rdf_data = rdf.parse(config_file)
-    gse_dir  = rdf_data["GSE_MERGED_DIR"]
-    outfile  = rdf_data["GAP_REPORT"]
+    rdf_data  = rdf.parse(config_file)
+    gse_dir   = rdf_data["GSE_MERGED_DIR"]
+    outfile   = rdf_data["GAP_REPORT"]
+    gsetimes  = rdf_data["GSE_TIMES"]
+    gapthresh = rdf_data["GAP_THRESHOLD"]
   except KeyError:
     print>>sys.stderr, 'Required keywords not found in rdf file: %s\n' % config_file
     return 0
@@ -68,6 +70,8 @@ def GSEGapReport( config_file ):
   start_times = []
   end_times   = []
   files       = []
+  
+  gse_times_fp = open(gsetimes,'w')
   
   gsefiles = subprocess.check_output('find %s -name "*RS_GSE*"'%gse_dir,shell=True).split('\n')
   for file in gsefiles:
@@ -80,6 +84,10 @@ def GSEGapReport( config_file ):
       continue
     
     tt = numpy.unique( numpy.sort( tt ) )
+    
+    # Write out span of each GSE file to GSE_TIMES file
+    print>>gse_times_fp, '%s,%f,%f' % ( file, time_funcs.gps_to_sim(tt[0]), \
+                                        time_funcs.gps_to_sim(tt[tt.size-1]) )
     
     diff_tt  = tt[1:]-tt[0:tt.size-1]
     idx      = numpy.argwhere( diff_tt>2 )
@@ -96,6 +104,8 @@ def GSEGapReport( config_file ):
     start_times.append(tt_start)
     end_times.append(tt[tt.size-1])
     files.append(file)
+  
+  gse_times_fp.close()
   
   files       = numpy.array(files)
   start_times = numpy.array(start_times)
@@ -137,7 +147,7 @@ def GSEGapReport( config_file ):
   for ii in range(1,unique_start_times.size):
     delta_tt = unique_start_times[ii] - unique_end_times[ii-1]
     
-    if delta_tt > 2:
+    if delta_tt > gapthresh:
       ofp.write('%f,%f,%f,%s,%s,%s,%s\n' % ( delta_tt, \
                 time_funcs.gps_to_sim(unique_end_times[ii-1]),\
                 time_funcs.gps_to_sim(unique_start_times[ii]),\
