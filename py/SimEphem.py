@@ -9,10 +9,9 @@ import sys
 import numpy as np
 
 class SimEphem:
-""" Class for QScatSim Ephemeris Files
-
-"""
-
+  """ Class for QScatSim Ephemeris Files
+  
+  """
   def __init__(self,filename=None):
     self.time     = None
     self.pos      = None
@@ -21,7 +20,6 @@ class SimEphem:
     
     if filename != None:
       self.Read()
-  
   
   def Read(self):
     """Reads in the ephemeris files."""
