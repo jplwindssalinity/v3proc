@@ -34,7 +34,9 @@
 #    Alex Fore
 #    alexander.fore@jpl.nasa.gov
 #----------------------------------------------------------------------
-rcs_id = '$Id$'
+# __version__ = '$Id$'
+__version__='$Revision$'
+__date__='$Date$'
 
 QSCATSIM_PY_DIR='/home/fore/qscatsim/QScatSim/py'
 
@@ -48,8 +50,25 @@ import pdb
 import rdf
 import numpy
 import subprocess
+import Tracking
+import SimQuats
+import SimEphem
 
-def MakeRangeDopplerTables( config_file ):
+def UseTable(ephemfile, quatsfile):
+  
+  yaw_std_threshold   = 0.5
+  pitch_std_threshold = 0.5
+  roll_std_threshold  = 1.0
+  
+  quats = SimQuats.SimQuats(quatsfile)
+  
+  if quats.ypr[:,0].std() > yaw_std_threshold or \
+     quats.ypr[:,1].std() > pitch_std_threshold or \
+     quats.ypr[:,2].std() > roll_std_threshold:
+    return(0)
+  return(1)
+
+def MakeRangeDopplerTables(config_file):
   if not config_file or not os.path.isfile(config_file):
     print>>sys.stderr, 'Config file, %s, does not exist' % config_file
     return 0
@@ -67,8 +86,10 @@ def MakeRangeDopplerTables( config_file ):
   
   try:
     log_revtags = numpy.genfromtxt( table_log, delimiter=',', usecols=(0,), dtype='|S8' )
+    use_table   = numpy.genfromtxt( table_log, delimiter=',', usecols=(1,) )
   except IOError:
     log_revtags = numpy.array([])
+    use_table   = numpy.array([])
   
   # Get list of ephem file
   ephem_files = subprocess.check_output('find %s -name "RS_EPHEM_*" | sort' % ephem_dir, 
@@ -126,16 +147,22 @@ def MakeRangeDopplerTables( config_file ):
     
     subprocess.call('rm -f %s' % tempfile,shell=True)
     
-    log_revtags = numpy.append(log_revtags,revtag)
+    use_this_table = UseTable(ephem_file,quats_file)
+    
+    log_revtags = numpy.append(log_revtags, revtag)
+    use_table   = numpy.append(use_table, use_this_table)
   
-  ofp_logfile = open(table_log,'w')
-  for revtag in numpy.sort(log_revtags):
-    print>>ofp_logfile, '%s' % revtag
-  ofp_logfile.close
+  idx = numpy.argsort(log_revtags)
+  log_revtags=log_revtags[idx]
+  use_table=use_table[idx]
   
+  ofp = open(table_log,'w')
+  for ii in range(use_table.size):
+    print>>ofp, '%s,%d' % (log_revtags[ii], use_table[ii])
+  ofp.close()
   return 1
 
-if __name__=='__main__':
+def main():
   # Parse command line
   parser = OptionParser()
   parser.add_option( "-c", "--rdffile", action="store", type="string", dest="rdffile")
@@ -149,3 +176,8 @@ if __name__=='__main__':
     print>>sys.stderr, 'Error in MakeRangeDopplerTables'
     sys.exit(1)
   sys.exit(0)
+
+if __name__=='__main__':
+  main()
+
+
