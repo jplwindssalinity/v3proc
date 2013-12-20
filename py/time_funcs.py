@@ -1,9 +1,15 @@
-rcs_id = "$Id$"
+#==============================================================#
+# Copyright (C) 2013, California Institute of Technology.      #
+# U.S. Government sponsorship acknowledged.                    #
+#==============================================================#
+rcs_id      = '$Id$'
+__version__ = '$Revision$'
+
 
 import pdb
 import sys
 import datetime
-
+ 
 gps_epoch = datetime.datetime(1980,1,6)
 sim_epoch = datetime.datetime(1970,1,1)
 gs_epoch  = datetime.datetime(1993,1,1)
@@ -27,6 +33,9 @@ def sim_to_gps( sim_tt ):
 
 def ToCodeB( dt ):
   return(dt.strftime('%Y-%jT%H:%M:%S.%f')[:-3])
+
+def FromCodeB(code_b_string):
+  return(datetime.datetime.strptime(code_b_string+'000','%Y-%jT%H:%M:%S.%f'))
 
 def leap_seconds( dt ):
   """From: http://www.nist.gov/pml/div688/grp50/leapsecond.cfm"""
