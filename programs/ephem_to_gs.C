@@ -69,7 +69,7 @@ template class List<EarthPosition>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "l:"
+#define OPTSTRING  "o:l:d:"
 
 //--------//
 // MACROS //
@@ -91,7 +91,7 @@ template class List<EarthPosition>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -l leap_seconds ]", "<ephem_file>", 0};
+const char* usage_array[] = { "[-o outfile] || [-d outdir] [ -l leap_seconds ]", "<ephem_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -110,6 +110,8 @@ main(
 
     const char* command = no_path(argv[0]);
     extern char* optarg;
+    char* outfile = NULL;
+    char* outdir = NULL;
     extern int optind;
 
     int c;
@@ -117,6 +119,12 @@ main(
     {
         switch(c)
         {
+        case 'o':
+            outfile = optarg;
+            break;
+        case 'd':
+            outdir = optarg;
+            break;
         case 'l':
             leap_seconds = atoi(optarg);
             break;
@@ -125,7 +133,10 @@ main(
             break;
         }
     }
-
+    
+    if( !outfile == !outdir )
+      usage(command, usage_array, 1);
+    
     if (argc != optind + 1)
         usage(command, usage_array, 1);
 
@@ -160,7 +171,6 @@ main(
 
     double last_time = 0.0;
     ETime beginning_date, production_date;
-    char output_file[1024];
 
     do
     {
@@ -188,14 +198,17 @@ main(
             char production_block_b[BLOCK_B_TIME_LENGTH];
             production_date.ToBlockB(production_block_b);
 
-            sprintf(output_file, "SW_SEPHG%s.%s", beginning_block_b,
-                production_block_b);
-
-            ofp = fopen(output_file, "w");
+            if( outdir ) {
+              outfile = new char[1024];
+              sprintf(outfile, "SW_SEPHG%s.%s", beginning_block_b,
+                      production_block_b);
+            }
+            
+            ofp = fopen( outfile, "w");
             if (ofp == NULL)
             {
                 fprintf(stderr, "%s: error opening output file %s\n", command,
-                    output_file);
+                    outfile);
                 exit(1);
             }
 
@@ -246,7 +259,7 @@ main(
     fprintf(ofp, "producer_institution          = JPL                                          ;\r\n");
     fprintf(ofp, "project_id                    = RapidSCAT                                    ;\r\n");
     fprintf(ofp, "data_format_type              = BINARY                                       ;\r\n");
-    fprintf(ofp, "GranulePointer                = %-45.45s;\r\n",output_file);
+    fprintf(ofp, "GranulePointer                = %-45.45s;\r\n",no_path(outfile));
     fprintf(ofp, "InputPointer                  = %-45.45s;\r\n",no_path(ephem_file));
     fprintf(ofp, "sis_id                        = 686-644-15/1998-08-24                        ;\r\n");
     fprintf(ofp, "build_id                      = 2.3.2/2000-04-07                             ;\r\n");
@@ -274,5 +287,6 @@ main(
     fprintf(ofp, "spare_metadata_element        =                                              ;\r\n");
 
     fclose(ofp);
+    if ( outdir != NULL ) delete[] outfile;
     return (0);
 }
