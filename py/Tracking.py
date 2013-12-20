@@ -2,7 +2,9 @@
 # Copyright (C) 2013, California Institute of Technology.      #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
-rcs_id = "$Id$"
+rcs_id      = '$Id$'
+__version__ = '$Revision$'
+
 
 import os
 import sys

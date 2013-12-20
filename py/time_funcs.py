@@ -5,7 +5,6 @@
 rcs_id      = '$Id$'
 __version__ = '$Revision$'
 
-
 import pdb
 import sys
 import datetime

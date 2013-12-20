@@ -1,3 +1,20 @@
+#==============================================================#
+# Copyright (C) 2013, California Institute of Technology.      #
+# U.S. Government sponsorship acknowledged.                    #
+#==============================================================#
+rcs_id      = '$Id$'
+__version__ = '$Revision$'
+
+class GSE:
+  """ Class for GSE files"""
+  
+  def __init__(self,filename=None):
+    self.filename = filename
+    self.version  = None
+    
+    if filename != None:
+      self.filename = filename
+
 def read_packet_tt(gsefile):
   import os
   import struct
