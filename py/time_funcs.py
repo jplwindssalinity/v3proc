@@ -22,6 +22,10 @@ def date_time_from_sim( tt ):
 def date_time_from_gps( tt ):
   return(gps_epoch+datetime.timedelta(0,tt))
 
+def sim_from_date_time(dt):
+  delta = dt - sim_epoch
+  return(delta.days*86400.0+delta.seconds+delta.microseconds/1000000.)
+
 def gps_to_sim( gps_tt ):
   delta = gps_epoch - sim_epoch
   return(gps_tt+delta.days*86400.0+delta.seconds)
