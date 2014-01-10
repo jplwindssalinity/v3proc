@@ -48,17 +48,17 @@ class SimQuats:
     y = self.quats[:,2]
     z = self.quats[:,3]
     
-    x11 = 1.0 - 2.0 * ( y*y + z*z );
-    x12 =       2.0 * ( x*y - w*z );
-    x13 =       2.0 * ( x*z + w*y );
+    x11 = 1.0 - 2.0 * ( y*y + z*z )
+    x12 =       2.0 * ( x*y - w*z )
+    x13 =       2.0 * ( x*z + w*y )
     
-    x21 =       2.0 * ( x*y + w*z );
-    x22 = 1.0 - 2.0 * ( x*x + z*z );
-    x23 =       2.0 * ( y*z + w*x );
+    x21 =       2.0 * ( x*y + w*z )
+    x22 = 1.0 - 2.0 * ( x*x + z*z )
+    x23 =       2.0 * ( y*z - w*x )
     
-    x31 =       2.0 * ( x*z - w*y );
-    x32 =       2.0 * ( y*z + w*x );
-    x33 = 1.0 - 2.0 * ( x*x + y*y );
+    x31 =       2.0 * ( x*z - w*y )
+    x32 =       2.0 * ( y*z + w*x )
+    x33 = 1.0 - 2.0 * ( x*x + y*y )
     
     cos_roll = np.sqrt( x21*x21 + x22*x22 )
     sin_roll = -x23
