@@ -1,5 +1,5 @@
 #==============================================================#
-# Copyright (C) 2013, California Institute of Technology.      #
+# Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
 rcs_id      = '$Id$'
@@ -20,7 +20,7 @@ class SimEphem:
     self.vel      = None
     self.filename = filename
     
-    if filename != None:
+    if self.filename != None:
       self.Read()
   
   def Read(self):
@@ -29,7 +29,7 @@ class SimEphem:
       print>>sys.stderr, 'SimEphem::Read: %s does not exist' % self.filename
       return
     
-    ephem_size = os.path.getsize( self.filename )
+    ephem_size = os.path.getsize(self.filename)
     n_ephem = ephem_size/(7.0*8.0)
     if round(n_ephem) != n_ephem:
       print>>sys.stderr, 'SimEphem::Read: %s does not have correct file size' % self.filename

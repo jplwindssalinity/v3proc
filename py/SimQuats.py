@@ -1,5 +1,5 @@
 #==============================================================#
-# Copyright (C) 2013, California Institute of Technology.      #
+# Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
 rcs_id      = '$Id$'
@@ -20,7 +20,7 @@ class SimQuats:
     self.ypr      = None
     self.filename = filename
     
-    if filename != None:
+    if self.filename != None:
       self.Read()
       self.ComputeYPR()
   

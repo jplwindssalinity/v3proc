@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 #==============================================================#
-# Copyright (C) 2013, California Institute of Technology.      #
+# Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
 #----------------------------------------------------------------------

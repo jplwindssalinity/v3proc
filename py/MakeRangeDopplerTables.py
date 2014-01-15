@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 #==============================================================#
-# Copyright (C) 2013, California Institute of Technology.      #
+# Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
 #----------------------------------------------------------------------
@@ -106,16 +106,16 @@ def MakeRangeDopplerTables(config_file):
     
     tempfile=subprocess.check_output('mktemp -t RS.rdf.XXXXXX',shell=True).rstrip('\n')
     
-    rgcbase = range_table_dir   + '/RGC_' + revtag
-    dtcbase = doppler_table_dir + '/DTC_' + revtag
+    rgcbase = os.path.join(range_table_dir,   'RGC_' + revtag)
+    dtcbase = os.path.join(doppler_table_dir, 'DTC_' + revtag)
     
     rgcfile1 = rgcbase + '.1'
     rgcfile2 = rgcbase + '.2'
     dtcfile1 = dtcbase + '.1'
     dtcfile2 = dtcbase + '.2'
     
-    rttfile = range_table_dir   + '/RTT_' + revtag
-    dtsfile = doppler_table_dir + '/DTS_' + revtag
+    rttfile = os.path.join(range_table_dir,   'RTT_' + revtag)
+    dtsfile = os.path.join(doppler_table_dir, 'DTS_' + revtag)
     
     rgc1_rep_key = 'BEAM_1_RGC_FILE'
     rgc2_rep_key = 'BEAM_2_RGC_FILE'
@@ -128,10 +128,8 @@ def MakeRangeDopplerTables(config_file):
     dtc2_rep_line = '%s = %s' % ( dtc2_rep_key, dtcfile2 )
     
     sedcmdstr = 'sed -e "s:%s.*:%s:g" -e "s:%s.*:%s:g" -e "s:%s.*:%s:g" -e "s:%s.*:%s:g" %s > %s' % \
-           ( rgc1_rep_key, rgc1_rep_line, \
-             rgc2_rep_key, rgc2_rep_line, \
-             dtc1_rep_key, dtc1_rep_line, \
-             dtc2_rep_key, dtc2_rep_line, \
+           ( rgc1_rep_key, rgc1_rep_line, rgc2_rep_key, rgc2_rep_line, 
+             dtc1_rep_key, dtc1_rep_line, dtc2_rep_key, dtc2_rep_line, 
              sim_config_file_template, tempfile )
     
     subprocess.call(sedcmdstr,shell=True)

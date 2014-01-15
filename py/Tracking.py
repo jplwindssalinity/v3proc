@@ -1,5 +1,5 @@
 #==============================================================#
-# Copyright (C) 2013, California Institute of Technology.      #
+# Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
 rcs_id      = '$Id$'
@@ -43,4 +43,5 @@ def ReadBinaryDTC(filename):
   fterms[:,1] = scale[1,0] + terms[:,1] * scale[1,1]
   fterms[:,2] = scale[2,0] + terms[:,2] * scale[2,1]
   return(fterms)
+
 

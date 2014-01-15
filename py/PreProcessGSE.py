@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 #==============================================================#
-# Copyright (C) 2013, California Institute of Technology.      #
+# Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
 #----------------------------------------------------------------------
@@ -76,7 +76,7 @@ def PreProcessGSE( config_file ):
       continue
     
     # Check to see if merged GSE file already exists
-    merged_file = gse_out_dir + '/' + os.path.basename(file)
+    merged_file = os.path.join(gse_out_dir,os.path.basename(file))
     if not os.path.isfile(merged_file):
       # Run RS_GSE_merge on this file
       tmpfile = subprocess.check_output('mktemp').rstrip('\n')
@@ -98,8 +98,8 @@ def PreProcessGSE( config_file ):
       continue
     revtag = os.path.basename(file).strip('RS_GSE_')
     
-    ephem_file = ephem_dir + '/RS_EPHEM_' + revtag
-    quats_file = ephem_dir + '/RS_QUATS_' + revtag
+    ephem_file = os.path.join(ephem_dir, 'RS_EPHEM_' + revtag)
+    quats_file = os.path.join(ephem_dir, 'RS_QUATS_' + revtag)
     
     if not ( os.path.isfile(ephem_file) and os.path.isfile(quats_file) ):
       ierr = subprocess.call('RS_GSE_to_ephem_quat -i %s -e %s -q %s' % \
@@ -117,8 +117,8 @@ def PreProcessGSE( config_file ):
     
     revtag = os.path.basename(file).strip('RS_EPHEM_')
     
-    minz_file = minz_dir      + '/minz_times_'     + revtag
-    long_file = node_long_dir + '/asc_node_longs_' + revtag
+    minz_file = os.path.join(minz_dir,      'minz_times_'     + revtag)
+    long_file = os.path.join(node_long_dir, 'asc_node_longs_' + revtag)
     
     if not (os.path.isfile(minz_file) and os.path.isfile(long_file)):
       # Using the SimEphem class methods
