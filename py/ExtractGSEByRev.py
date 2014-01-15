@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 #==============================================================#
-# Copyright (C) 2013, California Institute of Technology.      #
+# Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
 #----------------------------------------------------------------------
@@ -96,10 +96,10 @@ def ExtractGSEByRev( config_file ):
     # Put in gaps directory if any gaps (keep in mind gap at end)
     if numpy.all(mask) and pad_t_end[i_rev] < file_t_end.max():
       # if no gaps in this rev, write to gse_out_dir
-      outgsefile = gse_out_dir + '/RS_GSE_%5.5d' % rev_no[i_rev]
+      outgsefile = os.path.join(gse_out_dir, 'RS_GSE_%5.5d' % rev_no[i_rev])
     else:
       # if gaps in this rev, write to gse_out_dir_gaps
-      outgsefile = gse_out_dir_gaps + '/RS_GSE_%5.5d' % rev_no[i_rev]
+      outgsefile = os.path.join(gse_out_dir_gaps, 'RS_GSE_%5.5d' % rev_no[i_rev])
     
     # skip if outgsefile already exists
     if os.path.isfile(outgsefile):

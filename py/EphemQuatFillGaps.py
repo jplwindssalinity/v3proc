@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 #==============================================================#
-# Copyright (C) 2013, California Institute of Technology.      #
+# Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
 #----------------------------------------------------------------------
@@ -87,8 +87,8 @@ def EphemQuatFillGaps( config_file ):
     
     this_revno = int(os.path.basename(ephem_file)[9:])
     
-    out_ephem_file = ephem_out_dir + '/' + os.path.basename(ephem_file)
-    out_quats_file = ephem_out_dir + '/' + os.path.basename(quats_file)
+    out_ephem_file = os.path.join(ephem_out_dir,os.path.basename(ephem_file))
+    out_quats_file = os.path.join(ephem_out_dir,os.path.basename(quats_file))
     
     if not ( os.path.isfile(out_ephem_file) and os.path.isfile(out_quats_file) ):
       

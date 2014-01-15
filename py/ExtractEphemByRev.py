@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 #==============================================================#
-# Copyright (C) 2013, California Institute of Technology.      #
+# Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
 #----------------------------------------------------------------------
@@ -73,8 +73,10 @@ def ExtractEphemByRev( config_file ):
     if not os.path.isfile(gse_file):
       continue
     
-    ephem_file = ephem_dir + '/RS_EPHEM_' + os.path.basename(gse_file).strip('RS_GSE_')
-    quats_file = ephem_dir + '/RS_QUATS_' + os.path.basename(gse_file).strip('RS_GSE_')
+    revtag = os.path.basename(gse_file).strip('RS_GSE_')
+    
+    ephem_file = os.path.join(ephem_dir, 'RS_EPHEM_' + revtag)
+    quats_file = os.path.join(ephem_dir, 'RS_QUATS_' + revtag)
     
     if not ( os.path.isfile(ephem_file) and os.path.isfile(quats_file) ):
       ierr = subprocess.call('RS_GSE_to_ephem_quat -i %s -e %s -q %s' % \
@@ -90,8 +92,10 @@ def ExtractEphemByRev( config_file ):
     if not os.path.isfile(gse_file):
       continue
     
-    ephem_file = ephem_dir_gaps + '/RS_EPHEM_' + os.path.basename(gse_file).strip('RS_GSE_')
-    quats_file = ephem_dir_gaps + '/RS_QUATS_' + os.path.basename(gse_file).strip('RS_GSE_')
+    revtag = os.path.basename(gse_file).strip('RS_GSE_')
+    
+    ephem_file = os.path.join(ephem_dir_gaps, 'RS_EPHEM_' + revtag)
+    quats_file = os.path.join(ephem_dir_gaps, 'RS_QUATS_' + revtag)
     
     if not ( os.path.isfile(ephem_file) and os.path.isfile(quats_file) ):
       ierr = subprocess.call('RS_GSE_to_ephem_quat -i %s -e %s -q %s' % \

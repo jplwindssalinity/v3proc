@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 #==============================================================#
-# Copyright (C) 2013, California Institute of Technology.      #
+# Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
 #----------------------------------------------------------------------
@@ -77,8 +77,8 @@ def ConvertEphemToGS( config_file ):
   for ephem_file in ephem_files:
     revtag         = os.path.basename(ephem_file).strip('RS_EPHEM_')
     quats_file     = ephem_file.replace('RS_EPHEM','RS_QUATS')
-    out_ephem_file = ephem_gs_dir + '/RS_SEPHG_' + revtag
-    out_att_file   = att_gs_dir   + '/RS_SATTG_' + revtag
+    out_ephem_file = os.path.join(ephem_gs_dir, 'RS_SEPHG_' + revtag)
+    out_att_file   = os.path.join(att_gs_dir,   'RS_SATTG_' + revtag)
     
     if os.path.isfile(ephem_file) and os.path.isfile(quats_file) and \
        not ( os.path.isfile(out_ephem_file) and os.path.isfile(out_att_file)):
@@ -99,11 +99,11 @@ def ConvertEphemToGS( config_file ):
   for ephem_file in ephem_files:
     revtag         = os.path.basename(ephem_file).strip('RS_EPHEM_')
     quats_file     = ephem_file.replace('RS_EPHEM','RS_QUATS')
-    out_ephem_file = ephem_gs_gaps_dir + '/RS_SEPHG_' + revtag
-    out_att_file   = att_gs_gaps_dir   + '/RS_SATTG_' + revtag
+    out_ephem_file = os.path.join(ephem_gs_gaps_dir, 'RS_SEPHG_' + revtag)
+    out_att_file   = os.path.join(att_gs_gaps_dir,   'RS_SATTG_' + revtag)
     
-    if os.path.isfile(ephem_file) and os.path.isfile(quats_file) and \
-       not ( os.path.isfile(out_ephem_file) and os.path.isfile(out_att_file)):
+    if( os.path.isfile(ephem_file) and os.path.isfile(quats_file) and 
+        not (os.path.isfile(out_ephem_file) and os.path.isfile(out_att_file))):
       
       idx = rev_no==int(revtag)
       leap_secs = time_funcs.leap_seconds( 
@@ -139,7 +139,7 @@ def ConvertRangeDopplerToGS(config_file):
     rng_in_table1 = '%s/RGC_%5.5d.1' % (rng_in_dir, rev_no)
     rng_in_table2 = '%s/RGC_%5.5d.2' % (rng_in_dir, rev_no)
     rng_gs_table  = '%s/RGC_%5.5d'   % (rng_gs_dir, rev_no)
-
+    
     if os.path.isfile(rng_in_table1) and os.path.isfile(rng_in_table2) and \
        not os.path.isfile(rng_gs_table):
       subprocess.call('rgc_format -b 1 -f b -i %s -b 2 -f b -i %s -f g -o %s' % \
