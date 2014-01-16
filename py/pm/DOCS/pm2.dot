@@ -1,0 +1,203 @@
+ /* Author: BELZ, Subject: RapidScat processing flowchart */
+digraph flowchart {	
+ordering=out
+orientation=portrait
+concentrate=true
+#page="8.5, 11"
+label="RapidScat Processing Management"	
+size="4.8,4.8"	
+remincross=1
+ratio=2
+
+/* Start FLOW here */
+{
+start->q_scidat
+q_scidat->wait1[label="No", color=red]
+wait1->q_scidat
+q_scidat->q_sclk[label="Yes", color=green]
+q_sclk->wait2[label="No", color=red]
+q_sclk->SCLK[style=dashed, dir=both, color=violet]
+wait2->q_sclk
+q_sclk->L00py[label="Yes", color=green]
+L00py->find_new_S0A
+find_new_S0A->read_alex
+
+
+read_alex->alex[style=dashed, dir=both, color=violet, label="Rev=N"]
+read_alex->q_rev
+q_rev->read_alex[label="Yes", color=green]
+q_rev->compute_times[label="No", color=red]
+compute_times->find_matching_S0As
+find_matching_S0As->q_have_all_S0As
+q_have_all_S0As->q_scidat[label="No", color=red]
+
+
+q_gpsephm->wait3[label="No", color=red]
+wait3->q_gpsephm
+q_gpsephm->L1Apy[label="Yes", color=green]
+
+L1Apy->find_new_S1A
+find_new_S1A->q_gpsatt
+
+q_gpsatt->throw1[color=red, label="No"]
+q_gpsatt->get_calp
+get_calp->get_X_factor
+get_X_factor->get_S_factor
+get_X_factor->X[style=dashed, dir=both, color=violet]
+get_S_factor->get_DOPDELAY
+get_S_factor->S[style=dashed, dir=both, color=violet]
+get_DOPDELAY->L1Bpy
+get_DOPDELAY->DOPDELAY[style=dashed, dir=both, color=violet]
+
+
+get_calp->throw1[color=purple, label="Failed"]
+get_X_factor->throw1[color=purple, label="Failed"]
+get_S_factor->throw1[color=purple, label="Failed"]
+get_DOPDELAY->throw1[color=purple, label="Failed"]
+
+L1Bpy->get_seaice
+
+get_seaice->throw2[color=purple, label="Failed"]
+get_seaice->SEA_ICE[style=dashed, dir=both, color=violet]
+
+get_seaice->split_versions
+
+split_versions->L2Apy
+L2Apy->get_weather
+get_weather->L2Bpy
+get_weather->WEATHER[style=dashed, dir=both, color=violet]
+get_weather->throw3[color=purple, label="Failed"]
+L2Bpy->merge
+
+split_versions->L1Bv3py
+L1Bv3py->L2Av3py
+L2Av3py->merge
+merge->L2Bv3py
+
+L2Bv3py->exit
+
+
+
+
+subgraph clusterOB{
+label="Level 0 Observer"
+q_scidat[shape=diamond, color=cyan, style=filled, label="New\n'sci.dat'?"]
+q_sclk[shape=diamond, color=cyan, style=filled, label="'sci.dat'\nin\nSCLK?"]
+wait1[shape=egg, color=brown, style=filled, label="WAIT"]
+wait2[shape=egg, color=brown, style=filled, label="WAIT"]
+}
+
+subgraph cluster00{
+label="Level 0"
+style=filled
+L00py[shape=box3d, label="LEVEL 00"]
+}
+
+find_new_S0A
+
+subgraph clusterREV{
+label="REV Observer"
+
+q_rev[shape=diamond, color=cyan, style=filled, label="Rev N\nprocessed?"]
+read_alex[shape=ellipse, label="Read next line from\n Rev Index"]
+}
+
+
+subgraph clusterOB2{
+label="Level 1A Observer"
+compute_times
+find_matching_S0As
+q_have_all_S0As->q_gpsephm[label="Yes", color=green]
+wait3[shape=egg, color=brown, style=filled, label="WAIT"]
+}
+
+
+subgraph cluster1A{
+label="Level 1A"
+style=filled
+L1Apy[shape=box3d, label="LEVEL 1A"]
+}
+
+subgraph clusterPREP1B{
+label="Prepare 1B"
+find_new_S1A
+q_gpsatt[shape=diamond, color=cyan, style=filled, label="Are the GPS\nEphemeris & ATT\n STILL Files \nReady?"]
+get_calp
+get_X_factor
+get_S_factor
+get_DOPDELAY
+}
+
+subgraph cluster1B{
+style=filled
+label="Level 1B"
+L1Bpy[shape=box3d, label="LEVEL 1B"]
+}
+
+subgraph clusterFORTRAN{
+label="FORTRAN Chain"
+         subgraph cluster2A{
+	 	  label="Level 2A"
+		   style=filled
+	 	   L2Apy[shape=box3d, label="LEVEL 2A"]
+	 }
+	 subgraph cluster2B{
+	 	  label="Level 2A"
+	 	  style=filled
+	 	  L2Bpy[shape=box3d, label="LEVEL 2B"]
+	 	  get_weather	 
+	 }
+}
+
+
+subgraph clusterC{
+label="C++ Chain"
+         subgraph cluster1Bv3{
+	 	  label="Level 2Av3"
+		   style=filled
+		   L1Bv3py[shape=box3d, label="LEVEL 1Bv3"]
+	 }
+         subgraph cluster2Av3{
+	 	  label="Level 2Av3"
+		  L2Av3py[shape=box3d, label="LEVEL 2Av3"]
+		   style=filled
+	 }
+	 merge[shape=invtriangle, color=salmon, label="", style=filled]
+
+	 subgraph cluster2Bv3{
+	 	  label="Level 2Bv3"
+	 	  style=filled
+		  L2Bv3py[shape=box3d, label="LEVEL 2Bv3"]
+	 }
+}
+
+
+
+
+split_versions[shape=triangle, color=salmon, label="", style=filled]
+
+throw1[shape=pentagon, style=filled, color=purple, label="!"]
+throw2[shape=pentagon, style=filled, color=purple, label="!"]
+throw3[shape=pentagon, style=filled, color=purple, label="!"]
+
+
+
+
+q_gpsephm[shape=diamond, color=cyan, style=filled, label="Are the GPS\nEphemeris & ATT\n Files \nReady?"]
+
+
+
+q_have_all_S0As[shape=diamond, color=cyan, style=filled, label="Have\nall S0As for\n Rev N?"]
+
+
+start[shape="circle",color="green",label="START", style=filled]
+exit[shape=octagon, color=red, label="FINISH", style=filled]
+alex[shape=parallelogram, color=violet, label="Rev\nIndex"style=filled]
+SCLK[shape=parallelogram, color=violet, label="Time\nConversion", style=filled]
+X[shape=parallelogram, color=violet, label="X-Tables", style=filled]
+S[shape=parallelogram, color=violet, label="S-Tables", style=filled]
+SEA_ICE[shape=parallelogram, color=violet, label="SEA\nICE", style=filled]
+WEATHER[shape=parallelogram, color=violet, label="WEATHER", style=filled]
+DOPDELAY[shape=parallelogram, color=violet, label="DOPDELAY", style=filled]
+
+}

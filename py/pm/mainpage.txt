@@ -1,0 +1,54 @@
+ /**
+     @mainpage pm Rapid Scat Processes Managment
+          
+     @subsection intro Introduction
+     A pure <a href="http://www.python.org/">python</a> package
+     for running Rapid Scat Level Processing
+	
+     @section proc Procesing Status
+
+     @subsection level Level Processing
+     Level processing occurs in 5 steps:
+
+     (0) Level 0
+     
+     (1) Level 1A
+     
+     (2) Level 1B
+     
+     (3) Level 2A
+     
+     (4) Level 2B
+    
+     
+     The processing operation is nilpotent: step n is processed
+     (processor.py) to step n+1 unless n=4, then it terminates
+     (framework.py)
+
+     @subsection auto Automation
+     Processing is kicked off by the appearance of a science file.
+     Processing a level 0 file leaves a level 1A file.
+
+     Level 1a procesing requires additional data files.
+
+     @section DI Dependencies
+     
+     C and V
+
+     @subsection Fixed Fixed
+
+     lipsu
+
+     @subsection Variable
+     
+     sci.dat + int(task ID) --> logfile name, level00.rdf
+
+     
+     @subsection tests Testing
+
+     test/test.py is a script that test the code (it is not profiled in this
+     API doc).
+
+	**/
+
+

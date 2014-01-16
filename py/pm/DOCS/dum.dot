@@ -1,0 +1,27 @@
+ /* Author: BELZ, Subject: RapidScat processing flowchart */
+digraph flowchart {	
+ordering=out
+orientation=portrait
+concentrate=true
+#page="8.5, 11"
+label="RapidScat Processing Management"	
+size="4.8,4.8"	
+remincross=1
+ratio=2
+
+/* Start FLOW here */
+{
+start->q_scidat
+q_scidat->wait1[label="No", color=red]
+wait1->q_scidat
+q_scidat->q_sclk[label="Yes", color=green]
+q_sclk->wait2[label="No", color=red]
+q_sclk->SCLK[style=dashed, dir=both, color=violet]
+wait2->q_sclk
+q_sclk->L00py[label="Yes", color=green]
+L00py->find_new_S0A
+find_new_S0A->read_alex
+
+
+
+}
