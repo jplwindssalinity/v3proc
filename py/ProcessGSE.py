@@ -51,6 +51,7 @@ import rdf
 import pdb
 import subprocess
 import GenRevList
+import UpdateRevsDB
 import GSEGapReport
 import ExtractGSEByRev
 import ExtractEphemByRev
@@ -60,25 +61,28 @@ import ConvertToGS
 
 def ProcessGSE( config_file ):
   # Makes the revlist file
-  GenRevList.GenRevList( config_file )
+  GenRevList.GenRevList(config_file)
+  
+  # Updates the revlist database to be in sync with revlist file
+  UpdateRevsDB.UpdateRevsDB(config_file)
   
   # Makes the Gap report file
-  GSEGapReport.GSEGapReport( config_file )
+  GSEGapReport.GSEGapReport(config_file)
   
   # Extracts the GSE data into rev chunks
-  ExtractGSEByRev.ExtractGSEByRev( config_file )
+  ExtractGSEByRev.ExtractGSEByRev(config_file)
   
   # Converts GSE data to sim ephem and quats files for each GSE rev file
-  ExtractEphemByRev.ExtractEphemByRev( config_file )
+  ExtractEphemByRev.ExtractEphemByRev(config_file)
   
   # Fills gaps in the gap-ridden ephem files
-  EphemQuatFillGaps.EphemQuatFillGaps( config_file )
+  EphemQuatFillGaps.EphemQuatFillGaps(config_file)
   
   # Makes the range and doppler talbes
-  MakeRangeDopplerTables.MakeRangeDopplerTables( config_file )
+  MakeRangeDopplerTables.MakeRangeDopplerTables(config_file)
   
   # Convert Stuff to GS Format
-  ConvertToGS.ConvertToGS( config_file )
+  ConvertToGS.ConvertToGS(config_file)
   
   # Done processing the GSE data!
   return(1)
