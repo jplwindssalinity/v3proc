@@ -68,10 +68,10 @@ def UpdateRevsDB(config_file):
     return 0
   
   if not os.path.isfile(revlist_db):
-    # Make a new old
+    # Make a new database file
     pm.database.revlist.reader(revlist) >> revlist_db
   else:
-    # Try to update it
+    # Try to update the existing database
     rev_db   = pm.database.revs.RevDataBase(revlist_db)
     rev_rows = pm.database.revlist.reader(revlist)
     
