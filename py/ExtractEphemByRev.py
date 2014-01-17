@@ -49,6 +49,7 @@ import pdb
 import rdf
 import numpy
 import subprocess
+from pm.utils.helper import find_files
 
 def ExtractEphemByRev( config_file ):
   if not config_file or not os.path.isfile(config_file):
@@ -66,10 +67,7 @@ def ExtractEphemByRev( config_file ):
     print>>sys.stderr, 'Required keywords not found in rdf file: %s\n' % config_file
     return 0
 
-  gse_files = subprocess.check_output('find %s -name "RS_GSE_*" | sort ' % gse_dir,\
-                                      shell=True).split('\n')
-  
-  for gse_file in gse_files:
+  for gse_file in find_files(gse_dir,"RS_GSE_*"):
     if not os.path.isfile(gse_file):
       continue
     
@@ -85,10 +83,7 @@ def ExtractEphemByRev( config_file ):
       if not ierr==0:
         print>>sys.stderr, 'Error making ephem/quats files for %s' % gse_file
   
-  gse_files = subprocess.check_output('find %s -name "RS_GSE_*" | sort ' % gse_dir_gaps,\
-                                      shell=True).split('\n')
-  
-  for gse_file in gse_files:
+  for gse_file in find_files(gse_dir_gaps,"RS_GSE_*"):
     if not os.path.isfile(gse_file):
       continue
     

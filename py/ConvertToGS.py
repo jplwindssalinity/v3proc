@@ -50,6 +50,7 @@ import rdf
 import numpy
 import subprocess
 import time_funcs
+from pm.utils.helper import find_files
 
 def ConvertEphemToGS( config_file ):
   """ Converts the QScatSim Ephemeris and Quats files to the GS format"""
@@ -72,9 +73,7 @@ def ConvertEphemToGS( config_file ):
   rev_t_start = numpy.loadtxt( revlist, delimiter=',', usecols=(1,) )
   
   # Convert the Gap-free ephemeris/quaternion files
-  ephem_files = subprocess.check_output('find %s -name "RS_EPHEM_*" | sort' %
-                                        ephem_dir, shell=True).split('\n')
-  for ephem_file in ephem_files:
+  for ephem_file in find_files(ephem_dir,"RS_EPHEM_*"):
     revtag         = os.path.basename(ephem_file).strip('RS_EPHEM_')
     quats_file     = ephem_file.replace('RS_EPHEM','RS_QUATS')
     out_ephem_file = os.path.join(ephem_gs_dir, 'RS_SEPHG_' + revtag)
@@ -94,9 +93,7 @@ def ConvertEphemToGS( config_file ):
                      (out_att_file, leap_secs, quats_file), shell=True )
       
   # Convert the Gap-filled ephemeris/quaternion files
-  ephem_files = subprocess.check_output('find %s -name "RS_EPHEM_*" | sort' %
-                                        ephem_gaps_dir, shell=True).split('\n')
-  for ephem_file in ephem_files:
+  for ephem_file in find_files(ephem_gaps_dir,"RS_EPHEM_*"):
     revtag         = os.path.basename(ephem_file).strip('RS_EPHEM_')
     quats_file     = ephem_file.replace('RS_EPHEM','RS_QUATS')
     out_ephem_file = os.path.join(ephem_gs_gaps_dir, 'RS_SEPHG_' + revtag)

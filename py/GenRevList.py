@@ -109,7 +109,6 @@ def GenRevList(config_file):
   node_times = nodes[:,0]
   node_longs = nodes[:,1]
   
-  
   # Delete tempfile
   subprocess.call('rm -f %s' % tmpfile,shell=True)
   
@@ -143,8 +142,8 @@ def GenRevList(config_file):
                time_funcs.ToCodeB(time_funcs.date_time_from_sim(this_tt_end)),
                long_node))
   ofp.close()
+  
   return 1
-
 
 if __name__=='__main__':
   # Parse command line

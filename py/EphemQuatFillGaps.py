@@ -49,6 +49,7 @@ import pdb
 import rdf
 import numpy
 import subprocess
+from pm.utils.helper import find_files
 
 def EphemQuatFillGaps( config_file ):
   if not config_file or not os.path.isfile(config_file):
@@ -76,10 +77,7 @@ def EphemQuatFillGaps( config_file ):
   pad_t_start = rev_t_start - revpad_start
   pad_t_end   = rev_t_end   + revpad_end
   
-  ephem_files = subprocess.check_output('find %s -name "RS_EPHEM*" | sort' % ephem_in_dir, \
-                                        shell=True).split('\n')
-  
-  for ephem_file in ephem_files:
+  for ephem_file in find_files(ephem_in_dir,"RS_EPHEM*"):
     quats_file = ephem_file.replace('RS_EPHEM','RS_QUATS')
     
     if not os.path.isfile(ephem_file) or not os.path.isfile(quats_file):

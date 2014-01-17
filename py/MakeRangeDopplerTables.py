@@ -52,6 +52,7 @@ import subprocess
 import Tracking
 import SimQuats
 import SimEphem
+from pm.utils.helper import find_files
 
 def UseTable(ephemfile, quatsfile):
   
@@ -91,9 +92,7 @@ def MakeRangeDopplerTables(config_file):
     use_table   = numpy.array([])
   
   # Get list of ephem file
-  ephem_files = subprocess.check_output('find %s -name "RS_EPHEM_*" | sort' % ephem_dir, 
-                                        shell=True ).split('\n')
-  for ephem_file in ephem_files:
+  for ephem_file in find_files(ephem_dir,"RS_EPHEM_*"):
     revtag = os.path.basename(ephem_file).strip('RS_EPHEM_')
     
     if log_revtags.size>0 and any(log_revtags==revtag):

@@ -87,7 +87,6 @@ class Tracker(object):
     # print 59 spaces and a newline to fill out last line of file
     f.write("                                                           \n")
     f.close()
-    
   
   def WriteDIBBinary(self,filename):
     """
@@ -112,10 +111,10 @@ class Tracker(object):
     dib_data = StringIO.StringIO()
     
     # Write OpCode depending on if this is a range/doppler table and beam
-    if self.dtype.char=='B':
+    if self.dtype.char=='B': # Range
       dib_data.write(struct.pack('>H',range_opcodes[beam_index]))
       this_size = 804
-    elif self.dtype.char=='H':
+    elif self.dtype.char=='H': # Doppler
       dib_data.write(struct.pack('>H',doppler_opcodes[beam_index]))
       this_size = 1572
     

@@ -50,6 +50,7 @@ import rdf
 import pdb
 import subprocess
 import SimEphem
+from pm.utils.helper import find_files
 
 def PreProcessGSE( config_file ):
   if not config_file or not os.path.isfile(config_file):
@@ -67,9 +68,8 @@ def PreProcessGSE( config_file ):
     return(0)
   
   # Find all GSE files
-  cmd    = 'find %s -name "RS_GSE*" -a ! -name "*.rpsm" | sort' % gse_in_dir
-  output = subprocess.check_output(cmd,shell=True)
-  files  = output.split('\n')
+  cmd   = 'find %s -name "RS_GSE*" -a ! -name "*.rpsm" | sort' % gse_in_dir
+  files = subprocess.check_output(cmd,shell=True).split('\n')
   
   for file in files:
     if not os.path.isfile(file):
@@ -91,9 +91,7 @@ def PreProcessGSE( config_file ):
         print>>sys.stderr, 'Error merging' % file
   
   # Make all ephem files
-  files = subprocess.check_output('find %s -name "*RS_GSE*"' % \
-                                  gse_out_dir,shell=True).split('\n')
-  for file in files:
+  for file in find_files(gse_out_dir,"RS_GSE*"):
     if not os.path.isfile(file):
       continue
     revtag = os.path.basename(file).strip('RS_GSE_')
@@ -109,9 +107,7 @@ def PreProcessGSE( config_file ):
   
   
   # Make all minz times and asc node longitudes
-  files = subprocess.check_output('find %s -name "RS_EPHEM_*"' % \
-                                  ephem_dir,shell=True).split('\n')
-  for file in files:
+  for file in find_files(ephem_dir,"RS_EPHEM_*"):
     if not os.path.isfile(file):
       continue
     

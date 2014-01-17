@@ -52,6 +52,7 @@ import subprocess
 import GSE
 import rdf
 import time_funcs
+from pm.utils.helper import find_files
 
 def GSEGapReport( config_file ):
   if not config_file or not os.path.isfile(config_file):
@@ -74,8 +75,7 @@ def GSEGapReport( config_file ):
   
   gse_times_fp = open(gsetimes,'w')
   
-  gsefiles = subprocess.check_output('find %s -name "*RS_GSE*"'%gse_dir,shell=True).split('\n')
-  for file in gsefiles:
+  for file in find_files(gse_dir,"RS_GSE*"):
     if not os.path.isfile(file):
       continue
     
