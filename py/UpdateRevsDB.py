@@ -56,9 +56,9 @@ def UpdateRevsDB(config_file):
     print>>sys.stderr, 'Config file, %s, does not exist' % config_file
     return 0
   try:
-    rdf_data = rdf.parse(config_file)
-    revlist        = rdf_data["REVLIST"]
-    revlist_db     = rdf_data["REVLIST_DB"]
+    rdf_data   = rdf.parse(config_file)
+    revlist    = rdf_data["REVLIST"]
+    revlist_db = rdf_data["REVLIST_DB"]
   except KeyError:
     print>>sys.stderr, 'Required keywords not found in rdf file: %s\n' % config_file
     return 0
@@ -94,7 +94,7 @@ if __name__=='__main__':
     print>>sys.stderr, 'Usage: UpdateRevsDB.py -c config.rdf'
     sys.exit(1)
   
-  if UpdateRevsDB( options.rdffile )==0:
+  if UpdateRevsDB(options.rdffile)==0:
     print>>sys.stderr, 'Error in UpdateRevsDB'
     sys.exit(1)
   sys.exit(0)

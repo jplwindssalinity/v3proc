@@ -8,7 +8,7 @@
 #    GenRevList.py
 #
 # SYNOPSIS
-#    GenRevList.py -i minztimes.txt -o revlist.csv -c rdf_file
+#    GenRevList.py -c rdf_file
 #
 # DESCRIPTION
 #    Reads in all minimum z times, writes out a revlist containing:
