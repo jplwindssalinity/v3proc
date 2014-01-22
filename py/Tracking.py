@@ -56,11 +56,16 @@ class Tracker(object):
     self.amp_terms_eu    = None
     self.pha_terms_eu    = None
     self.bias_terms_eu   = None
+    self.dib_data        = None
   
   def WriteGSASCII(self,filename):
     """
     Writes the GS style ASCII hex doppler / range tables
     """
+    if self.dib_data==None:
+      print sys.stderr,"Call CreateDibData first"
+      return
+    
     # create header line consisting of 127 chars and a newline char
     basename_file = os.path.basename(filename)
     header_string = "%s RAPIDSCAT JPL %s" % ( 
@@ -92,6 +97,10 @@ class Tracker(object):
     """
     Writes the DIB format doppler / range tables
     """
+    if self.dib_data==None:
+      print sys.stderr,"Call CreateDibData first"
+      return
+    
     # replace 1st short (op code) with zeros, as demanded by ?? for ISS.
     outdata = (0,) + self.dib_data[1::]
     
