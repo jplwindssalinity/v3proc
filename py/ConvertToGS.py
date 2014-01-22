@@ -181,24 +181,31 @@ def ConvertRangeDopplerToGS(config_file):
   
   rev_db = pm.database.revs.RevDataBase(revlist_db)
   for rev in rev_db:
-    rev_no        = rev.rev
-    rng_in_table1 = '%s/RGC_%5.5d.1' % (rng_in_dir, rev_no)
-    rng_in_table2 = '%s/RGC_%5.5d.2' % (rng_in_dir, rev_no)
-    rng_gs_table  = '%s/RGC_%5.5d'   % (rng_gs_dir, rev_no)
+    rev_no = rev.rev
     
-    if os.path.isfile(rng_in_table1) and os.path.isfile(rng_in_table2) and \
-       not os.path.isfile(rng_gs_table):
-      subprocess.call('rgc_format -b 1 -f b -i %s -b 2 -f b -i %s -f g -o %s' % \
-                     (rng_in_table1,rng_in_table2,rng_gs_table),shell=True)
+    if rev_no < 0:
+      continue
     
-    dop_in_table1 = '%s/DTC_%5.5d.1' % (dop_in_dir, rev_no)
-    dop_in_table2 = '%s/DTC_%5.5d.2' % (dop_in_dir, rev_no)
-    dop_gs_table  = '%s/DTC_%5.5d'   % (dop_gs_dir, rev_no)
-    
-    if os.path.isfile(dop_in_table1) and os.path.isfile(dop_in_table2) and \
-       not os.path.isfile(dop_gs_table):
-      subprocess.call('dtc_format -b 1 -f b -i %s -b 2 -f b -i %s -f g -o %s' % \
-                     (dop_in_table1,dop_in_table2,dop_gs_table),shell=True)
+    for ib in range(2):
+      # Convert range tables
+      rng_in_table = os.path.join(rng_in_dir,"RGC_%5.5d.%d"%(rev_no,ib+1))
+      rng_gs_table = os.path.join(rng_gs_dir,"RGC_%5.5d.%d"%(rev_no,ib+1))
+      
+      if os.path.isfile(rng_in_table) and not os.path.isfile(rng_gs_table):
+        rng_track = Tracking.RangeTracker()
+        rng_track.ReadSimBinary(rng_in_table)
+        rng_track.CreateDIBData(ib,rev_no)
+        rng_track.WriteGSASCII(rng_gs_table)
+      
+      # Convert doppler tables
+      dop_in_table = os.path.join(dop_in_dir,"DTC_%5.5d.%d"%(rev_no,ib+1))
+      dop_gs_table = os.path.join(dop_gs_dir,"DTC_%5.5d.%d"%(rev_no,ib+1))
+      
+      if os.path.isfile(dop_in_table) and not os.path.isfile(dop_gs_table):
+        dop_track = Tracking.DopplerTracker()
+        dop_track.ReadSimBinary(dop_in_table)
+        dop_track.CreateDIBData(ib,rev_no)
+        dop_track.WriteGSASCII(dop_gs_table)
 
 def ConvertToGS( config_file ):
   if not config_file or not os.path.isfile(config_file):
