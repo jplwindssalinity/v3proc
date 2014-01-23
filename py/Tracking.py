@@ -70,7 +70,7 @@ class Tracker(object):
     basename_file = os.path.basename(filename)
     header_string = "%s RAPIDSCAT JPL %s" % ( 
                     basename_file, 
-                    time_funcs.ToCodeB(datetime.datetime.now()))
+                    time_funcs.ToCodeB(datetime.datetime.utcnow()))
     
     if len(header_string) > 127:
       print sys.stderr,"Use a shorter filename -- You made the header too big yo!"
