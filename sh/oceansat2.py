@@ -28,6 +28,7 @@ Libraries and functions to process Oceansat-II Scatterometer wind data.
 import argparse
 import exceptions
 import fcntl
+import getpass
 import glob
 import logging
 import math
@@ -116,7 +117,7 @@ class OceanSAT2Rev(object):
             'podaac': "./podaac/",
             'ncep': "/u/potr-r0/fore/ECMWF/nwp1/",
             'ecmwf': "/u/potr-r0/fore/ECMWF/nwp3/",
-            'work': "/dev/shm/"
+            'work': "/dev/shm/" + getpass.getuser() + "/"
             }
 
     common_files = {'times': "/u/polecat-r0/fore/ISRO/orb_ele/{0}_orbit_ele/rev_tstart_teqa_long.txt",
@@ -486,7 +487,7 @@ class dummyServer():
 def runjob(job, server=None):
     if len(job) == 2:
         year,revid = job
-        rev = OceanSAT2Rev(year=year, rev=revid, level=1)
+        rev = OceanSAT2Rev(year=year, rev=revid, level=1, keep_log=True)
     else:
         year,revid,revtag = job
         rev = OceanSAT2Rev(year=year, rev=revid, revtag=revtag, level=1)
