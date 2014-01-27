@@ -14,9 +14,8 @@ sim_epoch = datetime.datetime(1970,1,1)
 gs_epoch  = datetime.datetime(1993,1,1)
 
 def tz_delta():
-  tz_off = datetime.datetime.utcnow() - datetime.datetime.now()
-  seconds = tz_off.seconds + round(tz_off.microseconds/1000000.)
-  return(datetime.timedelta(tz_off.days,seconds,0))
+  return(datetime.datetime.utcfromtimestamp(0) - 
+         datetime.datetime.fromtimestamp(0))
 
 def date_time_from_gs( tt ):
   return(gs_epoch+datetime.timedelta(0,tt))
