@@ -8,7 +8,7 @@
 #    ProcessGSE.py
 #
 # SYNOPSIS
-#    ProcessGSE.py -c config_file
+#    ProcessGSE.py config_file
 #
 # DESCRIPTION
 #    Makes the revlist, gap report, and gse times files.  Then it
@@ -88,16 +88,14 @@ def ProcessGSE( config_file ):
   return(1)
 
 def main():
-  # Parse command line
-  parser = OptionParser()
-  parser.add_option( "-c", "--rdffile", action="store", type="string", dest="rdffile")
-  (options, args) = parser.parse_args()
+  usage_string = 'Usage: %s <config_file>' % sys.argv[0]
+  config_file = sys.argv[1]
   
-  if not options.rdffile or not os.path.isfile(options.rdffile):
-    print>>sys.stderr, 'Usage: ProcessGSE.py -c config.rdf'
+  if not os.path.isfile(config_file):
+    print>>sys.stderr, usage_string
     sys.exit(1)
   
-  if ProcessGSE( options.rdffile )==0:
+  if ProcessGSE(config_file)==0:
     print>>sys.stderr, 'Error in ProcessGSE'
     sys.exit(1)
   sys.exit(0)

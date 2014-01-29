@@ -8,7 +8,7 @@
 #    GSEGapReport.py
 #
 # SYNOPSIS
-#    GSEGapReport.py -c config_file
+#    GSEGapReport.py config_file
 #
 # DESCRIPTION
 #    Reads in all GSE times and writes out a report of all gaps
@@ -159,16 +159,14 @@ def GSEGapReport( config_file ):
   ofp.close()
     
 if __name__=='__main__':
-  # Parse command line
-  parser = OptionParser()
-  parser.add_option( "-c", "--rdffile", action="store", type="string", dest="rdffile")
-  (options, args) = parser.parse_args()
+  usage_string = 'Usage: %s <config_file>' % sys.argv[0]
+  config_file = sys.argv[1]
   
-  if not options.rdffile or not os.path.isfile(options.rdffile):
-    print>>sys.stderr, 'Usage: GSEGapReport.py -c config.rdf'
+  if not os.path.isfile(config_file):
+    print>>sys.stderr, usage_string
     sys.exit(1)
   
-  if GSEGapReport( options.rdffile )==0:
+  if GSEGapReport(config_file)==0:
     print>>sys.stderr, 'Error in GSEGapReport'
     sys.exit(1)
   sys.exit(0)

@@ -8,7 +8,7 @@
 #    ConvertToGS.py
 #
 # SYNOPSIS
-#    ConvertToGS.py -c config_file
+#    ConvertToGS.py config_file
 #
 # DESCRIPTION
 #    Converts stuff to GS format
@@ -217,16 +217,14 @@ def ConvertToGS( config_file ):
   return(1)
 
 def main():
-  # Parse command line
-  parser = OptionParser()
-  parser.add_option( "-c", "--rdffile", action="store", type="string", dest="rdffile")
-  (options, args) = parser.parse_args()
+  usage_string = 'Usage: %s <config_file>' % sys.argv[0]
+  config_file = sys.argv[1]
   
-  if not options.rdffile or not os.path.isfile(options.rdffile):
-    print>>sys.stderr, 'Usage: ConvertToGS.py -c config.rdf'
+  if not os.path.isfile(config_file):
+    print>>sys.stderr, usage_string
     sys.exit(1)
   
-  if ConvertToGS( options.rdffile )==0:
+  if ConvertToGS( config_file )==0:
     print>>sys.stderr, 'Error in ConvertToGS'
     sys.exit(1)
   sys.exit(0)

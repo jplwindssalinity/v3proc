@@ -8,7 +8,7 @@
 #    PreProcessGSE.py
 #
 # SYNOPSIS
-#    PreProcessGSE.py -c config_file
+#    PreProcessGSE.py config_file
 #
 # DESCRIPTION
 #    Runs RS_GSE_merge on all GSE files, extracts the ephem for each,
@@ -137,16 +137,14 @@ def PreProcessGSE( config_file ):
   return(1)
 
 def main():
-  # Parse command line
-  parser = OptionParser()
-  parser.add_option( "-c", "--rdffile", action="store", type="string", dest="rdffile")
-  (options, args) = parser.parse_args()
+  usage_string = 'Usage: %s <config_file>' % sys.argv[0]
+  config_file = sys.argv[1]
   
-  if not options.rdffile or not os.path.isfile(options.rdffile):
-    print>>sys.stderr, 'Usage: PreProcessGSE.py -c config.rdf'
+  if not os.path.isfile(config_file):
+    print>>sys.stderr, usage_string
     sys.exit(1)
   
-  if PreProcessGSE( options.rdffile )==0:
+  if PreProcessGSE(config_file)==0:
     print>>sys.stderr, 'Error in PreProcessGSE'
     sys.exit(1)
   sys.exit(0)

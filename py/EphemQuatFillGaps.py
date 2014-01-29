@@ -8,7 +8,7 @@
 #    EphemQuatFillGaps.py
 #
 # SYNOPSIS
-#    EphemQuatFillGaps.py -c config_file
+#    EphemQuatFillGaps.py config_file
 #
 # DESCRIPTION
 #    Fills gaps in ephem and quat files
@@ -105,16 +105,14 @@ def EphemQuatFillGaps( config_file ):
   return 1
 
 def main():
-  # Parse command line
-  parser = OptionParser()
-  parser.add_option( "-c", "--rdffile", action="store", type="string", dest="rdffile")
-  (options, args) = parser.parse_args()
+  usage_string = 'Usage: %s <config_file>' % sys.argv[0]
+  config_file = sys.argv[1]
   
-  if not options.rdffile or not os.path.isfile(options.rdffile):
-    print>>sys.stderr, 'Usage: EphemQuatFillGaps.py -c config.rdf'
+  if not os.path.isfile(config_file):
+    print>>sys.stderr, usage_string
     sys.exit(1)
-  
-  if EphemQuatFillGaps( options.rdffile )==0:
+
+  if EphemQuatFillGaps( config_file )==0:
     print>>sys.stderr, 'Error in EphemQuatFillGaps'
     sys.exit(1)
   sys.exit(0)

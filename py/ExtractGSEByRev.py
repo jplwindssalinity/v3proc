@@ -8,7 +8,7 @@
 #    ExtractGSEByRev.py
 #
 # SYNOPSIS
-#    ExtractGSEByRev.py -c config_file
+#    ExtractGSEByRev.py config_file
 #
 # DESCRIPTION
 #    Uses the revlist and gap report to figure out which revs are gap-free
@@ -126,16 +126,14 @@ def ExtractGSEByRev( config_file ):
   return 1
 
 if __name__=='__main__':
-  # Parse command line
-  parser = OptionParser()
-  parser.add_option( "-c", "--rdffile", action="store", type="string", dest="rdffile")
-  (options, args) = parser.parse_args()
+  usage_string = 'Usage: %s <config_file>' % sys.argv[0]
+  config_file = sys.argv[1]
   
-  if not options.rdffile or not os.path.isfile(options.rdffile):
-    print>>sys.stderr, 'Usage: ExtractGSEByRev.py -c config.rdf'
+  if not os.path.isfile(config_file):
+    print>>sys.stderr, usage_string
     sys.exit(1)
   
-  if ExtractGSEByRev( options.rdffile )==0:
+  if ExtractGSEByRev(config_file)==0:
     print>>sys.stderr, 'Error in ExtractGSEByRev'
     sys.exit(1)
   sys.exit(0)
