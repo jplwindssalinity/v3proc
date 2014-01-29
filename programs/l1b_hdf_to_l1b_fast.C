@@ -53,7 +53,7 @@ static const char rcs_id[] =
 
 #define QS_LANDMAP_FILE_KEYWORD 		"QS_LANDMAP_FILE"
 #define QS_ICEMAP_FILE_KEYWORD	 		"QS_ICEMAP_FILE"
-
+#define DO_COASTAL_PROCESSING_KEYWORD   "DO_COASTAL_PROCESSING"
 
 //----------//
 // INCLUDES //
@@ -126,7 +126,7 @@ int return_num_l1b_frames( int32 sd_id )
     return(dimsizes[0]);
 }
 
-int read_SDS( int32 sd_id, char* sds_name, void* data_buffer )
+int read_SDS( int32 sd_id, const char* sds_name, void* data_buffer )
 {
 	int32 sds_index = SDnametoindex( sd_id, sds_name );
 	int32 sds_id    = SDselect( sd_id, sds_index);
@@ -161,7 +161,7 @@ int read_SDS( int32 sd_id, char* sds_name, void* data_buffer )
 	return(1);
 }
 
-int read_frame_time( int32 h_id, int curr_frame, char* frame_time )
+int read_frame_time( int32 h_id, int curr_frame, const char* frame_time )
 {
 	int32 frame_time_ref_id = VSfind(h_id, "frame_time");
 	if( frame_time_ref_id == 0 )
@@ -179,7 +179,7 @@ int read_frame_time( int32 h_id, int curr_frame, char* frame_time )
 	return(1);
 }
 
-int read_attr( int32 obj_id, char* attr_name, void* data_buffer )
+int read_attr( int32 obj_id, const char* attr_name, void* data_buffer )
 {
 	int32 data_type, count;
 	char attr_name_[80];
@@ -489,11 +489,15 @@ main(
     char*        qslandmap_file  = NULL;
     char*        qsicemap_file   = NULL;
     
+    int          compute_land_frac = 0;
+    
     ConfigList   config_list;
     AttenMap     attenmap;
     QSLandMap    qs_landmap;
     QSIceMap     qs_icemap;
     Kp           kp;
+    LandMap      lmap;
+    Antenna      antenna;
     //QSKpr        qs_kpr;
 
     //------------------------//
@@ -501,11 +505,23 @@ main(
     //------------------------//
 
     command = no_path(argv[0]);
-
-    if( !( argc == 2) )
-        usage(command, usage_array, 1);
-        
-    config_file = argv[1];
+    
+    while ( (optind < argc) && (argv[optind][0]=='-') ) {
+      std::string sw = argv[optind];
+      if( sw == "-c" ) {
+        ++optind;
+        config_file = argv[optind];
+      } else {
+        fprintf(stderr,"%s: Unknow option\n", command);
+        exit(1);
+      }
+      ++optind;
+    }
+    
+    if( config_file==NULL ) {
+      fprintf(stderr,"Usage: %s -c config_file\n",command);
+      exit(1);
+    }
     
     if (! config_list.Read(config_file)) {
         fprintf(stderr, "%s: error reading config file %s\n",
@@ -531,7 +547,17 @@ main(
       fprintf(stderr,"%s: Must specify QS_LANDMAP_FILE and QS_ICEMAP_FILE in config!\n",command);
       exit(1);
     }
-
+    
+    float land_frac_threshold;
+    config_list.GetInt(DO_COASTAL_PROCESSING_KEYWORD,&compute_land_frac);
+    
+    if( compute_land_frac && 
+        !config_list.GetFloat("COASTAL_LAND_FRAC_THRESH",&land_frac_threshold) ) {
+      fprintf(stderr,"%s: Must specify COASTAL_LAND_FRAC_THRESH if DO_COASTAL_PROCESSING = 1\n",
+              command );
+      exit(1);
+    }
+    
     fprintf(stdout,"%s: Using QS LANDMAP %s\n",command,qslandmap_file);
     fprintf(stdout,"%s: Using QS ICEMAP %s\n",command,qsicemap_file);
     qs_landmap.Read( qslandmap_file );
@@ -586,7 +612,19 @@ main(
       exit(1);
     }
     printf("%s: Use compositing flag: %d\n", command, do_composite);
-
+    
+    // Check for Coastal maps & configure landmap if commanded
+    if( compute_land_frac ) {
+      if(!ConfigLandMap(&lmap,&config_list)) {
+        fprintf(stderr,"%s: Error configuring LandMap\n",command);
+        exit(1);
+      }
+      if(!ConfigAntenna(&antenna,&config_list)) {
+        fprintf(stderr,"%s: Error configuring Antenna\n",command);
+        exit(1);
+      }
+    }
+    
     //
     //------Done reading from config file.-------------------------------------
     //
@@ -647,6 +685,8 @@ main(
     float* cell_lat = (float*)calloc(sizeof(float),num_l1b_frames*100);
     float* cell_lon = (float*)calloc(sizeof(float),num_l1b_frames*100);
     
+    int16* frequency_shift = (int16*)calloc(sizeof(int16),num_l1b_frames*100);
+    
     int16* slice_lat       = (int16*)calloc(sizeof(int16),num_l1b_frames*100*8);
     int16* slice_lon       = (int16*)calloc(sizeof(int16),num_l1b_frames*100*8);
     int16* slice_sigma0    = (int16*)calloc(sizeof(int16),num_l1b_frames*100*8);
@@ -678,7 +718,8 @@ main(
     
     if( !read_SDS( sd_id, "cell_lat",        &cell_lat[0]        ) ||
         !read_SDS( sd_id, "cell_lon",        &cell_lon[0]        ) ||
-        !read_SDS( sd_id, "antenna_azimuth", &antenna_azimuth[0] ) )  // uint16
+        !read_SDS( sd_id, "antenna_azimuth", &antenna_azimuth[0] ) ||
+        !read_SDS( sd_id, "frequency_shift", &frequency_shift[0] ) )  // uint16
     {
       fprintf(stderr,"Error reading geolocation from HDF file!\n");
       exit(1);
@@ -711,7 +752,7 @@ main(
       fprintf(stderr,"Error readng KpB, kpC from HDF file!\n");
       exit(1);
     }
-        
+    
     for( int i_frame = 0; i_frame < num_l1b_frames; ++i_frame ) {
       // Read Frame times (put null in all chars since VSread won't null terminate
       // the chars that it reads).
@@ -755,6 +796,7 @@ main(
       //printf("Frame time: %4.4d-%3.3d-%2.2d:%2.2d:%2.6f\n", year, doy, hour, minute, seconds );
       
       for( int i_pulse = 0; i_pulse < 100; ++i_pulse ) {
+        int pulse_ind = i_frame * 100 + i_pulse;
         
         MeasSpot* new_meas_spot = new MeasSpot();
         
@@ -778,7 +820,6 @@ main(
         for( int i_slice = 0; i_slice < 8; ++i_slice )
         {
            // Using 1d arrays 
-           int pulse_ind = i_frame * 100     + i_pulse;                   
            int slice_ind = i_frame * 100 * 8 + i_pulse * 8 + i_slice;
 
            //Check that pulse is a measurement pulse.
@@ -862,10 +903,15 @@ main(
            uint16 gatewidth = (sigma0_mode_flag[pulse_ind] & (uint16)0x1C0 ) >> 6;
            
            if( gatewidth != (uint16)3) {
-             fprintf(stderr,"%s: Gatewidth not equal to 3!\n",command);
+             fprintf(stderr,"%s: Gatewidth not equal to 3; %d!\n",command,gatewidth);
              exit(1);
            }
            
+           if(gatewidth==(uint16)3) {
+             new_meas->bandwidth = 6.929 * 1000;
+           } else if ( gatewidth==(uint16)3) {
+             new_meas->bandwidth = 12.933 * 1000;
+           }
            // Set sigma0 + correct for attenuation if !do_composote
            if( do_composite )
              new_meas->value   = pow(10.0,0.01*double(slice_sigma0[slice_ind])/10.0);
@@ -953,6 +999,26 @@ main(
            new_meas_spot->Append(new_meas);
         }
         
+        // Optionally compute land fractions
+        if( compute_land_frac ) {
+          float this_frequency_shift = (float)frequency_shift[pulse_ind];
+          
+          new_meas_spot->ComputeLandFraction( &lmap, &qs_landmap, 
+                                              &antenna, this_frequency_shift );
+          
+          Meas* this_meas = new_meas_spot->GetHead();
+          while( this_meas ) {
+            if( this_meas->bandwidth > land_frac_threshold ) {
+              this_meas = new_meas_spot->RemoveCurrent();
+              delete this_meas;
+              this_meas = new_meas_spot->GetCurrent();
+            } else {
+              // unset land flag
+              this_meas->landFlag &= ~(1<<0);
+              this_meas = new_meas_spot->GetNext();
+            }
+          }
+        }
         // Stick this measSpot in the spotList.
         l1b.frame.spotList.Append(new_meas_spot);
       }
@@ -960,7 +1026,7 @@ main(
       // Write the ephemeris.
       if( !l1b.frame.spotList.WriteEphemeris(eph_fp) )
       {
-        fprintf(stderr, "%s: writing to %s failed.\n", command, l1b.GetOutputFilename() );
+        fprintf(stderr, "%s: writing to %s failed.\n", command, ephemeris_file );
         return (1);      
       }
       
@@ -972,12 +1038,13 @@ main(
       
       // Write this L1BFrame
       if( ! l1b.WriteDataRec() ) {
-        fprintf(stderr, "%s: writing to %s failed.\n", command, ephemeris_file );
+        fprintf(stderr, "%s: writing to %s failed.\n", command, l1b.GetOutputFilename() );
         return (1);
       }
       
-      if( i_frame % 1024 == 0 )
+      if( i_frame % 50 == 0 )
         printf("Wrote %d frames of %d\n", i_frame, num_l1b_frames);
+        //if( i_frame == 1000 ) exit(1);
     }
     
     fclose(eph_fp);
@@ -995,6 +1062,7 @@ main(
     free(antenna_azimuth);
     free(cell_lat);
     free(cell_lon);
+    free(frequency_shift);
     free(slice_lat);
     free(slice_lon);
     free(slice_sigma0);
