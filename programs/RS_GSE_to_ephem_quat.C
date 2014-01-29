@@ -122,19 +122,6 @@ const char usage_string[] = "-i gsefile -e out_ephem_file -q out_quat_file";
 // MAIN PROGRAM //
 //--------------//
 
-struct GSE_TT_IDX {
-  int tt0;
-  int idx;
-};
-
-bool compare( const GSE_TT_IDX &gse_tt_idx0, const GSE_TT_IDX &gse_tt_idx1 ) {
-  return( gse_tt_idx0.tt0 < gse_tt_idx1.tt0 );
-}
-
-bool same( const GSE_TT_IDX &gse_tt_idx0, const GSE_TT_IDX &gse_tt_idx1 ) {
-  return( gse_tt_idx0.tt0==gse_tt_idx1.tt0 );
-}
-
 int
 main(
     int    argc,
@@ -174,9 +161,6 @@ main(
   sprintf(quat_geocfile,"%s_geoc",out_quat_file);
   
   FILE* ifp    = fopen(gse_file,"r");
-  FILE* ofp_e  = fopen(out_ephem_file,"w");
-  FILE* ofp_q  = fopen(out_quat_file,"w");
-  FILE* ofp_qc = fopen(quat_geocfile,"w");
   
   fseek(ifp,0,SEEK_END);
   long int gse_size  = ftell(ifp);
@@ -184,28 +168,13 @@ main(
   
   if( n_packets*PACKET_SIZE != gse_size ) {
     fprintf(stderr,"%s: something is not right with GSE file: %s\n",command,gse_file);
+    fclose(ifp);
     exit(1);
   }
   
-  // Read in all GPS second time-tags fron GSE file
-  std::list< GSE_TT_IDX > gse_tt_idx_list;
-  for( int ipacket=0;ipacket<n_packets;++ipacket) {
-    int   tt0;
-    long int packet_off = ipacket*PACKET_SIZE;
-    fseek(ifp,packet_off+TT0_OFF+NHEAD-1,SEEK_SET);
-    fread( &tt0, sizeof(int), 1, ifp ); 
-    SWAP_VAR( tt0, int );
-    
-    GSE_TT_IDX this_gse_tt_idx;
-    this_gse_tt_idx.tt0 = tt0;
-    this_gse_tt_idx.idx = ipacket;
-    
-    gse_tt_idx_list.push_back( this_gse_tt_idx );
-  }
-  
-  // Sort them and remove duplicates
-  gse_tt_idx_list.sort( &compare );
-  gse_tt_idx_list.unique( &same );
+  FILE* ofp_e  = fopen(out_ephem_file,"w");
+  FILE* ofp_q  = fopen(out_quat_file,"w");
+  //FILE* ofp_qc = fopen(quat_geocfile,"w");
   
   ETime etime;
   etime.FromCodeB("1970-001T00:00:00.000");
@@ -214,28 +183,23 @@ main(
   etime.FromCodeB("1980-006T00:00:00.000");
   double gps_time_base = (double)etime.GetSec() + (double)etime.GetMs()/1000;
   
-  // Loop over the unique, sorted GPS time-tags in GSE file
-  for( std::list<GSE_TT_IDX>::iterator it=gse_tt_idx_list.begin();
-       it != gse_tt_idx_list.end(); ++it) {
-    
-    // Get the index in the GSE file for this time-tag
-    int this_packet_index = it->idx;
-    
+  for( int i_packet = 0; i_packet < n_packets; ++i_packet ) {
+
     int   tt0;
-    char  tt1;
+    unsigned char  tt1;
     float pos[3];
     float vel[3];
     float quat[4];
     short gps2utc;
     
-    long int packet_off = this_packet_index*PACKET_SIZE;
+    long int packet_off = i_packet * PACKET_SIZE;
     
     fseek(ifp,packet_off+TT0_OFF+NHEAD-1,SEEK_SET);
     fread( &tt0, sizeof(int), 1, ifp ); 
     SWAP_VAR( tt0, int );
     
     fseek(ifp,packet_off+TT1_OFF+NHEAD-1,SEEK_SET);
-    fread( &tt1, sizeof(char), 1, ifp );
+    fread( &tt1, sizeof(unsigned char), 1, ifp );
     
     fseek(ifp,packet_off+POSX_OFF+NHEAD-1,SEEK_SET);
     fread( &pos[0], sizeof(float), 1, ifp );
@@ -281,10 +245,10 @@ main(
     fread( &gps2utc, sizeof(short), 1, ifp );
     SWAP_VAR( gps2utc, short );
 
-    double time = double(tt0); //+ double(tt1)/255.0;
+    double time = double(tt0) + double(tt1)/255.0;
     time       += double(gps2utc) + gps_time_base - sim_time_base;
     
-    if( print_curr_leap_secs && it == gse_tt_idx_list.begin() ) {
+    if( print_curr_leap_secs && i_packet==0 ) {
       printf("Current number of GPS leap secs: %d\n",-gps2utc);
     }
     
@@ -342,7 +306,7 @@ main(
     ecef_pos[0] = rot_pos[0]*cos(gha) + rot_pos[1]*sin(gha);
     ecef_pos[1] =-rot_pos[0]*sin(gha) + rot_pos[1]*cos(gha);
     ecef_pos[2] = rot_pos[2];
-
+    
     ecef_vel[0] = rot_vel[0]*cos(gha) + rot_vel[1]*sin(gha);
     ecef_vel[1] =-rot_vel[0]*sin(gha) + rot_vel[1]*cos(gha);
     ecef_vel[2] = rot_vel[2];
@@ -356,11 +320,11 @@ main(
     Vector3 xscvel_geoc, yscvel_geoc, zscvel_geoc;
     Vector3 xscvel_geod, yscvel_geod, zscvel_geod;
     
-    velocity_frame_geocentric( orbit_state.rsat, orbit_state.vsat, 
-                               &xscvel_geoc, &yscvel_geoc, &zscvel_geoc, time );
+    if(!velocity_frame_geocentric( orbit_state.rsat, orbit_state.vsat, &xscvel_geoc, &yscvel_geoc, 
+                                   &zscvel_geoc, time )) continue;
     
-    velocity_frame_geodetic( orbit_state.rsat, orbit_state.vsat, 
-                             &xscvel_geod, &yscvel_geod, &zscvel_geod, time );
+    if(!velocity_frame_geodetic( orbit_state.rsat, orbit_state.vsat, 
+                             &xscvel_geod, &yscvel_geod, &zscvel_geod, time )) continue;
     
     // Make them unit vectors
     xscvel_geoc.Scale(1.0);
@@ -409,7 +373,7 @@ main(
     
     orbit_state.Write( ofp_e );
     quat_rec_geod.Write( ofp_q );
-    quat_rec_geoc.Write( ofp_qc );
+    //quat_rec_geoc.Write( ofp_qc );
   }
   fclose(ifp);
   fclose(ofp_e);
