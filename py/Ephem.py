@@ -4,6 +4,7 @@
 #==============================================================#
 __version__ = '$Id$'
 
+import pdb
 import os
 import sys
 import math
@@ -15,8 +16,12 @@ import numpy as np
 
 FEET_TO_METERS = 0.3048006096012
 
-def ConvertTOPO1950(infile,outfile):
-    ephem = TOPO1950(infile)
+def ConvertTOPOB1950(infile,outfile):
+    ephem = TOPOB1950(infile)
+    ephem.WriteSim(outfile)
+
+def ConvertTOPOJ2000(infile,outfile):
+    ephem = TOPOJ2000(infile)
     ephem.WriteSim(outfile)
 
 def Sim(filename):
@@ -24,10 +29,21 @@ def Sim(filename):
     ephem.ReadSim(filename)
     return(ephem)
 
-def TOPO1950(filename):
+def TOPOB1950(filename):
     ephem = Ephem()
-    ephem.ReadTOPO1950(infile)
+    ephem.ReadTOPOB1950(filename)
     return(ephem)
+
+def TOPOJ2000(filename):
+    ephem = Ephem()
+    ephem.ReadTOPOJ2000(filename)
+    return(ephem)
+
+def datetime_to_JD(dt):
+    jd0, jd1 = pysofa.cal2jd(dt.year, dt.month, dt.day)
+    jd1 += (dt - datetime.datetime(dt.year,dt.month,dt.day)
+           ).total_seconds()/24/60/60
+    return jd0, jd1
 
 class Ephem(object):
     """
@@ -57,7 +73,7 @@ class Ephem(object):
         data[:, 0] = [util.time.sim_from_datetime(item) for item in self.time]
         data[:, (1, 2, 3)] = self.pos
         data[:, (4, 5, 6)] = self.vel
-        data.astype('<f8').tofile(outfile)
+        data.astype('<f8').tofile(filename)
 
     def GetMinZTimes(self):
         """
@@ -106,7 +122,8 @@ class Ephem(object):
         out = {'times': asc_node_times, 'longs': asc_node_longs }
         return out
 
-    def ReadTOPO1950(self,filename):
+    def ReadTOPOB1950(self,filename):
+        """For reading in the B1950 TOPO ISS predicted ephmeris."""
         ifp = open(filename, "r")
         headerline1 = ifp.readline()
         headerline2 = ifp.readline()
@@ -123,31 +140,51 @@ class Ephem(object):
         self.pos = np.zeros(pos.shape)
         self.vel = np.zeros(vel.shape)
 
-        b1950_to_j2000 = np.asarray(spice.pxform('B1950', 'J2000',
-                                                 spice.j2000()))
+        b1950_to_j2000 = np.mat(spice.pxform('B1950', 'J2000', spice.j2000()))
 
         for ii in range(len(self.time)):
-            [jd0,jd1] = pysofa.cal2jd(self.time[ii].year, self.time[ii].month,
-                                      self.time[ii].day)
-            
-            jd1 += (self.time[ii] - datetime.datetime(
-              self.time[ii].year,
-              self.time[ii].month,
-              self.time[ii].day)).total_seconds()/24/60/60
-            
-            [rb, rp, rbp] = pysofa.bp00(jd0,jd1);
-            gha = pysofa.gst00a(jd0,jd1,jd0,jd1)
-            
-            rot_pos = pysofa.rxp(b1950_to_j2000, pos[ii,:])
-            rot_pos = pysofa.rxp(rp, rot_pos )
-            
-            self.pos[ii,0] = rot_pos[0,0]*np.cos(gha)+rot_pos[0,1]*np.sin(gha)
-            self.pos[ii,1] =-rot_pos[0,0]*np.sin(gha)+rot_pos[0,1]*np.cos(gha)
-            self.pos[ii,2] = rot_pos[0,2]
+            jd0, jd1 = datetime_to_JD(self.time[ii])
+            rb, rp, rbp = pysofa.bp00(jd0, jd1);
+            gha = pysofa.gst00a(jd0, jd1, jd0, jd1)
 
-            rot_vel = pysofa.rxp(b1950_to_j2000, vel[ii, :])
-            rot_vel = pysofa.rxp(rp, rot_vel )
+            rot_pos = rp * b1950_to_j2000 * np.mat(pos[ii, :]).T
 
-            self.vel[ii,0] = rot_vel[0,0]*np.cos(gha)+rot_vel[0,1]*np.sin(gha)
-            self.vel[ii,1] =-rot_vel[0,0]*np.sin(gha)+rot_vel[0,1]*np.cos(gha)
-            self.vel[ii,2] = rot_vel[0,2]
+            self.pos[ii,0] = rot_pos[0]*np.cos(gha)+rot_pos[1]*np.sin(gha)
+            self.pos[ii,1] =-rot_pos[0]*np.sin(gha)+rot_pos[1]*np.cos(gha)
+            self.pos[ii,2] = rot_pos[2]
+
+            rot_vel = rp * b1950_to_j2000 * np.mat(vel[ii, :]).T
+
+            self.vel[ii,0] = rot_vel[0]*np.cos(gha)+rot_vel[1]*np.sin(gha)
+            self.vel[ii,1] =-rot_vel[0]*np.sin(gha)+rot_vel[1]*np.cos(gha)
+            self.vel[ii,2] = rot_vel[2]
+
+    def ReadTOPOJ2000(self,filename):
+        """For reading in the J2000 TOPO ISS predicted ephmeris."""
+        time_strings = np.genfromtxt(filename, dtype=None, skip_header=3, 
+                                     usecols=(0,))
+        
+        pos = np.genfromtxt(filename, skip_header=3, usecols=(5, 6, 7))
+        vel = np.genfromtxt(filename, skip_header=3, usecols=(8, 9, 10))
+        
+        self.time = np.asarray(
+            [datetime.datetime.strptime(item+'000', '%Y:%m:%d:%H:%M:%S.%f') 
+            for item in time_strings])
+
+        self.pos = np.zeros(pos.shape)
+        self.vel = np.zeros(vel.shape)
+
+        for ii in range(len(self.time)):
+            jd0, jd1 = datetime_to_JD(self.time[ii])
+            rb, rp, rbp = pysofa.bp00(jd0, jd1);
+            gha = pysofa.gst00a(jd0, jd1, jd0, jd1)
+            
+            rot_pos = rp * np.mat(pos[ii, :]).T
+            self.pos[ii,0] = rot_pos[0]*np.cos(gha)+rot_pos[1]*np.sin(gha)
+            self.pos[ii,1] =-rot_pos[0]*np.sin(gha)+rot_pos[1]*np.cos(gha)
+            self.pos[ii,2] = rot_pos[2]
+            
+            rot_vel = rp * np.mat(vel[ii, :]).T
+            self.vel[ii,0] = rot_vel[0]*np.cos(gha)+rot_vel[1]*np.sin(gha)
+            self.vel[ii,1] =-rot_vel[0]*np.sin(gha)+rot_vel[1]*np.cos(gha)
+            self.vel[ii,2] = rot_vel[2]
