@@ -49,9 +49,8 @@ import rdf
 import numpy
 import subprocess
 import Tracking
-import SimQuats
-import SimEphem
-from pm.utils.helper import find_files
+import Att
+import util.file
 
 def UseTable(ephemfile, quatsfile):
   
@@ -59,11 +58,11 @@ def UseTable(ephemfile, quatsfile):
   pitch_std_threshold = 0.5
   roll_std_threshold  = 1.0
   
-  quats = SimQuats.SimQuats(quatsfile)
+  att = Att.AttFromSimQuats(quatsfile)
   
-  if quats.ypr[:,0].std() > yaw_std_threshold or \
-     quats.ypr[:,1].std() > pitch_std_threshold or \
-     quats.ypr[:,2].std() > roll_std_threshold:
+  if att.yaw.std() > yaw_std_threshold or \
+     att.pitch.std() > pitch_std_threshold or \
+     att.roll.std() > roll_std_threshold:
     return(0)
   return(1)
 
@@ -91,7 +90,7 @@ def MakeRangeDopplerTables(config_file):
     use_table   = numpy.array([])
   
   # Get list of ephem file
-  for ephem_file in find_files(ephem_dir,"RS_EPHEM_*"):
+  for ephem_file in util.file.find(ephem_dir,"RS_EPHEM_*"):
     revtag = os.path.basename(ephem_file).strip('RS_EPHEM_')
     
     if log_revtags.size>0 and any(log_revtags==revtag):

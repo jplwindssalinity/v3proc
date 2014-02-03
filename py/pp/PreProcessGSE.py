@@ -48,8 +48,8 @@ import os
 import rdf
 import pdb
 import subprocess
-import SimEphem
-from pm.utils.helper import find_files
+import Ephem
+import util.file
 
 def PreProcessGSE( config_file ):
   if not config_file or not os.path.isfile(config_file):
@@ -67,10 +67,7 @@ def PreProcessGSE( config_file ):
     return(0)
   
   # Find all GSE files
-  cmd   = 'find %s -name "RS_GSE*" -a ! -name "*.rpsm" | sort' % gse_in_dir
-  files = subprocess.check_output(cmd,shell=True).split('\n')
-  
-  for file in files:
+  for file in util.file.find(gse_in_dir, "RS_GSE*", "*.rpsm"):
     if not os.path.isfile(file):
       continue
     
@@ -90,7 +87,7 @@ def PreProcessGSE( config_file ):
         print>>sys.stderr, 'Error merging' % file
   
   # Make all ephem files
-  for file in find_files(gse_out_dir,"RS_GSE*"):
+  for file in util.file.find(gse_out_dir,"RS_GSE*"):
     if not os.path.isfile(file):
       continue
     revtag = os.path.basename(file).strip('RS_GSE_')
@@ -106,7 +103,7 @@ def PreProcessGSE( config_file ):
   
   
   # Make all minz times and asc node longitudes
-  for file in find_files(ephem_dir,"RS_EPHEM_*"):
+  for file in util.file.find(ephem_dir,"RS_EPHEM_*"):
     if not os.path.isfile(file):
       continue
     
@@ -116,23 +113,22 @@ def PreProcessGSE( config_file ):
     long_file = os.path.join(node_long_dir, 'asc_node_longs_' + revtag)
     
     if not (os.path.isfile(minz_file) and os.path.isfile(long_file)):
-      # Using the SimEphem class methods
-      ephem      = SimEphem.SimEphem(file)
+      ephem      = Ephem.Sim(file)
       minz_times = ephem.GetMinZTimes()
       nodes      = ephem.GetAscendingNodes()
       
       ofp = open(minz_file,'w')
       for minz_time in minz_times:
-        print>>ofp,'%f' % minz_time
+        print>>ofp,'%f' % util.time.sim_from_datetime(minz_time)
       ofp.close()
       
       ofp = open(long_file,'w')
       
       for ii in range(len(nodes['times'])):
-        print>>ofp,'%f,%f' % ( nodes['times'][ii], nodes['longs'][ii] )
+        print>>ofp,'%f,%f' % (util.time.sim_from_datetime(nodes['times'][ii]),
+                              nodes['longs'][ii])
       ofp.close()
   
-  # Done preprocessing GSE data!
   return(1)
 
 def main():

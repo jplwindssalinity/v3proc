@@ -2,10 +2,11 @@
 # Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
-__version__ = '$Id$'
 """
 Helper functions for doing stuff with time-tags.
 """
+__version__ = '$Id$'
+
 import pdb
 import sys
 import datetime
@@ -32,7 +33,7 @@ DT_LEAP = [ONE_DAY+item for item in [datetime.datetime(1979,12,31),
                                      datetime.datetime(2008,12,31),
                                      datetime.datetime(2012, 6,30)]]
 
-def datetime_interp(x0,x1,x,dt0,dt1):
+def datetime_interp(x0, x1, x, dt0, dt1):
     """
     Linearly interpolates two datetime objects (x==x0 at dt0; x==x1 at dt1
     to desired value (x).
@@ -93,7 +94,7 @@ def leap_seconds(dt):
             return(ii)
   
     print>>sys.stderr, "Stop trying to call this function for times before %s" % \
-                      ToCodeB( dt_leap[0] )
+                      ToCodeB(dt_leap[0])
   
     return(0)
   
