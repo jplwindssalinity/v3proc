@@ -4,8 +4,7 @@
 #==============================================================#
 __version__ = '$Id$'
 """
-Helper functions for converting from C++ time-tags to python
-to GPS time-tags.
+Helper functions for doing stuff with time-tags.
 """
 import pdb
 import sys
