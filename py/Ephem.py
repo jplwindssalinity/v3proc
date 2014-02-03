@@ -58,6 +58,9 @@ class Ephem(object):
         self.pos = None
         self.vel = None
 
+    def __getitem__(self, key):
+        return self.time[key], self.pos[key, :], self.vel[key, :]
+
     def ReadSim(self,filename):
         ephem_size = os.path.getsize(filename)
         n_ephem = ephem_size/(7.0*8.0)
