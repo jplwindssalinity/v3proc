@@ -77,8 +77,8 @@ def UpdateRevsDB(config_file):
         for rev_row in rev_rows:
             if not rev_row in rev_db:
                 rev_db.add(rev_row.rev, 
-                           util.time.date_time_from_sim(rev_row.fstart),
-                           util.time.date_time_from_sim(rev_row.fstop),
+                           util.time.datetime_from_sim(rev_row.fstart),
+                           util.time.datetime_from_sim(rev_row.fstop),
                            -1)
     return 1
 

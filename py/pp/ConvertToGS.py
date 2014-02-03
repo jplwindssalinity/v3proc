@@ -49,7 +49,7 @@ import rdf
 import numpy
 import subprocess
 import util.time
-import Tracking
+import Tracker
 import pm.database.revs
 from pm.utils.helper import find_files
 
@@ -145,7 +145,7 @@ def ConvertRangeDopplerToDIB(config_file):
             rng_dib_table = os.path.join(rng_dib_dir,"RGC_%5.5d.%d"%(rev_no,ib+1))
 
             if os.path.isfile(rng_in_table) and not os.path.isfile(rng_dib_table):
-                rng_track = Tracking.RangeTracker()
+                rng_track = Tracker.Range()
                 rng_track.ReadSimBinary(rng_in_table)
                 rng_track.CreateDIBData(ib,rev_no)
                 rng_track.WriteDIBBinary(rng_dib_table)
@@ -155,7 +155,7 @@ def ConvertRangeDopplerToDIB(config_file):
             dop_dib_table = os.path.join(dop_dib_dir,"DTC_%5.5d.%d"%(rev_no,ib+1))
 
             if os.path.isfile(dop_in_table) and not os.path.isfile(dop_dib_table):
-                dop_track = Tracking.DopplerTracker()
+                dop_track = Tracker.Doppler()
                 dop_track.ReadSimBinary(dop_in_table)
                 dop_track.CreateDIBData(ib,rev_no)
                 dop_track.WriteDIBBinary(dop_dib_table)
@@ -189,7 +189,7 @@ def ConvertRangeDopplerToGS(config_file):
             rng_gs_table = os.path.join(rng_gs_dir,"RGC_%5.5d.%d"%(rev_no,ib+1))
 
             if os.path.isfile(rng_in_table) and not os.path.isfile(rng_gs_table):
-                rng_track = Tracking.RangeTracker()
+                rng_track = Tracker.Range()
                 rng_track.ReadSimBinary(rng_in_table)
                 rng_track.CreateDIBData(ib,rev_no)
                 rng_track.WriteGSASCII(rng_gs_table)
@@ -199,7 +199,7 @@ def ConvertRangeDopplerToGS(config_file):
             dop_gs_table = os.path.join(dop_gs_dir,"DTC_%5.5d.%d"%(rev_no,ib+1))
 
             if os.path.isfile(dop_in_table) and not os.path.isfile(dop_gs_table):
-                dop_track = Tracking.DopplerTracker()
+                dop_track = Tracker.Doppler()
                 dop_track.ReadSimBinary(dop_in_table)
                 dop_track.CreateDIBData(ib,rev_no)
                 dop_track.WriteGSASCII(dop_gs_table)

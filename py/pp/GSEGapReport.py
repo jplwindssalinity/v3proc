@@ -151,8 +151,8 @@ def GSEGapReport( config_file ):
       ofp.write('%f,%f,%f,%s,%s,%s,%s\n' % ( delta_tt, \
                 util.time.gps_to_sim(unique_end_times[ii-1]),\
                 util.time.gps_to_sim(unique_start_times[ii]),\
-                util.time.ToCodeB(util.time.date_time_from_gps(unique_end_times[ii-1])), \
-                util.time.ToCodeB(util.time.date_time_from_gps(unique_start_times[ii])), \
+                util.time.ToCodeB(util.time.datetime_from_gps(unique_end_times[ii-1])), \
+                util.time.ToCodeB(util.time.datetime_from_gps(unique_start_times[ii])), \
                 os.path.basename(unique_files[ii-1]),\
                 os.path.basename(unique_files[ii]) ) )
   ofp.close()

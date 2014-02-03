@@ -74,7 +74,7 @@ def GapMetrics(config_file):
   days_since_gap = ()
   gap_ratio      = ()
   for ii in range(2,gap_t_start.size):
-    gap_start_time += (util.time.date_time_from_sim(gap_t_start[ii]),)
+    gap_start_time += (util.time.datetime_from_sim(gap_t_start[ii]),)
     days_since_gap += ((gap_t_start[ii]-gap_t_end[ii-1])/86400.0,)
     gap_ratio      += ((gap_size[ii])/(gap_t_start[ii]-gap_t_end[ii-1]),)
   
@@ -95,7 +95,7 @@ def GapMetrics(config_file):
 #   num_bins     = math.ceil((datetime.datetime.utcnow()-dt_ref).days / days_per_bin)
 #   
 #   for ii in range(num_bins):
-#     sim_tt_low  = util.time.sim_from_date_time(dt_ref)+ii*days_per_bin*86400.0)
+#     sim_tt_low  = util.time.sim_from_datetime(dt_ref)+ii*days_per_bin*86400.0)
 #     sim_tt_high = sim_tt_low + days_per_bin*86400.0
 #     
 #     mask = numpy.logical_and(gap_t_start>=sim_tt_low,gap_t_start<sim_tt_high)
@@ -104,7 +104,7 @@ def GapMetrics(config_file):
 #     
 #     
 # #   for ii in range(len(bin_start)):
-# #     mask = numpy.logical_and( gap_t_start>util.time.sim_from_date_time(gap_start_time[0])
+# #     mask = numpy.logical_and( gap_t_start>util.time.sim_from_datetime(gap_start_time[0])
 # #   
 #   
 #   pdb.set_trace()
