@@ -34,8 +34,7 @@
 #    Alex Fore
 #    alexander.fore@jpl.nasa.gov
 #----------------------------------------------------------------------
-rcs_id      = '$Id$'
-__version__ = '$Revision$'
+__version__ = '$Id$'
 
 QSCATSIM_PY_DIR='/home/fore/qscatsim/QScatSim/py'
 
@@ -51,7 +50,7 @@ import numpy
 import subprocess
 from pm.utils.helper import find_files
 
-def ExtractEphemByRev( config_file ):
+def ExtractEphemByRev(config_file):
   if not config_file or not os.path.isfile(config_file):
     print>>sys.stderr, 'Config file, %s, does not exist' % config_file
     return 0
@@ -78,7 +77,7 @@ def ExtractEphemByRev( config_file ):
     
     if not ( os.path.isfile(ephem_file) and os.path.isfile(quats_file) ):
       ierr = subprocess.call('RS_GSE_to_ephem_quat -i %s -e %s -q %s' % \
-                            ( gse_file, ephem_file, quats_file ), shell=True )
+                            (gse_file, ephem_file, quats_file ), shell=True)
       
       if not ierr==0:
         print>>sys.stderr, 'Error making ephem/quats files for %s' % gse_file
@@ -94,7 +93,7 @@ def ExtractEphemByRev( config_file ):
     
     if not ( os.path.isfile(ephem_file) and os.path.isfile(quats_file) ):
       ierr = subprocess.call('RS_GSE_to_ephem_quat -i %s -e %s -q %s' % \
-                            ( gse_file, ephem_file, quats_file ), shell=True )
+                            (gse_file, ephem_file, quats_file ), shell=True)
       
       if not ierr==0:
         print>>sys.stderr, 'Error making gap ephem/quats files for %s' % gse_file
@@ -110,7 +109,7 @@ if __name__=='__main__':
     print>>sys.stderr, usage_string
     sys.exit(1)
   
-  if ExtractEphemByRev(config_file)==0:
+  if ExtractEphemByRev(config_file) == 0:
     print>>sys.stderr, 'Error in ExtractEphemByRev'
     sys.exit(1)
   sys.exit(0)

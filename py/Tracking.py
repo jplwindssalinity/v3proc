@@ -15,7 +15,7 @@ import sys
 import pdb
 import struct
 import StringIO
-import time_funcs
+import util.time
 import datetime
 import numpy as np
 
@@ -70,7 +70,7 @@ class Tracker(object):
     basename_file = os.path.basename(filename)
     header_string = "%s RAPIDSCAT JPL %s" % ( 
                     basename_file, 
-                    time_funcs.ToCodeB(datetime.datetime.utcnow()))
+                    util.time.ToCodeB(datetime.datetime.utcnow()))
     
     if len(header_string) > 127:
       print sys.stderr,"Use a shorter filename -- You made the header too big yo!"

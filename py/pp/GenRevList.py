@@ -67,7 +67,7 @@ import numpy
 import pdb
 import os
 import subprocess
-import time_funcs
+import util.time
 
 def GenRevList(config_file):
   if not config_file or not os.path.isfile(config_file):
@@ -138,8 +138,8 @@ def GenRevList(config_file):
     long_node_ref = long_node
     
     ofp.write( '%5.5d,%f,%f,%s,%s,%f\n' % ( this_rev_no, this_tt_start, this_tt_end, 
-               time_funcs.ToCodeB(time_funcs.date_time_from_sim(this_tt_start)),
-               time_funcs.ToCodeB(time_funcs.date_time_from_sim(this_tt_end)),
+               util.time.ToCodeB(util.time.date_time_from_sim(this_tt_start)),
+               util.time.ToCodeB(util.time.date_time_from_sim(this_tt_end)),
                long_node))
   ofp.close()
   

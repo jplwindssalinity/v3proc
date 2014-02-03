@@ -34,8 +34,7 @@
 #    Alex Fore
 #    alexander.fore@jpl.nasa.gov
 #----------------------------------------------------------------------
-rcs_id      = '$Id$'
-__version__ = '$Revision$'
+__version__ = '$Id$'
 
 QSCATSIM_PY_DIR='/home/fore/qscatsim/QScatSim/py'
 

@@ -34,8 +34,7 @@
 #    Alex Fore
 #    alexander.fore@jpl.nasa.gov
 #----------------------------------------------------------------------
-rcs_id      = '$Id$'
-__version__ = '$Revision$'
+__version__ = '$Id$'
 
 QSCATSIM_PY_DIR='/home/fore/qscatsim/QScatSim/py'
 
@@ -51,7 +50,7 @@ import numpy
 import subprocess
 import GSE
 import rdf
-import time_funcs
+import util.time
 from pm.utils.helper import find_files
 
 def GSEGapReport( config_file ):
@@ -87,8 +86,8 @@ def GSEGapReport( config_file ):
     tt = numpy.unique( numpy.sort( tt ) )
     
     # Write out span of each GSE file to GSE_TIMES file
-    print>>gse_times_fp, '%s,%f,%f' % ( file, time_funcs.gps_to_sim(tt[0]), \
-                                        time_funcs.gps_to_sim(tt[tt.size-1]) )
+    print>>gse_times_fp, '%s,%f,%f' % ( file, util.time.gps_to_sim(tt[0]), \
+                                        util.time.gps_to_sim(tt[tt.size-1]) )
     
     diff_tt  = tt[1:]-tt[0:tt.size-1]
     idx      = numpy.argwhere( diff_tt>2 )
@@ -150,10 +149,10 @@ def GSEGapReport( config_file ):
     
     if delta_tt > gapthresh:
       ofp.write('%f,%f,%f,%s,%s,%s,%s\n' % ( delta_tt, \
-                time_funcs.gps_to_sim(unique_end_times[ii-1]),\
-                time_funcs.gps_to_sim(unique_start_times[ii]),\
-                time_funcs.ToCodeB(time_funcs.date_time_from_gps(unique_end_times[ii-1])), \
-                time_funcs.ToCodeB(time_funcs.date_time_from_gps(unique_start_times[ii])), \
+                util.time.gps_to_sim(unique_end_times[ii-1]),\
+                util.time.gps_to_sim(unique_start_times[ii]),\
+                util.time.ToCodeB(util.time.date_time_from_gps(unique_end_times[ii-1])), \
+                util.time.ToCodeB(util.time.date_time_from_gps(unique_start_times[ii])), \
                 os.path.basename(unique_files[ii-1]),\
                 os.path.basename(unique_files[ii]) ) )
   ofp.close()

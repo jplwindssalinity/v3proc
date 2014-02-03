@@ -36,69 +36,64 @@
 #    Alex Fore
 #    alexander.fore@jpl.nasa.gov
 #----------------------------------------------------------------------
-rcs_id      = '$Id$'
-__version__ = '$Revision$'
+__version__ = '$Id$'
 
-QSCATSIM_PY_DIR='/home/fore/qscatsim/QScatSim/py'
+QSCATSIM_PY_DIR = '/home/fore/qscatsim/QScatSim/py'
 
 import sys
 if not QSCATSIM_PY_DIR in sys.path:
-  sys.path.append(QSCATSIM_PY_DIR)
+    sys.path.append(QSCATSIM_PY_DIR)
 
-from optparse import OptionParser
 import os
-import rdf
-import pdb
-import subprocess
-import GenRevList
-import UpdateRevsDB
-import GSEGapReport
-import ExtractGSEByRev
-import ExtractEphemByRev
-import EphemQuatFillGaps
-import MakeRangeDopplerTables
-import ConvertToGS
+import pp.GenRevList
+import pp.UpdateRevsDB
+import pp.GSEGapReport
+import pp.ExtractGSEByRev
+import pp.ExtractEphemByRev
+import pp.EphemQuatFillGaps
+import pp.MakeRangeDopplerTables
+import pp.ConvertToGS
 
-def ProcessGSE( config_file ):
-  # Makes the revlist file
-  GenRevList.GenRevList(config_file)
-  
-  # Updates the revlist database to be in sync with revlist file
-  UpdateRevsDB.UpdateRevsDB(config_file)
-  
-  # Makes the Gap report file
-  GSEGapReport.GSEGapReport(config_file)
-  
-  # Extracts the GSE data into rev chunks
-  ExtractGSEByRev.ExtractGSEByRev(config_file)
-  
-  # Converts GSE data to sim ephem and quats files for each GSE rev file
-  ExtractEphemByRev.ExtractEphemByRev(config_file)
-  
-  # Fills gaps in the gap-ridden ephem files
-  EphemQuatFillGaps.EphemQuatFillGaps(config_file)
-  
-  # Makes the range and doppler talbes
-  MakeRangeDopplerTables.MakeRangeDopplerTables(config_file)
-  
-  # Convert Stuff to GS Format
-  ConvertToGS.ConvertToGS(config_file)
-  
-  # Done processing the GSE data!
-  return(1)
+def ProcessGSE(config_file):
+    # Makes the revlist file
+    pp.GenRevList.GenRevList(config_file)
+
+    # Updates the revlist database to be in sync with revlist file
+    pp.UpdateRevsDB.UpdateRevsDB(config_file)
+
+    # Makes the Gap report file
+    pp.GSEGapReport.GSEGapReport(config_file)
+
+    # Extracts the GSE data into rev chunks
+    pp.ExtractGSEByRev.ExtractGSEByRev(config_file)
+
+    # Converts GSE data to sim ephem and quats files for each GSE rev file
+    pp.ExtractEphemByRev.ExtractEphemByRev(config_file)
+
+    # Fills gaps in the gap-ridden ephem files
+    pp.EphemQuatFillGaps.EphemQuatFillGaps(config_file)
+
+    # Makes the range and doppler talbes
+    pp.MakeRangeDopplerTables.MakeRangeDopplerTables(config_file)
+
+    # Convert Stuff to GS Format
+    pp.ConvertToGS.ConvertToGS(config_file)
+
+    # Done processing the GSE data!
+    return 1
 
 def main():
-  usage_string = 'Usage: %s <config_file>' % sys.argv[0]
-  config_file = sys.argv[1]
-  
-  if not os.path.isfile(config_file):
-    print>>sys.stderr, usage_string
-    sys.exit(1)
-  
-  if ProcessGSE(config_file)==0:
-    print>>sys.stderr, 'Error in ProcessGSE'
-    sys.exit(1)
-  sys.exit(0)
+    usage_string = 'Usage: %s <config_file>' % sys.argv[0]
+    config_file = sys.argv[1]
+
+    if not os.path.isfile(config_file):
+        print>>sys.stderr, usage_string
+        sys.exit(1)
+
+    if ProcessGSE(config_file) == 0:
+        print>>sys.stderr, 'Error in ProcessGSE'
+        sys.exit(1)
+    sys.exit(0)
 
 if __name__ == '__main__':
     main()

@@ -34,8 +34,7 @@
 #    Alex Fore
 #    alexander.fore@jpl.nasa.gov
 #----------------------------------------------------------------------
-rcs_id      = '$Id$'
-__version__ = '$Revision$'
+__version__ = '$Id$'
 
 QSCATSIM_PY_DIR='/home/fore/qscatsim/QScatSim/py'
 
@@ -112,7 +111,7 @@ def main():
     print>>sys.stderr, usage_string
     sys.exit(1)
 
-  if EphemQuatFillGaps( config_file )==0:
+  if EphemQuatFillGaps(config_file) == 0:
     print>>sys.stderr, 'Error in EphemQuatFillGaps'
     sys.exit(1)
   sys.exit(0)
