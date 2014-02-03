@@ -56,6 +56,9 @@ class Tracker(object):
     self.bias_terms_eu   = None
     self.dib_data        = None
   
+  def __getitem__(self, key):
+    return self.amp_terms_eu[key], self.pha_terms_eu[key], self.bias_terms_eu[key]
+  
   def WriteGSASCII(self,filename):
     """
     Writes the GS style ASCII hex doppler / range tables
