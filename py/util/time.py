@@ -2,15 +2,18 @@
 # Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
-__version__ = '$Revision$'
-
+__version__ = '$Id$'
+"""
+Helper functions for converting from C++ time-tags to python
+to GPS time-tags.
+"""
 import pdb
 import sys
 import datetime
- 
-gps_epoch = datetime.datetime(1980,1,6)
-sim_epoch = datetime.datetime(1970,1,1)
-gs_epoch  = datetime.datetime(1993,1,1)
+
+gps_epoch = datetime.datetime(1980, 1, 6)
+sim_epoch = datetime.datetime(1970, 1, 1)
+gs_epoch  = datetime.datetime(1993, 1, 1)
 ONE_DAY = datetime.timedelta(1)
 DT_LEAP = [ONE_DAY+item for item in [datetime.datetime(1979,12,31),
                                      datetime.datetime(1981, 6,30),
@@ -30,41 +33,58 @@ DT_LEAP = [ONE_DAY+item for item in [datetime.datetime(1979,12,31),
                                      datetime.datetime(2008,12,31),
                                      datetime.datetime(2012, 6,30)]]
 
+def datetime_interp(x0,x1,x,dt0,dt1):
+    """
+    Linearly interpolates two datetime objects (x==x0 at dt0; x==x1 at dt1
+    to desired value (x).
+    """
+    if x1==x0:
+        weight=0.0
+    else:
+        weight = (x-x0)/(x1-x0)
+    time_off = datetime.timedelta(seconds=(dt1-dt0).total_seconds()*weight)
+    return(dt0+time_off)
 
 def tz_delta():
-    return(datetime.datetime.utcfromtimestamp(0) - 
+    return(datetime.datetime.utcfromtimestamp(0) -
            datetime.datetime.fromtimestamp(0))
 
-def date_time_from_gs( tt ):
-    return(gs_epoch+datetime.timedelta(0,tt))
+def datetime_from_gs(gs_tt):
+    """Converts a GS referenced time-tag to datetime object"""
+    return(gs_epoch+datetime.timedelta(0,gs_tt))
 
-def date_time_from_sim( tt ):
-    return(sim_epoch+datetime.timedelta(0,tt))
+def datetime_from_sim(sim_tt):
+    """Converts a sim time-tag to datetime object"""
+    return(sim_epoch+datetime.timedelta(0,sim_tt))
 
-def date_time_from_gps( tt ):
-    return(gps_epoch+datetime.timedelta(0,tt))
+def datetime_from_gps(gps_tt):
+    """Converts a GPS time-tag to a datetime object"""
+    return(gps_epoch+datetime.timedelta(0,gps_tt))
 
-def sim_from_date_time(dt):
+def sim_from_datetime(dt):
     delta = dt - sim_epoch
     return(delta.days*86400.0+delta.seconds+delta.microseconds/1000000.)
 
-def gps_to_sim( gps_tt ):
+def gps_to_sim(gps_tt):
     delta = gps_epoch - sim_epoch
     return(gps_tt+delta.days*86400.0+delta.seconds)
 
-def sim_to_gps( sim_tt ):
+def sim_to_gps(sim_tt):
     delta = sim_epoch - gps_epoch
     return(sim_tt+delta.days*86400.0+delta.seconds)
 
-def ToCodeB( dt ):
+def ToCodeB(dt):
     return(dt.strftime('%Y-%jT%H:%M:%S.%f')[:-3])
 
 def FromCodeB(code_b_string):
     return(datetime.datetime.strptime(code_b_string+'000','%Y-%jT%H:%M:%S.%f'))
 
-def leap_seconds( dt ):
-    """From: http://www.nist.gov/pml/div688/grp50/leapsecond.cfm"""
-    valid_through = datetime.datetime(2014,1,1)
+def leap_seconds(dt):
+    """
+    Figures the number of leap seconds at the UTC input datetime
+    From: http://www.nist.gov/pml/div688/grp50/leapsecond.cfm
+    """
+    valid_through = datetime.datetime(2014, 1, 1)
 
     if (dt-valid_through).days > 90:
         print "Check for updates: http://www.nist.gov/pml/div688/grp50/leapsecond.cfm"
