@@ -58,6 +58,10 @@ class Ephem(object):
         self.pos = None
         self.vel = None
 
+    def __iter__(self):
+        for ii in range(len(self.time)):
+            yield self.time[ii], self.pos[ii, :], self.vel[ii, :]
+
     def __getitem__(self, key):
         return self.time[key], self.pos[key, :], self.vel[key, :]
 

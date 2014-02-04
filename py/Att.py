@@ -34,6 +34,10 @@ class Att:
         self.pitch = None
         self.roll = None
 
+    def __iter__(self):
+        for ii in range(len(self.time)):
+            yield self.time[ii], self.yaw[ii], self.pitch[ii], self.roll[ii]
+
     def __getitem__(self, key):
         return self.time[key], self.yaw[key], self.pitch[key], self.roll[key]
 

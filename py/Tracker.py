@@ -56,6 +56,10 @@ class Tracker(object):
     self.bias_terms_eu   = None
     self.dib_data        = None
   
+  def __iter__(self):
+    for ii in range(len(self.amp_terms_eu)):
+        yield self.amp_terms_eu[ii], self.pha_terms_eu[ii], self.bias_terms_eu[ii]
+  
   def __getitem__(self, key):
     return self.amp_terms_eu[key], self.pha_terms_eu[key], self.bias_terms_eu[key]
   
