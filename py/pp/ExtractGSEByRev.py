@@ -49,6 +49,7 @@ import os
 import pdb
 import rdf
 import numpy
+import GSE
 import subprocess
 
 def ExtractGSEByRev( config_file ):
@@ -110,6 +111,7 @@ def ExtractGSEByRev( config_file ):
     tmpfile = subprocess.check_output('mktemp').rstrip('\n')
     list_fp = open(tmpfile,'w')
     for file in files[mask]:
+      gse = GSE.GSE(file)
       print>>list_fp, file
     list_fp.close()
     

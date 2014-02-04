@@ -78,12 +78,13 @@ def GSEGapReport( config_file ):
     if not os.path.isfile(file):
       continue
     
-    tt = GSE.read_packet_tt(file)
+    gse = GSE.GSE(file)
+    tt = gse.ReadPacketTimes()
     if tt==None:
       print>>sys.stderr, 'Error reading time-tags from %s' % file
       continue
     
-    tt = numpy.unique( numpy.sort( tt ) )
+    tt = numpy.unique(numpy.sort(tt))
     
     # Write out span of each GSE file to GSE_TIMES file
     print>>gse_times_fp, '%s,%f,%f' % ( file, util.time.gps_to_sim(tt[0]), \

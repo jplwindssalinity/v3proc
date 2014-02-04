@@ -49,6 +49,7 @@ import rdf
 import pdb
 import subprocess
 import Ephem
+import GSE
 import util.file
 
 def PreProcessGSE( config_file ):
@@ -75,12 +76,15 @@ def PreProcessGSE( config_file ):
     merged_file = os.path.join(gse_out_dir,os.path.basename(file))
     if not os.path.isfile(merged_file):
       # Run RS_GSE_merge on this file
+      gse = GSE.GSE(file)
+      
       tmpfile = subprocess.check_output('mktemp').rstrip('\n')
       f = open(tmpfile,'w')
-      f.write('%s\n' % file)
+      print>>f, file
       f.close()
       
-      ierr = subprocess.call('RS_GSE_merge -i %s -o %s' % (tmpfile,merged_file),shell=True)
+      ierr = subprocess.call('RS_GSE_merge -i %s -o %s' % 
+                            (tmpfile,merged_file),shell=True)
       subprocess.call('rm -f %s' % tmpfile,shell=True)
       
       if not ierr==0:
@@ -90,16 +94,18 @@ def PreProcessGSE( config_file ):
   for file in util.file.find(gse_out_dir,"RS_GSE*"):
     if not os.path.isfile(file):
       continue
+    
     revtag = os.path.basename(file).strip('RS_GSE_')
     
     ephem_file = os.path.join(ephem_dir, 'RS_EPHEM_' + revtag)
     quats_file = os.path.join(ephem_dir, 'RS_QUATS_' + revtag)
     
-    if not ( os.path.isfile(ephem_file) and os.path.isfile(quats_file) ):
+    if not (os.path.isfile(ephem_file) and os.path.isfile(quats_file)):
+      gse = GSE.GSE(file)
       ierr = subprocess.call('RS_GSE_to_ephem_quat -i %s -e %s -q %s' % \
-                            ( file, ephem_file, quats_file ), shell=True )
+                             (file, ephem_file, quats_file), shell=True)
       if not ierr==0:
-        print>>sys.stderr, 'Error making ephem/quats files' % file
+        print>>sys.stderr, 'Error making ephem/quats files %s' % file
   
   
   # Make all minz times and asc node longitudes
