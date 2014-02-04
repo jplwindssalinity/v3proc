@@ -31,10 +31,11 @@ def ReadPacketTimes(gse_packet):
 
 class GSE:
     """Class for GSE files"""
-  
     def __init__(self, filename):
         self.filename = filename
+        self.version = None
         self._DetectVersion()
+        assert self.version != None, "%s is not a GSE file" % self.filename
         self.n_packets = os.path.getsize(self.filename)/PACKET_SIZE[self.version]
 
     def _DetectVersion(self):
@@ -42,7 +43,6 @@ class GSE:
         header = ifp.read(HEADER_BYTES)
         ifp.close()
         packet_length = struct.unpack('>H', header[36:38:])[0]+HEADER_BYTES
-        
         for version in range(len(PACKET_SIZE)):
             if packet_length == PACKET_SIZE[version]:
                 self.version = version
