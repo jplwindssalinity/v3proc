@@ -26,7 +26,7 @@ def AttFromSimQuats(filename):
     att = Att()
     quats = Quats()
     quats.ReadSim(filename)
-    att.FromQuat(quats)
+    att.FromQuats(quats)
     return att
 
 class Att:
