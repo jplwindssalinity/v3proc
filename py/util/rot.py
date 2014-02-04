@@ -1,4 +1,6 @@
 """    
+Set of stuff for dealing with quat-matrix-attitude angle conversions.
+
 Default is to use the 2, 1, 3 order of rotations i.e.
 1st rotate about z, second about x, last about y, or
     
