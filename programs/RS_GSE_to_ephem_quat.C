@@ -80,7 +80,8 @@ template class List<QuatRec>;
 //-----------//
 // CONSTANTS //
 //-----------//
-#define PACKET_SIZE  526
+
+#define HEADER_BYTES 39
 #define NHEAD        9
 #define TT0_OFF      40
 #define TT1_OFF      53
@@ -127,11 +128,19 @@ main(
     int    argc,
     char*  argv[]) {
 
+  // Really want these to be declared const, but I dunno how??
+  // Valid GSE packet sizes (version 1 526 bytes; version 2 869 byte)
+  // Version 2 for data after 2014-Feb-3rd (140203)
+  std::vector<int> valid_packet_sizes;
+  valid_packet_sizes.push_back(526);
+  valid_packet_sizes.push_back(869);
+  
   const char* command        = no_path(argv[0]);
   char*       gse_file       = NULL; // GSE telemetry file
   char*       out_ephem_file = NULL;
   char*       out_quat_file  = NULL;
   
+  int version=0;
   int print_curr_leap_secs = 0;
   
   int optind = 1;
@@ -163,14 +172,7 @@ main(
   FILE* ifp    = fopen(gse_file,"r");
   
   fseek(ifp,0,SEEK_END);
-  long int gse_size  = ftell(ifp);
-  long int n_packets = gse_size / PACKET_SIZE;
-  
-  if( n_packets*PACKET_SIZE != gse_size ) {
-    fprintf(stderr,"%s: something is not right with GSE file: %s\n",command,gse_file);
-    fclose(ifp);
-    exit(1);
-  }
+  size_t gse_size  = ftell(ifp);
   
   FILE* ofp_e  = fopen(out_ephem_file,"w");
   FILE* ofp_q  = fopen(out_quat_file,"w");
@@ -183,8 +185,10 @@ main(
   etime.FromCodeB("1980-006T00:00:00.000");
   double gps_time_base = (double)etime.GetSec() + (double)etime.GetMs()/1000;
   
-  for( int i_packet = 0; i_packet < n_packets; ++i_packet ) {
-
+  
+  size_t packet_off = 0;
+  while(packet_off<gse_size) {
+    unsigned char gse_headers[HEADER_BYTES];
     int   tt0;
     unsigned char  tt1;
     float pos[3];
@@ -192,7 +196,21 @@ main(
     float quat[4];
     short gps2utc;
     
-    long int packet_off = i_packet * PACKET_SIZE;
+    // Figure out the size of this packet
+    fseek(ifp,packet_off,SEEK_SET);
+    fread(&gse_headers,sizeof(unsigned char),HEADER_BYTES,ifp);
+    short packet_length = (short)gse_headers[36]*256 + (short)gse_headers[37];
+    int valid_length = 0;
+    for(size_t ii=0; ii<valid_packet_sizes.size(); ++ii) {
+      if(packet_length==valid_packet_sizes[ii]-HEADER_BYTES) {
+        valid_length=1;
+      }
+    }
+    
+    if(valid_length==0){
+      packet_off++;
+      continue;
+    }
     
     fseek(ifp,packet_off+TT0_OFF+NHEAD-1,SEEK_SET);
     fread( &tt0, sizeof(int), 1, ifp ); 
@@ -248,14 +266,14 @@ main(
     double time = double(tt0) + double(tt1)/255.0;
     time       += double(gps2utc) + gps_time_base - sim_time_base;
     
-    if( print_curr_leap_secs && i_packet==0 ) {
+    if( print_curr_leap_secs && packet_off==0 ) {
       printf("Current number of GPS leap secs: %d\n",-gps2utc);
     }
     
     // Convert to meters, meters / second from feet, feet / second.
     for( int ii=0;ii<3;++ii) {
-      pos[ii] *= 0.3048;
-      vel[ii] *= 0.3048;
+      pos[ii] *= 0.3048006096012;
+      vel[ii] *= 0.3048006096012;
     }
     
     // EarthPosition objects use kilometers, kilometers / second units.
@@ -374,6 +392,9 @@ main(
     orbit_state.Write( ofp_e );
     quat_rec_geod.Write( ofp_q );
     //quat_rec_geoc.Write( ofp_qc );
+    
+    // set offset for next GSE packet
+    packet_off += packet_length+HEADER_BYTES;
   }
   fclose(ifp);
   fclose(ofp_e);

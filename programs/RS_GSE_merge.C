@@ -50,7 +50,6 @@ static const char rcs_id[] =
 #include "SwapEndian.h"
 #include "ETime.h"
 
-#define PACKET_SIZE  526
 #define HEADER_BYTES 39
 #define NHEAD        9
 #define TT0_OFF      40
@@ -64,6 +63,7 @@ struct GSE_TT_FILE_IDX {
   unsigned char tt1;
   double        gps_tt;
   size_t        off;
+  int           packet_size;
   std::string   filename;
 };
 
@@ -76,6 +76,13 @@ bool same( const GSE_TT_FILE_IDX &gse_tt_idx0, const GSE_TT_FILE_IDX &gse_tt_idx
 }
 
 int main( int argc, char* argv[] ) {
+  
+  // Really want these to be declared const, but I dunno how??
+  // Valid GSE packet sizes (version 1 526 bytes; version 2 869 byte)
+  // Version 2 for data after 2014-Feb-3rd (140203)
+  std::vector<int> valid_packet_sizes;
+  valid_packet_sizes.push_back(526);
+  valid_packet_sizes.push_back(869);
   
   const char* command  = argv[0];
   char*       outfile  = NULL;
@@ -102,7 +109,7 @@ int main( int argc, char* argv[] ) {
     }
     ++optind;
   }
-
+  
   // Only one of outfile and outdir may be commanded
   if( !listfile || ( !outfile == !outdir ) ) {
     fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
@@ -143,7 +150,7 @@ int main( int argc, char* argv[] ) {
     size_t this_off  = 0;
     
     // Scan through file
-    while( this_off+PACKET_SIZE <= file_size ) {
+    while( this_off+valid_packet_sizes[0] <= file_size ) {
       unsigned char gse_headers[HEADER_BYTES];
       
       fseek(ifp,this_off,SEEK_SET);
@@ -152,6 +159,13 @@ int main( int argc, char* argv[] ) {
       // Extract packet length header, should always be PACKET_SIZE-HEADER_BYTES
       // Table 8.6.3.1-1 in Document 50305D
       short packet_length = (short)gse_headers[36]*256 + (short)gse_headers[37];
+      
+      // Is this a valid packet size (compare to known sizes)
+      int valid_length = 0;
+      for(int ii=0; ii<valid_packet_sizes.size(); ++ii) {
+        if(packet_length==valid_packet_sizes[ii]-HEADER_BYTES)
+          valid_length=1;
+      }
       
       int tt0;
       fseek(ifp,this_off+TT0_OFF+NHEAD-1,SEEK_SET);
@@ -174,15 +188,15 @@ int main( int argc, char* argv[] ) {
       // Byte 0 indicates version of EHS protocol and project ID
       // Byte 3 indicates content of EHS protocol data (GSE==6).
       if( gse_headers[0]==35 && gse_headers[3]==6  && 
-          packet_length==PACKET_SIZE-HEADER_BYTES &&
-          gps_tt>0 && gps2utc < 0 ) {
+          valid_length==1 && gps_tt>0 && gps2utc < 0 ) {
         // Add to list of packets
         GSE_TT_FILE_IDX this_gse_tt_file_idx;
-        this_gse_tt_file_idx.tt0      = tt0;
-        this_gse_tt_file_idx.tt1      = tt1;
-        this_gse_tt_file_idx.gps_tt   = gps_tt;
-        this_gse_tt_file_idx.off      = this_off;
-        this_gse_tt_file_idx.filename = infiles[ifile];
+        this_gse_tt_file_idx.tt0         = tt0;
+        this_gse_tt_file_idx.tt1         = tt1;
+        this_gse_tt_file_idx.gps_tt      = gps_tt;
+        this_gse_tt_file_idx.off         = this_off;
+        this_gse_tt_file_idx.packet_size = packet_length+HEADER_BYTES;
+        this_gse_tt_file_idx.filename    = infiles[ifile];
         
         // check if this packet is within the time bounds
         double t_packet = (double)(gps_tt+gps2utc) + gps_time_base - sim_time_base;
@@ -191,7 +205,7 @@ int main( int argc, char* argv[] ) {
           gse_tt_idx_list.push_back( this_gse_tt_file_idx );
         
         total_gse_packets += 1;
-        this_off          += PACKET_SIZE;
+        this_off          += this_gse_tt_file_idx.packet_size;
       } else {
         // shift one byte and try again.
         this_off++;
@@ -263,11 +277,11 @@ int main( int argc, char* argv[] ) {
   // Write out unique GSE packets in all files
   FILE* ofp = fopen(outfile,"w");
   for( it=gse_tt_idx_list.begin(); it != gse_tt_idx_list.end(); ++it) {
-    char gse_packet[PACKET_SIZE];
+    char gse_packet[it->packet_size];
     ifp = fopen(it->filename.c_str(),"r");
     fseek(ifp,it->off,SEEK_SET);
-    fread(&gse_packet,sizeof(char),PACKET_SIZE,ifp);
-    fwrite(&gse_packet,sizeof(char),PACKET_SIZE,ofp);
+    fread(&gse_packet,sizeof(char),it->packet_size,ifp);
+    fwrite(&gse_packet,sizeof(char),it->packet_size,ofp);
     fclose(ifp);
   }
   fclose(ofp);
