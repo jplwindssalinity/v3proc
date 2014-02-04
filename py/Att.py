@@ -2,12 +2,20 @@
 # Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
+"""
+Contains Att and Quat attitude classes for doing stuff with
+quaternions and attitude records / files.
+"""
 __version__ = '$Id$'
 
 import os
 import sys
 import util.time
+import util.rot
 import numpy as np
+
+RAD_TO_DEG = 180.0/np.pi
+DEG_TO_RAD = np.pi/180.0
 
 def SimQuats(filename):
     quats = Quats()
@@ -40,45 +48,21 @@ class Att:
 
     def __getitem__(self, key):
         return self.time[key], self.yaw[key], self.pitch[key], self.roll[key]
-
-    def FromQuat(self,quat):
-        """Note this makes an assumption about order of rotations!"""
+    
+    def FromQuats(self,quats):
         import copy
-        self.time = copy.copy(quat.time)
-
-        w = quat.quats[:,0]
-        x = quat.quats[:,1]
-        y = quat.quats[:,2]
-        z = quat.quats[:,3]
-
-        x11 = 1.0 - 2.0 * ( y*y + z*z )
-        x12 =       2.0 * ( x*y - w*z )
-        x13 =       2.0 * ( x*z + w*y )
-
-        x21 =       2.0 * ( x*y + w*z )
-        x22 = 1.0 - 2.0 * ( x*x + z*z )
-        x23 =       2.0 * ( y*z - w*x )
-
-        x31 =       2.0 * ( x*z - w*y )
-        x32 =       2.0 * ( y*z + w*x )
-        x33 = 1.0 - 2.0 * ( x*x + y*y )
-
-        cos_roll = np.sqrt( x21*x21 + x22*x22 )
-        sin_roll = -x23
-
-        self.roll  = np.arctan2(sin_roll, cos_roll) * 180.0 / np.pi;
-        self.yaw   = np.zeros(self.roll.shape)
-        self.pitch = np.zeros(self.roll.shape)
-
-        mask = np.logical_or(cos_roll==0, np.abs(sin_roll)==1)
-
-        idx = np.argwhere( mask )
-        self.yaw[idx]   = 0.0
-        self.pitch[idx] = np.arctan2(x12[idx]/sin_roll[idx], x11[idx])*180.0/np.pi
-
-        idx = np.argwhere(~mask)
-        self.yaw[idx]   = np.arctan2(x21[idx], x22[idx]) * 180.0/np.pi
-        self.pitch[idx] = np.arctan2(x13[idx], x33[idx]) * 180.0/np.pi
+        self.time = copy.copy(quats.time)
+        self.roll = np.zeros(self.time.shape)
+        self.yaw = np.zeros(self.time.shape)
+        self.pitch = np.zeros(self.time.shape)
+        
+        for ii in range(len(self.time)):
+            quat_time, quat = quats[ii]
+            self.pitch[ii], self.roll[ii], self.yaw[ii] = util.rot.q2att(quat)
+        
+        self.pitch *= RAD_TO_DEG
+        self.roll *= RAD_TO_DEG
+        self.yaw *= RAD_TO_DEG
 
 class Quats:
     """
@@ -91,10 +75,14 @@ class Quats:
         self.time = None
         self.quats = None
     
+    def __iter__(self):
+        for ii in range(len(self.time)):
+            yield self.time[ii], self.quats[ii,:]
+    
     def __getitem__(self, key):
         return self.time[key], self.quats[key,:]
     
-    def ReadSim(self,filename):
+    def ReadSim(self, filename):
         quat_size = os.path.getsize(filename)
         n_quats = quat_size/(5.0*8.0)
         n_quats = int(n_quats)
@@ -102,3 +90,19 @@ class Quats:
         self.time = np.asarray(
             [util.time.datetime_from_sim(item) for item in tmp[:,0]])
         self.quats = tmp[:,(1,2,3,4)]
+    
+    def WriteSim(self, filename):
+        data = np.zeros([len(self.time),5])
+        data[:, 0] = [util.time.sim_from_datetime(item) for item in self.time]
+        data[:, 1:] = self.quats
+        data.astype('<f8').tofile(filename)
+    
+    def FromAtt(self, att):
+        import copy
+        self.time = copy.copy(att.time)
+        self.quats = np.zeros([len(att.time),4])
+        
+        for ii in range(len(self.time)):
+            att_time, yaw, pitch, roll = att[ii]
+            angles = (pitch*DEG_TO_RAD, roll*DEG_TO_RAD, yaw*DEG_TO_RAD)
+            self.quats[ii,:] = util.rot.att2q(angles)
