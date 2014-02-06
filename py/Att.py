@@ -10,8 +10,10 @@ __version__ = '$Id$'
 
 import os
 import sys
+import datetime
 import util.time
 import util.rot
+import util.ang
 import numpy as np
 
 RAD_TO_DEG = 180.0/np.pi
@@ -49,7 +51,7 @@ class Att:
     def __getitem__(self, key):
         return self.time[key], self.yaw[key], self.pitch[key], self.roll[key]
     
-    def FromQuats(self,quats):
+    def FromQuats(self, quats):
         import copy
         self.time = copy.copy(quats.time)
         self.roll = np.zeros(self.time.shape)
@@ -63,6 +65,55 @@ class Att:
         self.pitch *= RAD_TO_DEG
         self.roll *= RAD_TO_DEG
         self.yaw *= RAD_TO_DEG
+    
+    def ReadADCO(self, filename):
+        """Absurd file format that does not include the year."""
+        
+        print "Get better ADCO data!"
+        
+        time_string = np.genfromtxt(filename, dtype=None, skip_header=1, 
+                                    delimiter=',', usecols=(0,))
+        
+        angles = np.genfromtxt(filename, skip_header=1, delimiter=',', 
+                               usecols=(1,2,3))
+        
+        # Do some stuff to make the ADCO data more useable (assume constant
+        # attitude until next record, instead of default interpolation between.
+        adco_dt = [datetime.datetime.strptime('2013:'+item,'%Y:%j/%H:%M') 
+                   for item in time_string]  
+        adco_yaw = np.asarray(map(util.ang.wrap, angles[:,0]))
+        adco_pitch = np.asarray(map(util.ang.wrap, angles[:,1]))
+        adco_roll = np.asarray(map(util.ang.wrap, angles[:,2]))
+        
+        times = []
+        yaws = []
+        pitches = []
+        rolls = []
+        
+        for ii in range(len(adco_dt)):
+            this_time = adco_dt[ii]
+            try:
+                next_time = adco_dt[ii+1]+datetime.timedelta(seconds=-1)
+            except IndexError:
+                next_time = adco_dt[ii]+datetime.timedelta(days=7)
+            
+            # put two records for every rec, so interpolators will return
+            # contant values between the two times (requires linear interp
+            # being used, we use slerp for quat interpolation in C++ code)
+            times.append(this_time)
+            yaws.append(adco_yaw[ii])
+            pitches.append(adco_pitch[ii])
+            rolls.append(adco_roll[ii])
+            
+            times.append(next_time)
+            yaws.append(adco_yaw[ii])
+            pitches.append(adco_pitch[ii])
+            rolls.append(adco_roll[ii])
+            
+        self.time = np.asarray(times)
+        self.yaw = np.asarray(yaws)
+        self.pitch = np.asarray(pitches)
+        self.roll = np.asarray(rolls)
 
 class Quats:
     """
