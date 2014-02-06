@@ -233,14 +233,14 @@ def Merge(trackers, orbsteps):
         raise TypeError
     
     # Determine dynamic range that we need to cover
-    amp_lims = [min([min(item.amp_terms_eu) for item in trackers]),
-                max([max(item.amp_terms_eu) for item in trackers])]
+    amp_lims = (min([min(item.amp_terms_eu) for item in trackers]),
+                max([max(item.amp_terms_eu) for item in trackers]))
     
-    pha_lims = [min([min(item.pha_terms_eu) for item in trackers]),
-                max([max(item.pha_terms_eu) for item in trackers])]
+    pha_lims = (min([min(item.pha_terms_eu) for item in trackers]),
+                max([max(item.pha_terms_eu) for item in trackers]))
     
-    bias_lims = [min([min(item.bias_terms_eu) for item in trackers]),
-                 max([max(item.bias_terms_eu) for item in trackers])]
+    bias_lims = (min([min(item.bias_terms_eu) for item in trackers]),
+                 max([max(item.bias_terms_eu) for item in trackers]))
     
     if merged_tracker.dtype == np.dtype('u1'):
         max_dn = 255
