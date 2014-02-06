@@ -20,15 +20,6 @@ TT0_OFF = 40
 TT1_OFF = 53
 GPS2UTC_OFF = 444
 
-def ReadPacketTimes(gse_packet):
-    tt0_pos = TT0_OFF+NHEAD-1
-    tt1_pos = TT1_OFF+NHEAD-1
-    gpc2utc_pos = GPS2UTC_OFF+NHEAD-1
-    tt0 = struct.unpack(">i", gse_packet[tt0_pos:tt0_pos+4])[0]
-    tt1 = struct.unpack(">B", gse_packet[tt1_pos])[0]
-    gps2utc = struct.unpack(">h", gse_packet[gpc2utc_pos:gpc2utc_pos+2])[0]
-    return 1.0*tt0+tt1/255.0+gps2utc*1.0
-
 class GSE:
     """Class for GSE files"""
     def __init__(self, filename):
