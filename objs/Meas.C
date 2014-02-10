@@ -77,7 +77,9 @@ int Meas::CompositeObsKP(MeasList* meas_list) {
     //
 
     Meas* meas;
-    Meas* meas_start;
+
+    // BUG fix BWS Feb 10 2014 before this meas_start was uninitialized
+    Meas* meas_start=meas_list->GetHead();
 
     int min_slice_idx = meas_start->startSliceIdx;
     landFlag = 0;
