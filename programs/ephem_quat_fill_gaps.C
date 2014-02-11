@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 2013, California Institute of Technology.      //
+// Copyright (C) 2014, California Institute of Technology.      //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 //----------------------------------------------------------------------
@@ -178,10 +178,12 @@ int main( int argc, char* argv[] ) {
   double amp_yyy[end_term], pha_yyy[end_term];
   double amp_zzz[end_term], pha_zzz[end_term];
   
-  specfit( &azi[0], &qw[0], &fitvar[0], (int)azi.size(), start_term, end_term, &amp_www[0], &pha_www[0] );
-  specfit( &azi[0], &qx[0], &fitvar[0], (int)azi.size(), start_term, end_term, &amp_xxx[0], &pha_xxx[0] );
-  specfit( &azi[0], &qy[0], &fitvar[0], (int)azi.size(), start_term, end_term, &amp_yyy[0], &pha_yyy[0] );
-  specfit( &azi[0], &qz[0], &fitvar[0], (int)azi.size(), start_term, end_term, &amp_zzz[0], &pha_zzz[0] );
+  int fit_size = (int)azi.size();
+  
+  specfit(&azi[0], &qw[0], &fitvar[0], fit_size, start_term, end_term, &amp_www[0], &pha_www[0]);
+  specfit(&azi[0], &qx[0], &fitvar[0], fit_size, start_term, end_term, &amp_xxx[0], &pha_xxx[0]);
+  specfit(&azi[0], &qy[0], &fitvar[0], fit_size, start_term, end_term, &amp_yyy[0], &pha_yyy[0]);
+  specfit(&azi[0], &qz[0], &fitvar[0], fit_size, start_term, end_term, &amp_zzz[0], &pha_zzz[0]);
   
   
   // Determine where gaps are
@@ -270,14 +272,24 @@ int main( int argc, char* argv[] ) {
     if( is_gap[ii]==0 )
       continue;
     
-    // Search backward for most recent ephem point
-    int idx_backward = ii;
-    while( idx_backward>=0 && is_gap[idx_backward] ) --idx_backward;
+    // Search for ephem records that bracket time_out[ii] in 
+    // gappy ephem file (i.e. input ephem file)
+    int idx_backward = 0;
+    for( int i_ephem=0; i_ephem<n_ephem; ++i_ephem) {
+      if( time[i_ephem] <= time_out[ii] ) {
+        idx_backward = i_ephem;
+      }
+    }
     
-    // Search forward for next ephem point
-    int idx_forward = ii;
-    while( idx_forward<n_ephem_out && is_gap[idx_forward] ) ++idx_forward;
+    int idx_forward = n_ephem-1;
+    for( int i_ephem=n_ephem-1; i_ephem>=0; --i_ephem) {
+      if( time[i_ephem] > time_out[ii] ) {
+        idx_forward = i_ephem;
+      }
+    }
     
+    // Compute orbit elements from each bracketing ephem record,
+    // use orbit propagator to progagate both to time_out[ii].
     double nodal_period;
     double arg_lat;
     double long_asc_node;
@@ -290,52 +302,37 @@ int main( int argc, char* argv[] ) {
     // helper vars to reduce code duplication
     // index 0 is backward, index 1 is forward
     int    idx_ref[2]  = { idx_backward, idx_forward };
-    double time_ref[2] = { time_out[idx_backward], time_out[idx_forward] };
+    double time_ref[2] = { time[idx_backward], time[idx_forward] };
     
     double posx_ref[2], posy_ref[2], posz_ref[2];
     double velx_ref[2], vely_ref[2], velz_ref[2];
     
     for( int i_ref = 0; i_ref < 2; ++i_ref ) {
-      if( is_gap[idx_ref[i_ref]]==0) {
-        compute_orbit_elements( posx_out[idx_ref[i_ref]], posy_out[idx_ref[i_ref]], 
-                                posz_out[idx_ref[i_ref]], velx_out[idx_ref[i_ref]], 
-                                vely_out[idx_ref[i_ref]], velz_out[idx_ref[i_ref]], 
-                                &nodal_period, &arg_lat, &long_asc_node, &orb_inclination,
-                                &orb_smaj_axis, &orb_eccen, &arg_of_per, &mean_anom );
+      compute_orbit_elements( posx[idx_ref[i_ref]], posy[idx_ref[i_ref]],
+                  posz[idx_ref[i_ref]], velx[idx_ref[i_ref]], 
+                  vely[idx_ref[i_ref]], velz[idx_ref[i_ref]], 
+                  &nodal_period, &arg_lat, &long_asc_node, &orb_inclination,
+                  &orb_smaj_axis, &orb_eccen, &arg_of_per, &mean_anom );
         
-        spacecraft_sim.DefineOrbit( time_ref[i_ref], orb_smaj_axis*1e-3, 
-                                    orb_eccen, orb_inclination,
-                                    long_asc_node, arg_of_per,
-                                    mean_anom );
+      spacecraft_sim.DefineOrbit( time_ref[i_ref], orb_smaj_axis*1e-3, 
+                  orb_eccen, orb_inclination,
+                  long_asc_node, arg_of_per,
+                  mean_anom );
         
-        spacecraft_sim.UpdateOrbit( time_out[ii], &spacecraft );
-        posx_ref[i_ref] = spacecraft.orbitState.rsat.GetX()*1e3;
-        posy_ref[i_ref] = spacecraft.orbitState.rsat.GetY()*1e3;
-        posz_ref[i_ref] = spacecraft.orbitState.rsat.GetZ()*1e3;
-        
-        velx_ref[i_ref] = spacecraft.orbitState.vsat.GetX()*1e3;
-        vely_ref[i_ref] = spacecraft.orbitState.vsat.GetY()*1e3;
-        velz_ref[i_ref] = spacecraft.orbitState.vsat.GetZ()*1e3;
-      }
+      spacecraft_sim.UpdateOrbit( time_out[ii], &spacecraft );
+      posx_ref[i_ref] = spacecraft.orbitState.rsat.GetX()*1e3;
+      posy_ref[i_ref] = spacecraft.orbitState.rsat.GetY()*1e3;
+      posz_ref[i_ref] = spacecraft.orbitState.rsat.GetZ()*1e3;
+      
+      velx_ref[i_ref] = spacecraft.orbitState.vsat.GetX()*1e3;
+      vely_ref[i_ref] = spacecraft.orbitState.vsat.GetY()*1e3;
+      velz_ref[i_ref] = spacecraft.orbitState.vsat.GetZ()*1e3;
     }
-    
-    double forward_weight = (time_out[ii]-time_out[idx_backward]) / 
-                            (time_out[idx_forward]-time_out[idx_backward]);
+    // Finally, linearly mix the two ephem predictions as time_out[ii]
+    double forward_weight = (time_out[ii]-time[idx_backward]) / 
+                            (time[idx_forward]-time[idx_backward]);
     
     double backward_weight = 1 - forward_weight;
-    
-    if( is_gap[idx_forward] ) {
-      forward_weight  = 0;
-      backward_weight = 1;
-    } 
-    if( is_gap[idx_backward] ) {
-      forward_weight  = 1;
-      backward_weight = 0;
-    }
-    if( is_gap[idx_forward] && is_gap[idx_backward] ) {
-      fprintf(stderr,"%s: Giving up!\n",command);
-      exit(1);
-    }
     
     posx_out[ii] = backward_weight*posx_ref[0] + forward_weight*posx_ref[1];
     posy_out[ii] = backward_weight*posy_ref[0] + forward_weight*posy_ref[1];
