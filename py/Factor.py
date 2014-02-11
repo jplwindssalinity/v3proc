@@ -37,7 +37,6 @@ class X(Factor):
     def __init__(self, filename=None):
         super(X, self).__init__()
         self.NumSciSlices = 10
-        self.NumGuardSlicesPerSide = 1
         self.NumTerms = 6
 
         # Set shape tuples for all arrays in file.
