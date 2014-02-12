@@ -22,7 +22,7 @@ DOPPLER_OPCODES = (22002,22003)
 
 class Tracker(object):
     """Base class for Range and Doppler tracking classes."""
-    def __init__(self,dtype):
+    def __init__(self, dtype, filename=None):
         self.dtype           = dtype
         self.amp_scale_mag   = None
         self.amp_scale_bias  = None
@@ -37,6 +37,10 @@ class Tracker(object):
         self.pha_terms_eu    = None
         self.bias_terms_eu   = None
         self.dib_data        = None
+
+        if filename != None:
+            self.ReadSimBinary(filename)
+
     
     def __iter__(self):
         for ii in range(len(self.amp_terms_eu)):
@@ -45,17 +49,15 @@ class Tracker(object):
     def __getitem__(self, key):
         return self.amp_terms_eu[key], self.pha_terms_eu[key], self.bias_terms_eu[key]
   
-    def WriteGSASCII(self,filename):
+    def WriteGSASCII(self, file_obj, name_tag=''):
         """Writes the GS style ASCII hex doppler / range tables."""
         if self.dib_data==None:
             print sys.stderr,"Call CreateDibData first"
             return
         
         # create header line consisting of 127 chars and a newline char
-        basename_file = os.path.basename(filename)
         header_string = "%s RAPIDSCAT JPL %s" % ( 
-            basename_file, 
-            util.time.ToCodeB(datetime.datetime.utcnow()))
+            name_tag, util.time.ToCodeB(datetime.datetime.utcnow()))
         
         if len(header_string) > 127:
             print sys.stderr,"Use a shorter filename -- You made the header too big yo!"
@@ -63,17 +65,15 @@ class Tracker(object):
         
         header_string = "%-127.127s\n" % header_string
         
-        f = open(filename,"w")
-        f.write(header_string)
+        file_obj.write(header_string)
         for ii in range(len(self.dib_data)):
-            f.write("%4.4X" % self.dib_data[ii])
+            file_obj.write("%4.4X" % self.dib_data[ii])
             if (ii+1) % 16==0:
-                f.write("\n")
+                file_obj.write("\n")
             else:
-                f.write(" ")
+                file_obj.write(" ")
         # print 59 spaces and a newline to fill out last line of file
-        f.write("                                                           \n")
-        f.close()
+        file_obj.write("                                                           \n")
     
     def WriteDIBBinary(self,filename):
         """
@@ -205,13 +205,13 @@ class Tracker(object):
 
 class Range(Tracker):
     """Range is a Tracker class with the byte option."""
-    def __init__(self):
-        super(Range,self).__init__(np.dtype('>u1'))
+    def __init__(self, filename=None):
+        super(Range,self).__init__(np.dtype('>u1'), filename)
 
 class Doppler(Tracker):
     """Doppler is a Tracker class with the unsigned short option."""
-    def __init__(self):
-        super(Doppler,self).__init__(np.dtype('>u2'))
+    def __init__(self, filename=None):
+        super(Doppler,self).__init__(np.dtype('>u2'), filename)
 
 # This coult be a classmethod, not sure that it matters??
 def Merge(trackers, orbsteps):
@@ -273,18 +273,24 @@ def Merge(trackers, orbsteps):
             if delta >= 0 and delta < min_delta:
                 use_tracker = tracker
                 min_delta = delta
-        
-        merged_tracker.amp_terms[iterm] = (
-            (use_tracker.amp_terms_eu[iterm]-merged_tracker.amp_scale_bias)
-            / merged_tracker.amp_scale_mag )
-        
-        merged_tracker.pha_terms[iterm] = (
-            (use_tracker.pha_terms_eu[iterm]-merged_tracker.pha_scale_bias)
-            / merged_tracker.pha_scale_mag )
-        
-        merged_tracker.bias_terms[iterm] = (
-            (use_tracker.bias_terms_eu[iterm]-merged_tracker.bias_scale_bias)
-            / merged_tracker.bias_scale_mag )
+
+        # If magnitude == 0 there is no dynamic range and leave them set to 
+        # zeros.
+        if merged_tracker.amp_scale_mag != 0:
+            merged_tracker.amp_terms[iterm] = (
+                (use_tracker.amp_terms_eu[iterm]-merged_tracker.amp_scale_bias)
+                / merged_tracker.amp_scale_mag )
+
+        if merged_tracker.pha_scale_mag != 0:
+            merged_tracker.pha_terms[iterm] = (
+                (use_tracker.pha_terms_eu[iterm]-merged_tracker.pha_scale_bias)
+                / merged_tracker.pha_scale_mag )
+
+        if merged_tracker.bias_scale_mag != 0:
+            merged_tracker.bias_terms[iterm] = (
+                (use_tracker.bias_terms_eu[iterm]-merged_tracker.bias_scale_bias)
+                / merged_tracker.bias_scale_mag )
+    
     merged_tracker.ComputeTermsEu()
     return merged_tracker
 
