@@ -59,9 +59,17 @@ class X(Factor):
             np.prod(self.slice_shift_shape) + np.prod(self.x_nominal_shape) +
             np.prod(self.x_coeff_shape) + np.prod(self.g_factor_shape) )
 
+        # If filename commanded read from file, otherwise allocate arrays to
+        # zeros.
         if filename != None:
             self._set_endian(filename)
             self.Read(filename)
+        else:
+            self.slice_shift_threshold = np.zeros(
+                self.slice_shift_shape).astype(self.dtype)
+            self.x_nominal = np.zeros(self.x_nominal_shape).astype(self.dtype)
+            self.x_coeff = np.zeros(self.x_coeff_shape).astype(self.dtype)
+            self.g_factor = np.zeros(self.g_factor_shape).astype(self.dtype)
 
     def Read(self, filename):
         ifp = open(filename, 'r')
@@ -71,15 +79,15 @@ class X(Factor):
             ifp, dtype=self.dtype, count=np.prod(self.slice_shift_shape),
             sep='').reshape(self.slice_shift_shape)
 
-        self.x_nominal=np.fromfile(
+        self.x_nominal = np.fromfile(
             ifp, dtype=self.dtype, count=np.prod(self.x_nominal_shape),
             sep='').reshape(self.x_nominal_shape)
 
-        self.x_coeff=np.fromfile(
+        self.x_coeff = np.fromfile(
             ifp, dtype=self.dtype, count=np.prod(self.x_coeff_shape),
             sep='').reshape(self.x_coeff_shape)
 
-        self.g_factor=np.fromfile(
+        self.g_factor = np.fromfile(
             ifp, dtype=self.dtype, count=np.prod(self.g_factor_shape),
             sep='').reshape(self.g_factor_shape)
         ifp.close()
@@ -94,6 +102,26 @@ class X(Factor):
         ofp.write(struct.pack('@i', self._expected_size))
         ofp.close()
 
+    def PopulateFromXPert(self, filename, mode, beam):
+        assert mode < self.NumModes
+        assert beam < self.NumBeams
+        data = np.loadtxt(filename)
+        iorb = np.round(data[:,0]/data[:,0].max()*(self.NumOrbBins-1)).astype('i')
+        iazi = np.round(data[:,1]/data[:,1].max()*(self.NumAziBins-1)).astype('i')
+        imode = mode * np.ones(iorb.shape).astype('i')
+        ibeam = beam * np.ones(iorb.shape).astype('i')
+        
+        x_nom_cols = range(12,112,10) + [122]
+        g_fact_cols = range(13,113,10)
+        
+        self.x_nominal[imode,iorb,iazi,ibeam,:] = data[:,x_nom_cols]
+        self.g_factor[imode,iorb,iazi,ibeam,:] = data[:,g_fact_cols]
+        
+        for term in range(self.NumTerms):
+            iterm = term*np.ones(iorb.shape).astype('i')
+            term_cols = range(14+term,114+term,10) + [124+term]
+            self.x_coeff[imode,iorb,iazi,ibeam,:,iterm] = data[:,term_cols]
+
     @classmethod
     def Merge(cls, factors, orbsteps):
         """
@@ -101,24 +129,16 @@ class X(Factor):
 
         factors: list of factor objects to merge
         orbsteps: list of fractional orbit times to start using each factor.
+        
+        Note one of the items in orbsteps must equal zero or it don't work.
         """
-
         merged_factor = factors[0].__class__()
-        if not all([isinstance(item,merged_factor.__class__) 
+        if not all([isinstance(item,merged_factor.__class__)
                     for item in factors]):
             raise TypeError
 
         merged_factor.slice_shift_threshold = \
             factors[0].slice_shift_threshold.copy()
-
-        merged_factor.x_nominal = np.zeros(
-            merged_factor.x_nominal_shape).astype(merged_factor.dtype)
-
-        merged_factor.x_coeff = np.zeros(
-            merged_factor.x_coeff_shape).astype(merged_factor.dtype)
-
-        merged_factor.g_factor = np.zeros(
-            merged_factor.g_factor_shape).astype(merged_factor.dtype)
 
         for iorb in range(merged_factor.NumOrbBins):
             this_orbstep = iorb/(merged_factor.NumOrbBins*1.0)
@@ -138,18 +158,23 @@ class S(Factor):
     """Class for the SFactor files."""
     def __init__(self, filename=None):
         super(S,self).__init__()
-        self.shape = (self.NumModes, self.NumOrbBins, self.NumAziBins, 
+        self.shape = (self.NumModes, self.NumOrbBins, self.NumAziBins,
                       self.NumBeams)
         self._expected_size = np.prod(self.shape)*self.dtype.itemsize
+        
+        # If filename commanded read from file, otherwise allocate arrays to
+        # zeros.
         if filename != None:
             self._set_endian(filename)
             self.Read(filename)
+        else:
+            self.table = np.zeros(self.shape).astype(self.dtype)
 
     def Read(self, filename):
         ifp = open(filename,'r')
         hdr = ifp.read(4)
         self.table = np.fromfile(
-            ifp, dtype=self.dtype, count=np.prod(self.shape), 
+            ifp, dtype=self.dtype, count=np.prod(self.shape),
             sep='').reshape(self.shape)
         ifp.close()
 
@@ -160,6 +185,16 @@ class S(Factor):
         ofp.write(struct.pack('@i', self._expected_size))
         ofp.close()
 
+    def PopulateFromXPert(self, filename, mode, beam):
+        assert mode < self.NumModes
+        assert beam < self.NumBeams
+        data = np.loadtxt(filename)
+        iorb = np.round(data[:,0]/data[:,0].max()*(self.NumOrbBins-1)).astype('i')
+        iazi = np.round(data[:,1]/data[:,1].max()*(self.NumAziBins-1)).astype('i')
+        imode = mode * np.ones(iorb.shape).astype('i')
+        ibeam = beam * np.ones(iorb.shape).astype('i')
+        self.table[imode,iorb,iazi,ibeam] = data[:,-1]
+
     @classmethod
     def Merge(cls, factors, orbsteps):
         """
@@ -167,14 +202,13 @@ class S(Factor):
         
         factors: list of factor objects to merge
         orbsteps: list of fractional orbit times to start using each factor.
+        
+        Note one of the items in orbsteps must equal zero or it don't work.
         """
         merged_factor = factors[0].__class__()
         if not all([isinstance(item,merged_factor.__class__) 
                     for item in factors]):
             raise TypeError
-
-        merged_factor.table = np.zeros(
-            merged_factor.shape).astype(merged_factor.dtype)
 
         for iorb in range(merged_factor.NumOrbBins):
             this_orbstep = iorb/(merged_factor.NumOrbBins*1.0)
@@ -187,3 +221,4 @@ class S(Factor):
 
             merged_factor.table[:,iorb,:,:] = factor.table[:,iorb,:,:]
         return merged_factor
+
