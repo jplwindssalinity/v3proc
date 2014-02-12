@@ -225,6 +225,8 @@ def Merge(trackers, orbsteps):
     assert len(trackers) == len(orbsteps), \
         "List of trackers and orbit steps must be same length."
     
+    assert isinstance(trackers[0],Tracker)
+    
     # Figure out if all trackers in tracker_list are the same type of tracker
     # and which kind of tracker they are
     merged_tracker = trackers[0].__class__()
@@ -266,22 +268,22 @@ def Merge(trackers, orbsteps):
         this_orbstep = iterm/256.0
         # use most recent commanded table
         min_delta = 999.0
-        for i_tracker in range(len(orbsteps)):
-            delta = this_orbstep-orbsteps[i_tracker]
+        for step, tracker in zip(orbsteps,trackers):
+            delta = this_orbstep - step
             if delta >= 0 and delta < min_delta:
-                tracker = trackers[i_tracker]
+                use_tracker = tracker
                 min_delta = delta
         
         merged_tracker.amp_terms[iterm] = (
-            (tracker.amp_terms_eu[iterm]-merged_tracker.amp_scale_bias)
+            (use_tracker.amp_terms_eu[iterm]-merged_tracker.amp_scale_bias)
             / merged_tracker.amp_scale_mag )
         
         merged_tracker.pha_terms[iterm] = (
-            (tracker.pha_terms_eu[iterm]-merged_tracker.pha_scale_bias)
+            (use_tracker.pha_terms_eu[iterm]-merged_tracker.pha_scale_bias)
             / merged_tracker.pha_scale_mag )
         
         merged_tracker.bias_terms[iterm] = (
-            (tracker.bias_terms_eu[iterm]-merged_tracker.bias_scale_bias)
+            (use_tracker.bias_terms_eu[iterm]-merged_tracker.bias_scale_bias)
             / merged_tracker.bias_scale_mag )
     merged_tracker.ComputeTermsEu()
     return merged_tracker
