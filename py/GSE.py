@@ -34,8 +34,8 @@ class GSE:
         header = ifp.read(HEADER_BYTES)
         ifp.close()
         packet_length = struct.unpack('>H', header[36:38:])[0]+HEADER_BYTES
-        for version in range(len(PACKET_SIZE)):
-            if packet_length == PACKET_SIZE[version]:
+        for version, valid_size in enumerate(PACKET_SIZE):
+            if packet_length == valid_size:
                 self.version = version
 
     def __getitem__(self, key):
