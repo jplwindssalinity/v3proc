@@ -269,7 +269,7 @@ int main( int argc, char* argv[] ) {
   
   int    num_slices        = qscat.ses.GetTotalSliceCount();
   
-  float fbb_shift[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS][AZIMUTH_STEPS];
+  double fbb_shift[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS][AZIMUTH_STEPS];
   
   XTable x_table( NUMBER_OF_QSCAT_BEAMS, AZIMUTH_STEPS, ORBIT_STEPS, 
                   qscat.ses.scienceSlicesPerSpot, qscat.ses.guardSlicesPerSide, 
@@ -386,7 +386,7 @@ int main( int argc, char* argv[] ) {
       this_quat.GetAttitudeGS( &(spacecraft.attitude) );
   
       // For adding extra pitch offsets for ISS/RapidSCAT
-      //spacecraft.attitude.SetPitch(spacecraft.attitude.GetPitch()-3*dtr);
+      //spacecraft.attitude.SetPitch(spacecraft.attitude.GetPitch()+4*dtr);
       
       // Interpolate ephem and overwrite that in spacecraft object
       ephem.GetOrbitState( time, EPHEMERIS_INTERP_ORDER, &(spacecraft.orbitState) );
@@ -576,10 +576,9 @@ int main( int argc, char* argv[] ) {
       int n_azi   = AZIMUTH_STEPS;
       
       size_t out_size = n_beams*n_orb*n_azi;
-      if( fwrite(&n_beams,sizeof(int),1,ofp) != 1 ||
-          fwrite(&n_orb,sizeof(int),1,ofp)   != 1 ||
+      if( fwrite(&n_orb,sizeof(int),1,ofp)   != 1 ||
           fwrite(&n_azi,sizeof(int),1,ofp)   != 1 ||
-          fwrite(&fbb_shift[0][0][0],sizeof(float),out_size,ofp) != out_size ) {
+          fwrite(&fbb_shift[0][0][0],sizeof(double),out_size,ofp) != out_size ) {
         fprintf(stderr,"%s: Error writing base-band freqs to file: %s\n",command,fbbshift_file);
       }
       fclose(ofp);
