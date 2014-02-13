@@ -178,7 +178,7 @@ main(
       ++optind;
     }
     
-    printf("%f %f %f %f\n",az_shift[0],az_shift[1],el_shift[0],el_shift[1]);
+    //printf("%f %f %f %f\n",az_shift[0],az_shift[1],el_shift[0],el_shift[1]);
     
     if( !config_file || !dtc_base || !ephem_file || !quat_file ) {
       fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
@@ -315,7 +315,7 @@ main(
       fprintf(stderr,"Error: bad value for start_rev\n");
       exit(1);
     }
-    printf("orbit_period: %f\n",orbit_period);
+    //printf("orbit_period: %f\n",orbit_period);
 
     //-----------//
     // variables //
@@ -329,7 +329,7 @@ main(
     double azimuth_step_size = two_pi / (double)DOPPLER_AZIMUTH_STEPS;
     unsigned int orbit_ticks_per_orbit =
         (unsigned int)(orbit_period * ORBIT_TICKS_PER_SECOND + 0.5);
-    printf("%s %d\n", ORBIT_TICKS_PER_ORBIT_KEYWORD, orbit_ticks_per_orbit);
+    //printf("%s %d\n", ORBIT_TICKS_PER_ORBIT_KEYWORD, orbit_ticks_per_orbit);
     qscat.cds.CmdOrbitTicksPerOrbit(orbit_ticks_per_orbit);
 
 
@@ -475,7 +475,7 @@ main(
             // Convert to attitude angles and overwrite those in spacecraft object
             this_quat.GetAttitudeGS( &(spacecraft.attitude) );
             
-            //spacecraft.attitude.SetPitch(spacecraft.attitude.GetPitch()-3*dtr);
+            //spacecraft.attitude.SetPitch(spacecraft.attitude.GetPitch()+4.0*dtr);
             
             // Interpolate ephem and overwrite that in spacecraft object
             ephem.GetOrbitState( time, EPHEMERIS_INTERP_ORDER, &(spacecraft.orbitState) );

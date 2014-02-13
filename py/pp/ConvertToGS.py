@@ -160,56 +160,11 @@ def ConvertRangeDopplerToDIB(config_file):
                 dop_track.CreateDIBData(ib,rev_no)
                 dop_track.WriteDIBBinary(dop_dib_table)
 
-def ConvertRangeDopplerToGS(config_file):
-    if not config_file or not os.path.isfile(config_file):
-        print>>sys.stderr, '%s not right' % config_file
-        return 0
-    try:
-        rdf_data = rdf.parse(config_file)
-        rng_in_dir = rdf_data['RANGE_TABLE_DIR']
-        dop_in_dir = rdf_data['DOPPLER_TABLE_DIR']
-        rng_gs_dir = rdf_data['GS_RANGE_TABLE_DIR']
-        dop_gs_dir = rdf_data['GS_DOPPLER_TABLE_DIR']
-        revlist_db = rdf_data["REVLIST_DB"]
-    except KeyError:
-        print>>sys.stderr, 'Required keywords not found in rdf file: %s\n' % \
-               config_file
-        return(0)
-
-    rev_db = pm.database.revs.RevDataBase(revlist_db)
-    for rev in rev_db:
-        rev_no = rev.rev
-
-        if rev_no < 0:
-            continue
-
-        for ib in range(2):
-            # Convert range tables
-            rng_in_table = os.path.join(rng_in_dir,"RGC_%5.5d.%d"%(rev_no,ib+1))
-            rng_gs_table = os.path.join(rng_gs_dir,"RGC_%5.5d.%d"%(rev_no,ib+1))
-
-            if os.path.isfile(rng_in_table) and not os.path.isfile(rng_gs_table):
-                rng_track = Tracker.Range()
-                rng_track.ReadSimBinary(rng_in_table)
-                rng_track.CreateDIBData(ib,rev_no)
-                rng_track.WriteGSASCII(rng_gs_table)
-
-            # Convert doppler tables
-            dop_in_table = os.path.join(dop_in_dir,"DTC_%5.5d.%d"%(rev_no,ib+1))
-            dop_gs_table = os.path.join(dop_gs_dir,"DTC_%5.5d.%d"%(rev_no,ib+1))
-
-            if os.path.isfile(dop_in_table) and not os.path.isfile(dop_gs_table):
-                dop_track = Tracker.Doppler()
-                dop_track.ReadSimBinary(dop_in_table)
-                dop_track.CreateDIBData(ib,rev_no)
-                dop_track.WriteGSASCII(dop_gs_table)
-
 def ConvertToGS( config_file ):
     if not config_file or not os.path.isfile(config_file):
         print>>sys.stderr, '%s not right' % config_file
         return 0
     ConvertEphemToGS(config_file)
-    ConvertRangeDopplerToGS(config_file)
     ConvertRangeDopplerToDIB(config_file)
     return(1)
 
