@@ -209,7 +209,9 @@ class S(Factor):
         iazi = to_index(data[:, 1], self.NumAziBins)
         imode = mode * np.ones(iorb.shape).astype('i')
         ibeam = beam * np.ones(iorb.shape).astype('i')
-        self.table[imode, iorb, iazi, ibeam] = data[:, -1]
+        # Xpert files contains frequency shift per km of topography, processor
+        # wants frequency shift per meter of topography.
+        self.table[imode, iorb, iazi, ibeam] = data[:, -1] * 1000.0
 
     @classmethod
     def Merge(cls, factors, orbsteps):
