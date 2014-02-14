@@ -6,7 +6,6 @@
 Tracker.py contains the Doppler and Range classes
 for reading and converting the doppler and range tables.
 """
-__version__ = '$Id$'
 
 import os
 import sys

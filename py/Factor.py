@@ -8,7 +8,6 @@ tables for the F90 SDS.  It also supports merging of multiple
 X or S factor tables into one table for processing of revs with
 table updates.
 """
-__version__ = '$Id$'
 
 import struct
 import numpy as np

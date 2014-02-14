@@ -5,7 +5,6 @@
 """
 Classes and functions for GSE data files / packets
 """
-__version__ = '$Id$'
 
 import os
 import sys
