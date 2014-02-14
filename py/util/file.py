@@ -5,7 +5,6 @@
 """
 Utility stuff for files
 """
-__version__ = '$Id$'
 
 import os
 import fnmatch

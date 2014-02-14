@@ -15,7 +15,6 @@ Notes:
 not of vectors.  We use opposite convention for attitude rotations.
 5: Read spice docs: http://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/req/rotation.html
 """
-__version__ = '$Id$'
 
 import spice
 import numpy as np

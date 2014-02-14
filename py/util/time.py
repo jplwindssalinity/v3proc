@@ -5,7 +5,6 @@
 """
 Helper functions for doing stuff with time-tags.
 """
-__version__ = '$Id$'
 
 import pdb
 import sys
