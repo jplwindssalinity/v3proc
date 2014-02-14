@@ -10,9 +10,9 @@ import pdb
 import sys
 import datetime
 
-gps_epoch = datetime.datetime(1980, 1, 6)
-sim_epoch = datetime.datetime(1970, 1, 1)
-gs_epoch  = datetime.datetime(1993, 1, 1)
+GPS_EPOCH = datetime.datetime(1980, 1, 6)
+SIM_EPOCH = datetime.datetime(1970, 1, 1)
+GS_EPOCH  = datetime.datetime(1993, 1, 1)
 ONE_DAY = datetime.timedelta(1)
 DT_LEAP = [ONE_DAY+item for item in [datetime.datetime(1979,12,31),
                                      datetime.datetime(1981, 6,30),
@@ -50,26 +50,26 @@ def tz_delta():
 
 def datetime_from_gs(gs_tt):
     """Converts a GS referenced time-tag to datetime object"""
-    return(gs_epoch+datetime.timedelta(0,gs_tt))
+    return(GS_EPOCH+datetime.timedelta(0,gs_tt))
 
 def datetime_from_sim(sim_tt):
     """Converts a sim time-tag to datetime object"""
-    return(sim_epoch+datetime.timedelta(0,sim_tt))
+    return(SIM_EPOCH+datetime.timedelta(0,sim_tt))
 
 def datetime_from_gps(gps_tt):
     """Converts a GPS time-tag to a datetime object"""
-    return(gps_epoch+datetime.timedelta(0,gps_tt))
+    return(GPS_EPOCH+datetime.timedelta(0,gps_tt))
 
 def sim_from_datetime(dt):
-    delta = dt - sim_epoch
+    delta = dt - SIM_EPOCH
     return(delta.days*86400.0+delta.seconds+delta.microseconds/1000000.)
 
 def gps_to_sim(gps_tt):
-    delta = gps_epoch - sim_epoch
+    delta = GPS_EPOCH - SIM_EPOCH
     return(gps_tt+delta.days*86400.0+delta.seconds)
 
 def sim_to_gps(sim_tt):
-    delta = sim_epoch - gps_epoch
+    delta = SIM_EPOCH - GPS_EPOCH
     return(sim_tt+delta.days*86400.0+delta.seconds)
 
 def ToCodeB(dt):
