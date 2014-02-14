@@ -2,7 +2,6 @@
 # Copyright (C) 2013-2014, California Institute of Technology. #
 # U.S. Government sponsorship acknowledged.                    #
 #==============================================================#
-__version__ = '$Id$'
 import os
 import rdf
 import Tracker

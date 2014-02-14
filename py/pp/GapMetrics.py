@@ -34,8 +34,6 @@
 #    Alex Fore
 #    alexander.fore@jpl.nasa.gov
 #----------------------------------------------------------------------
-__version__ = '$Id$'
-
 QSCATSIM_PY_DIR='/home/fore/qscatsim/QScatSim/py'
 import sys
 if not QSCATSIM_PY_DIR in sys.path:
