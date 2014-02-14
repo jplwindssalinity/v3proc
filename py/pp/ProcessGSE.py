@@ -51,8 +51,11 @@ import pp.ExtractEphemByRev
 import pp.EphemQuatFillGaps
 import pp.MakeRangeDopplerTables
 import pp.ConvertToGS
+import pp.NotifyIf
 
 def ProcessGSE(config_file):
+    pp.NotifyIf.OldGSE(config_file)
+    
     # Makes the revlist file
     pp.GenRevList.GenRevList(config_file)
 
