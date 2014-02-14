@@ -6,7 +6,6 @@
 Contains Att and Quat attitude classes for doing stuff with
 quaternions and attitude records / files.
 """
-__version__ = '$Id$'
 
 import os
 import sys
