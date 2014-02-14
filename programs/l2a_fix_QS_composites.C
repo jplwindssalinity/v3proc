@@ -103,6 +103,7 @@ template class std::map<string,string,Options::ltstr>;
 // config file keys we search for
 #define QS_LANDMAP_FILE_KEYWORD 		"QS_LANDMAP_FILE"
 #define QS_ICEMAP_FILE_KEYWORD	 		"QS_ICEMAP_FILE"
+#define DO_COASTAL_PROCESSING_KEYWORD   "DO_COASTAL_PROCESSING"
 
 int
 main(
@@ -124,6 +125,8 @@ main(
   ConfigList   config_list;
   QSLandMap    qs_landmap;
   QSIceMap     qs_icemap;
+   
+   int do_coastal_processing = 0;
    
   int transform_kp = 0;
   int optind       = 1;
@@ -173,7 +176,12 @@ main(
     fprintf(stderr,"%s: Must specify QS_LANDMAP_FILE and QS_ICEMAP_FILE in config!\n",command);
     exit(1);
   }
-
+  
+  do_coastal_processing = 0;
+  config_list.DoNothingForMissingKeywords();
+  config_list.GetInt(DO_COASTAL_PROCESSING_KEYWORD,&do_coastal_processing);
+  config_list.ExitForMissingKeywords(); 
+  
   fprintf(stdout,"%s: Using QS LANDMAP %s\n",command,qslandmap_file);
   fprintf(stdout,"%s: Using QS ICEMAP %s\n",command,qsicemap_file);
   qs_landmap.Read( qslandmap_file );
@@ -206,6 +214,9 @@ main(
   l2a.WriteHeader();
   
   while( l2a.ReadDataRec() ) {
+    // if all sigma0 obs are land or ice; skip output of WVC
+    int num_ocean_sigma0 = 0;
+    
     MeasList* ml = &(l2a.frame.measList);
     
     Meas* meas = ml->GetHead();
@@ -268,18 +279,30 @@ main(
       
       // Set landFlag on centroids of composites;
       // don't write out composites that are flagged
-      meas->landFlag = 0;
-      if( qs_landmap.IsLand( lon, lat, 1 ) )
-        meas->landFlag += 1;
+      if(!do_coastal_processing) {
+        if( qs_landmap.IsLand( lon, lat, 1 ) ) {
+          meas->landFlag |= 1<<0;
+        } else {
+          meas->landFlag &= ~(1<<0);
+        }
+      }
+      
       if( qs_icemap.IsIce( lon, lat, meas->beamIdx ) )
-        meas->landFlag += 2;
+        meas->landFlag |= 1<<1;
+      else
+        meas->landFlag &= ~(1<<1);
+
+      // If any ocean sigma0 in this WVC then write out all obs
+      // in WVC to L2A output file. 2/3/2011 AGF
+      if( meas->landFlag == 0 )
+        num_ocean_sigma0 += 1;
       
       // composite SNR
       double snr = meas->value * meas->XK / meas->EnSlice;
       
       // Skip land/ice and low snr composites.
       int skip_composite = 0;
-      if( meas->landFlag != 0 || 10*log10( fabs(snr) )  < -20 )
+      if( 10*log10( fabs(snr) ) < -20 )
         skip_composite = 1;
       
       // Remove composite if skip_composite != 0
@@ -292,8 +315,9 @@ main(
         meas = ml->GetNext();
     }
     
-    // Write out this WVC
-    l2a.WriteDataRec();
+    // Write out this WVC if it contains any ocean sigma0
+    if( num_ocean_sigma0 > 0 )
+      l2a.WriteDataRec();
   }
   // Close and quit
   l2a.CloseInputFile();
