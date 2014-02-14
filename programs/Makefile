@@ -26,7 +26,7 @@ LDLIBS =		-L/usr/local/lib $(LIBS) $(EALIBS) $(HDFLIBS) -lm
 PURE =
 
 CCC =			$(PURE) g++
-DEBUGFLAGS =	-ggdb2 --save-temps -O0 -g -O2 -g
+DEBUGFLAGS =  -ggdb2 --save-temps -O0 -g -O2 -g
 #DEBUGFLAGS = -O2
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) $(NCDFINCDIR) -DNOPM
 
@@ -272,6 +272,12 @@ l2b_hdf_to_netcdf: l2b_hdf_to_netcdf.C $(LIBS) $(EALIBS)
 os2_l2b_to_netcdf: os2_l2b_to_netcdf.C $(LIBS) $(EALIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(NETCDFLIBS) $(LDLIBS)
 
+generate_rgc_from_ephem_quat_files: generate_rgc_from_ephem_quat_files.C $(LIBS) $(EALIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS) -I/home/fore/include /home/fore/lib/libnlopt.a
+
+RS_GSE_to_ephem_quat: RS_GSE_to_ephem_quat.C $(LIBS) $(EALIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS) -I/home/fore/include /home/fore/lib/libsofa_c.a
+	
 %: %.C $(LIBS) $(EALIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
