@@ -10,12 +10,12 @@ import rdf
 import util.time
 import smtplib
 import shelve
-import pdb
 import numpy as np
 
 # key in shelved dict to use
 LAST_GSE_NOTIFY_KEY = 'LAST_GSE_NOTIFY'
 
+# When RapidScat hardware was designed
 ANCIENT_HISTORY = datetime.datetime(1990,1,1)
 
 # How long to wait for GSE data before commencement of sending annoying emails.
@@ -23,7 +23,7 @@ GSE_LAG_TOLERANCE = datetime.timedelta(hours=3)
 
 MAIL_FROM = "fore@pawpaw"
 PEOPLE_TO_ANNOY = [
-        "fore@jpl.nasa.gov", "douglas.j.equils@jpl.nasa.gov",
+        "alexander.fore@jpl.nasa.gov", "douglas.j.equils@jpl.nasa.gov",
         "wallace.hu@jpl.nasa.gov", "bryan.w.stiles@jpl.nasa.gov"]
 # PEOPLE_TO_ANNOY = PEOPLE_TO_ANNOY[0]
 
@@ -49,7 +49,7 @@ def OldGSE(config_file):
     try:
         rdf_data = rdf.parse(config_file)
         gsetimes = rdf_data["GSE_TIMES"]
-        notify_dbfile = rdf_data["GSE_NOTIFY_DB"]
+        notify_dbfile = rdf_data["NOTIFY_DB"]
     except KeyError:
         print>>sys.stderr, 'Required keywords not found in rdf file: %s\n' % config_file
         return 0
