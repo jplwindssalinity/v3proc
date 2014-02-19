@@ -50,6 +50,42 @@ class Att:
     def __getitem__(self, key):
         return self.time[key], self.yaw[key], self.pitch[key], self.roll[key]
     
+    def Get(self,time,method='linear'):
+        """Returns the yaw, pitch, roll linearly interpolated to time."""
+        
+        dt = np.asarray([item.total_seconds() for item in self.time - time])
+        
+        # Find bracketing records
+        idx_minus = np.argwhere(dt<=0)
+        idx_plus = np.argwhere(dt>0)
+        try:
+            idx_0 = idx_minus[dt[idx_minus].argmax()][0]
+            idx_1 = idx_plus[dt[idx_plus].argmin()][0]
+        except ValueError:
+            return
+        
+        t0 = self.time[idx_0]
+        t1 = self.time[idx_1]
+        
+        try:
+            weight = (time-t0).total_seconds() / (t1-t0).total_seconds()
+        except ZeroDivisionError:
+            weight = 0.0
+        
+        if method=='linear':
+            yaw = self.yaw[idx_0] + weight*(
+                self.yaw[idx_1]-self.yaw[idx_0])
+            pitch = self.pitch[idx_0] + weight*(
+                self.pitch[idx_1]-self.pitch[idx_0])
+            roll = self.roll[idx_0] + weight*(
+                self.roll[idx_1]-self.roll[idx_0])
+        elif method=='last':
+            yaw = self.yaw[idx_0]
+            pitch = self.pitch[idx_0]
+            roll = self.roll[idx_0]
+        
+        return yaw, pitch, roll
+    
     def FromQuats(self, quats):
         import copy
         self.time = copy.copy(quats.time)

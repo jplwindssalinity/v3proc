@@ -86,9 +86,8 @@ class Tracker(object):
         outdata = (0,) + self.dib_data[1::]
         
         # Write it out!
-        f = open(filename,'w')
-        f.write(struct.pack('>%dH' % len(outdata), *outdata ))
-        f.close()
+        with open(filename,'w') as f:
+            f.write(struct.pack('>%dH' % len(outdata), *outdata ))
     
     def CreateDIBData(self,beam_index,table_id):
         """
@@ -163,44 +162,44 @@ class Tracker(object):
         if not os.path.isfile(filename):
             print>>sys.stderr,'Tracker::ReadSimBinary: %s does not exist' % filename
             return
-        ifp        = open(filename,'r')
-        nsteps     = struct.unpack('@i',ifp.read(4))[0]
-        scale      = np.array(struct.unpack('@%df'%6, ifp.read(4*6))).reshape([3,2])
-        num_items  = nsteps*3
-        num_bytes  = num_items * self.dtype.itemsize
-        struct_str = '@%d%c' % (num_items, self.dtype.char)
-        terms      = np.array(struct.unpack(struct_str,ifp.read(num_bytes))).reshape([nsteps,3])
-        ifp.close()
+        with open(filename,'r') as ifp:
+            nsteps = struct.unpack('@i',ifp.read(4))[0]
+            scale = np.array(
+                struct.unpack('@%df'%6, ifp.read(4*6))).reshape([3,2])
+            num_items = nsteps*3
+            num_bytes = num_items * self.dtype.itemsize
+            struct_str = '@%d%c' % (num_items, self.dtype.char)
+            terms = np.array(struct.unpack(
+                struct_str, ifp.read(num_bytes))).reshape([nsteps,3])
         
-        self.amp_scale_bias  = scale[0,0]
-        self.amp_scale_mag   = scale[0,1]
-        self.pha_scale_bias  = scale[1,0]
-        self.pha_scale_mag   = scale[1,1]
+        self.amp_scale_bias = scale[0,0]
+        self.amp_scale_mag = scale[0,1]
+        self.pha_scale_bias = scale[1,0]
+        self.pha_scale_mag = scale[1,1]
         self.bias_scale_bias = scale[2,0]
-        self.bias_scale_mag  = scale[2,1]
+        self.bias_scale_mag = scale[2,1]
         
-        self.amp_terms  = terms[:,0]
-        self.pha_terms  = terms[:,1]
+        self.amp_terms = terms[:,0]
+        self.pha_terms = terms[:,1]
         self.bias_terms = terms[:,2]
         
         self.ComputeTermsEu()
     
     def WriteSimBinary(self, filename):
         """Writes out the tracking table to the Sim / C++ binary format."""
-        ofp = open(filename,"w")
-        ofp.write(struct.pack('@i',256))
-        ofp.write(struct.pack('@f',self.amp_scale_bias))
-        ofp.write(struct.pack('@f',self.amp_scale_mag))
-        ofp.write(struct.pack('@f',self.pha_scale_bias))
-        ofp.write(struct.pack('@f',self.pha_scale_mag))
-        ofp.write(struct.pack('@f',self.bias_scale_bias))
-        ofp.write(struct.pack('@f',self.bias_scale_mag))
-        terms = np.zeros([256,3])
-        terms[:,0] = self.amp_terms
-        terms[:,1] = self.pha_terms
-        terms[:,2] = self.bias_terms
-        terms.astype(self.dtype.char).tofile(ofp)
-        ofp.close()
+        with open(filename,"w") as ofp:
+            ofp.write(struct.pack('@i',256))
+            ofp.write(struct.pack('@f',self.amp_scale_bias))
+            ofp.write(struct.pack('@f',self.amp_scale_mag))
+            ofp.write(struct.pack('@f',self.pha_scale_bias))
+            ofp.write(struct.pack('@f',self.pha_scale_mag))
+            ofp.write(struct.pack('@f',self.bias_scale_bias))
+            ofp.write(struct.pack('@f',self.bias_scale_mag))
+            terms = np.zeros([256,3])
+            terms[:,0] = self.amp_terms
+            terms[:,1] = self.pha_terms
+            terms[:,2] = self.bias_terms
+            terms.astype(self.dtype.char).tofile(ofp)
 
 class Range(Tracker):
     """Range is a Tracker class with the byte option."""

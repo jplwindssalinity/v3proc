@@ -30,9 +30,8 @@ class Factor(object):
 
     def _set_endian(self, filename):
         """Checks fortran header bytes to determine byte order of file."""
-        f = open(filename, 'r')
-        header = f.read(4)
-        f.close()
+        with open(filename, 'r') as f:
+            header = f.read(4)
         if struct.unpack('>i', header)[0] == self._expected_size:
             self.dtype = np.dtype('>f')
 
@@ -76,35 +75,33 @@ class X(Factor):
             self.g_factor = np.zeros(self.g_factor_shape).astype(self.dtype)
 
     def Read(self, filename):
-        ifp = open(filename, 'r')
-        hdr = ifp.read(4)
+        with open(filename, 'r') as ifp:
+            hdr = ifp.read(4)
 
-        self.slice_shift_threshold = np.fromfile(
-            ifp, dtype=self.dtype, count=np.prod(self.slice_shift_shape),
-            sep='').reshape(self.slice_shift_shape)
+            self.slice_shift_threshold = np.fromfile(
+                ifp, dtype=self.dtype, count=np.prod(self.slice_shift_shape),
+                sep='').reshape(self.slice_shift_shape)
 
-        self.x_nominal = np.fromfile(
-            ifp, dtype=self.dtype, count=np.prod(self.x_nominal_shape),
-            sep='').reshape(self.x_nominal_shape)
+            self.x_nominal = np.fromfile(
+                ifp, dtype=self.dtype, count=np.prod(self.x_nominal_shape),
+                sep='').reshape(self.x_nominal_shape)
 
-        self.x_coeff = np.fromfile(
-            ifp, dtype=self.dtype, count=np.prod(self.x_coeff_shape),
-            sep='').reshape(self.x_coeff_shape)
+            self.x_coeff = np.fromfile(
+                ifp, dtype=self.dtype, count=np.prod(self.x_coeff_shape),
+                sep='').reshape(self.x_coeff_shape)
 
-        self.g_factor = np.fromfile(
-            ifp, dtype=self.dtype, count=np.prod(self.g_factor_shape),
-            sep='').reshape(self.g_factor_shape)
-        ifp.close()
+            self.g_factor = np.fromfile(
+                ifp, dtype=self.dtype, count=np.prod(self.g_factor_shape),
+                sep='').reshape(self.g_factor_shape)
 
     def Write(self, filename):
-        ofp = open(filename, 'w')
-        ofp.write(struct.pack('@i', self._expected_size))
-        self.slice_shift_threshold.astype('float32').tofile(ofp)
-        self.x_nominal.astype('float32').tofile(ofp)
-        self.x_coeff.astype('float32').tofile(ofp)
-        self.g_factor.astype('float32').tofile(ofp)
-        ofp.write(struct.pack('@i', self._expected_size))
-        ofp.close()
+        with open(filename, 'w') as ofp:
+            ofp.write(struct.pack('@i', self._expected_size))
+            self.slice_shift_threshold.astype('float32').tofile(ofp)
+            self.x_nominal.astype('float32').tofile(ofp)
+            self.x_coeff.astype('float32').tofile(ofp)
+            self.g_factor.astype('float32').tofile(ofp)
+            ofp.write(struct.pack('@i', self._expected_size))
 
     def PopulateFromXPert(self, filename, mode, beam):
         """Populates the Factor.X object using the BYU Xpert ASCII files.
@@ -186,19 +183,17 @@ class S(Factor):
             self.table = np.zeros(self.shape).astype(self.dtype)
 
     def Read(self, filename):
-        ifp = open(filename, 'r')
-        hdr = ifp.read(4)
-        self.table = np.fromfile(
-            ifp, dtype=self.dtype, count=np.prod(self.shape),
-            sep='').reshape(self.shape)
-        ifp.close()
+        with open(filename, 'r') as ifp:
+            hdr = ifp.read(4)
+            self.table = np.fromfile(
+                ifp, dtype=self.dtype, count=np.prod(self.shape),
+                sep='').reshape(self.shape)
 
     def Write(self, filename):
-        ofp = open(filename, 'w')
-        ofp.write(struct.pack('@i', self._expected_size))
-        self.table.astype('float32').tofile(ofp)
-        ofp.write(struct.pack('@i', self._expected_size))
-        ofp.close()
+        with open(filename, 'w') as ofp:
+            ofp.write(struct.pack('@i', self._expected_size))
+            self.table.astype('float32').tofile(ofp)
+            ofp.write(struct.pack('@i', self._expected_size))
 
     def PopulateFromXPert(self, filename, mode, beam):
         assert mode < self.NumModes

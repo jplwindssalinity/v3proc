@@ -130,13 +130,13 @@ class Ephem(object):
 
     def ReadTOPOB1950(self,filename):
         """For reading in the B1950 TOPO ISS predicted ephmeris."""
-        ifp = open(filename, "r")
-        headerline1 = ifp.readline()
-        headerline2 = ifp.readline()
+        with open(filename,'r') as ifp:
+            headerline1 = ifp.readline()
+            headerline2 = ifp.readline()
+            data = np.loadtxt(ifp)
+        
         year = int(headerline2.split()[0])
-
-        data = np.loadtxt(ifp)
-        ifp.close()
+        
         pos = data[:, (1, 2, 3)] * FEET_TO_METERS
         vel = data[:, (4, 5, 6)] * FEET_TO_METERS
 
