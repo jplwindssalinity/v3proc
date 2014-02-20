@@ -11,7 +11,6 @@ table updates.
 
 import struct
 import numpy as np
-
 def to_index(values, steps):
     """Converts values to array indicies"""
     values = np.asarray(values)
@@ -22,11 +21,12 @@ class Factor(object):
     def __init__(self):
         """Sets some common attributes for both the X and S classes."""
         self.dtype = np.dtype('<f')
-        self.NumBeams = 2
-        self.NumAziBins = 36
-        self.NumOrbBins = 32
-        self.NumModes = 8
-        self.NumSciSlices = 10
+        self.num_beams = 2
+        self.num_azi_bins = 36
+        self.num_orb_bins = 32
+        self.num_modes = 8
+        self.num_sci_slices = 10
+        self._expected_size = 0
 
     def _set_endian(self, filename):
         """Checks fortran header bytes to determine byte order of file."""
@@ -39,23 +39,23 @@ class X(Factor):
     """Class for the Xfactor files."""
     def __init__(self, filename=None):
         super(X, self).__init__()
-        self.NumSciSlices = 10
-        self.NumTerms = 6
+        self.num_sci_slices = 10
+        self.num_terms = 6
 
         # Set shape tuples for all arrays in file.
-        self.slice_shift_shape = (self.NumModes, self.NumBeams, 2)
+        self.slice_shift_shape = (self.num_modes, self.num_beams, 2)
 
         # Note: table has has 10 slices then the egg value,
-        # hence the array size NumSciSlices+1 for one of the dimensions.
+        # hence the array size num_sci_slices+1 for one of the dimensions.
         self.x_nominal_shape = (
-            self.NumModes, self.NumOrbBins, self.NumAziBins,
-            self.NumBeams, self.NumSciSlices+1)
+            self.num_modes, self.num_orb_bins, self.num_azi_bins,
+            self.num_beams, self.num_sci_slices+1)
 
-        self.x_coeff_shape = self.x_nominal_shape + (self.NumTerms,)
+        self.x_coeff_shape = self.x_nominal_shape + (self.num_terms,)
 
         self.g_factor_shape = (
-            self.NumModes, self.NumOrbBins, self.NumAziBins,
-            self.NumBeams, self.NumSciSlices)
+            self.num_modes, self.num_orb_bins, self.num_azi_bins,
+            self.num_beams, self.num_sci_slices)
 
         # Expected size of fortran data record in bytes.
         self._expected_size = self.dtype.itemsize * (
@@ -66,7 +66,7 @@ class X(Factor):
         # zeros.
         if filename != None:
             self._set_endian(filename)
-            self.Read(filename)
+            self.read(filename)
         else:
             self.slice_shift_threshold = np.zeros(
                 self.slice_shift_shape).astype(self.dtype)
@@ -74,7 +74,8 @@ class X(Factor):
             self.x_coeff = np.zeros(self.x_coeff_shape).astype(self.dtype)
             self.g_factor = np.zeros(self.g_factor_shape).astype(self.dtype)
 
-    def Read(self, filename):
+    def read(self, filename):
+        """Reads the XFactor files in GS format."""
         with open(filename, 'r') as ifp:
             hdr = ifp.read(4)
 
@@ -94,7 +95,8 @@ class X(Factor):
                 ifp, dtype=self.dtype, count=np.prod(self.g_factor_shape),
                 sep='').reshape(self.g_factor_shape)
 
-    def Write(self, filename):
+    def write(self, filename):
+        """Writes the XFactor files in GS format."""
         with open(filename, 'w') as ofp:
             ofp.write(struct.pack('@i', self._expected_size))
             self.slice_shift_threshold.astype('float32').tofile(ofp)
@@ -103,16 +105,16 @@ class X(Factor):
             self.g_factor.astype('float32').tofile(ofp)
             ofp.write(struct.pack('@i', self._expected_size))
 
-    def PopulateFromXPert(self, filename, mode, beam):
+    def from_xpert(self, filename, mode, beam):
         """Populates the Factor.X object using the BYU Xpert ASCII files.
         Validated to give the same exact table as the "writeToJPL.m" matlab
         script provided by N. Madsen. (same md5sum)
         """
-        assert mode < self.NumModes
-        assert beam < self.NumBeams
+        assert mode < self.num_modes
+        assert beam < self.num_beams
         data = np.loadtxt(filename)
-        iorb = to_index(data[:, 0], self.NumOrbBins)
-        iazi = to_index(data[:, 1], self.NumAziBins)
+        iorb = to_index(data[:, 0], self.num_orb_bins)
+        iazi = to_index(data[:, 1], self.num_azi_bins)
         imode = mode * np.ones(iorb.shape).astype('i')
         ibeam = beam * np.ones(iorb.shape).astype('i')
 
@@ -123,7 +125,7 @@ class X(Factor):
         self.x_nominal[imode, iorb, iazi, ibeam] = data[:, x_nom_cols]
         self.g_factor[imode, iorb, iazi, ibeam] = data[:, g_fact_cols]
 
-        for term in range(self.NumTerms):
+        for term in range(self.num_terms):
             iterm = term*np.ones(iorb.shape).astype('i')
             term_cols = range(14+term, 114+term, 10) + [123+term]
             self.x_coeff[imode, iorb, iazi, ibeam, :, iterm] = \
@@ -135,7 +137,7 @@ class X(Factor):
         self.x_coeff[:, :, :, :, :, 5] = 0
 
     @classmethod
-    def Merge(cls, factors, orbsteps):
+    def merge(cls, factors, orbsteps):
         """
         Merges multiple X tables into one table
 
@@ -152,8 +154,8 @@ class X(Factor):
         merged_factor.slice_shift_threshold = \
             factors[0].slice_shift_threshold.copy()
 
-        for iorb in range(merged_factor.NumOrbBins):
-            this_orbstep = iorb/(merged_factor.NumOrbBins*1.0)
+        for iorb in range(merged_factor.num_orb_bins):
+            this_orbstep = iorb/(merged_factor.num_orb_bins*1.0)
             min_delta = 999.0
             for step, factor in zip(orbsteps, factors):
                 delta = this_orbstep - step
@@ -170,37 +172,40 @@ class S(Factor):
     """Class for the SFactor files."""
     def __init__(self, filename=None):
         super(S, self).__init__()
-        self.shape = (self.NumModes, self.NumOrbBins, self.NumAziBins,
-                      self.NumBeams)
+        self.shape = (self.num_modes, self.num_orb_bins, self.num_azi_bins,
+                      self.num_beams)
         self._expected_size = np.prod(self.shape)*self.dtype.itemsize
 
         # If filename commanded read from file, otherwise allocate arrays to
         # zeros.
         if filename != None:
             self._set_endian(filename)
-            self.Read(filename)
+            self.read(filename)
         else:
             self.table = np.zeros(self.shape).astype(self.dtype)
 
-    def Read(self, filename):
+    def read(self, filename):
+        """Reads the SFactor files in GS format."""
         with open(filename, 'r') as ifp:
             hdr = ifp.read(4)
             self.table = np.fromfile(
                 ifp, dtype=self.dtype, count=np.prod(self.shape),
                 sep='').reshape(self.shape)
 
-    def Write(self, filename):
+    def write(self, filename):
+        """Writes the SFactor files in GS format."""
         with open(filename, 'w') as ofp:
             ofp.write(struct.pack('@i', self._expected_size))
             self.table.astype('float32').tofile(ofp)
             ofp.write(struct.pack('@i', self._expected_size))
 
-    def PopulateFromXPert(self, filename, mode, beam):
-        assert mode < self.NumModes
-        assert beam < self.NumBeams
+    def from_xpert(self, filename, mode, beam):
+        """Populates the Factor.S object from BYU ASCCI Xpert files."""
+        assert mode < self.num_modes
+        assert beam < self.num_beams
         data = np.loadtxt(filename)
-        iorb = to_index(data[:, 0], self.NumOrbBins)
-        iazi = to_index(data[:, 1], self.NumAziBins)
+        iorb = to_index(data[:, 0], self.num_orb_bins)
+        iazi = to_index(data[:, 1], self.num_azi_bins)
         imode = mode * np.ones(iorb.shape).astype('i')
         ibeam = beam * np.ones(iorb.shape).astype('i')
         # Xpert files contains frequency shift per km of topography, processor
@@ -208,7 +213,7 @@ class S(Factor):
         self.table[imode, iorb, iazi, ibeam] = data[:, -1] * 1000.0
 
     @classmethod
-    def Merge(cls, factors, orbsteps):
+    def merge(cls, factors, orbsteps):
         """
         Merges multiple S tables into one table
 
@@ -222,8 +227,8 @@ class S(Factor):
                     for item in factors]):
             raise TypeError
 
-        for iorb in range(merged_factor.NumOrbBins):
-            this_orbstep = iorb/(merged_factor.NumOrbBins*1.0)
+        for iorb in range(merged_factor.num_orb_bins):
+            this_orbstep = iorb/(merged_factor.num_orb_bins*1.0)
             min_delta = 999.0
             for step, factor in zip(orbsteps, factors):
                 delta = this_orbstep - step

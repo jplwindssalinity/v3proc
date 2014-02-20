@@ -56,7 +56,7 @@ class Tracker(object):
         
         # create header line consisting of 127 chars and a newline char
         header_string = "%s RAPIDSCAT JPL %s" % ( 
-            name_tag, util.time.ToCodeB(datetime.datetime.utcnow()))
+            name_tag, util.time.to_code_b(datetime.datetime.utcnow()))
         
         if len(header_string) > 127:
             print sys.stderr,"Use a shorter filename -- You made the header too big yo!"
