@@ -72,10 +72,10 @@ def sim_to_gps(sim_tt):
     delta = SIM_EPOCH - GPS_EPOCH
     return(sim_tt+delta.days*86400.0+delta.seconds)
 
-def ToCodeB(dt):
+def to_code_b(dt):
     return(dt.strftime('%Y-%jT%H:%M:%S.%f')[:-3])
 
-def FromCodeB(code_b_string):
+def from_code_b(code_b_string):
     return(datetime.datetime.strptime(code_b_string+'000','%Y-%jT%H:%M:%S.%f'))
 
 def leap_seconds(dt):
@@ -93,7 +93,7 @@ def leap_seconds(dt):
             return(ii)
   
     print>>sys.stderr, "Stop trying to call this function for times before %s" % \
-                      ToCodeB(dt_leap[0])
+                      to_code_b(dt_leap[0])
   
     return(0)
   
