@@ -2,7 +2,6 @@
 RDFRecord = (key, RDFField)"""
 ## \namespace rdf.data.entries Usable data objects for lines (records).
 import collections
-import sys
 #from functools import partial
 #from operator import methodcaller
 from rdf import reserved
@@ -26,19 +25,19 @@ def _cast(magicmethodbinding):
 ## Base RDF Field named tuple -it's all in here -note, it's assigned (public)
 ## name dIffers from its variable (private) name, so that users never need to
 ## know about this  private assignment
-_RDFField = collections.namedtuple('RDFField',
+RDFField = collections.namedtuple('RDFField',
                                    'value units dimensions element comments')
 
 
-## Add methods and constants to _RDFField so that it lives up to its name.
-class RDFField(reserved.SymbolsMixIn, _RDFField):
+## Add methods and constants to RDFField so that it lives up to its name.
+class RDFField(reserved.SymbolsMixIn, RDFField):
     """
     RDFField(value, units=None, dimensions=None, element=None, comments=None)
 
     represents a fully interpreted logical entry in an RDF file (sans key)
     """
 
-    ## (-) appears as default
+    ## (-) appears as default -others are ignored
     _default_units = "-"
     ## non-private version: it is used in units.py
     default_units = _default_units
@@ -66,32 +65,53 @@ class RDFField(reserved.SymbolsMixIn, _RDFField):
             return value
         ## Unit conversion
         value, units = cls._handle_units(value, units)
-        return _RDFField.__new__(cls,
-                                 value,
-                                 str(units or cls._default_units),
-                                 str(dimensions or cls._default_dimensions),
-                                 str(element or cls._default_element),
-                                 str(comments or cls._default_comments))
-
-    ## Do the unit conversion
+        return cls.__bases__[-1].__new__(
+            cls,
+            value,
+            str(units or cls._default_units[0]),
+            str(dimensions or cls._default_dimensions),
+            str(element or cls._default_element),
+            str(comments or cls._default_comments)
+            )
+    
+    ## Do the unit conversion, with guard on _uavsar_workaround()
+    ## \param value str
+    ## \param units str
+    ## \retval tuple value, units --interpreted by SI, unless
+    ## _uavsar_workaround() is invoked.
     @classmethod
     def _handle_units(cls, value, units):
+        """private class method: value, units workaround, or not"""
         from rdf.units import SI, errors
+        if cls._uavsar_workaround(units):  # guard for UAVSAR workaround
+            return str(value), reserved.UAVSAR  # skip nominal unit processing
         # convert units, If they're neither None nor "-".
-        if units and units != cls._default_units:
+        if units and units not in cls._default_units:
             try:
                 value, units = SI(value, units)
             except errors.UnrecognizedUnitWarning:
                 pass
         return value, units
 
+    ## True IFF UAVSAR workaound is to be invoked.
+    ## \param units some units-field string
+    ## \retval bool IFF the uavsar workaround criteria are met.
+    @staticmethod
+    def _uavsar_workaround(units):
+        """static: does units invoke workaround for uavsar"""
+        return reserved.UAVSAR and units == reserved.UAVSAR
+
+
     ## eval(self.value) -with some protection/massage
     ## safe for list, tuples, nd.arrays, set, dict,
     ## anything that can survive repr - this is really a work in progress,
     ## since there is a lot of python subtly involved.
-    ## \returns evaluated version of RDFField.value
+    ## \retval result  evaluated version of RDFField.value
     def eval(self):
         """eval() uses eval built-in to interpret value"""
+        if self._uavsar_workaround(self.units):  # UAVSAR workaround
+            return str(self.value)
+        # proceed with nominal behavior
         try:
             result = eval(str(self.value))
         except (TypeError, NameError, AttributeError, SyntaxError):
@@ -102,6 +122,7 @@ class RDFField(reserved.SymbolsMixIn, _RDFField):
         return result
 
     ## Construct string on the right side of OPERATOR (w/o an IF)
+    ## \returns str version of the right side of "="
     def right_field(self):
         """Parse right of operator"""
         return (str(self.value) +
@@ -109,6 +130,7 @@ class RDFField(reserved.SymbolsMixIn, _RDFField):
                 (self.comments or ""))
 
     ## Construct string on the left side of OPERATOR
+    ## \returns str version of the left side of "="
     def left_field(self, index=0):
         """Parse left of OPERATOR
         place OPERATOR at index or don't
@@ -133,6 +155,11 @@ class RDFField(reserved.SymbolsMixIn, _RDFField):
         field(float)"""
         return caster(self.eval())
 
+    ## Parse ['234.3   3434.3   334'] e.g.
+    def list(self, cast=float):
+        return map(cast, str(self.value).split())
+
+
     __index__ = _cast(bin)
     __hex__ = _cast(hex)
     __oct__ = _cast(oct)
@@ -142,12 +169,10 @@ class RDFField(reserved.SymbolsMixIn, _RDFField):
     __complex__ = _cast(complex)
 
     ## key + field --> _RDFPreRecord, the whole thing is private.
+    ## \param key
+    ## \retval prerecord and RDFPreRecord
     def __radd__(self, key):
         return RDFPreRecord(key, self)
-
-
-## This assignment is a bit deeper: Just a key and a field
-_RDFRecord = collections.namedtuple("RDFRecord", "key field")
 
 
 ## Base for iterable (key, field) pair
@@ -155,10 +180,14 @@ class _RDFRecord(object):
     """See __slots__"""
 
     __slots__ = ('key', 'field')
-
-    ## (key, field)
+    
+    RDFField = RDFField
+    
+    ## \param key The rdf key
+    ## \param field an RDFField
+    ## \throws AssertionError if field is not an RDFField.
     def __init__(self, key, field):
-        assert(isinstance(field, RDFField))
+        assert isinstance(field, self.RDFField)
         ## The RDF key (with affixes)
         self.key = key
         ## The RDFField
@@ -185,11 +214,12 @@ class RDFRecord(_RDFRecord):
     is the parsed RDF file line. Key is a string (or else), and
     field is an RDFField.
     """
-    ## (key, field)
+    ## Traverse key, field
+    ## \returns generator of key, field.
     def __iter__(self):
         return iter((getattr(self, attr) for attr in self.__slots__))
 
-    ## int is the position of the rdf.reserved.OPERATOR (for formatting)
+    ## \retval int is the position of the rdf.reserved.OPERATOR (for formatting)
     def __int__(self):
         return str(self).index(reserved.OPERATOR)
 

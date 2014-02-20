@@ -52,11 +52,15 @@ class Affix(list):
         return "".join(self)
 
     ## strictly for safety
+    ## @param other
+    ## @throws errors.MorphemeExchangeError
     def __add__(self, other):
         from rdf.language import errors
+        # raise a UserWaring (or TypeError) depending on mistake, that is
+        # if other is (or is  not) as string.
         raise (
             {True: errors.MorphemeExchangeError(
-                    "Cannot Pre/Ap-pend a Suf/Pre-fix"),
+                "Cannot Pre/Ap-pend a Suf/Pre-fix"),
              False: TypeError("Can only add strings to this list sub")}[
                 isinstance(other, basestring)
                 ]
@@ -72,6 +76,8 @@ class Prefix(Affix):
     is the only allowed operator overload- it, by definition, must
     be pre-pended"""
     ## prefix + stem (over-rides list concatenation)
+    ## @param stem
+    ## @retval word  prefix + stem
     def __add__(self, stem):
         return self() + stem
 
@@ -82,6 +88,8 @@ class Suffix(Affix):
 
     is the only allowed operator overload- it, by definition, must
     be appended"""
-    ## stem + prefix  (over-rides list concatenation)
+    ## stem + suffix  (over-rides list concatenation)
+    ## @param stem
+    ## @retval word  stem + suffix
     def __radd__(self, stem):
         return stem + self()

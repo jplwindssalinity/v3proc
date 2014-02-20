@@ -5,16 +5,12 @@ Analyzer
 Accumulator
 
 """
+## \namespace rdf.iRDF __i__ nteractive RDF tools for 'perts.
 import abc
+
 from rdf.language.grammar.syntax import Grammar
 from rdf.data import RDF, RDFField, RDFRecord
 from rdf.units import SI
-
-## \namespace rdf.iRDF __i__ nteractive RDF tools for 'perts.
-
-## The RDF Toybox.
-__all__ = ('Grammar', 'RDF', 'RDFField', 'RDFRecord', 'RDFAccumulator',
-           'RDFAnalyzer', 'SI', 'rdf_list')
 
 
 ## A list of rdf records that can filter itself and make an RDF
@@ -26,12 +22,48 @@ class rdf_list(list):
     @property
     ## Convert list to an RDF instance: filter out comments
     ## and pass to RDF constructor
-    ## \return RDF instance from filter(bool, self)
+    ## @returns RDF instance from filter(bool, self)
     def rdf(self):
         """Convert list's contents into an RDF instance"""
-        from rdf.data.files import RDF
         # filter out comments and send over to RDF.
         return RDF(*filter(bool, self))
+
+
+## A generic base class for RDF wrapped data structures -clients should
+## use this when they have an object with RDF dependency injection and then
+## further behavior as defined by the sub-classes methods.
+class RDFWrapper(object):
+    """RDFWrapper(rdf instance):
+
+    is a base class for classes that wrap rdf instances.
+    """
+    ## Initialized with an RDF instance
+    ## \param rdf_ a bona fide rdf.data.files.RDF object
+    def __init__(self, rdf_):
+        ## The wrapped rdf
+        self._rdf = rdf_
+
+    ## self.rdf == self.rdf() == self._rdf
+    @property
+    def rdf(self):
+        """rdf getter"""
+        return self._rdf
+
+    ## Access rdf dictionary
+    def __getitem__(self, key):
+        return self._rdf.__getitem__(self, key)
+
+    ## Access rdf dictionary
+    def __setitem__(self, key, field):
+        return self._rdf.__setitem__(self, key, field)
+
+    ## Access rdf dictionary
+    def __delitem__(self, key):
+        return self._rdf.__delitem__(self, key)
+
+    ## Access rdf dictionary
+    def __len__(self, key):
+        return len(self._rdf)
 
 
 ## Base class
@@ -48,12 +80,24 @@ class _RDFAccess(object):
    ## Getter for grammar
     @property
     def grammar(self):
+        """grammar getter"""
         return self._grammar
 
     ## Protect the language!
+    ## \throws errors.GrammarAccessError You can't set grammar like this.
     @grammar.setter
     def grammar(self):
-        raise TypeError("Cannot change grammar (like this)")
+        """protects grammar"""
+        from rdf.language.errors import GrammarAccessError
+        raise GrammarAccessError("Cannot change grammar (like this)")
+
+    ## Protect the language!
+    ## \throws errors.GrammarAccessError You can't delete grammar
+    @grammar.deleter
+    def grammar(self):
+        """protects grammar"""
+        from rdf.language.errors import GrammarAccessError
+        raise GrammarAccessError("Cannot delete grammar")
 
     ## Just call the grammar
     ## \param line An full rdf line
@@ -89,8 +133,8 @@ class RDFAnalyzer(_RDFAccess):
         return rdf_list([item for item in result] if result else [result])
 
 
-## A TBD rdf accumulator - prolly slower than RDFAnalyzer as it rebuild
-## dictionary all the time-- see RDF.__iadd__
+## A TBD rdf accumulator - prolly slower than RDFAnalyzer as it rebuilds its
+## dictionary all the time-- see rdf.data.files.RDF.__iadd__
 class RDFAccumulator(_RDFAccess):
     """a = RDFAccumulator()
 
@@ -136,8 +180,26 @@ class RDFAccumulator(_RDFAccess):
         """see rdf_list.rdf()"""
         return self.record_list.rdf()
 
+    ## Short circuit rdf()[key] or record_list[index]
+    def __getitem__(self, arg):
+        f_list = lambda index: self.record_list[index]
+        f_dict = lambda key: self.rdf()[key]
+        return {int: f_list, str: f_dict}[type(arg)](arg)
+
+    def __setitem__(self, arg, value):
+        raise TypeError("Cannot set items")
+
+    def __len__(self):
+        return len(self.record_list)
+
+
+## The RDF Toybox.
+__all__ = ('Grammar', 'RDF', 'RDFField', 'RDFRecord', 'RDFAccumulator',
+           'RDFAnalyzer', 'SI', 'rdf_list')
+
 
 def test():
+    """test in rdf/test"""
     accum = RDFAccumulator()
     accum("INCLUDE = rdf.txt")
     return accum

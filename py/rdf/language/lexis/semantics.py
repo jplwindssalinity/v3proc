@@ -4,21 +4,24 @@ the more complex Verb.VERB classes, which do much more.
 """
 ## \namespace rdf.language.lexis.semantics References to Things (Noun)
 import abc
+import operator
+
 from rdf.language import lexis
 
 
 ## Nouns are rdf.language.lexis.Word objects that "concrete" as their
 ## sin_qua_non
 class _Noun(lexis.Word):
+    """The Noun IS something"""
 
     __metaclass__ = abc.ABCMeta
 
-    ## A Noun needs a name
-    def __new__(cls):
-        return str.__new__(cls, cls.__name__.capitalize())
+    ## a _Noun is Capitalized
+    _namer = operator.methodcaller("capitalize")
 
     ## ID Noun type-- race hazard: don't send verbs to this...
     def is_(self, prosodic):
+        """is_ is is_not..."""
         line, grammar = prosodic
         return not (
             (grammar.operator in grammar.comment(line)[0]) ==
@@ -37,7 +40,9 @@ class _Noun(lexis.Word):
     ## \param line A complete RDF sentence (str)
     ## \param grammar An rdf.language.grammar.syntax.Grammar instance
     ## \return N/A: this is an
-    ## <a href="http://docs.python.org/2/library/abc.html?highlight=abstractmethod#abc.abstractmethod">abstractmethod</a>
+    ## <a href=
+    ##"http://docs.python.org/2/library/abc.html?highlight=abstractmethod#abc.abstractmethod">
+    ## abstractmethod</a>
     @abc.abstractmethod
     def concrete(self, prosodic):
         """Abstract method must be over-ridden in concrete subclasses"""
@@ -48,6 +53,7 @@ class _Noun(lexis.Word):
 
 ## The Record Noun processes the basic input: An RDF line.
 class Record(_Noun):
+    """Records have '=' an concretely extract_record"""
 
     _operator_in_line = True
 
@@ -61,7 +67,7 @@ class Record(_Noun):
 
 ## The Comment Noun remembers passive comment lines.
 class Comment(_Noun):
-
+    """Comments don't have '=' an concretely extract_comment"""
     _operator_in_line = False
 
     @staticmethod

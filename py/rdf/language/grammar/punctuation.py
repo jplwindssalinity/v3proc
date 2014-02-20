@@ -23,7 +23,8 @@ potentially silly comment fields.
 from rdf import reserved
 
 
-## A character that knows how to find itself in strings
+## A <a href="http://en.wikipedia.org/wiki/Glyph">character<\a> that knows
+## how to find itself in strings
 class Glyph(str):
     """A Glyph is a str sub-class that can be called to figure itself out.
     For example:
@@ -44,12 +45,16 @@ class Glyph(str):
     ## \returns (left, right) side of line (with possible null str on right)
     def __call__(self, line):
         try:
+            # This works if the glyph is in line,
             index = line.index(self)
         except ValueError:
+            # otherwise, there is nothing to split, so left=line and right="".
             left, right = line, ""
         else:
+            # Since it did work, take the 1-char Glyph out of the results.
             left = line[:index]
             right = line[index+1:]
+        # now return the results with leading/trailing junk stripped.
         return map(str.strip, (left, right))
 
     ## Get line left of self
@@ -57,6 +62,7 @@ class Glyph(str):
     ## \retval left line left of self
     def _left(self, line):
         """left symbol"""
+        # return the left side of __call__.
         return self(line)[0]
 
     ## Get line right of self
@@ -64,16 +70,19 @@ class Glyph(str):
     ## \retval right line right of self
     def _right(self, line):
         """right symbol"""
+        # return the right side of __call__.
         return self(line)[-1]
 
     ## (+glyph)(line) --> glyph.right(line)
     def __pos__(self):
         """+glyph --> glyph.right"""
+        # NB: this returns the METHOD, not the value
         return self._right
 
     ## (-glyph)(line) --> glyph.left(line)
     def __neg__(self):
         """-glyph --> glyph.left"""
+        # NB: this returns the METHOD, not the value
         return self._left
 
 
@@ -166,8 +175,8 @@ class Brackets(str):
     # \retval <bool> IF Bracket is in the line
     def __contains__(self, line):
         return ((-self in line) and
-                 (+self in line) and
-                 line.index(-self) < line.index(+self))
+                (+self in line) and
+                line.index(-self) < line.index(+self))
 
     ## line - delimiter removes delimiter from line, with no IF
     def __rsub__(self, line):
@@ -184,6 +193,7 @@ class Brackets(str):
     ## Method "could be a function" -except it is called as an unbound
     ## method  by __rsub__ and the signature must match _get_outer()
     ## which could not be a function-- so-to-speak.
+    #pylint: disable=R0201
     def _noop_on_inner(self, line):
         """If glyph is not in line, then do nothing"""
         return line

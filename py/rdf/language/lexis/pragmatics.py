@@ -5,6 +5,8 @@ the grammar.
 ## \namespace rdf.language.lexis.pragmatics Words with (reflexive) meaning
 ## (Verb)
 import abc
+import operator
+
 from rdf.language import lexis
 
 
@@ -12,16 +14,15 @@ from rdf.language import lexis
 class _Verb(lexis.Word):
     """_Pragmatic is an self identIfying string"""
 
-    ## _Verb is to general to instaniated, it delegates sin_qua_non to
-    ## act and decides is_not()
     __metaclass__ = abc.ABCMeta
 
-    ## A Verb need a name, and it *will* be VERB.
-    def __new__(cls):
-        return str.__new__(cls, cls.__name__.upper())
+    ## a _Verb is UPPER case.
+    _namer = operator.methodcaller("upper")
 
     ## Allow class to identIfiy itself in the context of an
     ## rdf.language.prosodic.
+    ## @param prosodic A prosodic.Prosodic
+    ## @retval bool boolean is prosodic is type(self).
     def is_(self, prosodic):
         """is_not(prosodic) IFF line is pragmaatic"""
         line = prosodic.strip()
@@ -38,6 +39,8 @@ class _Verb(lexis.Word):
         """act(prosodic) --> do what the line says and return result"""
 
     ## Verbs must act -- or return an empty iterable.
+    ## @param prosodic A prosodic.Prosodic
+    ## @retval iter is dynamically dispatched from subs.
     def sin_qua_non(self, prosodic):
         """see act"""
         return self.act(prosodic) or ()
@@ -46,7 +49,10 @@ class _Verb(lexis.Word):
 ## Open an Include File
 class Include(_Verb):
     """Verb can identIfy the INCLUDE lines"""
+
     ## Include via rdf.language.prosodic.include_file
+    ## @param prosodic A prosodic.Prosodic
+    ## @retval iter from prosodic.Prosodic.include_file()
     def act(self, prosodic):
         """return contents of file as an iterable full of RDFRecords"""
         return prosodic.include_file()
@@ -60,6 +66,8 @@ class _SymbolChanger(_Verb):
     __metaclass__ = abc.ABCMeta
 
     ## A concrete method for an abstract class-- this changes grammar
+    ## @param prosodic A prosodic.Prosodic
+    ## @retval iter from prosodic.Prosodic.change_symbol()
     def act(self, prosodic):
         """change the symbol"""
         prosodic.change_symbol(type(self).__name__.lower())
@@ -84,6 +92,8 @@ class _AffixAdder(_Verb):
     __metaclass__ = abc.ABCMeta
 
     ## Act means set the affix, according to the sub's __name__.
+    ## @param prosodic A prosodic.Prosodic
+    ## @retval iter from prosodic.Prosodic.set_affix()
     def act(self, prosodic):
         """add the affix"""
         prosodic.set_affix(type(self).__name__.lower())
@@ -108,6 +118,9 @@ class Unit(_Verb):
 
     will load another unit in the GLOSSARY
     """
+
+    ## @param prosodic A prosodic.Prosodic
+    ## @retval iter from prosodic.Prosodic.set_unit()
     def act(self, prosodic):
         """create a unit"""
         return prosodic.set_unit()

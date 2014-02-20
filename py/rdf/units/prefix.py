@@ -31,11 +31,11 @@ class Prefix(object):
     ## Sub's need a base to define what their prefixing means
     @abc.abstractproperty
     def base(self):
-        pass
+        """base"""
 
     @abc.abstractmethod
     def cast(self):
-        return self.factor
+        """cast values to ...."""
 
     ## Construct with a symbol and an exponent
     ## \param symbol A string symbol that IS the abbreviation
@@ -63,6 +63,7 @@ class Prefix(object):
         ## Here we can look up base class to see if it
         ## a log on not?
         def decorator(cls):
+            """decorator from factory"""
             ## Instantiate cls with prefixed name, and scale factor
             ## (with exponent)
             cls(str(self) + cls._symbol, self**n)
@@ -87,6 +88,7 @@ class MetricPrefix(Prefix):
 
     ## float
     def cast(self):
+        """cast values to float"""
         return float
 
 
@@ -104,6 +106,7 @@ class BinaryPrefix(Prefix):
 
     ## long
     def cast(self):
+        """cast values to long"""
         return long
 
 
@@ -183,7 +186,9 @@ yobi = yebi
 
 ## Decorate All Metric Prefixes
 def metric(n=1):
+    """metric(n=1) decorates all metric prefixes, with dimensionality = n"""
     def pmetric(cls):
+        """nested: apply all metric prefixes with "n" """
         @exa(n)
         @peta(n)
         @tera(n)
@@ -199,16 +204,18 @@ def metric(n=1):
         @femto(n)
         @atto(n)
         class _Dummy(cls):
-            pass
+            """_Dummy cls memoized unit"""
         return cls
     return pmetric
 
 
 ## Decorate JEDEC prefixes
 def jedec(cls):
+    """Apply all JEDEC decorators to cls"""
     return kilo2()(mega2()(giga2()(cls)))
 
 
 ## Decorate IEC prefixes
 def iec(cls):
+    """Apply all IEC decorators to cls"""
     return kibi()(mebi()(gibi()(tebi()(pebi()(exbi()(zebi()(yobi()(cls))))))))

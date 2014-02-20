@@ -1,5 +1,10 @@
 """RDF Language Exceptions"""
+
 ## \namespace rdf.language.errors RDF Language Exceptions
+
+## Disallowed Access to grammar
+class GrammarAccessError(TypeError):
+    """Thrown for trying to change grammar illegally"""
 
 
 ## Fatal attempt to CODE badly

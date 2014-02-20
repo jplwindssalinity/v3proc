@@ -9,13 +9,16 @@ in the GLOSSARY
 """
 import operator
 import math
-from rdf.units.physical_quantity import *
+from rdf.units.physical_quantity import (
+    Length, Mass, Area, Time, Velocity, dBPower, Energy
+    )
 
 ## Supported _Length conversions
 LENGTHS = (Length('in', 0.0254),
            Length('ft', 0.3048),
            Length('mi', 1.609344e3))
 
+## The Gram.
 MASSES = (Mass('g', 0.001),)
 
 
@@ -48,9 +51,6 @@ POWERS = ()
 DBPOWERS = (dBPower('dBm', adder=-30),)
 
 ENERGIES = (Energy('BTU', 1055.056),)
-
-
-#TORQUES = (Torque('oz-inch', 0.00706155183333),)
 
 
 ## Supported Frequency conversions

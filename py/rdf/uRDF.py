@@ -5,7 +5,7 @@ rdf_include  is the key function- it reads rdf files recursivly.
 rdf_reader unpacks the result into the RDF constructor.
 """
 ## \namespace rdf.uRDF __u__ sers' interface to language.py and data.py
-#from rdf import read
+
 from rdf.language.grammar import syntax
 from rdf.data.files import RDF
 from rdf.utils import unwrap_file
@@ -29,11 +29,9 @@ def rdf_include(src, **_kwargs):
     # There is one keyword allowed, and it is secret
     # Get grammar passed in, or make a new one.
     _grammar = _kwargs.get('_grammar') or syntax.Grammar()
-
     # prepare grammar depth, or add on a recursive call
     _grammar += 1
     # read (full) line from src
-
     for line in unwrap_file(src, wrap=_grammar.wrap):
         # get the result as _grammar processes it.
         result = _grammar(line)
@@ -51,10 +49,17 @@ def rdf_include(src, **_kwargs):
 ## For src it's that simple
 ## \param src Is the source file name
 ## \retval rdf.data.files.RDF The RDF mapping object
-def rdf_reader(src=None):
+def rdf_reader(src=None, uavsar=False):
     """rdf = rdf_reader(src)
 
     src      rdf filename
     rdf      The RDF mapping object"""
     from rdf import utils
-    return RDF(*rdf_include(src or utils.dialog_pickfile()))
+    if uavsar: # fork for uavsar
+        grammar_ = syntax.Grammar()
+        grammar_.comment = ";"   # change comment symbol
+        kwargs = {'_grammar': grammar_} # kick off w/ uavsar grammar
+        ## TODO: make this enable UAVSAR "&" symbol....
+    else:
+        kwargs = {}
+    return RDF(*rdf_include(src or utils.dialog_pickfile(), **kwargs))

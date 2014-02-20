@@ -1,5 +1,10 @@
+#pylint: disable=W0201
 """syntax handles syntax via the Grammar class. It handles syntax
-but farms out some work to cooperative classes"""
+but farms out some work to cooperative classes.
+
+
+Grammar uses private setter injection.
+"""
 ## \namespace rdf.language.grammar.syntax Syntax glues it all together
 import abc
 import itertools
@@ -11,7 +16,11 @@ from rdf.language.lexis import semantics, pragmatics
 
 
 ## decorate setters to prevent setting required commands to NULL
+## \param method Unbound setter method
+## \retval setter Unbound setter method with Null protections
+## \throws errors.NullCommandError
 def null_command_watch(method):
+    """watch method for null commands"""
     def setter(self, value):
         """if bool(value): setter, else raise NullCommandError"""
         if not value:  # guard
@@ -21,7 +30,11 @@ def null_command_watch(method):
 
 
 ## decorate incremental ops to only allow +1 change
+## \param method Unbound setter method
+## \retval setter Unbound setter method with value protection
+## \throws ValueError IF value is not 1
 def unit_change(method):
+    """wrap method in unit (1) change protection"""
     def setter(self, value):
         """if value != 1: raise error"""
         if value != 1:  # guard
@@ -34,13 +47,19 @@ def unit_change(method):
 ## load-time" pragmatics.Verb instances are assigned according to the
 ## rdf.reserved.words.KEYWORDS, and the semantics. Noun instances are created-
 ## these are needed by Grammar.process
+
 class lexicon(abc.ABCMeta):
     """lexicon meta class deal with the keywords defined in
     verbs.
     """
     ## Create class and add pragmatics and semantics
+    ## \param mcs implicit metaclass
+    ## \param *args
+    ## \param **kwargs
+    ## \retval cls made from mcs with *args and **kwargs
     def __new__(mcs, *args, **kwargs):
-        cls = type.__new__(mcs, *args, **kwargs)
+        #pylint: disable=W0212
+        cls = super(lexicon, mcs).__new__(mcs, *args, **kwargs)
         ## Set up verbs
         cls._VERBS = tuple(map(apply, pragmatics.VERBS))
         ## Set up Noun instances by instantiating NOUNS's classes
@@ -111,6 +130,7 @@ class Grammar(reserved.SymbolsMixIn):
 
     ## Grammar always boots into the default state, and can only
     ## be changed by processing RDF lines.
+    ## Refactor into a metaclass's call.
     def __init__(self):
         """Nullary instantiation: you cannot inject dependencies (DI)
         in the constructor. You always start with the default grammar-
@@ -133,6 +153,7 @@ class Grammar(reserved.SymbolsMixIn):
     ## Getter
     @property
     def operator(self):
+        """operator getter"""
         return self._operator
 
     ## Setter has mutators to ensure it is an
@@ -140,11 +161,13 @@ class Grammar(reserved.SymbolsMixIn):
     @operator.setter
     @null_command_watch
     def operator(self, value):
+        """operator setter, casts to Glyph, with null_command_watch"""
         self._operator = punctuation.Glyph(value)
 
     ## Getter
     @property
     def comment(self):
+        """comment getter"""
         return self._comment
 
     ## Setter has mutators to ensure it is a
@@ -152,26 +175,31 @@ class Grammar(reserved.SymbolsMixIn):
     @comment.setter
     @null_command_watch
     def comment(self, value):
+        """comment setter, casts to Glyph, with null_command_watch"""
         self._comment = punctuation.Glyph(value)
 
     ## Getter
     @property
     def prefix(self):
+        """prefix getter"""
         return self._prefix
 
     ## Ensure Grammar._prefix is an rdf.language.grammar.morpheme.Prefix
     @prefix.setter
     def prefix(self, value):
+        """prefix setter, cast to Prefix"""
         self._prefix = morpheme.Prefix(value)
 
     ## Getter
     @property
     def suffix(self):
+        """prefix setter"""
         return self._suffix
 
     ## Ensure Grammar._suffix is an rdf.language.grammar.morpheme.Suffix
     @suffix.setter
     def suffix(self, value):
+        """suffix setter, cast to Suffix"""
         self._suffix = morpheme.Suffix(value)
 
     ## str reflects the current grammar state
@@ -180,7 +208,8 @@ class Grammar(reserved.SymbolsMixIn):
                 self.operator + " " +
                 self.comment + " " + str(self.prefix) + str(self.suffix))
 
-    ## int() --> Grammar.depth
+    ## Recursion Depth
+    ## \reval int Grammar.depth
     def __int__(self):
         return self.depth
 
@@ -213,20 +242,24 @@ class Grammar(reserved.SymbolsMixIn):
     ## Grammar(line) --> rdf.data.entries.RDFRecord \n
     ## It's the money method-- not it's not a pure function- it can
     ## change the state of grammar.
+    ## \param line An rdf line
+    ## \retval result see _process().
     def __call__(self, line):
         """grammar(line) --> grammar.process(line) (with error catching)"""
         from rdf.units.errors import UnrecognizedUnitWarning
         try:
             result = self._process(line)
         except UnrecognizedUnitWarning as err:
-            print >> sys.stderr, "WARNING: " + repr(err) + ": : " + line
+            print >> sys.stderr, "WARNING: " + repr(err) + "::" + line
             result = []
         except errors.RDFWarning as err:
-            print >> sys.stderr, "WARNING: " + repr(err) + ": : " + line
+            print >> sys.stderr, "WARNING: " + repr(err) + "::" + line
             result = []
         return result
 
     ## Grammar + <str> = rdf.language.Prosodic
+    ## \param line an rdf line
+    ## \retval prosodic rdf.language.Prosodic
     def __add__(self, line):
         from rdf.language import Prosodic
         return Prosodic(line, self)
@@ -237,6 +270,7 @@ class Grammar(reserved.SymbolsMixIn):
     ## word might change self
     ## \retval word(prosodic) The processed line
     def _process(self, line):
+        """process the line"""
         import operator
         # combine line and grammar into 1 thing
         prosodic = self + line
@@ -250,6 +284,8 @@ class Grammar(reserved.SymbolsMixIn):
         return word(prosodic)
 
     ## Setitem in an AFFIX in Grammar._appendables
+    ## \param classname Affix sub-class
+    ## \throws ValueError
     def set_affix(self, classname, value):
         """set_affix(self, classname, value)
         classname in (prefix, suffix)
@@ -262,10 +298,12 @@ class Grammar(reserved.SymbolsMixIn):
                              repr(classname))
 
     ## Change a symbol in Grammar._mutables
+    ## \param attr key into Grammar._mutables
+    ## \throws ValueError
     def change_symbol(self, attr, value):
         """change_symbol(self, attr, value)
         atr in (operator, comment)
-        value = , # ! ... whatevs."""
+        value =, # ! ... whatevs."""
         try:
             setattr(self, self._mutables[attr], value)
         except KeyError:

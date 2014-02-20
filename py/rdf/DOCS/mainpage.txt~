@@ -50,9 +50,9 @@ does not contain an operator field, including lines that are entirely blank.
 
 @subsubsection kw		Keyword
 
-All data in an RDF file are identified byunique Keywords.  The Keyword is
-composed of any arbitrary string of printable ascii characters except for the
-11 reserved characters listed in section 2.3.  Spaces (ascii #32) and tabs
+All data in an RDF file are identified by unique Keywords.  The Keyword is
+composed of any arbitrary string of printable ASCII characters except for the
+11 reserved characters listed in section 2.3.  Spaces (ASCII #32) and tabs
 contained within a keyword are considered part of the keyword and must be
 present when making keyword searches. However, spaces and tabs are considered
 equivalent.  Also, consecutive spaces and tabs within a keyword are equivalent
@@ -66,7 +66,7 @@ search.
 
 If present, the Units field must occur between the keyword and the operator.
 It is distinguish from the key word by open and close parenthesis ( ).
-The units are expressed as an ascii field.  The RDF certified list of units
+The units are expressed as an ASCII field.  The RDF certified list of units
 can be found in appendix A.  They include measures of length, velocity, mass,
 time, etc.  If a logical record contains more than one data value, a separate
 unit can be specified for each value.  If there are more values than units,
@@ -88,8 +88,8 @@ It must be present in every logical data record.
 @subsubsection values		Values
 
 
-The value field can consist of any printable ascii character except for the
-comment deliminator (see following section). The ascii representation of
+The value field can consist of any printable ASCII character except for the
+comment deliminator (see following section). The ASCII representation of
 numeric data follows the FORTRAN conventions for integer, fix point, and
 floating point data formats.  Floating point data uses an E to indicate the
 exponent value.  Data values can be space or comma delimited.  When character
@@ -100,8 +100,8 @@ contains spaces or commas, the string must be enclosed by double quotes, Ò
 
 
 Any characters following the comment deliminator are considered a comment.
-The default comment deliminator is an exclimation point, !.  The comment
-deliminator can be change by specifing:
+The default comment deliminator is an exclamation point, !.  The comment
+deliminator can be change by specifying:
 
 	    COMMENT = string
 
@@ -125,7 +125,7 @@ separated from each other using: commas, tabs, or spaces.
 
 The following characters are not allowed in keywords, units, dimensions, and
 elements:  (,  ),   [,   ],   {,   },  <,  >,  =,  !,  and ;.   In addition,
-the semicolon, ;,  is not allowed in the value field. If ascii data contains
+the semicolon, ;,  is not allowed in the value field. If ASCII data contains
 spaces, commas or tabs, it must be enclosed by double quotes.  Finally, if the
 last character of a physical record is a backslash, \, the logical record is
 continued onto the following line (see section 2.5).
@@ -186,8 +186,8 @@ continues. The maximum depth of include files open at any one time is 1000
 
 @subsection newu UNIT
 
-The UNIT command is new to RDF3000. It allows a user to specifiy a unit
-that is susequently used in the (unit) field of an RDF record. The protocal
+The UNIT command is new to RDF3000. It allows a user to specify a unit
+that is subsequently used in the (unit) field of an RDF record. The protocol
 is:
 
 UNIT = (*args, **kwargs)
@@ -196,11 +196,11 @@ with the (python) function signature:
 
 (abbreviation="", multiplier=1, adder=0, si_unit=None)
 
-Because it subs a built-in (str), it uses __new__ insetad of the more familiar
+Because it subs a built-in (str), it uses __new__ instead of the more familiar
 __init__, which leads to some nuances in the signatures:
 
-(1) You cannot use the abbreviation keyword, so that the abbrviation argument
-must be positiona;
+(1) You cannot use the abbreviation keyword, so that the abbreviation argument
+must be positional;
 
 
 
@@ -243,18 +243,14 @@ The python implementation is described within.
 
 @subsection pandm Packages and Modules
 uRDF.py     basic __u__-sers \n 
-iRDF.py     advanced __i__-teractive stuff \n
+iRDF.py     advanced __i__-nteractive stuff \n
 eRDF.py     uncut __e__-xperiment stuff\n
 parse.py    A script for processing an rdf file to stdout\n
-read.py     generators that read rdf files\n
-utils.py    non-rdf specific utilites\n\n
+utils.py    non-rdf specific utilities and rdf reading helpers\n\n
+reserved.py Reserved words and characters
 __data__ External object for data\n
 	entries.py  Data structure for file lines\n
 	files.py  Mapping object (RDF) for files\n
-\n
-__reserved__ Constants as primatives.\n
-	glyphs.py  Constant character glyphs\n
-	words.py Command WORDS\n
 \n
 __language__  Grammar and Lexicon \n
 	prosodic.py The interaction between text (clitics) and the host grammar.
@@ -263,14 +259,17 @@ __language__/ __grammar__ Symbols and Parsing\n
 		morpheme.py Self-aware morphemes (affixes)\n
 		punctuation.py Self-aware punctuations\n
 		syntax.py the Grammar object that knows how to read RDF\n
+		errors.py Language exceptions.
 \n
 __language__/ __lexis__ Words\n
 		semantics.py Words that become things (Nouns)\n
 		pragmatics.py Words that will an can change Grammar (Verbs)\n
 \n
 __units__/ Units \n
-	   	 physical_quantity.py SI Units, Prefixes and all the basics\n
-		 addendum.py Non SI and user units.
+	   	 physical_quantity.py SI Units\n
+		 prefix.py prefix class decorator classes\n
+		 addendum.py Non SI and user units\n
+		 errors.py Unit exceptions.
 		 
 @subsection how How it works:
 
@@ -282,26 +281,26 @@ Before processing begins, an rdf.language.grammar.syntax.Grammar object
 is created-- it knows the default RDF spec.
 
 Input lines are ingested, with continued lines unwrapped, and yielded
-one-by-one by the likes of rdf.read.unwrap_file
+one-by-one by the likes of rdf.utils.unwrap_file
 
 The lines are passed to the grammar  -which knows how to interpret them.
-There are procesed in rdf.language.grammar.syntax.Grammar.process which
+There are processed in rdf.language.grammar.syntax.Grammar which
 loops through the possible input types in a chain of the iterable
 constants: \n
 rdf.language.lexis.pragmatics.VERBS \n
 rdf.language.lexis.semantics.NOUNS \n
 until the line is ID's as and instance of one of them. That instance
 knows what to do: \n
-Verbs change the grammar ans possibly recursivey include files \n
+Verbs change the grammar ans possibly recursively include files \n
 Nouns are Records or Comments. \n
 
 In either case the grammar object does not know what to do, the Verb or
-Noun object doesn't knnow what to do, but it does know who to ask, and
+Noun object doesn't know what to do, but it does know who to ask, and
 it asks\n
 rdf.language.prosodic.Prosodic
 
 All verb except rdf.language.lexis.pragmatics.Include return and empty tuple,
-while the later returns a list of the conetents of the included file.
+while the later returns a list of the contents of the included file.
 
 There are to Nouns: \n\n
 rdf.language.lexis.semantics.Record \n
@@ -317,8 +316,8 @@ no matter what you get back from the rdf_include generator: you can iterate
 it and it will yield 0, 1, or many rdf.data.entries.RDFRecord objects
 (which is the fundamental data representation of an RDF Record).
 Note: you really can't yield 0, so what happens is it moves to the next
-rdf line, until a finite number of records is kicked put. Thus the generator
-chains them all together seemlessy, no matter the depth of recursion- and that
+rdf line, until a finite number of records is kicked out. Thus the generator
+chains them all together seamlessly, no matter the depth of recursion- and that
 can be unpacked into the rdf.data.files.RDF constructor.
 
 Note: the RDFRecord is a fancy (Key, "value") pair, where the key is the
@@ -331,15 +330,16 @@ The rdf.data.entries.RDFField is a tuple of:
     value (units) {dimensions} [element] !comments
 
 with some extras-- for instance, when it is created, the units (if present)
-are check against the rdf.units.units_.UNITS dictionary and converted to
+are checked against the rdf.units.physical_quantity._UNITS.Gloassry dictionary
+and converted to
 base units. It also has an eval() method, which will do what it takes to
 take the value from a string into its native type.
 
 Finally the rdf.data.files.RDF object-- which is what users really put into
-their programms-- has some features:\n
+their programs-- has some features:\n
 
 (1) failed attribute requests are passed to the underline mapping class- so
-you can perferm OrderDict method calls on them.
+you can perform OrderDict method calls on them.
 
 (2) getitem is special: rdf[key] returns eval(value)-- so the numeric (or
 whatever) version of value, while rdf.get(key) returns the whole rdf field.
