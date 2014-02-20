@@ -1,7 +1,5 @@
-# stuff to ignore
-*.so
+*.pyc
 *.o
 *.s
 *.ii
 *.i
-*.pyc
