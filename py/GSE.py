@@ -26,7 +26,8 @@ class GSE:
         self.version = None
         self._DetectVersion()
         assert self.version != None, "%s is not a GSE file" % self.filename
-        self.n_packets = os.path.getsize(self.filename)/PACKET_SIZE[self.version]
+        self.n_packets = os.path.getsize(
+            self.filename)/PACKET_SIZE[self.version]
 
     def _DetectVersion(self):
         with open(self.filename, 'r') as ifp:
