@@ -36,12 +36,7 @@
 #    Alex Fore
 #    alexander.fore@jpl.nasa.gov
 #----------------------------------------------------------------------
-QSCATSIM_PY_DIR = '/home/fore/qscatsim/QScatSim/py'
-
 import sys
-if not QSCATSIM_PY_DIR in sys.path:
-    sys.path.append(QSCATSIM_PY_DIR)
-
 import os
 import pp.GenRevList
 import pp.UpdateRevsDB

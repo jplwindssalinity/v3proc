@@ -37,7 +37,7 @@ def GetS(config_file, table_ids, orbsteps, this_rev):
     try:
         iter(table_ids)
         outfile=os.path.join(gs_sfact_merged_dir, 'RS_SFACT_%5.5d'%this_rev)
-        Factor.S.Merge([
+        Factor.S.merge([
             Factor.S(os.path.join(gs_sfact_dir, 'RS_SFACT_%5.5d'%id)) for
             id in table_ids], orbsteps).Write(outfile)
     except TypeError:
@@ -68,7 +68,7 @@ def GetX(config_file, table_ids, orbsteps, this_rev):
     try:
         iter(table_ids)
         outfile=os.path.join(gs_xfact_merged_dir, 'RS_XFACT_%5.5d'%this_rev)
-        Factor.X.Merge([
+        Factor.X.merge([
             Factor.X(os.path.join(gs_xfact_dir, 'RS_XFACT_%5.5d'%id)) for
             id in table_ids], orbsteps).Write(outfile)
     except TypeError:

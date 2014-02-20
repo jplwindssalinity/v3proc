@@ -35,13 +35,7 @@
 #    alexander.fore@jpl.nasa.gov
 #----------------------------------------------------------------------
 
-QSCATSIM_PY_DIR='/home/fore/qscatsim/QScatSim/py'
-
 import sys
-if not QSCATSIM_PY_DIR in sys.path:
-    sys.path.append(QSCATSIM_PY_DIR)
-
-from optparse import OptionParser
 import os
 import pdb
 import rdf

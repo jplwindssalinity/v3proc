@@ -75,7 +75,7 @@ def OldGSE(config_file):
                (datetime.datetime.now()-last_notify['time'])<ANNOY_INTERVAL):
             message_body = MAIL_BODY % (
                 os.path.basename(last_gse_file), 
-                util.time.ToCodeB(last_gse_time))
+                util.time.to_code_b(last_gse_time))
                 
             hours_old = (
                 datetime.datetime.utcnow()-last_gse_time).total_seconds()/60/60
