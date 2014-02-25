@@ -1,8 +1,0 @@
-
-angle (degrees)  = 20
-speed  (mph)  = 50
-height (feet) /
-= 20
-love /
-{feeling} = /
-1
