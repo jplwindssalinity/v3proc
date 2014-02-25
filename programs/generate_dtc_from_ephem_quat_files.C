@@ -446,7 +446,9 @@ main(
             //--------------------//
 
             // addition of 0.5 centers on orbit_step
-            double time = start_time + orbit_step_size * ((double)orbit_step + 0.5);
+            // double time = start_time + orbit_step_size * ((double)orbit_step + 0.5);
+            double time = start_time + orbit_step_size * ((double)orbit_step);
+            qscat.cds.SetTime(time);
 
             //-----------------------//
             // locate the spacecraft //
