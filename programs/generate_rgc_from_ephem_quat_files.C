@@ -539,9 +539,10 @@ main(
             // calculate the time //
             //--------------------//
 
-            // addition of 0.5 centers s/c on orbit_step
-            double time = start_time +
-                orbit_step_size * ((double)orbit_step + 0.5);
+            // addition of 0.5 centers on orbit_step
+            // double time = start_time + orbit_step_size * ((double)orbit_step + 0.5);
+            double time = start_time + orbit_step_size * ((double)orbit_step);
+            qscat.cds.SetTime(time);
 
             //-----------------------//
             // locate the spacecraft //
@@ -640,7 +641,7 @@ main(
                 azimuth -= encoder_offset;
 
                 // subtract the internal (sampling) delay angle
-                double cds_pri = (double)qscat.cds.priDn / 10.0;
+                double cds_pri = MS_TO_S * (double)qscat.cds.priDn / 10.0;
                 azimuth -= (cds_pri * assumed_spin_rate);
 
                 // add the actual sampling delay angle
@@ -668,7 +669,7 @@ main(
                 // (not using IdealRtt because IdealRtt zeros the attitude)
                 rtt[azimuth_step] = ( qti.roundTripTime + T_GRID +
                     T_RC) * S_TO_MS;
-                
+                rtt[azimuth_step] = qti.roundTripTime * S_TO_MS;
             }
             
             if(out_rtt_table) fwrite(&rtt,sizeof(double),RANGE_AZIMUTH_STEPS,ofp_rtt_table);
