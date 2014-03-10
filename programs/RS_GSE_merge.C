@@ -227,7 +227,7 @@ int main( int argc, char* argv[] ) {
   //printf("Unique GSE packets: %zd\n",gse_tt_idx_list.size());
   
   if( gse_tt_idx_list.size()==0) {
-    printf("No packets to write, quitting\n");
+    //printf("No packets to write, quitting\n");
     exit(0);
   }
   
