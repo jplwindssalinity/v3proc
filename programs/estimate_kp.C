@@ -72,9 +72,7 @@ static const char rcs_id[] =
 #include <signal.h>
 #include <unistd.h>
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Misc.h"
 #include "ConfigList.h"
 #include "L2AH.h"
@@ -86,7 +84,6 @@ static const char rcs_id[] =
 #include "KpStatistics.h"
 #include "Index.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "WindGrad.h"
 
 //-----------//

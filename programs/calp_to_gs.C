@@ -55,9 +55,7 @@ static const char rcs_id[] =
 #include "ETime.h"
 #include "L1A.h"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "List.h"
-#include "List.C"
 
 //-----------//
 // TEMPLATES //

@@ -54,16 +54,13 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <stdlib.h>
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "List.h"
-#include "List.C"
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ConfigList.h"
 #include "ConfigSim.h"
 #include "L1B.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "PscatL1A.h"
 #include "PscatL1AToL1B.h"
 #include "PscatConfig.h"
@@ -88,7 +85,6 @@ template class List<EarthPosition>;
 template class List<MeasSpot>;
 template class List<WindVectorPlus>;
 template class List<long>;
-template class List<off_t>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;

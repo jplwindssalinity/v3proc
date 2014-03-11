@@ -76,7 +76,6 @@ static const char rcs_id[] =
 #include "Wind.h"
 #include "L2B.h"
 #include "List.h"
-#include "List.C"
 
 using std::list;
 using std::map; 

@@ -63,12 +63,9 @@ static const char rcs_id[] =
 #include "Beam.h"
 #include "GMF.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "AngleInterval.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "Qscat.h"
 
 //-----------//

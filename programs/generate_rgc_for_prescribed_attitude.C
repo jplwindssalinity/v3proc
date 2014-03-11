@@ -60,9 +60,7 @@ static const char rcs_id[] =
 #include <string.h>
 #include <signal.h>
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Misc.h"
 #include "InstrumentGeom.h"
 #include "ConfigList.h"
@@ -71,7 +69,6 @@ static const char rcs_id[] =
 #include "L2B.h"
 #include "L2AToL2B.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "Array.h"
 #include "Meas.h"
 #include "SpacecraftSim.h"

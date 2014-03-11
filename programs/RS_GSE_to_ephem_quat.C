@@ -50,6 +50,7 @@
 static const char rcs_id[] =
     "@(#) $Id$";
 
+#include <math.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <vector>
@@ -59,9 +60,7 @@ static const char rcs_id[] =
 #include "ETime.h"
 #include "Matrix3.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "EarthPosition.h"
 #include "GenericGeom.h"
 #include "Ephemeris.h"

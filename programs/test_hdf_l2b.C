@@ -62,7 +62,6 @@ static const char rcs_id[] =
 #include "L2B.h"
 #include "Constants.h"
 #include "List.h"
-#include "List.C"
 
 //-----------//
 // TEMPLATES //

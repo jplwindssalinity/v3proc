@@ -61,11 +61,8 @@ static const char rcs_id[] =
 #include "Misc.h"
 #include "L2A.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "LandMap.h"
 
 //-----------//
@@ -78,7 +75,6 @@ template class List<MeasSpot>;
 template class BufferedList<OrbitState>;
 template class List<OrbitState>;
 template class List<long>;
-template class List<off_t>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;

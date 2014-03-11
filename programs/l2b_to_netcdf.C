@@ -39,16 +39,15 @@ static const char rcs_id[] =
 #include <getopt.h>
 #include <mfhdf.h>
 
+#include "AngleInterval.h"
 #include "NetCDF.h"
 #include "Misc.h"
 #include "L2B.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "Constants.h"
+#include "Wind.h"
 
 
 //--------//
@@ -127,15 +126,6 @@ enum {
 //-----------//
 // TEMPLATES //
 //-----------//
-
-class AngleInterval;
-template class List<AngleInterval>;
-template class List<EarthPosition>;
-template class List<WindVectorPlus>;
-template class List<long>;
-template class TrackerBase<unsigned char>;
-template class TrackerBase<unsigned short>;
-
 
 typedef enum {
     TIME = 0,
