@@ -28,22 +28,16 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CFLAGS = @CFLAGS@ -D_NO_PROTO -Wno-deprecated -fPIC
 AM_CXXFLAGS = @CXXFLAGS@ -D__SCAT_GNUCPP__ -DFUNCPROTO -D_REENTRANT -DXTFUNCPROTO -D__EXTENSIONS__ -DNOPM -Wno-deprecated
-#-fno-implicit-templates
 
-AM_CPPFLAGS = -I. -Iobjs -Ieadata @CPPFLAGS@
+AM_CPPFLAGS = -I. -I@top_srcdir@/objs -I@top_srcdir@/eadata @CPPFLAGS@
 
 AM_LDFLAGS =   \
     -lstdc++   \
     @LDFLAGS@
 
-#    -lSim      \
-#    -lEAData   
-
 lib_LIBRARIES = \
     libEAData.a \
     libSim.a
-
-#programs_baseband_errors_LDADD = ../lib/libSim.a ../lib/libEAData.a
 
 LDADD = libSim.a libEAData.a
 
