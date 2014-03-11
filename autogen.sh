@@ -24,4 +24,4 @@
 mkdir m4 > /dev/null 2>&1
 
 libtoolize
-autoreconf --force --install --make
+autoreconf --force --install
