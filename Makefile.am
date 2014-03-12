@@ -80,6 +80,7 @@ bin_PROGRAMS = \
     programs/l1b_coverage                         \
     programs/l1bhdf_sigma0_histo                  \
     programs/l1b_hdf_to_l1b                       \
+    programs/l1b_hdf_to_l1b_fast                  \
     programs/l1b_isro_to_l1b                      \
     programs/l1b_outlines                         \
     programs/l1b_s0                               \
@@ -91,6 +92,7 @@ bin_PROGRAMS = \
     programs/l2a_centroids                        \
     programs/l2a_dissect                          \
     programs/l2a_filter                           \
+    programs/l2a_fix_QS_composites                \
     programs/l2a_getcell                          \
     programs/l2ags_s0                             \
     programs/l2ags_s0l                            \
