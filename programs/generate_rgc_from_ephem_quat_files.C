@@ -280,6 +280,8 @@ main(
         nadir_rtt_file = argv[++optind];
       } else if( sw == "-f" ) {
         opt_fixed = 1;
+      } else if( sw == "-c" ) {
+        opt_clean = 1;
       } else {
         fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
         exit(1);
@@ -713,7 +715,7 @@ main(
         //-----------//
 
         cds_beam_info->rangeTracker.SetRoundTripTime(terms);
-
+        
         //-------//
         // clean //
         //-------//
