@@ -280,7 +280,7 @@ main(
         nadir_rtt_file = argv[++optind];
       } else if( sw == "-f" ) {
         opt_fixed = 1;
-      } else if( sw == "-c" ) {
+      } else if( sw == "-clean" ) {
         opt_clean = 1;
       } else {
         fprintf(stderr,"%s: %s\n",command,&usage_string[0]);
