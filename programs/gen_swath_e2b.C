@@ -177,6 +177,7 @@ int main(int argc, char* argv[]){
         ++optind;
     }
 
+    // validate inputs
     if( !ecmwf_dir || !out_file || !t_start_str || orbit_period==0 || 
         long_asc_node==-999 || orbit_inc==-999) {
         fprintf(stderr, "%s: Usage: %s\n", command,&usage_string[0]);
@@ -191,6 +192,10 @@ int main(int argc, char* argv[]){
     orbit_config.at_res      = wvc_size;
     orbit_config.xt_res      = wvc_size;
     
+    // Keep swath grid consistent with historical grids
+    // possible sizes:
+    // 50km - 812, 25km -- 1624, 12.5km -- 3248, 10km -- 4060,
+    // 8km - 5075, 7km -- 5800, 6.25km -- 6496, ...etc
     double f_nati = 40600 / wvc_size;
     if( f_nati != round(f_nati)) {
         fprintf(stderr, "wvc_size must divide 40600 exactly\n");
@@ -301,7 +306,8 @@ int main(int argc, char* argv[]){
             }
         }
 
-        // Copy to _last string variables so we don't reload every time when files are the same.
+        // Copy to _last string variables so we don't reload every time when 
+        // files are the same.
         strcpy( ecmwf_file_1_last, ecmwf_file_1 );
         strcpy( ecmwf_file_2_last, ecmwf_file_2 );
 
@@ -345,11 +351,13 @@ int main(int argc, char* argv[]){
                     LonLat     tmp_ll;
                     WindVector tmp_wv[2];
 
-                    tmp_ll.Set( DEG_TO_RAD( lon[i_lon] ), DEG_TO_RAD( lat[i_lat] ) );
+                    tmp_ll.Set(
+                        DEG_TO_RAD( lon[i_lon] ), DEG_TO_RAD( lat[i_lat] ) );
 
                     if( !nwp_1.NearestWindVector( tmp_ll, &tmp_wv[0] ) ||
                         !nwp_2.NearestWindVector( tmp_ll, &tmp_wv[1] ) ) {
-                        fprintf( stderr, "Error getting nearest wind vectors @ corners!\n");
+                        fprintf( stderr, 
+                            "Error getting nearest wind vectors @ corners!\n");
                         exit(1);
                     }
 
@@ -367,16 +375,20 @@ int main(int argc, char* argv[]){
             // Interpolate!
             for ( int tt = 0; tt < 2; ++tt ) {
                 // interpolate for u, v, and speed.
-                if( !bilinear_interp( lon[0],      lon[1],      lat[0],      lat[1], 
-                                      u[tt][0][0], u[tt][0][1], u[tt][1][0], u[tt][1][1], 
-                                      wvc_lon_deg, wvc_lat_deg, &uu[tt] ) ||
-                    !bilinear_interp( lon[0],      lon[1],      lat[0],      lat[1], 
-                                      v[tt][0][0], v[tt][0][1], v[tt][1][0], v[tt][1][1], 
-                                      wvc_lon_deg, wvc_lat_deg, &vv[tt] ) ||
-                    !bilinear_interp( lon[0],      lon[1],      lat[0],      lat[1], 
-                                      s[tt][0][0], s[tt][0][1], s[tt][1][0], s[tt][1][1], 
-                                      wvc_lon_deg, wvc_lat_deg, &ss[tt] ) ) {
-                    fprintf( stderr, "Error in spatial (bilinear) interpolation\n");
+                if( !bilinear_interp( 
+                        lon[0],      lon[1],      lat[0],      lat[1], 
+                        u[tt][0][0], u[tt][0][1], u[tt][1][0], u[tt][1][1], 
+                        wvc_lon_deg, wvc_lat_deg, &uu[tt] ) ||
+                    !bilinear_interp( 
+                        lon[0],      lon[1],      lat[0],      lat[1], 
+                        v[tt][0][0], v[tt][0][1], v[tt][1][0], v[tt][1][1], 
+                        wvc_lon_deg, wvc_lat_deg, &vv[tt] ) ||
+                    !bilinear_interp( 
+                        lon[0],      lon[1],      lat[0],      lat[1], 
+                        s[tt][0][0], s[tt][0][1], s[tt][1][0], s[tt][1][1], 
+                        wvc_lon_deg, wvc_lat_deg, &ss[tt] ) ) {
+                    fprintf( 
+                        stderr, "Error in spatial interpolation\n");
                     exit(1);
                 }
             }
@@ -388,12 +400,13 @@ int main(int argc, char* argv[]){
                 exit(1);
             }
 
-            // Final (u,v) components (as per RSD's code); RSD says this from M. Freilich.
-            // BWS says to continue to do it this way...
+            // Final (u,v) components (as per RSD's code); RSD says this from 
+            // M. Freilich. BWS says to continue to do it this way...
             double uuu_ = uuu * sss / sqrt( uuu*uuu + vvv*vvv );
             double vvv_ = vvv * sss / sqrt( uuu*uuu + vvv*vvv );
 
-            // Use clockwise from North convention for wind direction (oceanographic)
+            // Use clockwise from North convention for wind direction 
+            // (oceanographic)
             output_lat[ati][cti] = wvc_lat_deg;
             output_lon[ati][cti] = wvc_lon_deg;
             output_spd[ati][cti] = sqrt( uuu_ * uuu_ + vvv_ * vvv_ );
