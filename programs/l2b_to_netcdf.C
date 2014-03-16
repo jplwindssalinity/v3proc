@@ -289,7 +289,7 @@ int main(int argc, char **argv) {
     max_ambiguities = l2b.frame.swath.GetMaxAmbiguityCount();
 
     // Initialize the NetCDF DB
-    NCERR(nc_create(run_config.l2bc_file, NC_WRITE, &ncid));
+    NCERR(nc_create(run_config.l2bc_file, 0, &ncid));
 
     ERR(copy_l2bhdf_attributes(ncid, l2bhdf_fid) != 0);
 
