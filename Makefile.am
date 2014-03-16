@@ -60,6 +60,7 @@ bin_PROGRAMS = \
     programs/fake_vap                             \
     programs/fit_dtc                              \
     programs/fix_ecmwf_speed                      \
+    programs/gen_swath_e2b                        \
     programs/generate_dtc                         \
     programs/generate_rgc                         \
     programs/get_att                              \
