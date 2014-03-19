@@ -60,7 +60,6 @@ static const char rcs_id[] =
 #include "hdf.h"
 #include "mfhdf.h"
 #include "Tracking.h"
-#include "Tracking.C"
 
 //-----------//
 // CONSTANTS //

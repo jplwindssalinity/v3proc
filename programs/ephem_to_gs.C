@@ -53,9 +53,7 @@ static const char rcs_id[] =
 #include "Ephemeris.h"
 #include "ETime.h"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "List.h"
-#include "List.C"
 
 //-----------//
 // TEMPLATES //

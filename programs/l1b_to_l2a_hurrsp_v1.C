@@ -63,13 +63,10 @@ static const char rcs_id[] =
 #include "L1BHdf.h"
 #include "L1AToL1B.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "QscatConfig.h"
 #include "CoastalMaps.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 
 
 using std::list;

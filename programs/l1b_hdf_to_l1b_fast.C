@@ -70,12 +70,9 @@ static const char rcs_id[] =
 #include "ConfigSim.h"
 #include "L1AToL1B.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "QscatConfig.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "SeaPac.h"
 #include "AttenMap.h"
 

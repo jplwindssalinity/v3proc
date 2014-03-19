@@ -14,16 +14,13 @@ static const char rcs_id[] =
 #include <stdlib.h>
 #include <string>
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Misc.h"
 #include "ConfigList.h"
 #include "ConfigSim.h"
 #include "L1B.h"
 #include "Meas.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "SpacecraftSim.h"
 #include "AscatL1bReader.h"
 #include "ETime.h"

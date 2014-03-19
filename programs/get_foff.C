@@ -60,7 +60,6 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <fcntl.h>
-#include <ieeefp.h>
 #include "Misc.h"
 #include "ConfigList.h"
 #include "L1A.h"
@@ -68,11 +67,8 @@ static const char rcs_id[] =
 #include "QscatConfig.h"
 #include "InstrumentGeom.h"
 #include "List.h"
-#include "List.C"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "AngleInterval.h"
 #include "echo_funcs.h"
 #include <unistd.h>
@@ -720,7 +716,7 @@ process_orbit_step(
     // check for reasonableness //
     //--------------------------//
 
-    if (isnand(a) || isnand(c) || isnand(p))
+    if (isnan(a) || isnan(c) || isnan(p))
         g_sector_count[beam_idx][orbit_step] = 0;
 
     if (fabs(a) > 600000.0)

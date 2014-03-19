@@ -39,16 +39,15 @@ static const char rcs_id[] =
 #include <getopt.h>
 #include <mfhdf.h>
 
+#include "AngleInterval.h"
 #include "NetCDF.h"
 #include "Misc.h"
 #include "L2B.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "Constants.h"
+#include "Wind.h"
 
 
 //--------//
@@ -127,15 +126,6 @@ enum {
 //-----------//
 // TEMPLATES //
 //-----------//
-
-class AngleInterval;
-template class List<AngleInterval>;
-template class List<EarthPosition>;
-template class List<WindVectorPlus>;
-template class List<long>;
-template class TrackerBase<unsigned char>;
-template class TrackerBase<unsigned short>;
-
 
 typedef enum {
     TIME = 0,
@@ -299,7 +289,7 @@ int main(int argc, char **argv) {
     max_ambiguities = l2b.frame.swath.GetMaxAmbiguityCount();
 
     // Initialize the NetCDF DB
-    NCERR(nc_create(run_config.l2bc_file, NC_WRITE, &ncid));
+    NCERR(nc_create(run_config.l2bc_file, 0, &ncid));
 
     ERR(copy_l2bhdf_attributes(ncid, l2bhdf_fid) != 0);
 

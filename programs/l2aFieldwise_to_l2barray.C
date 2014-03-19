@@ -62,9 +62,7 @@ static const char rcs_id[] =
 //#include "Array.h"
 
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Misc.h"
 #include "ConfigList.h"
 #include "L2A.h"
@@ -72,7 +70,6 @@ static const char rcs_id[] =
 #include "L2B.h"
 #include "L2AToL2B.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "Array.h"
 #include "Meas.h"
 

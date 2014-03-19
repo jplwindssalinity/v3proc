@@ -57,9 +57,7 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <stdlib.h>
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Misc.h"
 #include "Constants.h"
 #include "Attitude.h"
@@ -72,7 +70,6 @@ static const char rcs_id[] =
 #include "ConfigSim.h"
 #include "Antenna.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "AngleInterval.h"
 
 //-----------//

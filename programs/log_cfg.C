@@ -58,7 +58,6 @@ static const char rcs_id[] =
 #include "Misc.h"
 #include "ConfigList.h"
 #include "List.h"
-#include "List.C"
 
 //-----------//
 // TEMPLATES //

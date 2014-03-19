@@ -56,13 +56,11 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <signal.h>
 #include "List.h"
-#include "List.C"
 #include "AngleInterval.h"
 #include "ConfigList.h"
 #include "Meas.h"
 #include "PMeas.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "Spacecraft.h"
 #include "ConfigSim.h"
 #include "Pscat.h"
@@ -70,7 +68,6 @@ static const char rcs_id[] =
 #include "PscatSim.h"
 #include "PscatL1A.h"
 #include "BufferedList.h"
-#include "BufferedList.C"
 
 using std::list;
 using std::map; 
@@ -92,7 +89,6 @@ template class BufferedList<OrbitState>;
 template class List<OrbitState>;
 template class List<WindVectorPlus>;
 template class List<long>;
-template class List<off_t>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;

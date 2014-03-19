@@ -69,7 +69,6 @@ static const char rcs_id[] =
 #include <unistd.h>
 #include "Misc.h"
 #include "Tracking.h"
-#include "Tracking.C"
 
 //-----------//
 // TEMPLATES //

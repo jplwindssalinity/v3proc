@@ -71,11 +71,8 @@ static const char rcs_id[] =
 #include "Sds.h"
 #include "InstrumentGeom.h"
 #include "List.h"
-#include "List.C"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "echo_funcs.h"
 
 //-----------//
