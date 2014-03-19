@@ -57,9 +57,7 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <stdlib.h>
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "List.h"
-#include "List.C"
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ConfigList.h"
@@ -68,7 +66,6 @@ static const char rcs_id[] =
 #include "L1B.h"
 #include "OvwmL1AToL1B.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "OvwmConfig.h"
 
 using std::list;

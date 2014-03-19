@@ -35,9 +35,7 @@ static const char rcs_id[] =
 #include <fcntl.h>
 #include <signal.h>
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Misc.h"
 #include "ConfigList.h"
 #include "Spacecraft.h"
@@ -48,7 +46,6 @@ static const char rcs_id[] =
 #include "Wind.h"
 #include "Kpm.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "PscatL1A.h"
 #include "PscatConfig.h"
 
@@ -72,7 +69,6 @@ template class BufferedList<OrbitState>;
 template class List<OrbitState>;
 template class List<WindVectorPlus>;
 template class List<long>;
-template class List<off_t>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;

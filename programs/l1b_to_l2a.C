@@ -60,9 +60,7 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <stdlib.h>
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Misc.h"
 #include "ConfigList.h"
 #include "ConfigSim.h"
@@ -71,7 +69,6 @@ static const char rcs_id[] =
 #include "L2A.h"
 #include "L1BToL2A.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "ETime.h"
 
 using std::list;

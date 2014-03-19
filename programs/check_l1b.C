@@ -51,15 +51,12 @@ static const char rcs_id[] =
 #include "CheckFrame.h"
 #include "Meas.h"
 #include "List.h"
-#include "List.C"
 #include "Ephemeris.h"
 #include "ConfigList.h"
 #include "ConfigSim.h"
 #include "L1B.h"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "AngleInterval.h"
 
 //-----------//

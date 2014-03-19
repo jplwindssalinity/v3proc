@@ -71,11 +71,8 @@ static const char rcs_id[] =
 #include "QscatConfig.h"
 #include "InstrumentGeom.h"
 #include "List.h"
-#include "List.C"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "AngleInterval.h"
 #include "echo_funcs.h"
 
@@ -87,7 +84,6 @@ template class List<Meas>;
 template class List<long>;
 template class List<WindVectorPlus>;
 template class List<MeasSpot>;
-template class List<off_t>;
 template class List<OffsetList>;
 template class List<StringPair>;
 template class TrackerBase<unsigned char>;

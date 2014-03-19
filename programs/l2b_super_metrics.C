@@ -71,7 +71,6 @@ static const char rcs_id[] =
 #include "Metrics.h"
 #include "L2B.h"
 #include "List.h"
-#include "List.C"
 
 //-----------//
 // TEMPLATES //

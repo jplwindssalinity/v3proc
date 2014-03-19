@@ -54,9 +54,7 @@ static const char rcs_id[] = "$Id$";
 #include "ConfigList.h"
 #include "ConfigSim.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "SeaPac.h" 
 
 //-----------//

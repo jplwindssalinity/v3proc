@@ -60,10 +60,8 @@ static const char rcs_id[] =
 #include "mfhdf.h"
 #include "Qscat.h"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "List.h"
 #include "Sds.h"
-#include "List.C"
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ConfigList.h"
@@ -72,7 +70,6 @@ static const char rcs_id[] =
 #include "L1B.h"
 #include "L1AToL1B.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "QscatConfig.h"
 
 //-----------//

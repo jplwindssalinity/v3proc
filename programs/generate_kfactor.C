@@ -67,16 +67,13 @@ static const char rcs_id[] =
 #include "Misc.h"
 #include "ConfigList.h"
 #include "List.h"
-#include "List.C"
 #include "Spacecraft.h"
 #include "ConfigSim.h"
 #include "Tracking.h"
 #include "InstrumentGeom.h"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "XTable.h"
 #include "Tracking.h"
-#include "Tracking.C"
 
 //-----------//
 // TEMPLATES //

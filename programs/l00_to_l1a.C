@@ -59,9 +59,7 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <stdlib.h>
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "List.h"
-#include "List.C"
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ConfigList.h"
@@ -71,7 +69,6 @@ static const char rcs_id[] =
 #include "L00ToL1A.h"
 #include "Array.h"
 #include "Tracking.h"
-#include "Tracking.C"
 
 //-----------//
 // TEMPLATES //

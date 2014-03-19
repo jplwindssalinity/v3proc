@@ -14,9 +14,7 @@
 #include "Wind.h"
 #include "Array.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Ephemeris.h"
 
 class AngleInterval;

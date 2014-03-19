@@ -55,15 +55,12 @@ static const char rcs_id[] =
 #include<stdlib.h>
 #include<math.h>
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Kpr.h"
 #include "Meas.h"
 #include "L00.h"
 #include "Misc.h"
 #include "Tracking.h"
-#include "Tracking.C"
 
 //-----------------------//
 // Templates             //

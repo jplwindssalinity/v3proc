@@ -67,16 +67,13 @@ static const char rcs_id[] =
 #include "Beam.h"
 #include "GMF.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "AngleInterval.h"
 #include "Wind.h"
 
 // these are needed because Meas (which this program needs) uses L2AHdf
 // (which this program doesn't need)
 #include "Tracking.h"
-#include "Tracking.C"
 
 //-----------//
 // TEMPLATES //

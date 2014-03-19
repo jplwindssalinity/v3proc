@@ -12,7 +12,6 @@ static const char rcs_id_quat_c[] =
 #include "Quat.h"
 #include "Matrix3.h"
 #include "List.h"
-#include "List.C"
 #include "Attitude.h"
 
 //======//
