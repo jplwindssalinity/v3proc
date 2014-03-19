@@ -154,7 +154,12 @@ bin_PROGRAMS = \
     programs/test_hdf_l2b                         \
     programs/test_pattern                         \
     programs/windfield_to_vctr                    \
-    programs/xtable_to_xmgr
+    programs/xtable_to_xmgr                       \
+    programs/RS_GSE_merge                         \
+    programs/generate_dtc_from_ephem_quat_files   \
+    programs/generate_xfactor_from_ephem_quat_files \
+    programs/gen_os2_t2b12                        \
+    programs/gen_os2_e2b12                        
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files
