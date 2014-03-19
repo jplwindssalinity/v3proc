@@ -1423,7 +1423,7 @@ RangeTracker::ClearAmpPhase() {
 //------------------------------//
 // Keeps the quantization of RGC away from the rounding edge
 
-#define THRESHOLD  0.48
+#define THRESHOLD  0.0
 
 void
 RangeTracker::QuantizeCenter(float effective_gate_width) {
@@ -1458,6 +1458,9 @@ RangeTracker::QuantizeCenter(float effective_gate_width) {
 
     float new_cb = min_C;
     float new_cm = (max_C - min_C) / 254.0;    // 254 gives a bit of headroom
+
+    // restrict new_cm to be integer multiple of RANGE_GATE_NORMALIZER.
+    new_cm = RANGE_GATE_NORMALIZER*ceil(new_cm/RANGE_GATE_NORMALIZER);
 
     //----------------------//
     // regenerate bias term //
