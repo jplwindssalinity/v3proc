@@ -159,7 +159,10 @@ bin_PROGRAMS = \
     programs/generate_dtc_from_ephem_quat_files   \
     programs/generate_xfactor_from_ephem_quat_files \
     programs/gen_os2_t2b12                        \
-    programs/gen_os2_e2b12                        
+    programs/gen_os2_e2b12                        \
+    programs/quat_to_gs_att                       \
+    programs/ephem_to_gs                          \
+    programs/ephem_quat_fill_gaps
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files
