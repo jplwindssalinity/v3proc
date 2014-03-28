@@ -91,18 +91,18 @@ static const char rcs_id[] =
 // TEMPLATES //
 //-----------//
 
-template List<Meas>;
-template BufferedList<OrbitState>;
-template List<OrbitState>;
-template List<AngleInterval>;
-template TrackerBase<unsigned short>;
-template TrackerBase<unsigned char>;
-template List<EarthPosition>;
-template List<WindVectorPlus>;
-template List<MeasSpot>;
-template List<OffsetList>;
-template List<long>;
-template List<StringPair>;
+template class List<Meas>;
+template class BufferedList<OrbitState>;
+template class List<OrbitState>;
+template class List<AngleInterval>;
+template class TrackerBase<unsigned short>;
+template class TrackerBase<unsigned char>;
+template class List<EarthPosition>;
+template class List<WindVectorPlus>;
+template class List<MeasSpot>;
+template class List<OffsetList>;
+template class List<long>;
+template class List<StringPair>;
 
 //------------------//
 // OPTION VARIABLES //
