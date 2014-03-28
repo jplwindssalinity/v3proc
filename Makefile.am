@@ -162,7 +162,9 @@ bin_PROGRAMS = \
     programs/gen_os2_e2b12                        \
     programs/quat_to_gs_att                       \
     programs/ephem_to_gs                          \
-    programs/ephem_quat_fill_gaps
+    programs/ephem_quat_fill_gaps                 \
+    programs/ovwm_sim                             \
+    programs/hdf_l1a_writer
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files
