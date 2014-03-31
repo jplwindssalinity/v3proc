@@ -164,7 +164,9 @@ bin_PROGRAMS = \
     programs/ephem_to_gs                          \
     programs/ephem_quat_fill_gaps                 \
     programs/ovwm_sim                             \
-    programs/hdf_l1a_writer
+    programs/hdf_l1a_writer                       \
+    programs/gen_os2_l1b_fp_ecmwf                 \
+    programs/gen_qs_l1b_fp_ecmwf
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files
