@@ -160,6 +160,7 @@ bin_PROGRAMS = \
     programs/generate_xfactor_from_ephem_quat_files \
     programs/gen_os2_t2b12                        \
     programs/gen_os2_e2b12                        \
+    programs/gen_qs_e2b12                         \
     programs/quat_to_gs_att                       \
     programs/ephem_to_gs                          \
     programs/ephem_quat_fill_gaps                 \
