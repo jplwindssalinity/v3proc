@@ -171,6 +171,11 @@ bin_PROGRAMS = \
     programs/generate_rgc_from_ephem_quat_files   \
     programs/RS_GSE_to_ephem_quat
 
+# other programs (requires external libraries)
+# programs/generate_rgc_from_ephem_quat_files
+# programs/RS_GSE_to_ephem_quat
+>>>>>>> 35decad3ead260ebbbc8c5caf4ee9134225b2c2c
+
 ########################################################################
 
 libEAData_a_SOURCES =                \
