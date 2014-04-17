@@ -9,8 +9,8 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 # Default values
-CPPFLAGS+=" -I/usr/include/hdf"
-LDFLAGS+=" -L/usr/lib64/hdf"
+CPPFLAGS+=" -I/usr/include/hdf -I/home/fore/software/sofa/20120301_a/c/src/"
+LDFLAGS+=" -L/usr/lib64/hdf -L/home/fore/software/sofa/20120301_a/c/src/"
 
 # Checks for programs.
 AC_PROG_AWK
@@ -35,6 +35,8 @@ AC_CHECK_LIB([df], [Vopen], [], AC_MSG_ERROR([Could not find df library]))
 AC_CHECK_LIB([hdf5], [HDfprintf], [], AC_MSG_ERROR([Could not find gslcblas library]))
 AC_CHECK_LIB([mfhdf], [SDend], [], AC_MSG_ERROR([Could not find libmfhdf]))
 AC_CHECK_LIB([netcdf], [nc_close], [], AC_MSG_ERROR([Could not find libnetcdf]))
+AC_CHECK_LIB([sofa], [iauPpp], [], AC_MSG_ERROR([Could not find libsofa]))
+
 # FIXME: Replace `main' with a function in `-lnsl':
 #AC_CHECK_LIB([nsl], [main])
 # FIXME: Replace `main' with a function in `-lsz':
