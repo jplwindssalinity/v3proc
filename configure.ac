@@ -35,7 +35,7 @@ AC_CHECK_LIB([df], [Vopen], [], AC_MSG_ERROR([Could not find df library]))
 AC_CHECK_LIB([hdf5], [HDfprintf], [], AC_MSG_ERROR([Could not find gslcblas library]))
 AC_CHECK_LIB([mfhdf], [SDend], [], AC_MSG_ERROR([Could not find libmfhdf]))
 AC_CHECK_LIB([netcdf], [nc_close], [], AC_MSG_ERROR([Could not find libnetcdf]))
-AC_CHECK_LIB([sofa], [iauPpp], [], AC_MSG_ERROR([Could not find libsofa]))
+AC_CHECK_LIB([sofa_c], [iauPpp], [], AC_MSG_ERROR([Could not find libsofa]))
 
 # FIXME: Replace `main' with a function in `-lnsl':
 #AC_CHECK_LIB([nsl], [main])
