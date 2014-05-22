@@ -344,11 +344,6 @@ int GMF::ReadQScatStyle(
 //---------------------------//
 
 int GMF::ReadQScatStyleDualPol(const char*  filename) {
-    // Dual pol format has HH polarization first, then VV polarization
-    // as to agree with V2Proc codebase. Note V3proc has VV first, then HH so
-    // we gotta read 2nd half of table into met_index == 0 slot and first half
-    // into the met_index == 1 slot.  Hence need for new code here, cannot 
-    // use _ReadArrayFileLoop due to polarization order swap.
     _metCount = 2;
 
     _incCount = 21;
@@ -363,30 +358,17 @@ int GMF::ReadQScatStyleDualPol(const char*  filename) {
 
     _chiCount = 360;
     _chiStep = two_pi / _chiCount;
-
+    
     if (! _Allocate())
         return(0);
 
-    FILE* ifp = fopen(filename, "r");
-    // swap polarization order
-    for(int i_met = 1; i_met >= 0; --i_met) {
-        for(int i_chi = 0; i_chi < _chiCount; ++i_chi){
-            for(int i_spd = 0; i_spd < _spdCount; ++i_spd){
-                float values[_incCount];
-                if(fread(&values, sizeof(float), _incCount, ifp) != _incCount) {
-                    fclose(ifp);
-                    return(0);
-                }
-                for(int i_inc = 0; i_inc < _incCount; ++i_inc){
-                    // zero the GMF for speed 0
-                    float this_value = (i_spd == 0) ? 0.0 : values[i_inc];
-                    *(*(*(*(_value+i_met)+i_inc)+i_spd)+i_chi) = this_value;
-                }
-            }
-        }
-    }
-    fclose(ifp);
-    return(1);
+    bool mirrorChiValues = false;
+    bool discardFirstVal = false;
+    int met_idx_start = 0;
+    int n_met = 2;
+
+    return _ReadArrayFileLoop(filename, mirrorChiValues, discardFirstVal,
+        met_idx_start, n_met);
 }
 
 
