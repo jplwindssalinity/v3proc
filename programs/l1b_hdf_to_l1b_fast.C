@@ -906,7 +906,7 @@ main(
            
            if(gatewidth==(uint16)3) {
              new_meas->bandwidth = 6.929 * 1000;
-           } else if ( gatewidth==(uint16)3) {
+           } else if ( gatewidth==(uint16)4) {
              new_meas->bandwidth = 12.933 * 1000;
            }
            // Set sigma0 + correct for attenuation if !do_composote
