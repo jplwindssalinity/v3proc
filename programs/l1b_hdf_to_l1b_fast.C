@@ -899,8 +899,8 @@ main(
            // gate width flags are bits (6,7,8).
            uint16 gatewidth = (sigma0_mode_flag[pulse_ind] & (uint16)0x1C0 ) >> 6;
            
-           if( gatewidth != (uint16)3) {
-             fprintf(stderr,"%s: Gatewidth not equal to 3; %d!\n",command,gatewidth);
+           if( (gatewidth != (uint16)3) && (gatewidth != (uint16)4)) {
+             fprintf(stderr,"%s: Gatewidth not equal to 3 or 4; %d!\n",command,gatewidth);
              exit(1);
            }
            
