@@ -666,9 +666,7 @@ main(
         exit(1);
       }
     }
-    
-    FILE* dbg_ofp = fopen("cell_azi_debug.txt", "w");
-    
+
     char frame_time_str[64];	
     char sst[num_l1b_frames][22];
     read_SDS_h5(g_id,"Scan_start_time",&sst[0]);
