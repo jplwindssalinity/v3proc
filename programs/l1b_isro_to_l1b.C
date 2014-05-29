@@ -667,6 +667,8 @@ main(
       }
     }
     
+    FILE* dbg_ofp = fopen("cell_azi_debug.txt", "w");
+    
     char frame_time_str[64];	
     char sst[num_l1b_frames][22];
     read_SDS_h5(g_id,"Scan_start_time",&sst[0]);
@@ -893,20 +895,38 @@ main(
               if( tmp_lon >= two_pi ) tmp_lon -= two_pi;
               if( tmp_lat < -pi/2   ) tmp_lat  = -pi/2;
               if( tmp_lat >  pi/2   ) tmp_lat  =  pi/2;
-            
+
               new_meas->centroid.SetAltLonGDLat( 0.0, tmp_lon, tmp_lat );
-              
+
               // Get attenuation map value
               float atten_dB = 0;
               if( use_atten_map )
                 atten_dB = attenmap.GetNadirAtten( tmp_lon, tmp_lat, sec_year )
                          / cos( new_meas->incidenceAngle );
               float atten_lin = pow(10.0,0.1*atten_dB);
-            
+
+              // Think the the cell azimuth angles in OSCAT / L1B data are wrong.
               float northAzimuth       = dtr*0.005515*double(slice_azi[i_pol][slice_ind]);
               new_meas->eastAzimuth    = (450.0*dtr - northAzimuth);
-              if (new_meas->eastAzimuth >= two_pi) new_meas->eastAzimuth -= two_pi;         
-              
+              if (new_meas->eastAzimuth >= two_pi) new_meas->eastAzimuth -= two_pi;
+
+              // Compute surface coordinate system at the slice centroid
+              CoordinateSwitch ecef_to_enu = 
+                new_meas->centroid.SurfaceCoordinateSystem();
+
+              // Compute look vector (slice centroid - s/c position)
+              Vector3 look_ecef = 
+                new_meas->centroid - new_meas_spot->scOrbitState.rsat;
+
+              // rotate look vector to surface coordinates in
+              // East, North, Up (ENU) basis.
+              Vector3 look_enu = ecef_to_enu.Forward(look_ecef);
+
+              // Compute spherical coordinates of look vector in ENU basis
+              double r, theta, phi;
+              look_enu.SphericalGet(&r, &theta, &phi);
+              new_meas->eastAzimuth = phi;
+
               float ant_azi = dtr*(0.00643000*double(slice_ant_azi[i_pol][slice_ind])-60);
               
               ant_azi -= 20*dtr; // correct for flown -20 deg yaw offset.
