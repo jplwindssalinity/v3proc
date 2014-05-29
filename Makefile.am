@@ -94,6 +94,7 @@ bin_PROGRAMS = \
     programs/l2a_dissect                          \
     programs/l2a_filter                           \
     programs/l2a_fix_QS_composites                \
+    programs/l2a_fix_ISRO_composites              \
     programs/l2a_getcell                          \
     programs/l2ags_s0                             \
     programs/l2ags_s0l                            \
@@ -117,6 +118,7 @@ bin_PROGRAMS = \
     programs/l2b_metrics                          \
     programs/l2b_remove_extra                     \
     programs/l2b_spddif                           \
+    programs/l2b_to_arrays                        \
     programs/l2b_to_ascii                         \
     programs/l2b_to_flower                        \
     programs/l2b_to_netcdf                        \
