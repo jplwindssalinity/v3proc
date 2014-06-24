@@ -136,7 +136,7 @@ void bin_to_latlon(int at_ind, int ct_ind,
 }
 
 const char usage_string[] = 
-    "-e ecmwf_dir -o out_file -period period_seconds -t_start CODEB_string -long_asc long_asc_node -orbit_inc orbit_inclination";
+    "-e ecmwf_dir -o out_file -period period_seconds -t_start CODEB_string -long_asc long_asc_node -orbit_inc orbit_inclination [-n]";
 
 int main(int argc, char* argv[]){
     const char* command = argv[0];
@@ -148,28 +148,46 @@ int main(int argc, char* argv[]){
     double orbit_inc = -999;
     double orbit_period = 0;
     double long_asc_node = -999;
+    int file_hour_interval = 6;
+    int do_neutral = 0;
+    int use_bigE = 0;
 
     int optind=1;
     while(optind<argc && (argv[optind][0]=='-')){
         std::string sw = argv[optind];
         if(sw == "-e") {
             ecmwf_dir = argv[++optind];
+
         } else if(sw == "-o"){
             out_file = argv[++optind];
+
         } else if(sw == "-t_start"){
             t_start_str = argv[++optind];
+
         } else if(sw == "-n_cti"){
             n_cti = atoi(argv[++optind]);
+
         } else if(sw == "-wvc_size"){
             wvc_size = atof(argv[++optind]);
+
         } else if(sw == "-period"){
             orbit_period = atof(argv[++optind]);
+
         } else if(sw == "-long_asc"){
             long_asc_node = atof(argv[++optind]);
+
         } else if(sw == "-inc"){
             orbit_inc = atof(argv[++optind]);
+
+        } else if(sw == "-n"){
+            do_neutral = 1;
+            file_hour_interval = 3;
+
+        } else if(sw == "-bigE"){
+            use_bigE = 1;
+
         } else {
-            fprintf(stderr,"%s: Unknow option\n", command);
+            fprintf(stderr,"%s: Unknown option: %s\n", command, sw.c_str());
             exit(1);
         }
         ++optind;
@@ -246,59 +264,53 @@ int main(int argc, char* argv[]){
         t_now = double( hour_curr ) + ( double( min_curr ) 
               + double( sec_curr ) / 60.0 ) / 60.0;
 
-        if( hour_curr < 6 ) {
-            hour_1 = 0;
-            hour_2 = 6;
-            t_1    = 0.0;
-            t_2    = 6.0;
-        } else if( hour_curr < 12 ) {
-            hour_1 = 6;
-            hour_2 = 12;
-            t_1    = 6.0;
-            t_2    = 12.0;
-        } else if( hour_curr < 18 ) {
-            hour_1 = 12;
-            hour_2 = 18;
-            t_1    = 12.0;
-            t_2    = 18.0;      
-        } else if( hour_curr < 24 ) {
-            hour_1 = 18;
-            hour_2 = 0;
-            t_1    = 18.0;
-            t_2    = 24.0;
+        for(int file_hour_start = 0; file_hour_start<24;
+            file_hour_start += file_hour_interval){
+            int file_hour_stop = file_hour_start + file_hour_interval;
+            if(hour_curr>= file_hour_start && hour_curr < file_hour_stop){
+                hour_1 = file_hour_start;
+                hour_2 = file_hour_stop;
+                t_1 = (double)file_hour_start;
+                t_2 = (double)file_hour_stop;
 
-            int is_leap_year = 0;
-            if( year_curr % 400 == 0 )
-                is_leap_year = 1;
-            else if( year_curr % 100 == 0 )
-                is_leap_year = 0;
-            else if( year_curr % 4 == 0 )
-                is_leap_year = 1;
-            else
-                is_leap_year = 0;
+                if(file_hour_stop==24) {
+                    hour_2 = 0;
+                    int is_leap_year = 0;
+                    if( year_curr % 400 == 0 )
+                        is_leap_year = 1;
+                    else if( year_curr % 100 == 0 )
+                        is_leap_year = 0;
+                    else if( year_curr % 4 == 0 )
+                        is_leap_year = 1;
+                    else
+                        is_leap_year = 0;
 
-            if( ( doy_curr == 365 && is_leap_year == 0 ) || doy_curr == 366 ) {
-                doy_2  = 1;
-                year_2 = year_1 + 1;
-            } else {
-                doy_2  = doy_1 + 1;
-                year_2 = year_1;
+                    if((doy_curr == 365 && is_leap_year == 0) || 
+                        doy_curr == 366){
+                        doy_2  = 1;
+                        year_2 = year_1 + 1;
+                    } else {
+                        doy_2  = doy_1 + 1;
+                        year_2 = year_1;
+                    }
+                }
             }
         }
 
-        // use big endian filenames
-        sprintf(ecmwf_file_1, "%s/SNWP3%4.4d%3.3d%2.2d", ecmwf_dir, year_1, 
-            doy_1, hour_1 );
-        sprintf(ecmwf_file_2, "%s/SNWP3%4.4d%3.3d%2.2d", ecmwf_dir, year_2, 
-            doy_2, hour_2 );    
-
+        char nwp_char = '3';
+        if(do_neutral) nwp_char = '4';
+        sprintf(ecmwf_file_1, "%s/SNWP%c%4.4d%3.3d%2.2d", ecmwf_dir, nwp_char,
+            year_1, doy_1, hour_1);
+        sprintf(ecmwf_file_2, "%s/SNWP%c%4.4d%3.3d%2.2d", ecmwf_dir, nwp_char,
+            year_2, doy_2, hour_2);
+        
         // Test if need to load new files.
         if( strcmp( ecmwf_file_1, ecmwf_file_1_last ) != 0 ||
             strcmp( ecmwf_file_2, ecmwf_file_2_last ) != 0 ) {
             printf("need to load new files!\n");
             // load files
-            if( !nwp_1.ReadNCEP1( ecmwf_file_1, 1 ) ||
-                !nwp_2.ReadNCEP1( ecmwf_file_2, 1 ) ) {
+            if( !nwp_1.ReadNCEP1( ecmwf_file_1, use_bigE ) ||
+                !nwp_2.ReadNCEP1( ecmwf_file_2, use_bigE ) ) {
                 fprintf( stderr, "Error loading nwp files!\n");
                 exit(1);
             }
