@@ -280,7 +280,7 @@ class OceanSAT2Rev(object):
         log.debug("Converting L1B HDF")
         self._advertise("Converting L1B HDF")
 
-        logSubprocess(self._work['/'], "l1b_isro_to_l1b_v1.3", "-c",
+        logSubprocess(self._work['/'], "l1b_isro_to_l1b", "-c",
                 self._files['cfg'], "-hhbias", self._hbias, "-vvbias",
                 self._vbias, '-xf_table', self.common_files['xfactor'])
 

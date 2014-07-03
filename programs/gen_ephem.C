@@ -61,9 +61,7 @@ static const char rcs_id[] =
 #include "SpacecraftSim.h"
 #include "ConfigSim.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 
 //-----------//
 // TEMPLATES //

@@ -56,12 +56,9 @@ static const char rcs_id[] =
 #include "GMF.h"
 #include <unistd.h>
 #include "List.h"
-#include "List.C"
 #include "AngleInterval.h"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Tracking.h"
-#include "Tracking.C"
 
 //-----------//
 // TEMPLATES //

@@ -77,7 +77,6 @@ static const char rcs_id[] =
 #include "Meas.h"
 #include "Wind.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "Spacecraft.h"
 #include "SpacecraftSim.h"
 #include "ConfigSim.h"
@@ -86,9 +85,7 @@ static const char rcs_id[] =
                              // need to move to ConfigSim.C
 #include "OvwmSim.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 
 using std::list;
 using std::map;

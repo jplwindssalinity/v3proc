@@ -34,9 +34,7 @@ static const char rcs_id[] =
 #include <fcntl.h>
 #include <signal.h>
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Misc.h"
 #include "ConfigList.h"
 #include "Spacecraft.h"
@@ -47,7 +45,6 @@ static const char rcs_id[] =
 #include "Wind.h"
 #include "Kpm.h"
 #include "Tracking.h"
-#include "Tracking.C"
 
 //-----------//
 // TEMPLATES //

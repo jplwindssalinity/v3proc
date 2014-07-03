@@ -50,6 +50,7 @@
 static const char rcs_id[] =
     "@(#) $Id$";
 
+#include <math.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <vector>
@@ -59,9 +60,7 @@ static const char rcs_id[] =
 #include "ETime.h"
 #include "Matrix3.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "EarthPosition.h"
 #include "GenericGeom.h"
 #include "Ephemeris.h"
@@ -263,7 +262,7 @@ main(
     fread( &gps2utc, sizeof(short), 1, ifp );
     SWAP_VAR( gps2utc, short );
 
-    double time = double(tt0) + double(tt1)/255.0;
+    double time = double(tt0) + double(tt1)/(double)256.0;
     time       += double(gps2utc) + gps_time_base - sim_time_base;
     
     if( print_curr_leap_secs && packet_off==0 ) {

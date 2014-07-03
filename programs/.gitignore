@@ -1,3 +1,6 @@
+*~
+gen_swath_e2b
+gen_qs_l1b_fp_ecmwf
 doy
 l1a_to_l1b
 generate_xfactor_from_ephem_quat_files

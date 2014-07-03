@@ -11,14 +11,11 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "Misc.h"
 #include "ConfigList.h"
 #include "ConfigSim.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "Distributions.h"
 #include "AngleInterval.h"
 

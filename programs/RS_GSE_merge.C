@@ -181,7 +181,7 @@ int main( int argc, char* argv[] ) {
       fread( &gps2utc, sizeof(short), 1, ifp );
       SWAP_VAR( gps2utc, short );
       
-      double gps_tt = (double)tt0 + (double)tt1/255.0;
+      double gps_tt = (double)tt0 + (double)tt1/(double)256.0;
       
       // Check if this is a valid GSE packet starting at this byte offset
       // See Document 50305D, Table 8.1.1-1 Primary EHS protocol header format
@@ -227,7 +227,7 @@ int main( int argc, char* argv[] ) {
   //printf("Unique GSE packets: %zd\n",gse_tt_idx_list.size());
   
   if( gse_tt_idx_list.size()==0) {
-    printf("No packets to write, quitting\n");
+    //printf("No packets to write, quitting\n");
     exit(0);
   }
   

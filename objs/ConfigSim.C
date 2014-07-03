@@ -1932,6 +1932,11 @@ ConfigGMF(
         if (! gmf->ReadQScatStyle(gmf_filename))
             return(0);
     }
+    else if (strcasecmp(gmf_format, "QUIKSCAT_DUAL_POL") == 0)
+    {
+        if (! gmf->ReadQScatStyleDualPol(gmf_filename))
+            return(0);
+    }
     else if (strcasecmp(gmf_format, "C_BAND") == 0)
     {
       char* cgmf_filename = config_list->Get(C_BAND_GMF_FILE_KEYWORD);

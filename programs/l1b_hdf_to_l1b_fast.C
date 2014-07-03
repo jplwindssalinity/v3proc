@@ -70,12 +70,9 @@ static const char rcs_id[] =
 #include "ConfigSim.h"
 #include "L1AToL1B.h"
 #include "Tracking.h"
-#include "Tracking.C"
 #include "QscatConfig.h"
 #include "List.h"
-#include "List.C"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "SeaPac.h"
 #include "AttenMap.h"
 
@@ -902,14 +899,14 @@ main(
            // gate width flags are bits (6,7,8).
            uint16 gatewidth = (sigma0_mode_flag[pulse_ind] & (uint16)0x1C0 ) >> 6;
            
-           if( gatewidth != (uint16)3) {
-             fprintf(stderr,"%s: Gatewidth not equal to 3; %d!\n",command,gatewidth);
+           if( (gatewidth != (uint16)3) && (gatewidth != (uint16)4)) {
+             fprintf(stderr,"%s: Gatewidth not equal to 3 or 4; %d!\n",command,gatewidth);
              exit(1);
            }
            
            if(gatewidth==(uint16)3) {
              new_meas->bandwidth = 6.929 * 1000;
-           } else if ( gatewidth==(uint16)3) {
+           } else if ( gatewidth==(uint16)4) {
              new_meas->bandwidth = 12.933 * 1000;
            }
            // Set sigma0 + correct for attenuation if !do_composote

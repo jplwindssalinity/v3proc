@@ -53,9 +53,7 @@ static const char rcs_id[] =
 #include "ETime.h"
 #include "Quat.h"
 #include "BufferedList.h"
-#include "BufferedList.C"
 #include "List.h"
-#include "List.C"
 #include "Attitude.h"
 #include "Constants.h"
 
@@ -70,7 +68,7 @@ template class List<QuatRec>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "l:o:d:"
+#define OPTSTRING  "l:o:b:"
 
 //--------//
 // MACROS //
@@ -92,7 +90,7 @@ template class List<QuatRec>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[-o outfile] || [-d outdir] [ -l leap_seconds ]", "<quat_file>", 0};
+const char* usage_array[] = { "[-o outfile] || [-b outbase] [ -l leap_seconds ]", "<quat_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -112,7 +110,7 @@ main(
     const char* command = no_path(argv[0]);
     extern char* optarg;
     char* outfile = NULL;
-    char* outdir = NULL;
+    char* outbase = NULL;
     extern int optind;
 
     int c;
@@ -123,8 +121,8 @@ main(
         case 'o':
             outfile = optarg;
             break;
-        case 'd':
-            outdir = optarg;
+        case 'b':
+            outbase = optarg;
             break;
         case 'l':
             leap_seconds = atoi(optarg);
@@ -135,7 +133,7 @@ main(
         }
     }
 
-    if( !outfile == !outdir )
+    if( !outfile == !outbase )
       usage(command, usage_array, 1);
 
     if (argc != optind + 1)
@@ -200,9 +198,9 @@ main(
             char production_block_b[BLOCK_B_TIME_LENGTH];
             production_date.ToBlockB(production_block_b);
             
-            if( outdir ) {
+            if( outbase ) {
               outfile = new char[1024];
-              sprintf(outfile, "SW_SATTG%s.%s", beginning_block_b,
+              sprintf(outfile, "%s_%s.%s", outbase, beginning_block_b,
                       production_block_b);
             }
 
@@ -299,7 +297,7 @@ main(
     fprintf(ofp, "spare_metadata_element        =                                              ;\r\n");
 
     fclose(ofp);
-    if ( outdir != NULL ) delete[] outfile;
+    if ( outbase != NULL ) delete[] outfile;
     return (0);
 }
 
