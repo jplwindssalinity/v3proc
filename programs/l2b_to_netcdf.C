@@ -101,8 +101,8 @@ using namespace std;
 #define IS_SET(var, mask) ((var) & (mask))
 #define IS_NOT_SET(var, mask) (!IS_SET(var, mask))
 
-#define DATASET_TITLE "Oceansat-II Level 2B Ocean Wind Vectors in 12.5km Slice Composites"
-#define BUILD_ID "v2_0_0:A"
+#define DATASET_TITLE "Rapidscat Level 2B Ocean Wind Vectors in 12.5km Slice Composites"
+#define BUILD_ID "v1_0_0:A"
 #define VERSION_ID "2"
 
 #define EPOCH    "1999-001T00:00:00.000 UTC"
@@ -155,13 +155,10 @@ template class TrackerBase<unsigned short>;
 typedef struct {
     const char *command;
     const char *l2b_file;
+    const char *l2bhdf_file;
     const char *nc_file;
     const char *l1bhdf_file;
-    const char *times_file;
-    const char *xfact_table;
-    char *revtag;
-    float hpol_adj;
-    float vpol_adj;
+    char extended;
 } l2b_to_netcdf_config;
 
 typedef struct {
@@ -176,11 +173,10 @@ typedef struct {
 static int parse_commandline(int argc, char **argv,
         l2b_to_netcdf_config *config);
 static int set_global_attributes(int argc, char **argv,
-        const l2b_to_netcdf_config *config, const L2B *l2b, int ncid);
-static void read_attr_h5(hid_t obj_id, char *name, void *buffer);
+        const l2b_to_netcdf_config *config, const L2B *l2b, int l2bhdf_fid,
+        int ncid);
 static void bin_to_latlon(int at_ind, int ct_ind,
         const latlon_config *config, float *lat, float *lon);
-static char * rtrim(char *str);
 static struct timeval str_to_timeval(const char *end);
 static double difftime(const struct timeval t1, const struct timeval t0);
 
@@ -204,12 +200,13 @@ int main(int argc, char **argv) {
     L2B l2b;
 
     /* File IDs */
-    int ncid;
+    int l2bhdf_fid, l2bhdf_sds_fid, ncid;
 
     /* Net CDF dimension information */
-    int cross_track_dim_id, along_track_dim_id;
+    int max_ambiguities;
+    int cross_track_dim_id, along_track_dim_id, ambiguities_dim_id;
     size_t cross_track_dim_sz, along_track_dim_sz;
-    int dimensions[2], dimensions_sz[2];
+    int dimensions[3], dimensions_sz[3];
 
     /* For populating Net CDF file */
     size_t idx[2];
@@ -236,6 +233,8 @@ int main(int argc, char **argv) {
 
     // open the input files
     ERR(l2b.OpenForReading(run_config.l2b_file) == 0);
+    HDFERR((l2bhdf_fid = Hopen(run_config.l2bhdf_file, 
+                    DFACC_READ, 0)) == FAIL);
 
     ERR(l2b.ReadHeader() == 0);
     ERR(l2b.ReadDataRec() == 0);
@@ -253,10 +252,12 @@ int main(int argc, char **argv) {
      * of the array is a (u,v) two-float compounddata type.
      */
 
+    max_ambiguities = l2b.frame.swath.GetMaxAmbiguityCount();
+
     // Initialize the NetCDF DB
     NCERR(nc_create(run_config.nc_file, NC_WRITE, &ncid));
 
-    ERR(set_global_attributes(argc, argv, &run_config, &l2b, ncid) != 0);
+    ERR(set_global_attributes(argc, argv, &run_config, &l2b, l2bhdf_fid, ncid) != 0);
 
     // Create the data dimensions
     along_track_dim_sz = (size_t)l2b.frame.swath.GetAlongTrackBins();
@@ -266,6 +267,10 @@ int main(int argc, char **argv) {
                 &along_track_dim_id));
     NCERR(nc_def_dim(ncid, "cross_track", cross_track_dim_sz,
                 &cross_track_dim_id));
+    if (run_config.extended) {
+        NCERR(nc_def_dim(ncid, "ambiguities",
+                (size_t)max_ambiguities, &ambiguities_dim_id));
+    }
 
     /*************************************************************
      *
@@ -279,51 +284,48 @@ int main(int argc, char **argv) {
      */
     dimensions[0] = along_track_dim_id;
     dimensions[1] = cross_track_dim_id;
+    dimensions[2] = ambiguities_dim_id;
     dimensions_sz[0] = along_track_dim_sz;
     dimensions_sz[1] = cross_track_dim_sz;
+    dimensions_sz[2] = max_ambiguities;
 
     vector <NetCDF_Var_Base *> vars;
 
     // Define variables
     NetCDF_Var<float> *lat_var = new NetCDF_Var<float>("lat", ncid, 2, dimensions, dimensions_sz);
-        float lat_min = -90.0f, lat_max = 90.0f;
-        lat_var->AddAttribute(new NetCDF_Attr<float>("valid_min", lat_min));
-        lat_var->AddAttribute(new NetCDF_Attr<float>("valid_max", lat_max));
+        lat_var->AddAttribute(new NetCDF_Attr<float>("valid_min", -90.0f));
+        lat_var->AddAttribute(new NetCDF_Attr<float>("valid_max",  90.0f));
         lat_var->AddAttribute(new NetCDF_Attr<char>("long_name", "latitude"));
         lat_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "latitude"));
         lat_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees_north"));
     NetCDF_Var<float> *lon_var = new NetCDF_Var<float>("lon", ncid, 2, dimensions, dimensions_sz);
-        float lon_min = 0.0f, lon_max = 360.0f;
-        lon_var->AddAttribute(new NetCDF_Attr<float>("valid_min", lon_min));
-        lon_var->AddAttribute(new NetCDF_Attr<float>("valid_max", lon_max));
+        lon_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+        lon_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
         lon_var->AddAttribute(new NetCDF_Attr<char>("long_name", "longitude"));
         lon_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "longitude"));
         lon_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees_east"));
     NetCDF_Var<float> *retrieved_speed_var = new NetCDF_Var<float>("retrieved_wind_speed", ncid, 2, dimensions, dimensions_sz);
-        float retrieved_speed_fill = -9999.0f, retrieved_speed_min = 0.0f, retrieved_speed_max = 100.0f;
-        retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", retrieved_speed_fill));
-        retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_min", retrieved_speed_min));
-        retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_max", retrieved_speed_max));
+        retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+        retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+        retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 100.0f));
         retrieved_speed_var->AddAttribute(new NetCDF_Attr<char>("long_name", "equivalent neutral wind speed at 10 m"));
         retrieved_speed_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_speed"));
         retrieved_speed_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
         retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         retrieved_speed_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<float> *retrieved_dir_var = new NetCDF_Var<float>("retrieved_wind_direction", ncid, 2, dimensions, dimensions_sz);
-        float retrieved_dir_fill = -9999.0f, retrieved_dir_min = 0.0f, retrieved_dir_max = 360.0f;
-        retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", retrieved_dir_fill));
-        retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_min", retrieved_dir_min));
-        retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_max", retrieved_dir_max));
+        retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0));
+        retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+        retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
         retrieved_dir_var->AddAttribute(new NetCDF_Attr<char>("long_name", "equivalent neutral wind direction at 10 m"));
         retrieved_dir_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_to_direction"));
         retrieved_dir_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees"));
         retrieved_dir_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         retrieved_dir_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<float> *rain_impact_var = new NetCDF_Var<float>("rain_impact", ncid, 2, dimensions, dimensions_sz);
-        float rain_impact_fill = -9999.0f, rain_impact_min = 0.0f, rain_impact_max = 100.0f;
-        rain_impact_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", rain_impact_fill));
-        rain_impact_var->AddAttribute(new NetCDF_Attr<float>("valid_min", rain_impact_min));
-        rain_impact_var->AddAttribute(new NetCDF_Attr<float>("valid_max", rain_impact_max));
+        rain_impact_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+        rain_impact_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+        rain_impact_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 100.0f));
         rain_impact_var->AddAttribute(new NetCDF_Attr<char>("long_name", "impact of rain upon wind vector retrieval"));
         rain_impact_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         rain_impact_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
@@ -332,81 +334,136 @@ int main(int argc, char **argv) {
         time_var->AddAttribute(new NetCDF_Attr<char>("long_name", "date and time"));
         time_var->AddAttribute(new NetCDF_Attr<char>("units", "seconds since " EPOCH_CF));
     NetCDF_Var<short> *flags_var = new NetCDF_Var<short>("flags", ncid, 2, dimensions, dimensions_sz);
-        short flags_fill = 0x7fff, flags_min = 0, flags_max = 32643;
-        flags_var->AddAttribute(new NetCDF_Attr<short>("_FillValue", flags_fill));
-        flags_var->AddAttribute(new NetCDF_Attr<short>("valid_min", flags_min));
-        flags_var->AddAttribute(new NetCDF_Attr<short>("valid_max", flags_max));
+        flags_var->AddAttribute(new NetCDF_Attr<short>("_FillValue", 0x7fff));
+        flags_var->AddAttribute(new NetCDF_Attr<short>("valid_min", 0));
+        flags_var->AddAttribute(new NetCDF_Attr<short>("valid_max", 32643));
         flags_var->AddAttribute(new NetCDF_Attr<char>("long_name", "wind vector cell quality flags"));
         flags_var->AddAttribute(new NetCDF_Attr<short>("flag_masks", flag_masks, sizeof(flag_masks)/sizeof(flag_masks[0])));
         flags_var->AddAttribute(new NetCDF_Attr<char>("flag_meanings", "adequate_sigma0_flag adequate_azimuth_diversity_flag coastal_flag ice_edge_flag wind_retrieval_flag high_wind_speed_flag low_wind_speed_flag rain_impact_flag_usable rain_impact_flag available_data_flag"));
         flags_var->AddAttribute(new NetCDF_Attr<char>("units", "bit"));
         flags_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<short> *eflags_var = new NetCDF_Var<short>("eflags", ncid, 2, dimensions, dimensions_sz);
-        short eflags_fill = 0x7fff, eflags_min = 0, eflags_max = 15;
-        eflags_var->AddAttribute(new NetCDF_Attr<short>("_FillValue", eflags_fill));
-        eflags_var->AddAttribute(new NetCDF_Attr<short>("valid_min", eflags_min));
-        eflags_var->AddAttribute(new NetCDF_Attr<short>("valid_max", eflags_max));
+        eflags_var->AddAttribute(new NetCDF_Attr<short>("_FillValue", 0x7fff));
+        eflags_var->AddAttribute(new NetCDF_Attr<short>("valid_min", 0));
+        eflags_var->AddAttribute(new NetCDF_Attr<short>("valid_max", 15));
         eflags_var->AddAttribute(new NetCDF_Attr<char>("long_name", "extended wind vector cell quality flags"));
         eflags_var->AddAttribute(new NetCDF_Attr<short>("flag_masks", eflag_masks, sizeof(eflag_masks)/sizeof(eflag_masks[0])));
         eflags_var->AddAttribute(new NetCDF_Attr<char>("flag_meanings", "rain_correction_not_applied_flag correction_produced_negative_spd_flag all_ambiguities_contribute_to_nudging_flag large_rain_correction_flag"));
         eflags_var->AddAttribute(new NetCDF_Attr<char>("units", "bit"));
         eflags_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<float> *nudge_speed_var = new NetCDF_Var<float>("nudge_wind_speed", ncid, 2, dimensions, dimensions_sz);
-        float nudge_speed_fill = -9999.0f, nudge_speed_min = 0.0f, nudge_speed_max = 100.0f;
-        nudge_speed_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", nudge_speed_fill));
-        nudge_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_min", nudge_speed_min));
-        nudge_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_max", nudge_speed_max));
+        nudge_speed_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+        nudge_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+        nudge_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 100.0f));
         nudge_speed_var->AddAttribute(new NetCDF_Attr<char>("long_name", "model wind speed"));
         nudge_speed_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_speed"));
         nudge_speed_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
         nudge_speed_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         nudge_speed_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<float> *nudge_dir_var = new NetCDF_Var<float>("nudge_wind_direction", ncid, 2, dimensions, dimensions_sz);
-        float nudge_dir_fill = -9999.0f, nudge_dir_min = 0.0f, nudge_dir_max = 360.0f;
-        nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", nudge_dir_fill));
-        nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_min", nudge_dir_min));
-        nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_max", nudge_dir_max));
+        nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+        nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+        nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
         nudge_dir_var->AddAttribute(new NetCDF_Attr<char>("long_name", "model wind direction"));
         nudge_dir_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_to_direction"));
         nudge_dir_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees"));
         nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         nudge_dir_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<float> *wind_speed_uncorr_var = new NetCDF_Var<float>("wind_speed_uncorrected", ncid, 2, dimensions, dimensions_sz);
-        float wind_speed_uncorr_fill = -9999.0f, wind_speed_uncorr_min = 0.0f, wind_speed_uncorr_max = 100.f;
-        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", wind_speed_uncorr_fill));
-        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("valid_min", wind_speed_uncorr_min));
-        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("valid_max", wind_speed_uncorr_max));
+        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+        wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 100.0f));
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<char>("long_name", "wind speed without rain correction"));
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_speed"));
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
-    NetCDF_Var<float> *cross_track_bias_var = new NetCDF_Var<float>("cross_track_wind_speed_bias", ncid, 2, dimensions, dimensions_sz);
-        float cross_track_bias_fill = -9999.0f, cross_track_bias_min = -100.0f, cross_track_bias_max = 100.f;
-        cross_track_bias_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", cross_track_bias_fill));
-        cross_track_bias_var->AddAttribute(new NetCDF_Attr<float>("valid_min", cross_track_bias_min));
-        cross_track_bias_var->AddAttribute(new NetCDF_Attr<float>("valid_max", cross_track_bias_max));
-        cross_track_bias_var->AddAttribute(new NetCDF_Attr<char>("long_name", "relative wind speed bias with respect to sweet spot"));
-        cross_track_bias_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
-        cross_track_bias_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
-        cross_track_bias_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<float> *atm_spd_bias_var = new NetCDF_Var<float>("atmospheric_speed_bias", ncid, 2, dimensions, dimensions_sz);
-        float atm_spd_bias_fill = -9999.0f, atm_spd_bias_min = -100.0f, atm_spd_bias_max = 100.f;
-        atm_spd_bias_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", atm_spd_bias_fill));
-        atm_spd_bias_var->AddAttribute(new NetCDF_Attr<float>("valid_min", atm_spd_bias_min));
-        atm_spd_bias_var->AddAttribute(new NetCDF_Attr<float>("valid_max", atm_spd_bias_max));
+        atm_spd_bias_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+        atm_spd_bias_var->AddAttribute(new NetCDF_Attr<float>("valid_min", -100.0f`));
+        atm_spd_bias_var->AddAttribute(new NetCDF_Attr<float>("valid_max",  100.0f));
         atm_spd_bias_var->AddAttribute(new NetCDF_Attr<char>("long_name", "atmospheric speed bias"));
         atm_spd_bias_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
         atm_spd_bias_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         atm_spd_bias_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<unsigned char> *num_ambig_var = new NetCDF_Var<unsigned char>("num_ambiguities", ncid, 2, dimensions, dimensions_sz);
-        unsigned char num_ambig_fill = 0, num_ambig_min = 1, num_ambig_max = 4;
-        num_ambig_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_ambig_fill));
-        num_ambig_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", num_ambig_min));
-        num_ambig_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", num_ambig_max));
-        num_ambig_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of ambiguous wind " "directions found in point-wise wind retrieval prior to spatial filtering"));
+        num_ambig_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", 0));
+        num_ambig_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
+        num_ambig_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 4));
+        num_ambig_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of ambiguous wind directions found in point-wise wind retrieval prior to spatial filtering"));
         num_ambig_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         num_ambig_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+
+
+    NetCDF_Var<float> *sel_obj_var = new NetCDF_Var<float>("wind_obj", ncid, 2, dimensions, dimensions_sz);
+        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "selected wind objective function value"));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<unsigned char> *nambig_medfilt_var = new NetCDF<unsigned char>("num_ambiguities", ncid, 2, dimensions, dimension_sz);
+        nambig_medfilt_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", 0));
+        nambig_medfilt_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
+        nambig_medfilt_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 4));
+        nambig_medfilt_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of ambiguities from wind retrieval after median filtering"));
+        nambig_medfilt_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        nambig_medfilt_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<float> *ambiguity_speed_var = new NetCDF_Var<float>("ambiguity_speed", ncid, 3, dimensions, dimensions_sz);
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 100.0f));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("long_name", "wind speed ambiguity"));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_speed"));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat nambig"));
+    NetCDF_Var<float> *ambiguity_dir_var = new NetCDF_Var<float>("ambiguity_direction", ncid, 3, dimensions, dimensions_sz);
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("long_name", "wind direction ambiguity"));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_to_direction"));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees"));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat nambig"));
+    NetCDF_Var<float> *ambig_obj_var = new NetCDF_Var<float>("ambiguity_obj", ncid, 3, dimensions, dimensions_sz);
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", -9999.0f));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "selected wind objective function value"));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat nambig"));
+    NetCDF_Var<unsigned char> *num_in_fore_var = new NetCDF_Var<unsigned char>("number_in_fore", ncid, 2, dimensions, dimensions_sz);
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", 0));
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 0xFf));
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of inner forward looks in wind vector cell"));
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<unsigned char> *num_in_aft_var = new NetCDF_Var<unsigned char>("number_in_aft", ncid, 2, dimensions, dimensions_sz);
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", 0));
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 0xFf));
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of inner aft looks in wind vector cell"));
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<unsigned char> *num_out_fore_var = new NetCDF_Var<unsigned char>("number_out_fore", ncid, 2, dimensions, dimensions_sz);
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", 0));
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 0xFf));
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of outer forward looks in wind vector cell"));
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<unsigned char> *num_out_aft_var = new NetCDF_Var<unsigned char>("number_out_aft", ncid, 2, dimensions, dimensions_sz);
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", 0));
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 0xFf));
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of outer aft looks in wind vector cell"));
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
 
 
     // Cross track wind speed bias
@@ -423,9 +480,21 @@ int main(int argc, char **argv) {
     vars.push_back(nudge_speed_var);
     vars.push_back(nudge_dir_var);
     vars.push_back(wind_speed_uncorr_var);
-    vars.push_back(cross_track_bias_var);
     vars.push_back(atm_spd_bias_var);
     vars.push_back(num_ambig_var);
+
+    if (config.extended) {
+        vars.push_back(sel_obj_var);
+        vars.push_back(nambig_medfilt_var);
+        vars.push_back(ambiguity_speed_var);
+        vars.push_back(ambiguity_dir_var);
+        vars.push_back(ambig_obj_var);
+        vars.push_back(num_in_fore);
+        vars.push_back(num_in_aft);
+        vars.push_back(num_out_fore);
+        vars.push_back(num_out_aft);
+    }
+
 
     // Push definitions into NetCDF file
     for(vector <NetCDF_Var_Base *>::iterator it = vars.begin(); it < vars.end(); it++) {
@@ -436,7 +505,7 @@ int main(int argc, char **argv) {
     NCERR(nc_enddef(ncid));
 
     latlon_config orbit_config;
-    NCERR(nc_get_att_float(ncid, NC_GLOBAL, "Equator_Crossing_Longitude", &orbit_config.lambda_0));
+    NCERR(nc_get_att_float(ncid, NC_GLOBAL, "EquatorCrossingLongitude", &orbit_config.lambda_0));
     NCERR(nc_get_att_float(ncid, NC_GLOBAL, "orbit_inclination", &orbit_config.inclination));
     NCERR(nc_get_att_float(ncid, NC_GLOBAL, "rev_orbit_period", &orbit_config.rev_period));
     orbit_config.rev_period *= 60;  // orbit period -> seconds
@@ -595,38 +664,29 @@ int main(int argc, char **argv) {
 
     l2b.Close();
 
-    free(run_config.revtag);
-    run_config.revtag = NULL;
-
     return(0);
 }
 
 static int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
 
-    const char* usage_array = "--l2b=<l2b file> --nc=<nc file> --l1bhdf=<l1b hdf source file> --times=<times file> --xfact=<xfactor table> --hhbias=<hpol bias correction> --vvbias=<vpol bias correction>";
+    const char* usage_array = "--l2b=<l2b file> --l2bhdf=<lb hdf file> --nc=<nc file> --l1bhdf=<l1b hdf source file> [--extended]";
     int opt;
 
     /* Initialize configuration structure */
     config->command = no_path(argv[0]);
     config->l2b_file    = NULL;
+    config->l2bhdf_file = NULL;
     config->nc_file     = NULL;
     config->l1bhdf_file = NULL;
-    config->times_file  = NULL;
-    config->hpol_adj    = -NAN;
-    config->vpol_adj    = -NAN;
-    config->xfact_table = NULL;
-    config->revtag      = NULL;
+    config->extended    = 0;
 
     struct option longopts[] =
     {
         { "l2b",      required_argument, NULL, 'i'},
+        { "l2bhdf",   required_argument, NULL, 'h'},
         { "nc",       required_argument, NULL, 'o'},
         { "l1bhdf",   required_argument, NULL, 's'},
-        { "times",    required_argument, NULL, 't'},
-        { "hhbias",   required_argument, NULL, 'h'},
-        { "vvbias",   required_argument, NULL, 'v'},
-        { "xfact",    required_argument, NULL, 'x'},
-        { "revtag",   required_argument, NULL, 'r'},
+        { "extended", no_argument,       NULL, 'e'}, 
         {0, 0, 0, 0}
     };
 
@@ -635,36 +695,24 @@ static int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config
             case 'i':
                 config->l2b_file = optarg;
                 break;
+            case 'h': 
+                config->l2bhdf_file = optarg;
+                break;
             case 'o':
                 config->nc_file = optarg;
                 break;
             case 's':
                 config->l1bhdf_file = optarg;
                 break;
-            case 't':
-                config->times_file = optarg;
-                break;
-            case 'h':
-                config->hpol_adj = atof(optarg);
-                break;
-            case 'v':
-                config->vpol_adj = atof(optarg);
-                break;
-            case 'x':
-                config->xfact_table = optarg;
-                break;
-            case 'r':
-                free(config->revtag);
-                config->revtag = strdup(optarg);
+            case 'e':
+                config->extended = 1;
                 break;
         }
 
     }
 
-    if (config->l2b_file == NULL || config->nc_file == NULL
-            || config->l1bhdf_file == NULL || config->times_file == NULL
-            || config->xfact_table == NULL || config->hpol_adj == -NAN
-            || config->vpol_adj == -NAN) {
+    if (config->l2b_file == NULL || config->l2bhdf_file == NULL ||
+            config->nc_file == NULL || config->l1bhdf_file == NULL) {
 
         fprintf(stderr, "%s: %s\n", config->command, usage_array);
         return -1;
@@ -674,7 +722,13 @@ static int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config
 }
 
 static int set_global_attributes(int argc, char **argv,
-        const l2b_to_netcdf_config *cfg, const L2B *l2b, int ncid) {
+        const l2b_to_netcdf_config *cfg, const L2B *l2b, int l2bhdf_fid,
+        int ncid) {
+
+    int vdata_ref, vdata_id;
+    int attr_size;
+    const char attr_fname[] = "VALUES";
+    char *attr_value, *token;
 
     vector <class NetCDF_Attr_Base *> global_attributes;
     const char *date_time_fmt = "%Y-%jT%H:%M:%S%z";
@@ -683,8 +737,43 @@ static int set_global_attributes(int argc, char **argv,
     time_t now;
     char *history;
 
-    ifstream times(cfg->times_file);
-    times.exceptions(ifstream::eofbit);
+    const char *hdf_attributes[][2] = {
+        {"producer_agency", NULL},
+        {"producer_institution", "institution"},
+        {"PlatformType", NULL},
+        {"InstrumentShortName", NULL},
+        {"PlatformLongName", NULL},
+        {"PlatformShortName", NULL},
+        {"project_id", NULL},
+        {"QAPercentOutOfBoundsData", NULL},
+        {"QAPercentMissingData", NULL},
+        {"sis_id", NULL},
+        {"OrbitParametersPointer", NULL},
+        {"OperationMode", NULL},
+        {"StartOrbitNumber", NULL},
+        {"StopOrbitNumber", NULL},
+        {"EquatorCrossingLongitude", NULL},
+        {"EquatorCrossingTime", NULL},
+        {"EquatorCrossingDate", NULL},
+        {"rev_orbit_period", NULL},
+        {"orbit_inclination", NULL},
+        {"orbit_semi_major_axis", "rev_orbit_semimajor_axis"},
+        {"orbit_eccentricity", "rev_orbit_eccentricity"},
+        {"rev_number", NULL},
+        {"RangeBeginningDate", NULL},
+        {"RangeEndingDate", NULL},
+        {"RangeBeginningTime", NULL},
+        {"RangeEndingTime", NULL},
+        {"ephemeris_type", NULL},
+        {"sigma0_granularity", NULL},
+        {"median_filter_method", NULL},
+        {"sigma0_attenuation_method", NULL},
+        {"nudging_method", NULL},
+        {"ParameterName", NULL},
+        {"InputPointer", NULL},
+        {"ancillary_data_descriptors", NULL},
+        {"QAGranulePointer", NULL},
+    };
 
     // Compute history attribute string length
     whoami = getenv("LOGNAME");
@@ -715,29 +804,13 @@ static int set_global_attributes(int argc, char **argv,
     }
     history[strlen(history)] = '\n';
 
-    // Open HDF file
-    hid_t l1bhdf_id, science_group;
-    char attribute[256], rev_number[32];
-
-    HDFERR((l1bhdf_id = H5Fopen(cfg->l1bhdf_file, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0);
-    HDFERR((science_group = H5Gopen(l1bhdf_id, "science_data", H5P_DEFAULT)) < 0);
-
     global_attributes.push_back(new NetCDF_Attr<char>("title", DATASET_TITLE));
-    global_attributes.push_back(new NetCDF_Attr<char>("institution", "JPL"));
-    global_attributes.push_back(new NetCDF_Attr<char>("source", "Oceansat-II Scatterometer"));
-    global_attributes.push_back(new NetCDF_Attr<char>("comment", "Oceansat-II Level 1B Data Processed to Winds Using QuikSCAT v3 Algorithms"));
+    global_attributes.push_back(new NetCDF_Attr<char>("source", "Rapidscat Scatterometer"));
+    global_attributes.push_back(new NetCDF_Attr<char>("comment", "Rapidscat Level 1B Data Processed to Winds Using QuikSCAT v3 Algorithms"));
     global_attributes.push_back(new NetCDF_Attr<char>("history", history));
-
-    // TODO
-    global_attributes.push_back(new NetCDF_Attr<float>("hpol_adj", cfg->hpol_adj));
-    global_attributes.push_back(new NetCDF_Attr<float>("vpol_adj", cfg->vpol_adj));
-    global_attributes.push_back(new NetCDF_Attr<char>("xfactor_adj_table", cfg->xfact_table));
 
     global_attributes.push_back(new NetCDF_Attr<char>("Conventions", "CF-1.5"));
     global_attributes.push_back(new NetCDF_Attr<char>("data_format_type", "NetCDF Classic"));
-    global_attributes.push_back(new NetCDF_Attr<char>("producer_agency", "NASA"));
-    global_attributes.push_back(new NetCDF_Attr<char>("build_id", BUILD_ID));
-    global_attributes.push_back(new NetCDF_Attr<char>("ancillary_data_descriptors", ""));
     global_attributes.push_back(new NetCDF_Attr<char>("processing_level", "L2B"));
 
     char timestr[9];
@@ -747,14 +820,11 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("creation_time", timestr));
 
     global_attributes.push_back(new NetCDF_Attr<char>("LongName", DATASET_TITLE));
-    global_attributes.push_back(new NetCDF_Attr<char>("ShortName", "OS2_OSCAT_LEVEL_2B_OWV_COMP_12_V2"));
+    global_attributes.push_back(new NetCDF_Attr<char>("ShortName", "RS_OSCAT_LEVEL_2B_OWV_COMP_12_V2"));
     strncpy(attribute, cfg->nc_file, ARRAY_LEN(attribute) - 1);
-    global_attributes.push_back(new NetCDF_Attr<char>("GranulePointer", basename(attribute)));
-    strncpy(attribute, cfg->l1bhdf_file, ARRAY_LEN(attribute) - 1);
-    global_attributes.push_back(new NetCDF_Attr<char>("InputPointer", basename(attribute)));
     global_attributes.push_back(new NetCDF_Attr<char>("l2b_algorithm_descriptor",
                 "Uses QSCAT2012 GMF from Jet Propulsion Laboratory constructed using\n"
-                "data from the QuikSCAT instrument repointed to OceanSAT-2 incidence\n"
+                "data from the QuikSCAT instrument repointed to Rapidscat incidence\n"
                 "angles.  Applies median filter technique for ambiguity removal.\n"
                 "Ambiguity removal median filter is based on wind vectors over a 7 by 7\n"
                 "wind vector cell window.  Applies no median filter weights. Enhances\n"
@@ -763,83 +833,66 @@ static int set_global_attributes(int argc, char **argv,
                 "Applies multi-pass median filter technique to reduce the effects of\n"
                 "rain flagged cells on ambiguity selection.\n"
                 "Applies Neural Network Rain Correction."));
-    global_attributes.push_back(new NetCDF_Attr<char>("nudging_method", "NWP Weather Map probability threshold nudging"));
-    global_attributes.push_back(new NetCDF_Attr<char>("median_filter_method", "Wind vector median"));
-    global_attributes.push_back(new NetCDF_Attr<char>("sigma0_granularity", "slice composites"));
-    global_attributes.push_back(new NetCDF_Attr<char>("InstrumentShortName", "OSCAT"));
-    global_attributes.push_back(new NetCDF_Attr<char>("PlatformType", "spacecraft"));
-    global_attributes.push_back(new NetCDF_Attr<char>("PlatformLongName", "Oceansat-2"));
-    global_attributes.push_back(new NetCDF_Attr<char>("PlatformShortName", "OS2"));
-
-    // Spoof rev number if available
-    if (cfg->revtag == NULL) {
-        read_attr_h5(science_group, "Revolution Number", attribute);
-    } else {
-        strcpy(attribute, cfg->revtag);
-    }
-    strcpy(rev_number, attribute);
-    attribute[5] = '\0';   // Separate starting & stop orbit #s
-    global_attributes.push_back(new NetCDF_Attr<char>("rev_number", rtrim(attribute)));
-    global_attributes.push_back(new NetCDF_Attr<char>("StartOrbitNumber", rtrim(attribute)));
-    global_attributes.push_back(new NetCDF_Attr<char>("StopOrbitNumber", rtrim(attribute + 6)));
 
     global_attributes.push_back(new NetCDF_Attr<float>("cross_track_resolution", &l2b->header.crossTrackResolution));
     global_attributes.push_back(new NetCDF_Attr<float>("along_track_resolution", &l2b->header.alongTrackResolution));
     global_attributes.push_back(new NetCDF_Attr<int>("zero_index", &l2b->header.zeroIndex));
     global_attributes.push_back(new NetCDF_Attr<char>("version_id", VERSION_ID));
-    // These are internal L2B version numbers---don't need to log these
-//    global_attributes.push_back(new NetCDF_Attr<int>("version_id_major", &l2b->header.version_id_major));
-//    global_attributes.push_back(new NetCDF_Attr<int>("version_id_minor", &l2b->header.version_id_minor));
 
-    read_attr_h5(science_group, "Processor Version", attribute);
-    global_attributes.push_back(new NetCDF_Attr<char>("L1B_Processor_Version", rtrim(attribute)));
-    read_attr_h5(science_group, "Ephemeris Type", attribute);
-    global_attributes.push_back(new NetCDF_Attr<char>("Ephemeris_Type", rtrim(attribute)));
-    read_attr_h5(science_group, "L1B Actual Scans", attribute);
-    global_attributes.push_back(new NetCDF_Attr<short>("L1B_Actual_Scans", (short)atoi(attribute)));
-    read_attr_h5(science_group, "Production Date", attribute);  DT_SPLIT(attribute);
-    global_attributes.push_back(new NetCDF_Attr<char>("L1BProductionDate", rtrim(DT_DATE(attribute))));
-    global_attributes.push_back(new NetCDF_Attr<char>("L1BProductionTime", rtrim(DT_TIME(attribute))));
-
-    try {
-        char revno[32], orbit_start[32], orbit_stop[32], node_time[32], node_long[32], orb_per[32];
-
-        do {
-            times >> revno >> orbit_start >> orbit_stop >> node_time >> node_long >> orb_per;
-
-            if (strcmp(rev_number, revno) == 0) {
-                DT_SPLIT(orbit_start);
-                DT_SPLIT(orbit_stop);
-                DT_SPLIT(node_time);
-
-                rev_start_time = str_to_timeval(orbit_start);
-                rev_end_time   = str_to_timeval(orbit_stop);
-
-                global_attributes.push_back(new NetCDF_Attr<char>("EquatorCrossingDate", rtrim(DT_DATE(node_time))));
-                global_attributes.push_back(new NetCDF_Attr<char>("EquatorCrossingTime", rtrim(DT_TIME(node_time))));
-                global_attributes.push_back(new NetCDF_Attr<char>("RangeBeginningDate", rtrim(DT_DATE(orbit_start))));
-                global_attributes.push_back(new NetCDF_Attr<char>("RangeBeginningTime", rtrim(DT_TIME(orbit_start))));
-                global_attributes.push_back(new NetCDF_Attr<char>("RangeEndingDate", rtrim(DT_DATE(orbit_stop))));
-                global_attributes.push_back(new NetCDF_Attr<char>("RangeEndingTime", rtrim(DT_TIME(orbit_stop))));
-                global_attributes.push_back(new NetCDF_Attr<float>("Equator_Crossing_Longitude", atof(node_long)));
-                global_attributes.push_back(new NetCDF_Attr<float>("rev_orbit_period", atof(orb_per)));
-
-                break;
-            }
-        } while(true);
-    } catch (ifstream::failure e) {
-        cerr << "Reached end of file without finding " << rev_number << endl;
-        exit(-1);
-    }
-
-    read_attr_h5(science_group, "Orbit Inclination", attribute);
-    global_attributes.push_back(new NetCDF_Attr<float>("orbit_inclination", atof(attribute)));
-    read_attr_h5(science_group, "Orbit Semi-major Axis", attribute);
-    global_attributes.push_back(new NetCDF_Attr<float>("rev_orbit_semimajor_axis", atof(attribute)));
-    read_attr_h5(science_group, "Orbit Eccentricity", attribute);
-    global_attributes.push_back(new NetCDF_Attr<float>("rev_orbit_eccentricity", atof(attribute)));
     global_attributes.push_back(new NetCDF_Attr<char>("NetCDF_version_id", nc_inq_libvers()));
     global_attributes.push_back(new NetCDF_Attr<char>("references", ""));
+
+    for (i = 0; i < ARRAY_LEN(hdf_attributes); i++) {
+        int name_idx = (hdf_attributes[i][1] == NULL) ? 0 : 1;
+        const char *name = hdf_attributes[i][name_idx];
+
+        HDFERR((vdata_ref = VSfind(hdfid, hdf_attributes[i][0])) == 0);
+        HDFERR((vdata_id  = VSattach(hdfid, vdata_ref, "r")) == FAIL);
+        HDFERR((attr_size = VSsizeof(vdata_id, (char *)attr_fname)) == FAIL);
+
+        ERR((attr_value = 
+                    (typeof attr_value)calloc(attr_size + 1, 1)) == NULL);
+
+        HDFERR(VSsetfields(vdata_id, attr_fname) == FAIL);
+        HDFERR(VSread(vdata_id, (uint8 *)attr_value, 1, FULL_INTERLACE) == FAIL);
+
+        ERR((token = strtok(attr_value, "\n")) == NULL);
+
+        if (strcmp(token, "char") == 0) {
+            ERR((token = strtok(NULL, "\n")) == NULL);
+            ERR((token = strtok(NULL, "")) == NULL);
+
+            // Wipe final newline
+            if (token[strlen(token) - 1] == '\n') {
+                token[strlen(token) - 1] = '\0';
+            }
+
+            global_attributes.push_back(new NetCDF_Attr<char>(name, token));
+        } else if (strcmp(token, "int") == 0) {
+            int ival;
+            ERR((token = strtok(NULL, "\n")) == NULL);
+            ERR((token = strtok(NULL, "\n")) == NULL);
+
+            ival = atoi(token);
+            global_attributes.push_back(new NetCDF_Attr<int>(name, &ival));
+        } else if (strcmp(token, "float") == 0) {
+            float fval;
+            ERR((token = strtok(NULL, "\n")) == NULL);
+            ERR((token = strtok(NULL, "\n")) == NULL);
+
+            fval = strtof(token, NULL);
+            global_attributes.push_back(new NetCDF_Attr<float>(name, &fval));
+        } else {
+            fprintf(stderr, "Unknown attribute type [%s] = %s\n", 
+                    name, token);
+            return -1;
+        }
+
+        free(attr_value);
+        HDFERR(VSdetach(vdata_id) == FAIL);
+    }
+
+    HDFERR(Vend(hdfid) == FAIL);
 
     for (unsigned int i = 0; i < global_attributes.size(); i++) {
         NCERR(global_attributes[i]->Write(ncid, NC_GLOBAL));
@@ -851,30 +904,9 @@ static int set_global_attributes(int argc, char **argv,
 
     FREE(history);
 
-    H5Fclose(l1bhdf_id);
-
     return 0;
 }
 
-static char * rtrim(char *str) {
-    for (unsigned int i = 0; i < strlen(str); i++) {
-        if (isspace(str[i])) {
-            str[i] = '\0';
-            return str;
-        }
-    }
-    return str;
-}
-
-// From A. Fore
-static void read_attr_h5(hid_t obj_id, char *name, void *buffer) {
-    hid_t attr_id;
-    HDFERR((attr_id = H5Aopen(obj_id, name, H5P_DEFAULT)) < 0);
-    HDFERR((H5Aread(attr_id, H5Aget_type(attr_id), buffer)) < 0);
-    HDFERR((H5Aclose(attr_id)) < 0);
-}
-
-// Modified by A. Fore from QuikSCAT code to use OS-2 origins
 static void bin_to_latlon(int at_ind, int ct_ind,
         const latlon_config *config, float *lat, float *lon) {
 
@@ -887,12 +919,7 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     const double at_res = config->at_res;
     const double xt_res = config->xt_res;
 
-    // Modified for OS2 starting at north pole
-    //lambda_0 = DEG_TO_RAD(config->lambda_0);
-    double lambda_0 = config->lambda_0 + 180 + P2/(2*P1) * 360;
-    if( lambda_0 > 360 ) lambda_0 -= 360;
-    lambda_0 = DEG_TO_RAD(lambda_0);
-
+    const double lambda_0 = DEG_TO_RAD(config->lambda_0);
 
     const double r_n_at_bins = 1624.0 * 25.0 / at_res;
     const double atrack_bin_const = two_pi/r_n_at_bins;
@@ -908,9 +935,8 @@ static void bin_to_latlon(int at_ind, int ct_ind,
 
     sini = sinf(inc);
     cosi = cosf(inc);
-    // Modified for OS2 starting at north pole
-    //lambda_pp = (at_ind + 0.5)*atrack_bin_const - pi_over_two;
-    lambda_pp = (at_ind + 0.5)*atrack_bin_const - pi_over_two + pi;
+
+    lambda_pp = (at_ind + 0.5)*atrack_bin_const - pi_over_two;
     phi_pp = -(ct_ind - (r_n_xt_bins/2 - 0.5))*xtrack_bin_const;
 
     sin_phi_pp = sinf(phi_pp);
@@ -930,12 +956,9 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     lambda_t = atan2f(V, cosf(lambda_pp));
     lambda = lambda_t - (P2/P1)*lambda_pp + lambda_0;
 
-
     lambda += (lambda < 0)       ?  two_pi :
               (lambda >= two_pi) ? -two_pi :
                                     0.0f;
-
-
     phi = atanf((tanf(lambda_pp)*cosf(lambda_t) -
                 cosf(inc)*sinf(lambda_t))/((1 - e2)*
                 sinf(inc)));

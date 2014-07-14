@@ -1774,12 +1774,12 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     sin_phi_pp2 = sin_phi_pp*sin_phi_pp;
     sin_lambda_pp = sinf(lambda_pp);
     sin_lambda_pp2 = sin_lambda_pp*sin_lambda_pp;
-    
+
     Q = e2*sini*sini/(1 - e2);
     U = e2*cosi*cosi/(1 - e2);
 
     V1 = (1 - sin_phi_pp2/(1 - e2))*cosi*sin_lambda_pp;
-    V2 = (sini*sin_phi_pp*sqrtf((1 + Q*sin_lambda_pp2)*(1 - 
+    V2 = (sini*sin_phi_pp*sqrtf((1 + Q*sin_lambda_pp2)*(1 -
                     sin_phi_pp2) - U*sin_phi_pp2));
 
     V = (V1 - V2)/(1 - sin_phi_pp2*(1 + U));
@@ -1787,10 +1787,10 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     lambda_t = atan2f(V, cosf(lambda_pp));
     lambda = lambda_t - (P2/P1)*lambda_pp + lambda_0;
 
-    lambda += (lambda < 0)       ?  two_pi : 
+    lambda += (lambda < 0)       ?  two_pi :
               (lambda >= two_pi) ? -two_pi :
                                     0.0f;
-    phi = atanf((tanf(lambda_pp)*cosf(lambda_t) - 
+    phi = atanf((tanf(lambda_pp)*cosf(lambda_t) -
                 cosf(inc)*sinf(lambda_t))/((1 - e2)*
                 sinf(inc)));
 
