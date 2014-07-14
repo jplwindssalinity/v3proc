@@ -32,12 +32,14 @@ static const char rcs_id[] =
 // INCLUDES //
 //----------//
 
-#include "netcdf.h"
+#include <netcdf.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
 #include <mfhdf.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "AngleInterval.h"
 #include "NetCDF.h"
@@ -218,6 +220,7 @@ int parse_commandline(int argc, char **argv,
 int copy_l2bhdf_attributes(int ncid, int hdfid);
 static void bin_to_latlon(int at_ind, int ct_ind,
         const latlon_config *config, float *lat, float *lon);
+static int write_history(int ncid, int argc, const char * const * argv);
 
 
 //--------------//
@@ -1286,6 +1289,7 @@ int main(int argc, char **argv) {
                 NC_INT,   (size_t)(1), &l2b.header.version_id_minor));
     NCERR(nc_put_att_text (ncid, NC_GLOBAL, "source_file",
                 strlen(run_config.l1bhdf_file), run_config.l1bhdf_file));
+    write_history(ncid, argc, argv);
 
     NCERR(nc_enddef(ncid));
 
@@ -1792,4 +1796,55 @@ static void bin_to_latlon(int at_ind, int ct_ind,
 
     *lon = RAD_TO_DEG(lambda);
     *lat = RAD_TO_DEG(phi);
+}
+
+static int write_history(int ncid, int argc, const char * const * argv) {
+    /* Build and insert a history attribute per the NUG:
+     *
+     * history
+     *     A global attribute for an audit trail. This is a character array with
+     *     a line for each invocation of a program that has modified the
+     *     dataset. Well-behaved generic netCDF applications should append a
+     *     line containing: date, time of day, user name, program name and
+     *     command arguments.
+     *
+     */
+    char *history;
+    int i;
+    int len = 0;
+    time_t now;
+    char *cnow;
+    char *login;
+
+    now = time(NULL);
+    cnow = strdup(ctime(&now));
+    login = strdup(getlogin());
+
+    len += strlen(cnow) + 1;
+    len += strlen(login) + 1;
+
+    for (i = 0; i < argc; i++) {
+        len += strlen(argv[i]) + 1;
+    }
+
+    history = (typeof history)calloc(len, sizeof(*history));
+
+    strcat(history, cnow);
+    history[strlen(history) - 1] = ' ';
+    strcat(history, login);
+
+    for (i = 0; i < argc; i++) {
+        strcat(history, " ");
+        strcat(history, argv[i]);
+    }
+    strcat(history, "\n");
+
+    NCERR(nc_put_att_text (ncid, NC_GLOBAL, "history",
+                strlen(history), history));
+
+    free(history);
+    free(login);
+    free(cnow);
+
+    return 0;
 }
