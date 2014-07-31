@@ -108,17 +108,6 @@ using namespace std;
 #define EPOCH    "1999-001T00:00:00.000 UTC"
 #define EPOCH_CF "1999-1-1 0:0:0"
 
-// Used to separate date-time strings from YYYY-DDDTHH:MM:SS.sss into
-// {YYYY-DDD,HH:MM:SS.sss}
-#define DT_SPLIT(x) \
-do {                \
-    (x)[8] = '\0';  \
-} while(0)
-
-#define DT_DATE(x) (x + 0)
-#define DT_TIME(x) (x + 9)
-
-
 enum {
     SIGMA0_MASK               = 0x0001,
     AZIMUTH_DIV_MASK          = 0x0002,
@@ -155,10 +144,10 @@ template class TrackerBase<unsigned short>;
 typedef struct {
     const char *command;
     const char *l2b_file;
+    const char *l2b_ambig_file;
     const char *l2bhdf_file;
     const char *nc_file;
     const char *l1bhdf_file;
-    char extended;
 } l2b_to_netcdf_config;
 
 typedef struct {
@@ -197,7 +186,7 @@ struct timeval rev_end_time, rev_start_time;
 int main(int argc, char **argv) {
 
     l2b_to_netcdf_config run_config;
-    L2B l2b;
+    L2B l2b, l2b_ambig;
 
     /* File IDs */
     int l2bhdf_fid, l2bhdf_sds_fid, ncid;
@@ -210,7 +199,7 @@ int main(int argc, char **argv) {
 
     /* For populating Net CDF file */
     size_t idx[2];
-    WVC *wvc;
+    WVC *wvc, *wvc_ambig;
     int16 flags, eflags;
     float conversion;
 
@@ -218,6 +207,9 @@ int main(int argc, char **argv) {
 
     // For generating time values
     double rev_length_time;
+
+    vector <NetCDF_Var_Base *> vars;
+    vector <NetCDF_Var_Base *> *extended_target;
 
     // parse the command line
     if (parse_commandline(argc, argv, &run_config) != 0) {
@@ -232,14 +224,19 @@ int main(int argc, char **argv) {
     epoch = str_to_timeval(EPOCH);
 
     // open the input files
+    // L2B results
     ERR(l2b.OpenForReading(run_config.l2b_file) == 0);
-    HDFERR((l2bhdf_fid = Hopen(run_config.l2bhdf_file, 
-                    DFACC_READ, 0)) == FAIL);
-
     ERR(l2b.ReadHeader() == 0);
     ERR(l2b.ReadDataRec() == 0);
 
     l2b.header.version_id_major++;
+
+    ERR(l2b_ambig.OpenForReading(run_config.l2b_ambig_file) == 0);
+    ERR(l2b_ambig.ReadHeader() == 0);
+    ERR(l2b_ambig.ReadDataRec() == 0);
+
+    HDFERR((l2bhdf_fid = Hopen(run_config.l2bhdf_file, 
+                    DFACC_READ, 0)) == FAIL);
 
     /********************************************
      * Build NetCDF DB                          *
@@ -252,7 +249,7 @@ int main(int argc, char **argv) {
      * of the array is a (u,v) two-float compounddata type.
      */
 
-    max_ambiguities = l2b.frame.swath.GetMaxAmbiguityCount();
+    max_ambiguities = l2b_ambig.frame.swath.GetMaxAmbiguityCount();
 
     // Initialize the NetCDF DB
     NCERR(nc_create(run_config.nc_file, NC_WRITE, &ncid));
@@ -267,10 +264,8 @@ int main(int argc, char **argv) {
                 &along_track_dim_id));
     NCERR(nc_def_dim(ncid, "cross_track", cross_track_dim_sz,
                 &cross_track_dim_id));
-    if (run_config.extended) {
-        NCERR(nc_def_dim(ncid, "ambiguities",
-                (size_t)max_ambiguities, &ambiguities_dim_id));
-    }
+    NCERR(nc_def_dim(ncid, "ambiguities", (size_t)max_ambiguities,
+                &ambiguities_dim_id));
 
     /*************************************************************
      *
@@ -289,8 +284,6 @@ int main(int argc, char **argv) {
     dimensions_sz[1] = cross_track_dim_sz;
     dimensions_sz[2] = max_ambiguities;
 
-    vector <NetCDF_Var_Base *> vars;
-    vector <NetCDF_Var_Base *> unused_vars;
 
     // Define variables
     NetCDF_Var<float> *lat_var = new NetCDF_Var<float>("lat", ncid, 2, dimensions, dimensions_sz);
@@ -503,9 +496,7 @@ int main(int argc, char **argv) {
     vars.push_back(atm_spd_bias_var);
     vars.push_back(num_ambig_var);
 
-    vector <NetCDF_Var_Base *> *extended_target;
-
-    extended_target = run_config.extended ? &vars : &unused_vars;
+    extended_target = &vars;
 
     extended_target->push_back(sel_obj_var);
     extended_target->push_back(nambig_medfilt_var);
@@ -547,6 +538,7 @@ int main(int argc, char **argv) {
         for (idx[1] = 0; idx[1] < cross_track_dim_sz; idx[1]++) {
 
             wvc = l2b.frame.swath.swath[idx[1]][idx[0]];
+            wvc_ambig = l2b_ambig.frame.swath.swath[idx[1]][idx[0]];
 
             flags  = flags_fill;
             eflags = eflags_fill;
@@ -645,13 +637,13 @@ int main(int argc, char **argv) {
                 num_out_fore_var->SetData(idx, wvc->numOutFore);
                 num_out_aft_var->SetData(idx, wvc->numOutAft);
 
-                WindVectorPlus *wv = wvc->ambiguities.GetHead();
-                unsigned char num_ambiguities = wvc->ambiguities.NodeCount();
+                WindVectorPlus *wv = wvc_ambig->ambiguities.GetHead();
+                unsigned char num_ambiguities = wvc_ambig->ambiguities.NodeCount();
 
                 nambig_medfilt_var->SetData(idx, num_ambiguities);
 
                 for (idx[2] = 0; (int)idx[2] < num_ambiguities && wv != NULL;
-                        idx[2]++, wv = wvc->ambiguities.GetNext()) {
+                        idx[2]++, wv = wvc_ambig->ambiguities.GetNext()) {
 
                     if (wv->spd <= ambiguity_speed_max) {
                         ambiguity_speed_var->SetData(idx, wv->spd);
@@ -717,9 +709,6 @@ int main(int argc, char **argv) {
     for (int i = vars.size() - 1; i >= 0; i--) {
         delete vars[i];
     }
-    for (int i = unused_vars.size() - 1; i >= 0; i--) {
-        delete unused_vars[i];
-    }
 
     //----------------------//
     // close files and exit //
@@ -732,50 +721,51 @@ int main(int argc, char **argv) {
 
 static int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
 
-    const char* usage_array = "--l2b=<l2b file> --l2bhdf=<lb hdf file> --nc=<nc file> --l1bhdf=<l1b hdf source file> [--extended]";
+    const char* usage_array = "--l2b=<l2b file> --l2bhdf=<lb hdf file> --nc=<nc file> --l1bhdf=<l1b hdf source file>";
     int opt;
 
     /* Initialize configuration structure */
     config->command = no_path(argv[0]);
-    config->l2b_file    = NULL;
-    config->l2bhdf_file = NULL;
-    config->nc_file     = NULL;
-    config->l1bhdf_file = NULL;
-    config->extended    = 0;
+    config->l2b_ambig_file  = NULL;
+    config->l2b_file        = NULL;
+    config->l2bhdf_file     = NULL;
+    config->nc_file         = NULL;
+    config->l1bhdf_file     = NULL;
 
     struct option longopts[] =
     {
-        { "l2b",      required_argument, NULL, 'i'},
-        { "l2bhdf",   required_argument, NULL, 'h'},
-        { "nc",       required_argument, NULL, 'o'},
-        { "l1bhdf",   required_argument, NULL, 's'},
-        { "extended", no_argument,       NULL, 'e'}, 
+        { "l2b",       required_argument, NULL, 'i'},
+        { "l2b_ambig", required_argument, NULL, 'a'},
+        { "l2bhdf",    required_argument, NULL, 'h'},
+        { "nc",        required_argument, NULL, 'o'},
+        { "l1bhdf",    required_argument, NULL, 's'},
         {0, 0, 0, 0}
     };
 
     while ((opt = getopt_long(argc, argv, "i:o:s:t:", longopts, NULL)) != -1) {
         switch (opt) {
-            case 'i':
-                config->l2b_file = optarg;
-                break;
-            case 'h': 
-                config->l2bhdf_file = optarg;
-                break;
-            case 'o':
-                config->nc_file = optarg;
-                break;
-            case 's':
-                config->l1bhdf_file = optarg;
-                break;
-            case 'e':
-                config->extended = 1;
-                break;
+          case 'i':
+            config->l2b_file = optarg;
+            break;
+          case 'h': 
+            config->l2bhdf_file = optarg;
+            break;
+          case 'o':
+            config->nc_file = optarg;
+            break;
+          case 's':
+            config->l1bhdf_file = optarg;
+            break;
+          case 'a':
+            config->l2b_ambig_file = optarg;
+            break;
         }
 
     }
 
     if (config->l2b_file == NULL || config->l2bhdf_file == NULL ||
-            config->nc_file == NULL || config->l1bhdf_file == NULL) {
+            config->nc_file == NULL || config->l1bhdf_file == NULL ||
+            config->l2b_ambig_file == NULL) {
 
         fprintf(stderr, "%s: %s\n", config->command, usage_array);
         return -1;
