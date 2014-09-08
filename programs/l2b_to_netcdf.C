@@ -370,7 +370,7 @@ int main(int argc, char **argv) {
         nudge_dir_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees"));
         nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         nudge_dir_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
-    NetCDF_Var<float> *wind_speed_uncorr_var = new NetCDF_Var<float>("wind_speed_uncorrected", ncid, 2, dimensions, dimensions_sz);
+    NetCDF_Var<float> *wind_speed_uncorr_var = new NetCDF_Var<float>("retrieved_wind_speed_uncorrected", ncid, 2, dimensions, dimensions_sz);
         float wind_speed_uncorr_fill = -9999.0f;
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", wind_speed_uncorr_fill));
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
@@ -380,6 +380,15 @@ int main(int argc, char **argv) {
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<float> *cross_track_bias_var = new NetCDF_Var<float>("cross_track_wind_speed_bias", ncid, 2, dimensions, dimensions_sz);
+        float cross_track_bias_fill = -9999.0f, cross_track_bias_min = -100.0f, cross_track_bias_max = 100.f;
+        cross_track_bias_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", cross_track_bias_fill));
+        cross_track_bias_var->AddAttribute(new NetCDF_Attr<float>("valid_min", cross_track_bias_min));
+        cross_track_bias_var->AddAttribute(new NetCDF_Attr<float>("valid_max", cross_track_bias_max));
+        cross_track_bias_var->AddAttribute(new NetCDF_Attr<char>("long_name", "relative wind speed bias with respect to sweet spot"));
+        cross_track_bias_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
+        cross_track_bias_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        cross_track_bias_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
     NetCDF_Var<float> *atm_spd_bias_var = new NetCDF_Var<float>("atmospheric_speed_bias", ncid, 2, dimensions, dimensions_sz);
         float atm_spd_bias_fill = -9999.0f;
         atm_spd_bias_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", atm_spd_bias_fill));
@@ -493,13 +502,15 @@ int main(int argc, char **argv) {
     vars.push_back(nudge_speed_var);
     vars.push_back(nudge_dir_var);
     vars.push_back(wind_speed_uncorr_var);
+    vars.push_back(cross_track_bias_var);
     vars.push_back(atm_spd_bias_var);
     vars.push_back(num_ambig_var);
 
     extended_target = &vars;
 
     extended_target->push_back(sel_obj_var);
-    extended_target->push_back(nambig_medfilt_var);
+// Per email from bstiles on 4 Sept 2014, do not populate #ambiguities pre-median filtering
+//    extended_target->push_back(nambig_medfilt_var);
     extended_target->push_back(ambiguity_speed_var);
     extended_target->push_back(ambiguity_dir_var);
     extended_target->push_back(ambig_obj_var);
@@ -629,6 +640,8 @@ int main(int argc, char **argv) {
                 conversion = conversion - 360.0f*((int)(conversion/360.0f));
                 nudge_dir_var->SetData(idx, conversion);
 
+                cross_track_bias_var->SetData(idx, 0.0f);
+
                 num_ambig_var->SetData(idx, wvc->numAmbiguities);
 
                 sel_obj_var->SetData(idx, wvc->selected->obj);
@@ -679,6 +692,7 @@ int main(int argc, char **argv) {
                 nudge_dir_var->SetData(idx, nudge_dir_fill);
 
                 wind_speed_uncorr_var->SetData(idx, wind_speed_uncorr_fill);
+                cross_track_bias_var->SetData(idx, 0.0f);
                 atm_spd_bias_var->SetData(idx, atm_spd_bias_fill);
 
                 num_ambig_var->SetData(idx, num_ambig_fill);
@@ -721,7 +735,7 @@ int main(int argc, char **argv) {
 
 static int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
 
-    const char* usage_array = "--l2b=<l2b file> --l2bhdf=<lb hdf file> --nc=<nc file> --l1bhdf=<l1b hdf source file>";
+    const char* usage_array = "--l2b=<l2b file> --l2b_ambig=<l2b pre-median filtering> --l2bhdf=<lb hdf file> --nc=<nc file> --l1bhdf=<l1b hdf source file>";
     int opt;
 
     /* Initialize configuration structure */
