@@ -299,7 +299,7 @@ int main(int argc, char **argv) {
         lon_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "longitude"));
         lon_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees_east"));
     NetCDF_Var<float> *retrieved_speed_var = new NetCDF_Var<float>("retrieved_wind_speed", ncid, 2, dimensions, dimensions_sz);
-        float retrieved_speed_min = 0.0f, retrieved_speed_max = 100.0f, retrieved_speed_fill = -9999.0ft;
+        float retrieved_speed_min = 0.0f, retrieved_speed_max = 100.0f, retrieved_speed_fill = -9999.0f;
         retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", retrieved_speed_fill));
         retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_min", retrieved_speed_min));
         retrieved_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_max", retrieved_speed_max));
