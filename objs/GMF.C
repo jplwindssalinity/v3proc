@@ -371,6 +371,33 @@ int GMF::ReadQScatStyleDualPol(const char*  filename) {
         met_idx_start, n_met);
 }
 
+int GMF::ReadQScatStyleDualPolExtended(const char*  filename) {
+    _metCount = 2;
+
+    _incCount = 27;
+    _incMin = 40.0 * dtr;
+    _incMax = 66.0 * dtr;
+    _incStep = 1.0 * dtr;
+
+    _spdCount = 501;
+    _spdMin = 0.0;
+    _spdMax = 50.0;
+    _spdStep = 0.1;
+
+    _chiCount = 360;
+    _chiStep = two_pi / _chiCount;
+    
+    if (! _Allocate())
+        return(0);
+
+    bool mirrorChiValues = false;
+    bool discardFirstVal = false;
+    int met_idx_start = 0;
+    int n_met = 2;
+
+    return _ReadArrayFileLoop(filename, mirrorChiValues, discardFirstVal,
+        met_idx_start, n_met);
+}
 
 //------------------//
 // GMF:ReadHighWind //

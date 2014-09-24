@@ -66,6 +66,7 @@ public:
     int  ReadOldStyle(const char* filename);
     int  ReadQScatStyle(const char*  filename);
     int  ReadQScatStyleDualPol(const char*  filename);
+    int  ReadQScatStyleDualPolExtended(const char*  filename);
     int  ReadHighWind(const char* filename);
     int  ReadKuAndC(const char* ku_filename,const char* c_filename);
     int  ReadCBand(const char* filename);
