@@ -312,6 +312,21 @@ main(
     config_list.StompOrAppend(ORBIT_TICKS_PER_ORBIT_KEYWORD, "0");
     config_list.StompOrAppend(USE_KFACTOR_KEYWORD, "0");
 
+
+    //------------------------------//
+    // Compute effective gate-width //
+    //------------------------------//
+
+    float tx_pulse_width, rx_gate_width[2];
+    config_list.GetFloat("TX_PULSE_WIDTH", &tx_pulse_width);
+    config_list.GetFloat("TX_PULSE_WIDTH", &tx_pulse_width);
+    config_list.GetFloat("BEAM_1_RX_GATE_WIDTH", &rx_gate_width[0]);
+    config_list.GetFloat("BEAM_2_RX_GATE_WIDTH", &rx_gate_width[1]);
+    
+    float half_egw[2];
+    half_egw[0] = (rx_gate_width[0]-tx_pulse_width)/2.0;
+    half_egw[1] = (rx_gate_width[1]-tx_pulse_width)/2.0;
+
     //----------------------------------------------//
     // create a spacecraft and spacecraft simulator //
     //----------------------------------------------//
@@ -581,7 +596,9 @@ main(
             
             // last portion of nadir return at this time + 0.05 milli-sec 
             // for buffer -- 9/23/2013 AGF
-            double t_nadir_end = ( nadir_rtt + qscat.ses.txPulseWidth ) * S_TO_MS + 0.05 + 0.2;
+            double t_nadir_end = (
+                nadir_rtt + qscat.ses.txPulseWidth) * S_TO_MS + 0.05 +
+                half_egw[beam_idx];
             
             for (int azimuth_step = 0; azimuth_step < RANGE_AZIMUTH_STEPS;
                 azimuth_step++)
