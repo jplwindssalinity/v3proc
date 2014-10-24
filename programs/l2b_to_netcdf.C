@@ -804,6 +804,9 @@ static int set_global_attributes(int argc, char **argv,
     time_t now;
     char *history;
 
+    struct tm rev_end_tm;
+    struct tm rev_start_tm;
+
     const char *hdf_attributes[][2] = {
         {"producer_agency", NULL},
         {"producer_institution", "institution"},
@@ -940,6 +943,39 @@ static int set_global_attributes(int argc, char **argv,
             }
 
             global_attributes.push_back(new NetCDF_Attr<char>(name, token));
+
+            // Extract rev start and end times from L2B attributes
+            if (strcmp(name, "RangeBeginningDate") == 0) {
+                rev_start_tm.tm_year = atoi(token + 0) - 1900;
+
+                // Setting month to 0 and day-of-month to day-of-year will cause
+                // mktime() to normalize and give us the correct timeval
+                rev_start_tm.tm_mon  = 0;
+                // TODO: Is DOY 1- or 0- indexed?
+                rev_start_tm.tm_mday = atoi(token + 5);
+            }
+            if (strcmp(name, "RangeBeginningTime") == 0) {
+                rev_start_tm.tm_hour = atoi(token + 0);
+                rev_start_tm.tm_min = atoi(token + 3);
+                rev_start_tm.tm_sec = atoi(token + 6);
+                rev_start_time.tv_usec = 1000*atoi(token + 9);
+            }
+            if (strcmp(name, "RangeEndingDate") == 0) {
+                rev_end_tm.tm_year = atoi(token + 0) - 1900;
+
+                // Setting month to 0 and day-of-month to day-of-year will cause
+                // mktime() to normalize and give us the correct timeval
+                rev_end_tm.tm_mon  = 0;
+                // TODO: Is DOY 1- or 0- indexed?
+                rev_end_tm.tm_mday = atoi(token + 5);
+            }
+            if (strcmp(name, "RangeEndingTime") == 0) {
+                rev_end_tm.tm_hour = atoi(token + 0);
+                rev_end_tm.tm_min = atoi(token + 3);
+                rev_end_tm.tm_sec = atoi(token + 6);
+                rev_end_time.tv_usec = 1000*atoi(token + 9);
+            }
+
         } else if (strcmp(token, "int") == 0) {
             int ival;
             ERR((token = strtok(NULL, "\n")) == NULL);
@@ -969,6 +1005,9 @@ static int set_global_attributes(int argc, char **argv,
     for (unsigned int i = 0; i < global_attributes.size(); i++) {
         NCERR(global_attributes[i]->Write(ncid, NC_GLOBAL));
     }
+
+    rev_end_time.tv_sec = mktime(&rev_end_tm);
+    rev_start_time.tv_sec = mktime(&rev_start_tm);
 
     for (int i = global_attributes.size() - 1; i >= 0; i--) {
         delete global_attributes[i];
