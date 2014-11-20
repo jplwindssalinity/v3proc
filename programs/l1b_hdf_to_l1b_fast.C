@@ -884,7 +884,7 @@ main(
            new_meas->scanAngle = 0.01*dtr*double(antenna_azimuth[pulse_ind]);
            //if (new_meas->scanAngle < 0) new_meas->scanAngle += two_pi;
 
-           // Set measurement type depending on inc angle
+           // Set measurement type
            if (sigma0_mode_flag[pulse_ind] & 0x4) {
     	     new_meas->beamIdx = 1;
     	     new_meas->measType = Meas::VV_MEAS_TYPE;

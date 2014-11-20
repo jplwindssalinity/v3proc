@@ -897,9 +897,8 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("GranulePointer", basename(attribute)));
 
     global_attributes.push_back(new NetCDF_Attr<char>("l2b_algorithm_descriptor",
-                "Uses QSCAT2012 GMF from Jet Propulsion Laboratory constructed using\n"
-                "data from the QuikSCAT instrument repointed to Rapidscat incidence\n"
-                "angles.  Applies median filter technique for ambiguity removal.\n"
+                "Uses NSCAT 2014 GMF developed by Remote Sensing Systems.\n"
+                "Applies median filter technique for ambiguity removal.\n"
                 "Ambiguity removal median filter is based on wind vectors over a 7 by 7\n"
                 "wind vector cell window.  Applies no median filter weights. Enhances\n"
                 "the direction of the selected ambiguity based on the range of\n"
