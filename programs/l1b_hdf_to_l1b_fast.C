@@ -885,14 +885,14 @@ main(
            //if (new_meas->scanAngle < 0) new_meas->scanAngle += two_pi;
 
            // Set measurement type depending on inc angle
-           if (new_meas->incidenceAngle < 50*dtr) {
-    	     new_meas->beamIdx = 0;
-		     new_meas->measType = Meas::HH_MEAS_TYPE;
-           } 
-           else {
+           if (sigma0_mode_flag[pulse_ind] & 0x4) {
     	     new_meas->beamIdx = 1;
     	     new_meas->measType = Meas::VV_MEAS_TYPE;
-    	   }           
+           } 
+           else {
+    	     new_meas->beamIdx = 0;
+		     new_meas->measType = Meas::HH_MEAS_TYPE;
+    	   }
 
            // Get sigma-0 Mode from flags
            // Sigma0 mode is index into kpr table
