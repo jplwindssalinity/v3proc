@@ -125,7 +125,8 @@ enum {
     RAIN_CORR_NOT_APPL_MASK = 0x0001,
     NEG_WIND_SPEED_MASK     = 0x0002,
     ALL_AMBIG_CONTRIB_MASK  = 0x0004,
-    RAIN_CORR_LARGE_MASK    = 0x0008
+    RAIN_CORR_LARGE_MASK    = 0x0008,
+    EFLAGS_INIT             = 0x000f
 };
 
 //-----------//
@@ -552,7 +553,7 @@ int main(int argc, char **argv) {
             wvc_ambig = l2b_ambig.frame.swath.swath[idx[1]][idx[0]];
 
             flags  = flags_fill;
-            eflags = eflags_fill;
+            eflags = EFLAGS_INIT;
 
             if (wvc != NULL && wvc->selected != NULL) {
 
