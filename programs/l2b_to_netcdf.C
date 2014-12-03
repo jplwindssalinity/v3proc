@@ -412,8 +412,8 @@ int main(int argc, char **argv) {
     NetCDF_Var<float> *sel_obj_var = new NetCDF_Var<float>("wind_obj", ncid, 2, dimensions, dimensions_sz);
         float sel_obj_fill = -9999.0f;
         sel_obj_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", sel_obj_fill));
-        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
-        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", -199.0f));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 0.0f));
         sel_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "selected wind objective function value"));
         sel_obj_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         sel_obj_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
@@ -449,8 +449,8 @@ int main(int argc, char **argv) {
     NetCDF_Var<float> *ambig_obj_var = new NetCDF_Var<float>("ambiguity_obj", ncid, 3, dimensions, dimensions_sz);
         float ambig_obj_fill = -9999.0f;
         ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", ambig_obj_fill));
-        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
-        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", -199.0f));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 0.0f));
         ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "selected wind objective function value"));
         ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
