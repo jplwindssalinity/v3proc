@@ -594,7 +594,8 @@ int main(int argc, char **argv) {
                 if ((wvc->rainCorrectedSpeed == -1) && (wvc->rainImpact == 0)) {
                     rain_impact_var->SetData(idx, rain_impact_fill);
                 } else {
-                    rain_impact_var->SetData(idx, wvc->rainImpact);
+                    // Limit the rain impact to be no less than 0
+                    rain_impact_var->SetData(idx, (wvc->rainImpact > 0) ? wvc->rainImpact : 0);
                 }
 
                 if (IS_NOT_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
