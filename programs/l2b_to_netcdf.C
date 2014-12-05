@@ -435,7 +435,7 @@ int main(int argc, char **argv) {
         ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_speed"));
         ambiguity_speed_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
-        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat nambig"));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat num_ambiguities"));
     NetCDF_Var<float> *ambiguity_dir_var = new NetCDF_Var<float>("ambiguity_direction", ncid, 3, dimensions, dimensions_sz);
         float ambiguity_dir_fill = -9999.0f;
         ambiguity_dir_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", ambiguity_dir_fill));
@@ -445,7 +445,7 @@ int main(int argc, char **argv) {
         ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_to_direction"));
         ambiguity_dir_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees"));
-        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat nambig"));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat num_ambiguities"));
     NetCDF_Var<float> *ambig_obj_var = new NetCDF_Var<float>("ambiguity_obj", ncid, 3, dimensions, dimensions_sz);
         float ambig_obj_fill = -9999.0f;
         ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", ambig_obj_fill));
@@ -454,7 +454,7 @@ int main(int argc, char **argv) {
         ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "selected wind objective function value"));
         ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
-        ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat nambig"));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat num_ambiguities"));
     NetCDF_Var<unsigned char> *num_in_fore_var = new NetCDF_Var<unsigned char>("number_in_fore", ncid, 2, dimensions, dimensions_sz);
         unsigned char num_in_fore_fill = 0;
         num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_in_fore_fill));
