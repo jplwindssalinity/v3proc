@@ -883,7 +883,7 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("comment", "Rapidscat Level 1B Data Processed to Winds Using QuikSCAT v3 Algorithms"));
     global_attributes.push_back(new NetCDF_Attr<char>("history", history));
 
-    global_attributes.push_back(new NetCDF_Attr<char>("Conventions", "CF-1.5"));
+    global_attributes.push_back(new NetCDF_Attr<char>("Conventions", "CF-1.6"));
     global_attributes.push_back(new NetCDF_Attr<char>("data_format_type", "NetCDF Classic"));
     global_attributes.push_back(new NetCDF_Attr<char>("processing_level", "L2B"));
 
