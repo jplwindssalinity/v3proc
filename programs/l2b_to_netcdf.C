@@ -892,7 +892,7 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("date_created", timestr));
 
     global_attributes.push_back(new NetCDF_Attr<char>("LongName", DATASET_TITLE));
-    global_attributes.push_back(new NetCDF_Attr<char>("ShortName", "RS_OSCAT_LEVEL_2B_OWV_COMP_12_V2"));
+    global_attributes.push_back(new NetCDF_Attr<char>("ShortName", "RSCAT_LEVEL_2B_OWV_COMP_12_V1"));
     strncpy(attribute, cfg->nc_file, ARRAY_LEN(attribute) - 1);
     global_attributes.push_back(new NetCDF_Attr<char>("GranulePointer", basename(attribute)));
 
