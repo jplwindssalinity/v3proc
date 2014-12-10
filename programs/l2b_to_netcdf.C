@@ -888,7 +888,7 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("processing_level", "L2B"));
 
     char timestr[18];
-    strftime(timestr, sizeof(timestr), "%Y-%jT%H", gmtime(&now));
+    strftime(timestr, sizeof(timestr), "%Y-%jT%T", gmtime(&now));
     global_attributes.push_back(new NetCDF_Attr<char>("date_created", timestr));
 
     global_attributes.push_back(new NetCDF_Attr<char>("LongName", DATASET_TITLE));
