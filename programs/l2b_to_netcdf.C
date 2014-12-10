@@ -813,7 +813,7 @@ static int set_global_attributes(int argc, char **argv,
         {"producer_agency", NULL},
         {"producer_institution", "institution"},
         {"PlatformType", NULL},
-        {"InstrumentShortName", NULL},
+        //{"InstrumentShortName", NULL},
         {"PlatformLongName", NULL},
         {"PlatformShortName", NULL},
         {"project_id", "project"},
@@ -914,6 +914,10 @@ static int set_global_attributes(int argc, char **argv,
 
     global_attributes.push_back(new NetCDF_Attr<char>("NetCDF_version_id", nc_inq_libvers()));
     global_attributes.push_back(new NetCDF_Attr<char>("references", ""));
+
+    // This is marked as "SeaWinds" from the L2B file, which is not right for
+    // rapidscat, so we change it manually here.
+    global_attributes.push_back(new NetCDF_Attr<char>("InstrumentShortName", "RapidScat"));
 
     HDFERR(Vstart(l2bhdf_fid) == FAIL);
     for (int i = 0; i < ARRAY_LEN(hdf_attributes); i++) {
