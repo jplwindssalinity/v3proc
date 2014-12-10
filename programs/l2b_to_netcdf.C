@@ -887,11 +887,9 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("data_format_type", "NetCDF Classic"));
     global_attributes.push_back(new NetCDF_Attr<char>("processing_level", "L2B"));
 
-    char timestr[9];
-    strftime(timestr, sizeof(timestr), "%Y-%j", gmtime(&now));
-    global_attributes.push_back(new NetCDF_Attr<char>("creation_date", timestr));
-    strftime(timestr, sizeof(timestr), "%T", gmtime(&now));
-    global_attributes.push_back(new NetCDF_Attr<char>("creation_time", timestr));
+    char timestr[18];
+    strftime(timestr, sizeof(timestr), "%Y-%jT%H", gmtime(&now));
+    global_attributes.push_back(new NetCDF_Attr<char>("date_created", timestr));
 
     global_attributes.push_back(new NetCDF_Attr<char>("LongName", DATASET_TITLE));
     global_attributes.push_back(new NetCDF_Attr<char>("ShortName", "RS_OSCAT_LEVEL_2B_OWV_COMP_12_V2"));
