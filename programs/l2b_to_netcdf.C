@@ -844,7 +844,7 @@ static int set_global_attributes(int argc, char **argv,
         {"ParameterName", NULL},
         {"InputPointer", NULL},
         {"ancillary_data_descriptors", NULL},
-        {"QAGranulePointer", NULL},
+        //{"QAGranulePointer", NULL},
     };
 
     // Compute history attribute string length
