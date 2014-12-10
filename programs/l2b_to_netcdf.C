@@ -103,7 +103,7 @@ using namespace std;
 
 #define DATASET_TITLE "Rapidscat Level 2B Ocean Wind Vectors in 12.5km Slice Composites"
 #define BUILD_ID "v1_0_0:A"
-#define VERSION_ID "2"
+#define VERSION_ID "1"
 
 #define EPOCH    "1999-001T00:00:00.000 UTC"
 #define EPOCH_CF "1999-1-1 0:0:0"
