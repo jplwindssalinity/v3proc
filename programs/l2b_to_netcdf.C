@@ -1070,9 +1070,13 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     lambda_t = atan2f(V, cosf(lambda_pp));
     lambda = lambda_t - (P2/P1)*lambda_pp + lambda_0;
 
-    lambda += (lambda < 0)       ?  two_pi :
-              (lambda >= two_pi) ? -two_pi :
-                                    0.0f;
+    while (lambda < 0) {
+        lambda += two_pi;
+    }
+    while (lambda >= two_pi) {
+        lambda -= two_pi;
+    }
+
     phi = atanf((tanf(lambda_pp)*cosf(lambda_t) -
                 cosf(inc)*sinf(lambda_t))/((1 - e2)*
                 sinf(inc)));
