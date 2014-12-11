@@ -531,7 +531,6 @@ int main(int argc, char **argv) {
     NCERR(nc_get_att_float(ncid, NC_GLOBAL, "EquatorCrossingLongitude", &orbit_config.lambda_0));
     NCERR(nc_get_att_float(ncid, NC_GLOBAL, "orbit_inclination", &orbit_config.inclination));
     NCERR(nc_get_att_float(ncid, NC_GLOBAL, "rev_orbit_period", &orbit_config.rev_period));
-    orbit_config.rev_period *= 60;  // orbit period -> seconds
     orbit_config.xt_steps = 2*l2b.header.zeroIndex;
     orbit_config.at_res = l2b.header.alongTrackResolution;
     orbit_config.xt_res = l2b.header.crossTrackResolution;
