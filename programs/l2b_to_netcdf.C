@@ -103,7 +103,7 @@ using namespace std;
 
 #define DATASET_TITLE "Rapidscat Level 2B Ocean Wind Vectors in 12.5km Slice Composites"
 #define BUILD_ID "v1_0_0:A"
-#define VERSION_ID "2"
+#define VERSION_ID "1"
 
 #define EPOCH    "1999-001T00:00:00.000 UTC"
 #define EPOCH_CF "1999-1-1 0:0:0"
@@ -125,7 +125,8 @@ enum {
     RAIN_CORR_NOT_APPL_MASK = 0x0001,
     NEG_WIND_SPEED_MASK     = 0x0002,
     ALL_AMBIG_CONTRIB_MASK  = 0x0004,
-    RAIN_CORR_LARGE_MASK    = 0x0008
+    RAIN_CORR_LARGE_MASK    = 0x0008,
+    EFLAGS_INIT             = 0x000f
 };
 
 //-----------//
@@ -411,8 +412,8 @@ int main(int argc, char **argv) {
     NetCDF_Var<float> *sel_obj_var = new NetCDF_Var<float>("wind_obj", ncid, 2, dimensions, dimensions_sz);
         float sel_obj_fill = -9999.0f;
         sel_obj_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", sel_obj_fill));
-        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
-        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", -199.0f));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 0.0f));
         sel_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "selected wind objective function value"));
         sel_obj_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         sel_obj_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
@@ -434,7 +435,7 @@ int main(int argc, char **argv) {
         ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_speed"));
         ambiguity_speed_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
-        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat nambig"));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat num_ambiguities"));
     NetCDF_Var<float> *ambiguity_dir_var = new NetCDF_Var<float>("ambiguity_direction", ncid, 3, dimensions, dimensions_sz);
         float ambiguity_dir_fill = -9999.0f;
         ambiguity_dir_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", ambiguity_dir_fill));
@@ -444,21 +445,21 @@ int main(int argc, char **argv) {
         ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_to_direction"));
         ambiguity_dir_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees"));
-        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat nambig"));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat num_ambiguities"));
     NetCDF_Var<float> *ambig_obj_var = new NetCDF_Var<float>("ambiguity_obj", ncid, 3, dimensions, dimensions_sz);
         float ambig_obj_fill = -9999.0f;
         ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", ambig_obj_fill));
-        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
-        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
-        ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "selected wind objective function value"));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", -199.0f));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 0.0f));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "wind objective function values"));
         ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
-        ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat nambig"));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat num_ambiguities"));
     NetCDF_Var<unsigned char> *num_in_fore_var = new NetCDF_Var<unsigned char>("number_in_fore", ncid, 2, dimensions, dimensions_sz);
         unsigned char num_in_fore_fill = 0;
         num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_in_fore_fill));
         num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
-        num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 0xFf));
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 127));
         num_in_fore_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of inner forward looks in wind vector cell"));
         num_in_fore_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         num_in_fore_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
@@ -466,7 +467,7 @@ int main(int argc, char **argv) {
         unsigned char num_in_aft_fill = 0;
         num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_in_aft_fill));
         num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
-        num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 0xFf));
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 127));
         num_in_aft_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of inner aft looks in wind vector cell"));
         num_in_aft_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         num_in_aft_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
@@ -474,7 +475,7 @@ int main(int argc, char **argv) {
         unsigned char num_out_fore_fill = 0;
         num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_out_fore_fill));
         num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
-        num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 0xFf));
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 127));
         num_out_fore_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of outer forward looks in wind vector cell"));
         num_out_fore_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         num_out_fore_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
@@ -482,7 +483,7 @@ int main(int argc, char **argv) {
         unsigned char num_out_aft_fill = 0;
         num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_out_aft_fill));
         num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
-        num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 0xFf));
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 127));
         num_out_aft_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of outer aft looks in wind vector cell"));
         num_out_aft_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         num_out_aft_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
@@ -551,7 +552,7 @@ int main(int argc, char **argv) {
             wvc_ambig = l2b_ambig.frame.swath.swath[idx[1]][idx[0]];
 
             flags  = flags_fill;
-            eflags = eflags_fill;
+            eflags = EFLAGS_INIT;
 
             if (wvc != NULL && wvc->selected != NULL) {
 
@@ -592,7 +593,8 @@ int main(int argc, char **argv) {
                 if ((wvc->rainCorrectedSpeed == -1) && (wvc->rainImpact == 0)) {
                     rain_impact_var->SetData(idx, rain_impact_fill);
                 } else {
-                    rain_impact_var->SetData(idx, wvc->rainImpact);
+                    // Limit the rain impact to be no less than 0
+                    rain_impact_var->SetData(idx, (wvc->rainImpact > 0) ? wvc->rainImpact : 0);
                 }
 
                 if (IS_NOT_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
@@ -643,11 +645,19 @@ int main(int argc, char **argv) {
 
                 num_ambig_var->SetData(idx, wvc->numAmbiguities);
 
+                sel_obj_var->SetData(idx, sel_obj_fill);
+                num_in_fore_var->SetData(idx, num_in_fore_fill);
+                num_in_aft_var->SetData(idx, num_in_aft_fill);
+                num_out_fore_var->SetData(idx, num_out_fore_fill);
+                num_out_aft_var->SetData(idx, num_out_aft_fill);
+
+                /* Need to actually compute these
                 sel_obj_var->SetData(idx, wvc->selected->obj);
                 num_in_fore_var->SetData(idx, wvc->numInFore);
                 num_in_aft_var->SetData(idx, wvc->numInAft);
                 num_out_fore_var->SetData(idx, wvc->numOutFore);
                 num_out_aft_var->SetData(idx, wvc->numOutAft);
+                */
 
                 WindVectorPlus *wv = wvc_ambig->ambiguities.GetHead();
                 unsigned char num_ambiguities = wvc_ambig->ambiguities.NodeCount();
@@ -810,10 +820,10 @@ static int set_global_attributes(int argc, char **argv,
         {"producer_agency", NULL},
         {"producer_institution", "institution"},
         {"PlatformType", NULL},
-        {"InstrumentShortName", NULL},
+        //{"InstrumentShortName", NULL},
         {"PlatformLongName", NULL},
         {"PlatformShortName", NULL},
-        {"project_id", NULL},
+        {"project_id", "project"},
         {"QAPercentOutOfBoundsData", NULL},
         {"QAPercentMissingData", NULL},
         {"sis_id", NULL},
@@ -841,7 +851,7 @@ static int set_global_attributes(int argc, char **argv,
         {"ParameterName", NULL},
         {"InputPointer", NULL},
         {"ancillary_data_descriptors", NULL},
-        {"QAGranulePointer", NULL},
+        //{"QAGranulePointer", NULL},
     };
 
     // Compute history attribute string length
@@ -880,18 +890,16 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("comment", "Rapidscat Level 1B Data Processed to Winds Using QuikSCAT v3 Algorithms"));
     global_attributes.push_back(new NetCDF_Attr<char>("history", history));
 
-    global_attributes.push_back(new NetCDF_Attr<char>("Conventions", "CF-1.5"));
+    global_attributes.push_back(new NetCDF_Attr<char>("Conventions", "CF-1.6"));
     global_attributes.push_back(new NetCDF_Attr<char>("data_format_type", "NetCDF Classic"));
     global_attributes.push_back(new NetCDF_Attr<char>("processing_level", "L2B"));
 
-    char timestr[9];
-    strftime(timestr, sizeof(timestr), "%Y-%j", gmtime(&now));
-    global_attributes.push_back(new NetCDF_Attr<char>("creation_date", timestr));
-    strftime(timestr, sizeof(timestr), "%T", gmtime(&now));
-    global_attributes.push_back(new NetCDF_Attr<char>("creation_time", timestr));
+    char timestr[18];
+    strftime(timestr, sizeof(timestr), "%Y-%jT%T", gmtime(&now));
+    global_attributes.push_back(new NetCDF_Attr<char>("date_created", timestr));
 
     global_attributes.push_back(new NetCDF_Attr<char>("LongName", DATASET_TITLE));
-    global_attributes.push_back(new NetCDF_Attr<char>("ShortName", "RS_OSCAT_LEVEL_2B_OWV_COMP_12_V2"));
+    global_attributes.push_back(new NetCDF_Attr<char>("ShortName", "RSCAT_LEVEL_2B_OWV_COMP_12_V1"));
     strncpy(attribute, cfg->nc_file, ARRAY_LEN(attribute) - 1);
     global_attributes.push_back(new NetCDF_Attr<char>("GranulePointer", basename(attribute)));
 
@@ -913,6 +921,10 @@ static int set_global_attributes(int argc, char **argv,
 
     global_attributes.push_back(new NetCDF_Attr<char>("NetCDF_version_id", nc_inq_libvers()));
     global_attributes.push_back(new NetCDF_Attr<char>("references", ""));
+
+    // This is marked as "SeaWinds" from the L2B file, which is not right for
+    // rapidscat, so we change it manually here.
+    global_attributes.push_back(new NetCDF_Attr<char>("InstrumentShortName", "RapidScat"));
 
     HDFERR(Vstart(l2bhdf_fid) == FAIL);
     for (int i = 0; i < ARRAY_LEN(hdf_attributes); i++) {
@@ -1065,9 +1077,13 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     lambda_t = atan2f(V, cosf(lambda_pp));
     lambda = lambda_t - (P2/P1)*lambda_pp + lambda_0;
 
-    lambda += (lambda < 0)       ?  two_pi :
-              (lambda >= two_pi) ? -two_pi :
-                                    0.0f;
+    while (lambda < 0) {
+        lambda += two_pi;
+    }
+    while (lambda >= two_pi) {
+        lambda -= two_pi;
+    }
+
     phi = atanf((tanf(lambda_pp)*cosf(lambda_t) -
                 cosf(inc)*sinf(lambda_t))/((1 - e2)*
                 sinf(inc)));
