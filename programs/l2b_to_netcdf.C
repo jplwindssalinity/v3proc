@@ -459,7 +459,7 @@ int main(int argc, char **argv) {
         unsigned char num_in_fore_fill = 0;
         num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_in_fore_fill));
         num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
-        num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 0xFf));
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 127));
         num_in_fore_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of inner forward looks in wind vector cell"));
         num_in_fore_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         num_in_fore_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
@@ -467,7 +467,7 @@ int main(int argc, char **argv) {
         unsigned char num_in_aft_fill = 0;
         num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_in_aft_fill));
         num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
-        num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 0xFf));
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 127));
         num_in_aft_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of inner aft looks in wind vector cell"));
         num_in_aft_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         num_in_aft_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
@@ -475,7 +475,7 @@ int main(int argc, char **argv) {
         unsigned char num_out_fore_fill = 0;
         num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_out_fore_fill));
         num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
-        num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 0xFf));
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 127));
         num_out_fore_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of outer forward looks in wind vector cell"));
         num_out_fore_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         num_out_fore_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
@@ -483,7 +483,7 @@ int main(int argc, char **argv) {
         unsigned char num_out_aft_fill = 0;
         num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_out_aft_fill));
         num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
-        num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 0xFf));
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 127));
         num_out_aft_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of outer aft looks in wind vector cell"));
         num_out_aft_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         num_out_aft_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
