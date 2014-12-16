@@ -118,7 +118,8 @@ enum {
     LOW_WIND_MASK             = 0x0800,
     RAIN_IMPACT_UNUSABLE_MASK = 0x1000,
     RAIN_IMPACT_MASK          = 0x2000,
-    AVAILABLE_DATA_MASK       = 0x4000
+    AVAILABLE_DATA_MASK       = 0x4000,
+    RESERVED_BITS_MASK        = 0x007C
 };
 
 enum {
@@ -558,6 +559,7 @@ int main(int argc, char **argv) {
 
                 /* FLAGS */
                 UNSET(flags, WIND_RETRIEVAL_MASK);
+                UNSET(flags, RESERVED_BITS_MASK);
 
                 UNSET_IF(flags, SIGMA0_MASK, IS_NOT_SET(wvc->qualFlag, L2B_QUAL_FLAG_ADQ_S0));
                 UNSET_IF(flags, AZIMUTH_DIV_MASK, IS_NOT_SET(wvc->qualFlag, L2B_QUAL_FLAG_ADQ_AZI_DIV));
