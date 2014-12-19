@@ -705,28 +705,6 @@ Ephemeris::GetSOMCoordinates(
 	*at_lon = lip*rtd;   // along-track longitude
     *ct_lat = phipi*rtd; // cross-track latitude
 
- 	// Un-wrap along-track longitude depending on ascending/decending.	
-	if( grid_starts_north_pole ) {
-	  // For grids starting at north pole:
-	  // If decending (vz<0) and at_lon says at end of orbit, it is probably 
-	  // wrapped from observations near the start of orbit.	  
-	  if( *at_lon > 340 && sc_vel[2] < 0 ) 
-	    *at_lon -= 360;
-	    
-	  // Similar logic on other boundary.
-	  if( *at_lon < 20 && sc_vel[2] > 0 )
-	    *at_lon += 360;
-	} else {
-	  // For grids starting at south pole:
-	  // If ascending (vz>0) and at_lon says at end of orbit, it is probably 
-	  // wrapped from observations near the start of orbit.	  
-	  if( *at_lon > 340 && sc_vel[2] > 0 )
-	    *at_lon -= 360;
-	  
-	  // Similar logic on other boundary.
-	  if( *at_lon < 20 && sc_vel[2] < 0 )
-	    *at_lon += 360;
-	}
 	return(1);
 }
 
