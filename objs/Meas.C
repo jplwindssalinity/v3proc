@@ -1432,7 +1432,7 @@ int32        pulseIndex)   // index of the pulses (max of 100)
 }
 
 #define COAST_NXSTEPS 10
-#define COAST_NYSTEPS 100
+#define COAST_NYSTEPS 50
 
 int MeasSpot::ComputeLandFraction( LandMap*   lmap,
                                    QSLandMap* qs_lmap,
