@@ -247,9 +247,9 @@ Grid::Add(
       // If meas time closer to start than stop && atlon closer to stop
       // subtract 360 degrees
       if(fabs(meas_time-_start_time) < fabs(meas_time-_end_time)) {
-        if(fabs(ijbin_atlon) > 180.0) ijbin_atlon -= 360;
+        if(fabs(ijbin_atlon) > 270.0) ijbin_atlon -= 360;
       } else {
-        if(fabs(ijbin_atlon) < 180.0) ijbin_atlon += 360;
+        if(fabs(ijbin_atlon) < 90.0) ijbin_atlon += 360;
       }
 
 
