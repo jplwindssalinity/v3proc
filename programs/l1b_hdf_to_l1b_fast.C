@@ -999,9 +999,12 @@ main(
         // Optionally compute land fractions
         if( compute_land_frac ) {
           float this_frequency_shift = (float)frequency_shift[pulse_ind];
-          
+          double spot_lon = double(cell_lon[pulse_ind])*dtr;
+          double spot_lat = double(cell_lat[pulse_ind])*dtr;
+
           new_meas_spot->ComputeLandFraction( &lmap, &qs_landmap, 
-                                              &antenna, this_frequency_shift );
+                                              &antenna, this_frequency_shift,
+                                              spot_lon, spot_lat);
           
           Meas* this_meas = new_meas_spot->GetHead();
           while( this_meas ) {
