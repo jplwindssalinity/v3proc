@@ -71,6 +71,7 @@ public:
     int  ReadKuAndC(const char* ku_filename,const char* c_filename);
     int  ReadCBand(const char* filename);
     int  ReadPolarimetric(const char* filename);
+    int  ReadSMAPRadarOnly(const char* filename);
 
     // internal worker functions- don't use these directly
     int _ReadArrayFile(const char*  filename,
