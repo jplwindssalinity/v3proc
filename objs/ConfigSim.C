@@ -1947,11 +1947,6 @@ ConfigGMF(
         if (! gmf->ReadSMAPRadarOnly(gmf_filename))
             return(0);
     }
-    else if (strcasecmp(gmf_format, "SMAP_QUADPOL_RADAR_ONLY") == 0)
-    {
-        if (! gmf->ReadSMAPQuadPolRadarOnly(gmf_filename))
-            return(0);
-    }
     else if (strcasecmp(gmf_format, "C_BAND") == 0)
     {
       char* cgmf_filename = config_list->Get(C_BAND_GMF_FILE_KEYWORD);

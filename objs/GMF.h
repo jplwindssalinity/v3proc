@@ -72,7 +72,6 @@ public:
     int  ReadCBand(const char* filename);
     int  ReadPolarimetric(const char* filename);
     int  ReadSMAPRadarOnly(const char* filename);
-    int  ReadSMAPQuadPolRadarOnly(const char* filename);
 
     // internal worker functions- don't use these directly
     int _ReadArrayFile(const char*  filename,
