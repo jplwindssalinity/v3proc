@@ -10,6 +10,7 @@
 #define L1B_TB_LORES_ASC_FILE_KEYWORD "L1B_TB_LORES_ASC_FILE"
 #define L1B_TB_LORES_DEC_FILE_KEYWORD "L1B_TB_LORES_DEC_FILE"
 #define DO_QUADPOL_PROCESSING_KEYWORD "DO_QUADPOL_PROCESSING"
+#define QS_LANDMAP_FILE_KEYWORD "QS_LANDMAP_FILE"
 
 //----------//
 // INCLUDES //
@@ -196,6 +197,10 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
+    QSLandMap qs_landmap;
+    char* qslandmap_file = config_list.Get(QS_LANDMAP_FILE_KEYWORD);
+    qs_landmap.Read(qslandmap_file);
+
     L1B l1b;
     if (l1b.OpenForWriting(output_file) == 0) {
         fprintf(
@@ -302,7 +307,16 @@ int main(int argc, char* argv[]){
             read_SDS_h5(id, "/Sigma0_Data/x_factor_vh", &xf[2][0]);
             read_SDS_h5(id, "/Sigma0_Data/x_factor_hv", &xf[3][0]);
 
-            // ...etc
+            read_SDS_h5(id, "/Sigma0_Data/sigma0_vv", &s0[0][0]);
+            read_SDS_h5(id, "/Sigma0_Data/sigma0_hh", &s0[1][0]);
+            read_SDS_h5(id, "/Sigma0_Data/sigma0_vh", &s0[2][0]);
+            read_SDS_h5(id, "/Sigma0_Data/sigma0_hv", &s0[3][0]);
+
+            read_SDS_h5(id, "/Sigma0_Data/sigma0_qual_flag_vv", &s0_flag[0][0]);
+            read_SDS_h5(id, "/Sigma0_Data/sigma0_qual_flag_hh", &s0_flag[1][0]);
+            read_SDS_h5(id, "/Sigma0_Data/sigma0_qual_flag_vh", &s0_flag[2][0]);
+            read_SDS_h5(id, "/Sigma0_Data/sigma0_qual_flag_hv", &s0_flag[3][0]);
+
         } else {
             read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lat", &lat[0]);
             read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lon", &lon[0]);
@@ -323,8 +337,15 @@ int main(int argc, char* argv[]){
             read_SDS_h5(id, "/Sigma0_Slice_Data/slice_x_factor_vh", &xf[2][0]);
             read_SDS_h5(id, "/Sigma0_Slice_Data/slice_x_factor_hv", &xf[3][0]);
 
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_sigma0_vv", &s0[0][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_sigma0_hh", &s0[1][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_sigma0_vh", &s0[2][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_sigma0_hv", &s0[3][0]);
 
-            // ...etc
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_qual_flag_vv", &s0_flag[0][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_qual_flag_hh", &s0_flag[1][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_qual_flag_vh", &s0_flag[2][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_qual_flag_hv", &s0_flag[3][0]);
         }
 
         // Iterate over scans
@@ -348,11 +369,10 @@ int main(int argc, char* argv[]){
             double time = (
                 (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
 
-            int nfootprints = 0;
-            int nslices = 0;
-
             // Iterate over low-res footprints
-            for(int ifootprint = 0; ifootprint < nfootprints; ++ifootprint) {
+            for(int ifootprint = 0; ifootprint < nfootprints[ipart];
+                ++ifootprint) {
+
                 MeasSpot* new_meas_spot = new MeasSpot();
 
                 // Is this good enough (interpolate within each scan)
@@ -368,19 +388,131 @@ int main(int argc, char* argv[]){
                     (double)z_vel[iframe]*0.001);
 
                 new_meas_spot->scAttitude.SetRPY(
-                    roll[iframe], pitch[iframe], yaw[iframe]);
+                    dtr*roll[iframe], dtr*pitch[iframe], dtr*yaw[iframe]);
 
-                if(do_footprint) {
-                    Meas* new_meas = new Meas();
-                    //...
-                    new_meas_spot->Append(new_meas);
-                } else {
-                    for(int islice = 0; islice < nslices; ++islice) {
+                // Index into footprint-sized arrays
+                int fp_idx = iframe * nfootprints[ipart] + ifootprint;
+
+                for(int ipol=0; ipol<4; ++ipol){
+
+                    // Skip HV, VH if do_quadpol == 0
+                    if(!do_quadpol && ipol>=2)
+                        continue;
+
+                    if(do_footprint) {
+
+                        // Check quality flags
+                        if((uint16)0x1 & s0_flag[ipol][fp_idx])
+                            continue;
+
                         Meas* new_meas = new Meas();
-                        //...
+
+                        if(ipol==0) {
+                            new_meas->measType = Meas::VV_MEAS_TYPE;
+                        } else if(ipol==1) {
+                            new_meas->measType = Meas::HH_MEAS_TYPE;
+                        } else if(ipol==2) {
+                            new_meas->measType = Meas::VH_MEAS_TYPE;
+                        } else if(ipol==3) {
+                            new_meas->measType = Meas::HV_MEAS_TYPE;
+                        } else {
+                            continue;
+                        }
+
+                        new_meas->value = s0[ipol][fp_idx];
+                        new_meas->XK = xf[ipol][fp_idx];
+                        new_meas->EnSlice = (
+                            new_meas->value*new_meas->XK) /snr[ipol][fp_idx];
+
+                        double tmp_lon = dtr*lon[fp_idx];
+                        double tmp_lat = dtr*lat[fp_idx];
+                        if(tmp_lon<0) tmp_lon += two_pi;
+
+                        new_meas->centroid.SetAltLonGDLat(0.0, tmp_lon, tmp_lat);
+
+                        new_meas->incidenceAngle = dtr*inc[fp_idx];
+                        new_meas->eastAzimuth = (450.0*dtr - dtr*azi[fp_idx]);
+                        new_meas->scanAngle = dtr * antazi[fp_idx];
+                        new_meas->beamIdx = 0;
+                        new_meas->numSlices = -1;
+                        new_meas->startSliceIdx = -1;
+                        new_meas->landFlag = 0;
+
+                        // WAG based on radiometer 3dB fp of 39x47 km
+                        new_meas->azimuth_width = 28;
+                        new_meas->range_width = 34;
+
+                        if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0))
+                            new_meas->landFlag += 1; // bit 0 for land
+
+                        // Need to figure out the KP (a, b, c) terms.
+                        new_meas->A = 1.0 + pow(kp[ipol][fp_idx], 2);
+                        new_meas->B = 0.0;
+                        new_meas->C = 0.0;
+
                         new_meas_spot->Append(new_meas);
-                    }
-                }
+                    } else {
+                        for(int islice = 0; islice < nslices[ipart]; ++islice) {
+
+                            // Index into slice-sized arrays
+                            int slice_idx =
+                                iframe * nfootprints[ipart] * nslices[ipart] +
+                                ifootprint * nslices[ipart] + islice;
+
+                            if(0x1&s0_flag[ipol][slice_idx])
+                                continue;
+
+                            Meas* new_meas = new Meas();
+
+                            if(ipol==0) {
+                                new_meas->measType = Meas::VV_MEAS_TYPE;
+                            } else if(ipol==1) {
+                                new_meas->measType = Meas::HH_MEAS_TYPE;
+                            } else if(ipol==2) {
+                                new_meas->measType = Meas::VH_MEAS_TYPE;
+                            } else if(ipol==3) {
+                                new_meas->measType = Meas::HV_MEAS_TYPE;
+                            } else {
+                                continue;
+                            }
+
+                            new_meas->value = s0[ipol][slice_idx];
+                            new_meas->XK = xf[ipol][slice_idx];
+                            new_meas->EnSlice = (
+                                new_meas->value*new_meas->XK) /
+                                snr[ipol][slice_idx];
+
+                            double tmp_lon = dtr*lon[slice_idx];
+                            double tmp_lat = dtr*lat[slice_idx];
+                            if(tmp_lon<0) tmp_lon += two_pi;
+
+                            new_meas->centroid.SetAltLonGDLat(
+                                0.0, tmp_lon, tmp_lat);
+
+                            new_meas->incidenceAngle = dtr*inc[slice_idx];
+                            new_meas->eastAzimuth = (450.0*dtr - dtr*azi[fp_idx]);
+                            new_meas->scanAngle = dtr * antazi[fp_idx];
+                            new_meas->beamIdx = 0;
+                            new_meas->numSlices = 1;
+                            new_meas->startSliceIdx = islice;
+                            new_meas->landFlag = 0;
+
+                            // WAG based on radiometer 3dB fp of 39x47 km
+                            new_meas->azimuth_width = 28;
+                            new_meas->range_width = 34/(double)nslices[ipart];
+
+                            if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0))
+                                new_meas->landFlag += 1; // bit 0 for land
+
+                            // Need to figure out the KP (a, b, c) terms.
+                            new_meas->A = pow(kp[ipol][slice_idx], 2);
+                            new_meas->B = 0.0;
+                            new_meas->C = 0.0;
+
+                            new_meas_spot->Append(new_meas);
+                        } // slice loop
+                    } // slice / footprint conditional
+                } // ipol loop
                 l1b.frame.spotList.Append(new_meas_spot);
             }
 
@@ -389,7 +521,7 @@ int main(int argc, char* argv[]){
 
             l1b.frame.frame_i              = this_frame;
             l1b.frame.num_l1b_frames       = nframes[0] + nframes[1];
-            l1b.frame.num_pulses_per_frame = nfootprints;
+            l1b.frame.num_pulses_per_frame = nfootprints[ipart];
             l1b.frame.num_slices_per_pulse = -1;
 
             // Write this L1BFrame
@@ -398,15 +530,14 @@ int main(int argc, char* argv[]){
                     stderr, "%s: writing to %s failed.\n", command, output_file);
                 exit(1);
             }
+
+            if(this_frame % 100 == 0){
+                printf("Wrote %d of %d frames\n", this_frame,
+                    nframes[0] + nframes[1]);
+            }
+
         }
     }
-    
-    
-
-
-
-    // Iterate 
-
     return(0);
 }
 
