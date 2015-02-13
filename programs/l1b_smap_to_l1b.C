@@ -9,6 +9,7 @@
 #define L1C_S0_HIRES_DEC_FILE_KEYWORD "L1C_S0_HIRES_DEC_FILE"
 #define L1B_TB_LORES_ASC_FILE_KEYWORD "L1B_TB_LORES_ASC_FILE"
 #define L1B_TB_LORES_DEC_FILE_KEYWORD "L1B_TB_LORES_DEC_FILE"
+#define DO_QUADPOL_PROCESSING_KEYWORD "DO_QUADPOL_PROCESSING"
 
 //----------//
 // INCLUDES //
@@ -182,6 +183,11 @@ int main(int argc, char* argv[]){
     printf("l1b_s0files: %s %s\n", l1b_s0files[0], l1b_s0files[1]);
     printf("l1c_s0files: %s %s\n", l1c_s0files[0], l1c_s0files[1]);
     printf("l1b_tbfiles: %s %s\n", l1b_tbfiles[0], l1b_tbfiles[1]);
+
+    // back to making keywords required
+    config_list.ExitForMissingKeywords();
+    int do_quadpol = 0;
+    config_list.GetInt(DO_QUADPOL_PROCESSING_KEYWORD, &do_quadpol);
 
     // Check for L1B_FILE keyword
     char* output_file = config_list.Get(L1B_FILE_KEYWORD);
