@@ -65,7 +65,7 @@ template class std::map<string,string,Options::ltstr>;
 
 const char* usage_array[] = {"config_file", NULL};
 
-int read_SDS_h5( hid_t obj_id, char* sds_name, void* data_buffer )
+int read_SDS_h5( hid_t obj_id, const char* sds_name, void* data_buffer )
 {
     hid_t sds_id = H5Dopen1(obj_id,sds_name);
     if( sds_id < 0 ) return(0);
@@ -244,12 +244,87 @@ int main(int argc, char* argv[]){
         H5LTread_dataset_float(id, "/Spacecraft_Data/pitch", &pitch[0]);
         H5LTread_dataset_float(id, "/Spacecraft_Data/roll", &roll[0]);
 
-        // Read in the L1B data depending on do_footprint flag
-        if(do_footprint) {
-            // read kp, lat, lon, snr, xf, cell azi, ant azi
-            // inc, s0, s0 flags, per polarization
-        } else {
+        std::vector<float> lat;
+        std::vector<float> lon;
+        std::vector<float> azi;
+        std::vector<float> antazi;
+        std::vector<float> inc;
 
+        std::vector< std::vector<float> > kp(4);
+        std::vector< std::vector<float> > snr(4);
+        std::vector< std::vector<float> > xf(4);
+        std::vector< std::vector<float> > s0(4);
+        std::vector< std::vector<uint16> > s0_flag(4);
+
+        int data_size = nframes[ipart]*nfootprints[ipart];
+        azi.resize(data_size);
+        antazi.resize(data_size);
+
+        if(!do_footprint)
+            data_size *= nslices[ipart];
+
+        lat.resize(data_size);
+        lon.resize(data_size);
+        inc.resize(data_size);
+
+        // resize arrays for data dimensions
+        for(int ipol = 0; ipol < 4; ++ipol) {
+            kp[ipol].resize(data_size);
+            snr[ipol].resize(data_size);
+            xf[ipol].resize(data_size);
+            s0[ipol].resize(data_size);
+            s0_flag[ipol].resize(data_size);
+        }
+
+        // These data only have footprint versions
+        read_SDS_h5(id, "/Sigma0_Data/earth_boresight_azimuth", &azi[0]);
+        read_SDS_h5(id, "/Sigma0_Data/antenna_scan_angle", &antazi[0]);
+
+        // Read in the L1B data depending on do_footprint flag
+        // polarization order to match Meas::MeasTypeE (VV, HH, VH, HV)
+        if(do_footprint) {
+            read_SDS_h5(id, "/Sigma0_Data/center_lat", &lat[0]);
+            read_SDS_h5(id, "/Sigma0_Data/center_lon", &lon[0]);
+            read_SDS_h5(id, "/Sigma0_Data/earth_boresight_incidence", &inc[0]);
+
+            read_SDS_h5(id, "/Sigma0_Data/kp_vv", &kp[0][0]);
+            read_SDS_h5(id, "/Sigma0_Data/kp_hh", &kp[1][0]);
+            read_SDS_h5(id, "/Sigma0_Data/kp_vh", &kp[2][0]);
+            read_SDS_h5(id, "/Sigma0_Data/kp_hv", &kp[3][0]);
+
+            read_SDS_h5(id, "/Sigma0_Data/snr_vv", &snr[0][0]);
+            read_SDS_h5(id, "/Sigma0_Data/snr_hh", &snr[1][0]);
+            read_SDS_h5(id, "/Sigma0_Data/snr_vh", &snr[2][0]);
+            read_SDS_h5(id, "/Sigma0_Data/snr_hv", &snr[3][0]);
+
+            read_SDS_h5(id, "/Sigma0_Data/x_factor_vv", &xf[0][0]);
+            read_SDS_h5(id, "/Sigma0_Data/x_factor_hh", &xf[1][0]);
+            read_SDS_h5(id, "/Sigma0_Data/x_factor_vh", &xf[2][0]);
+            read_SDS_h5(id, "/Sigma0_Data/x_factor_hv", &xf[3][0]);
+
+            // ...etc
+        } else {
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lat", &lat[0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lon", &lon[0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_earth_incidence", &inc[0]);
+
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_kp_vv", &kp[0][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_kp_hh", &kp[1][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_kp_vh", &kp[2][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_kp_hv", &kp[3][0]);
+
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_snr_vv", &snr[0][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_snr_hh", &snr[1][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_snr_vh", &snr[2][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_snr_hv", &snr[3][0]);
+
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_x_factor_vv", &xf[0][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_x_factor_hh", &xf[1][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_x_factor_vh", &xf[2][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_x_factor_hv", &xf[3][0]);
+
+
+            // ...etc
         }
 
         // Iterate over scans
