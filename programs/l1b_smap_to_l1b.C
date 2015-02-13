@@ -64,6 +64,63 @@ template class std::map<string,string,Options::ltstr>;
 
 const char* usage_array[] = {"config_file", NULL};
 
+int read_SDS_h5( hid_t obj_id, char* sds_name, void* data_buffer )
+{
+    hid_t sds_id = H5Dopen1(obj_id,sds_name);
+    if( sds_id < 0 ) return(0);
+    
+	hid_t type_id = H5Dget_type(sds_id);
+	if( type_id < 0 ) return(0);
+	
+	if( H5Dread( sds_id, type_id, H5S_ALL, H5S_ALL,H5P_DEFAULT, data_buffer) < 0 ||
+	    H5Dclose( sds_id ) < 0 ) return(0);
+	
+	return(1);
+}
+
+int determine_l1b_sizes(char* l1b_s0files[], char* l1b_tbfiles[], int nframes[],
+                        int nfootprints[], int nslices[]) {
+
+    for(int ipart=0; ipart<2; ++ipart) {
+        hid_t id = H5Fopen(l1b_s0files[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
+        if(id<0) return(0);
+
+        hsize_t dims[3];
+        H5T_class_t class_id;
+        size_t type_size;
+
+        if(H5LTget_dataset_info(id, "/Sigma0_Slice_Data/slice_sigma0_hh",
+            dims, &class_id, &type_size))
+            return(0);
+
+        nframes[ipart] = dims[0];
+        nfootprints[ipart] = dims[1];
+        nslices[ipart] = dims[2];
+    }
+
+    // Check that TB files have same dims as s0 files
+    if(l1b_tbfiles[0]&&l1b_tbfiles[1]){
+        for(int ipart=0; ipart<2; ++ipart) {
+            hid_t id = H5Fopen(l1b_tbfiles[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
+            if(id<0) return(0);
+            int rank[2];
+            if(H5LTget_dataset_ndims(id, "/Brightness_Temperature/tb_h",
+                rank)<0)
+                return(0);
+
+            if(nframes[ipart] != rank[0] || nfootprints[ipart] != rank[1])
+                return(0);
+        }
+    }
+    return(1);
+}
+
+int init_string( char* string, int length ) {
+    for( int ii = 0; ii < length; ++ii )
+        string[ii] = NULL;
+    return(1);
+}
+
 int main(int argc, char* argv[]){
     //-----------//
     // variables //
@@ -106,24 +163,168 @@ int main(int argc, char* argv[]){
     //----------------------------------//
     // check for config file parameters //
     //----------------------------------//
-    char* l1b_s0_input_files[2] = {NULL, NULL};
-    char* l1b_tb_input_files[2] = {NULL, NULL};
-    char* l1c_s0_input_files[2] = {NULL, NULL};
+    char* l1b_s0files[2] = {NULL, NULL};
+    char* l1b_tbfiles[2] = {NULL, NULL};
+    char* l1c_s0files[2] = {NULL, NULL};
 
     // These ones are required
     config_list.ExitForMissingKeywords();
-    l1b_s0_input_files[0] = config_list.Get(L1B_S0_LORES_ASC_FILE_KEYWORD);
-    l1b_s0_input_files[1] = config_list.Get(L1B_S0_LORES_DEC_FILE_KEYWORD);
+    l1b_s0files[0] = config_list.Get(L1B_S0_LORES_ASC_FILE_KEYWORD);
+    l1b_s0files[1] = config_list.Get(L1B_S0_LORES_DEC_FILE_KEYWORD);
 
     // Not required
     config_list.DoNothingForMissingKeywords();
-    l1b_tb_input_files[0] = config_list.Get(L1B_TB_LORES_ASC_FILE_KEYWORD);
-    l1b_tb_input_files[1] = config_list.Get(L1B_TB_LORES_DEC_FILE_KEYWORD);
-    l1c_s0_input_files[0] = config_list.Get(L1C_S0_HIRES_ASC_FILE_KEYWORD);
-    l1c_s0_input_files[1] = config_list.Get(L1C_S0_HIRES_DEC_FILE_KEYWORD);
+    l1b_tbfiles[0] = config_list.Get(L1B_TB_LORES_ASC_FILE_KEYWORD);
+    l1b_tbfiles[1] = config_list.Get(L1B_TB_LORES_DEC_FILE_KEYWORD);
+    l1c_s0files[0] = config_list.Get(L1C_S0_HIRES_ASC_FILE_KEYWORD);
+    l1c_s0files[1] = config_list.Get(L1C_S0_HIRES_DEC_FILE_KEYWORD);
+
+    printf("l1b_s0files: %s %s\n", l1b_s0files[0], l1b_s0files[1]);
+    printf("l1c_s0files: %s %s\n", l1c_s0files[0], l1c_s0files[1]);
+    printf("l1b_tbfiles: %s %s\n", l1b_tbfiles[0], l1b_tbfiles[1]);
+
+    // Check for L1B_FILE keyword
+    char* output_file = config_list.Get(L1B_FILE_KEYWORD);
+    if (output_file == NULL) {
+        fprintf(stderr, "%s: config file must specify L1B_FILE\n", command);
+        exit(1);
+    }
+
+    L1B l1b;
+    if (l1b.OpenForWriting(output_file) == 0) {
+        fprintf(
+            stderr, "%s: cannot open l1b file %s for output\n", command,
+            output_file);
+        exit(1);
+    }
+
+    // Determine number of frames in both portions of orbit
+    int nframes[2] = {0, 0};
+    int nfootprints[2] = {0, 0};
+    int nslices[2] = {0, 0};
+
+    if(!determine_l1b_sizes(
+        l1b_s0files, l1b_tbfiles, nframes, nfootprints, nslices)) {
+        fprintf(stderr, "Non-matching sizes found in L1B S0 and TB files!");
+        exit(1);
+    }
+
+    // Iterate over ascending / decending portions of orbit
+    for(int ipart = 0; ipart < 2; ++ipart){
+
+        hid_t id = H5Fopen(l1b_s0files[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
+
+        char antenna_scan_time_utc[nframes[ipart]][24];
+
+        std::vector<float> x_pos(nframes[ipart]);
+        std::vector<float> y_pos(nframes[ipart]);
+        std::vector<float> z_pos(nframes[ipart]);
+        std::vector<float> x_vel(nframes[ipart]);
+        std::vector<float> y_vel(nframes[ipart]);
+        std::vector<float> z_vel(nframes[ipart]);
+        std::vector<float> yaw(nframes[ipart]);
+        std::vector<float> pitch(nframes[ipart]);
+        std::vector<float> roll(nframes[ipart]);
+
+        read_SDS_h5(
+            id, "/Spacecraft_Data/antenna_scan_time_utc", &antenna_scan_time_utc[0][0]);
+        H5LTread_dataset_float(id, "/Spacecraft_Data/x_pos", &x_pos[0]);
+        H5LTread_dataset_float(id, "/Spacecraft_Data/y_pos", &y_pos[0]);
+        H5LTread_dataset_float(id, "/Spacecraft_Data/z_pos", &z_pos[0]);
+        H5LTread_dataset_float(id, "/Spacecraft_Data/x_vel", &x_vel[0]);
+        H5LTread_dataset_float(id, "/Spacecraft_Data/y_vel", &y_vel[0]);
+        H5LTread_dataset_float(id, "/Spacecraft_Data/z_vel", &z_vel[0]);
+        H5LTread_dataset_float(id, "/Spacecraft_Data/yaw", &yaw[0]);
+        H5LTread_dataset_float(id, "/Spacecraft_Data/pitch", &pitch[0]);
+        H5LTread_dataset_float(id, "/Spacecraft_Data/roll", &roll[0]);
+
+        // Read in the L1B data depending on do_footprint flag
+        if(do_footprint) {
+            // read kp, lat, lon, snr, xf, cell azi, ant azi
+            // inc, s0, s0 flags, per polarization
+        } else {
+
+        }
+
+        // Iterate over scans
+        for(int iframe = 0; iframe < nframes[ipart]; ++iframe) {
+            l1b.frame.spotList.FreeContents();
+
+            // Copy over time-strings, null terminate and parse
+            char time_str[24];
+            init_string(time_str, 24);
+
+            // only copy first 23 chars (last one is Z)
+            strncpy(time_str, antenna_scan_time_utc[iframe], 23);
+
+            ETime etime;
+            etime.FromCodeB("1970-001T00:00:00.000");
+            double time_base = (
+                (double)etime.GetSec() + (double)etime.GetMs()/1000);
+            etime.FromCodeA(time_str);
+
+            // Result
+            double time = (
+                (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
+
+            int nfootprints = 0;
+            int nslices = 0;
+
+            // Iterate over low-res footprints
+            for(int ifootprint = 0; ifootprint < nfootprints; ++ifootprint) {
+                MeasSpot* new_meas_spot = new MeasSpot();
+
+                // Is this good enough (interpolate within each scan)
+                new_meas_spot->time = time;
+
+                new_meas_spot->scOrbitState.time = time;
+                new_meas_spot->scOrbitState.rsat.Set(
+                    (double)x_pos[iframe]*0.001, (double)y_pos[iframe]*0.001,
+                    (double)z_pos[iframe]*0.001);
+
+                new_meas_spot->scOrbitState.vsat.Set(
+                    (double)x_vel[iframe]*0.001, (double)y_vel[iframe]*0.001,
+                    (double)z_vel[iframe]*0.001);
+
+                new_meas_spot->scAttitude.SetRPY(
+                    roll[iframe], pitch[iframe], yaw[iframe]);
+
+                if(do_footprint) {
+                    Meas* new_meas = new Meas();
+                    //...
+                    new_meas_spot->Append(new_meas);
+                } else {
+                    for(int islice = 0; islice < nslices; ++islice) {
+                        Meas* new_meas = new Meas();
+                        //...
+                        new_meas_spot->Append(new_meas);
+                    }
+                }
+                l1b.frame.spotList.Append(new_meas_spot);
+            }
+
+            int this_frame = iframe;
+            if(ipart==1) this_frame += nframes[0];
+
+            l1b.frame.frame_i              = this_frame;
+            l1b.frame.num_l1b_frames       = nframes[0] + nframes[1];
+            l1b.frame.num_pulses_per_frame = nfootprints;
+            l1b.frame.num_slices_per_pulse = -1;
+
+            // Write this L1BFrame
+            if(!l1b.WriteDataRec()) {
+                fprintf(
+                    stderr, "%s: writing to %s failed.\n", command, output_file);
+                exit(1);
+            }
+        }
+    }
+    
+    
 
 
 
+    // Iterate 
 
     return(0);
 }
