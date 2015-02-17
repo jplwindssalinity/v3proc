@@ -281,12 +281,15 @@ int main(int argc, char* argv[]){
                     else
                         new_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
 
+                    new_meas->value = tb[ipol][fp_idx];
+
+                    // Placeholder for SWH
+                    double swh = 0.0;
+                    new_meas->XK = swh;
+
                     // Placeholder for surface temperature
                     double ts = 300.0;
-
-                    new_meas->value = tb[ipol][fp_idx] / ts;
-                    new_meas->XK = 1;
-                    new_meas->EnSlice = tb[ipol][fp_idx];
+                    new_meas->EnSlice = ts;
 
                     double tmp_lon = dtr*lon[fp_idx];
                     double tmp_lat = dtr*lat[fp_idx];
@@ -310,11 +313,8 @@ int main(int argc, char* argv[]){
                         new_meas->landFlag += 1; // bit 0 for land
 
                     // Need to figure out the KP (a, b, c) terms.
-                    double kp_e_squared = (
-                        pow(nedt[ipol][fp_idx], 2) / pow(tb[ipol][fp_idx], 2) +
-                        VARIANCE_SURF_TEMP / pow(ts, 2));
-
-                    new_meas->A = 1.0 + kp_e_squared;
+                    new_meas->A = 1.0 + pow(
+                        nedt[ipol][fp_idx]/tb[ipol][fp_idx], 2);
                     new_meas->B = 0.0;
                     new_meas->C = 0.0;
 
