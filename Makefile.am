@@ -172,7 +172,8 @@ bin_PROGRAMS = \
     programs/gen_qs_l1b_fp_ecmwf                  \
     programs/generate_rgc_from_ephem_quat_files   \
     programs/RS_GSE_to_ephem_quat                 \
-    programs/l1b_smap_to_l1b
+    programs/l1b_smap_to_l1b                      \
+    programs/l1b_smap_tb_to_l2a
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files
