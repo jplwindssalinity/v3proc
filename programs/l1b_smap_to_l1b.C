@@ -188,6 +188,9 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
+    char* ephemeris_file = config_list.Get(EPHEMERIS_FILE_KEYWORD);
+    FILE* eph_fp = fopen(ephemeris_file, "w");
+
     // Determine number of frames in both portions of orbit
     int nframes[2] = {0, 0};
     int nfootprints[2] = {0, 0};
@@ -198,6 +201,8 @@ int main(int argc, char* argv[]){
         fprintf(stderr, "Unable to determine array sizes.");
         exit(1);
     }
+
+    double last_frame_time = 0;
 
     // Iterate over ascending / decending portions of orbit
     for(int ipart = 0; ipart < 2; ++ipart){
@@ -348,6 +353,10 @@ int main(int argc, char* argv[]){
             double time = (
                 (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
 
+            // skip overlapping frames from descending side
+            if(ipart==1 && time<=last_frame_time)
+                continue;
+
             // Iterate over low-res footprints
             for(int ifootprint = 0; ifootprint < nfootprints[ipart];
                 ++ifootprint) {
@@ -368,6 +377,9 @@ int main(int argc, char* argv[]){
 
                 new_meas_spot->scAttitude.SetRPY(
                     dtr*roll[iframe], dtr*pitch[iframe], dtr*yaw[iframe]);
+
+                if(ifootprint==0)
+                    new_meas_spot->scOrbitState.Write(eph_fp);
 
                 // Index into footprint-sized arrays
                 int fp_idx = iframe * nfootprints[ipart] + ifootprint;
@@ -515,9 +527,11 @@ int main(int argc, char* argv[]){
                     nframes[0] + nframes[1]);
             }
 
+            last_frame_time = time;
         }
         H5Fclose(id);
     }
+    fclose(eph_fp);
     return(0);
 }
 

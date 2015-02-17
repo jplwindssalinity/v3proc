@@ -149,6 +149,8 @@ int main(int argc, char* argv[]){
     }
 
 
+    double last_frame_time = 0;
+
     // Iterate over ascending / decending portions of orbit
     for(int ipart = 0; ipart < 2; ++ipart){
         hid_t id = H5Fopen(l1b_tbfiles[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -237,6 +239,10 @@ int main(int argc, char* argv[]){
             // Result
             double time = (
                 (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
+
+            // skip overlapping frames from descending side
+            if(ipart==1 && time<=last_frame_time)
+                continue;
 
             // Iterate over low-res footprints
             for(int ifootprint = 0; ifootprint < nfootprints[ipart];
@@ -335,6 +341,7 @@ int main(int argc, char* argv[]){
                 printf("Wrote %d of %d frames\n", this_frame,
                     nframes[0] + nframes[1]);
             }
+            last_frame_time = time;
         }
         H5Fclose(id);
     }
