@@ -7,8 +7,6 @@
 #define L1B_S0_LORES_DEC_FILE_KEYWORD "L1B_S0_LORES_DEC_FILE"
 #define L1C_S0_HIRES_ASC_FILE_KEYWORD "L1C_S0_HIRES_ASC_FILE"
 #define L1C_S0_HIRES_DEC_FILE_KEYWORD "L1C_S0_HIRES_DEC_FILE"
-#define L1B_TB_LORES_ASC_FILE_KEYWORD "L1B_TB_LORES_ASC_FILE"
-#define L1B_TB_LORES_DEC_FILE_KEYWORD "L1B_TB_LORES_DEC_FILE"
 #define DO_QUADPOL_PROCESSING_KEYWORD "DO_QUADPOL_PROCESSING"
 #define QS_LANDMAP_FILE_KEYWORD "QS_LANDMAP_FILE"
 
@@ -166,7 +164,6 @@ int main(int argc, char* argv[]){
     // check for config file parameters //
     //----------------------------------//
     char* l1b_s0files[2] = {NULL, NULL};
-    char* l1b_tbfiles[2] = {NULL, NULL};
     char* l1c_s0files[2] = {NULL, NULL};
 
     // These ones are required
@@ -176,14 +173,11 @@ int main(int argc, char* argv[]){
 
     // Not required
     config_list.DoNothingForMissingKeywords();
-    l1b_tbfiles[0] = config_list.Get(L1B_TB_LORES_ASC_FILE_KEYWORD);
-    l1b_tbfiles[1] = config_list.Get(L1B_TB_LORES_DEC_FILE_KEYWORD);
     l1c_s0files[0] = config_list.Get(L1C_S0_HIRES_ASC_FILE_KEYWORD);
     l1c_s0files[1] = config_list.Get(L1C_S0_HIRES_DEC_FILE_KEYWORD);
 
     printf("l1b_s0files: %s %s\n", l1b_s0files[0], l1b_s0files[1]);
     printf("l1c_s0files: %s %s\n", l1c_s0files[0], l1c_s0files[1]);
-    printf("l1b_tbfiles: %s %s\n", l1b_tbfiles[0], l1b_tbfiles[1]);
 
     // back to making keywords required
     config_list.ExitForMissingKeywords();
