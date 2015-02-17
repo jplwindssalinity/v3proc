@@ -516,6 +516,7 @@ int main(int argc, char* argv[]){
             }
 
         }
+        H5Fclose(id);
     }
     return(0);
 }
