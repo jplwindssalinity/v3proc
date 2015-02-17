@@ -78,7 +78,7 @@ int read_SDS_h5( hid_t obj_id, const char* sds_name, void* data_buffer )
 	return(1);
 }
 
-int determine_l1b_sizes(char* l1b_s0files[], char* l1b_tbfiles[], int nframes[],
+int determine_l1b_sizes(char* l1b_s0files[], int nframes[],
                         int nfootprints[], int nslices[]) {
 
     for(int ipart=0; ipart<2; ++ipart) {
@@ -96,21 +96,6 @@ int determine_l1b_sizes(char* l1b_s0files[], char* l1b_tbfiles[], int nframes[],
         nframes[ipart] = dims[0];
         nfootprints[ipart] = dims[1];
         nslices[ipart] = dims[2];
-    }
-
-    // Check that TB files have same dims as s0 files
-    if(l1b_tbfiles[0]&&l1b_tbfiles[1]){
-        for(int ipart=0; ipart<2; ++ipart) {
-            hid_t id = H5Fopen(l1b_tbfiles[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
-            if(id<0) return(0);
-            int rank[2];
-            if(H5LTget_dataset_ndims(id, "/Brightness_Temperature/tb_h",
-                rank)<0)
-                return(0);
-
-            if(nframes[ipart] != rank[0] || nfootprints[ipart] != rank[1])
-                return(0);
-        }
     }
     return(1);
 }
@@ -209,8 +194,8 @@ int main(int argc, char* argv[]){
     int nslices[2] = {0, 0};
 
     if(!determine_l1b_sizes(
-        l1b_s0files, l1b_tbfiles, nframes, nfootprints, nslices)) {
-        fprintf(stderr, "Non-matching sizes found in L1B S0 and TB files!");
+        l1b_s0files, nframes, nfootprints, nslices)) {
+        fprintf(stderr, "Unable to determine array sizes.");
         exit(1);
     }
 
