@@ -9,6 +9,8 @@
 #define L1C_S0_HIRES_DEC_FILE_KEYWORD "L1C_S0_HIRES_DEC_FILE"
 #define DO_QUADPOL_PROCESSING_KEYWORD "DO_QUADPOL_PROCESSING"
 #define QS_LANDMAP_FILE_KEYWORD "QS_LANDMAP_FILE"
+#define REV_START_TIME_KEYWORD "REV_START_TIME"
+#define REV_STOP_TIME_KEYWORD "REV_STOP_TIME"
 
 //----------//
 // INCLUDES //
@@ -110,21 +112,17 @@ int main(int argc, char* argv[]){
     //-----------//
     // variables //
     //-----------//
-    const char* command = NULL;
-
-    char* config_file = NULL;
+    const char* command = no_path(argv[0]);
+    char* config_file = argv[1];
     int do_footprint = 0;
-
-    command = no_path(argv[0]);
 
     //------------------------//
     // parse the command line //
     //------------------------//
+    ++optind;
     while ((optind < argc) && (argv[optind][0]=='-')) {
         std::string sw = argv[optind];
-        if( sw == "-c" ) {
-            config_file = argv[++optind];
-        } else if ( sw == "-fp" ) {
+        if ( sw == "-fp" ) {
             do_footprint = 1;
         } else {
             fprintf(stderr,"%s: Unknown option\n", command);
@@ -188,9 +186,6 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
-    char* ephemeris_file = config_list.Get(EPHEMERIS_FILE_KEYWORD);
-    FILE* eph_fp = fopen(ephemeris_file, "w");
-
     // Determine number of frames in both portions of orbit
     int nframes[2] = {0, 0};
     int nfootprints[2] = {0, 0};
@@ -201,6 +196,23 @@ int main(int argc, char* argv[]){
         fprintf(stderr, "Unable to determine array sizes.");
         exit(1);
     }
+
+
+    ETime etime;
+    etime.FromCodeB("1970-001T00:00:00.000");
+    char* time_string;
+    time_string = config_list.Get(REV_START_TIME_KEYWORD);
+    double time_base = (
+        (double)etime.GetSec() + (double)etime.GetMs()/1000);
+    etime.FromCodeB(time_string);
+
+    double rev_start_time = (
+        (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
+
+    time_string = config_list.Get(REV_STOP_TIME_KEYWORD);
+    etime.FromCodeB(time_string);
+    double rev_stop_time = (
+        (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
 
     double last_frame_time = 0;
 
@@ -343,15 +355,14 @@ int main(int argc, char* argv[]){
             // only copy first 23 chars (last one is Z)
             strncpy(time_str, antenna_scan_time_utc[iframe], 23);
 
-            ETime etime;
-            etime.FromCodeB("1970-001T00:00:00.000");
-            double time_base = (
-                (double)etime.GetSec() + (double)etime.GetMs()/1000);
             etime.FromCodeA(time_str);
 
             // Result
             double time = (
                 (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
+
+            if(time<rev_start_time || time>rev_stop_time)
+                continue;
 
             // skip overlapping frames from descending side
             if(ipart==1 && time<=last_frame_time)
@@ -377,9 +388,6 @@ int main(int argc, char* argv[]){
 
                 new_meas_spot->scAttitude.SetRPY(
                     dtr*roll[iframe], dtr*pitch[iframe], dtr*yaw[iframe]);
-
-                if(ifootprint==0)
-                    new_meas_spot->scOrbitState.Write(eph_fp);
 
                 // Index into footprint-sized arrays
                 int fp_idx = iframe * nfootprints[ipart] + ifootprint;
@@ -531,7 +539,6 @@ int main(int argc, char* argv[]){
         }
         H5Fclose(id);
     }
-    fclose(eph_fp);
     return(0);
 }
 

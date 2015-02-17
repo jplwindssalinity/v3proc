@@ -8,6 +8,8 @@
 #define SURFACE_TEMP_ANC_FILE_KEYWORD "SURFACE_TEMP_ANC_FILE"
 #define L1B_TB_FILE_KEYWORD "L1B_TB_FILE"
 #define QS_LANDMAP_FILE_KEYWORD "QS_LANDMAP_FILE"
+#define REV_START_TIME_KEYWORD "REV_START_TIME"
+#define REV_STOP_TIME_KEYWORD "REV_STOP_TIME"
 
 #define VARIANCE_SURF_TEMP 1.0
 
@@ -109,7 +111,6 @@ int main(int argc, char* argv[]){
     // variables //
     //-----------//
     const char* command = no_path(argv[0]);
-
     char* config_file = argv[1];
 
     ConfigList config_list;
@@ -148,6 +149,21 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
+    ETime etime;
+    etime.FromCodeB("1970-001T00:00:00.000");
+    char* time_string;
+    time_string = config_list.Get(REV_START_TIME_KEYWORD);
+    double time_base = (
+        (double)etime.GetSec() + (double)etime.GetMs()/1000);
+    etime.FromCodeB(time_string);
+
+    double rev_start_time = (
+        (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
+
+    time_string = config_list.Get(REV_STOP_TIME_KEYWORD);
+    etime.FromCodeB(time_string);
+    double rev_stop_time = (
+        (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
 
     double last_frame_time = 0;
 
@@ -230,15 +246,13 @@ int main(int argc, char* argv[]){
             // only copy first 23 chars (last one is Z)
             strncpy(time_str, antenna_scan_time_utc[iframe], 23);
 
-            ETime etime;
-            etime.FromCodeB("1970-001T00:00:00.000");
-            double time_base = (
-                (double)etime.GetSec() + (double)etime.GetMs()/1000);
             etime.FromCodeA(time_str);
-
             // Result
             double time = (
                 (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
+
+            if(time<rev_start_time || time>rev_stop_time)
+                continue;
 
             // skip overlapping frames from descending side
             if(ipart==1 && time<=last_frame_time)
