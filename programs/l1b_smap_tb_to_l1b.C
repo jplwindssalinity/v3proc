@@ -296,10 +296,7 @@ int main(int argc, char* argv[]){
                         new_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
 
                     new_meas->value = tb[ipol][fp_idx];
-
-                    // Placeholder for SWH
-                    double swh = 0.0;
-                    new_meas->XK = swh;
+                    new_meas->XK = 1.0;
 
                     // Placeholder for surface temperature
                     double ts = 300.0;
