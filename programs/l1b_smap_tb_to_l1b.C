@@ -333,6 +333,10 @@ int main(int argc, char* argv[]){
                 }
                 l1b.frame.spotList.Append(new_meas_spot);
             }
+
+            if(l1b.frame.spotList.NodeCount() == 0)
+                continue;
+
             int this_frame = iframe;
             if(ipart==1) this_frame += nframes[0];
 
