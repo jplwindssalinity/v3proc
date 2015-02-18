@@ -372,27 +372,29 @@ int main(int argc, char* argv[]){
             for(int ifootprint = 0; ifootprint < nfootprints[ipart];
                 ++ifootprint) {
 
-                MeasSpot* new_meas_spot = new MeasSpot();
-
-                // Is this good enough (interpolate within each scan)
-                new_meas_spot->time = time;
-
-                new_meas_spot->scOrbitState.time = time;
-                new_meas_spot->scOrbitState.rsat.Set(
-                    (double)x_pos[iframe]*0.001, (double)y_pos[iframe]*0.001,
-                    (double)z_pos[iframe]*0.001);
-
-                new_meas_spot->scOrbitState.vsat.Set(
-                    (double)x_vel[iframe]*0.001, (double)y_vel[iframe]*0.001,
-                    (double)z_vel[iframe]*0.001);
-
-                new_meas_spot->scAttitude.SetRPY(
-                    dtr*roll[iframe], dtr*pitch[iframe], dtr*yaw[iframe]);
-
                 // Index into footprint-sized arrays
                 int fp_idx = iframe * nfootprints[ipart] + ifootprint;
 
                 for(int ipol=0; ipol<4; ++ipol){
+
+                    MeasSpot* new_meas_spot = new MeasSpot();
+
+                    // Is this good enough (interpolate within each scan)
+                    new_meas_spot->time = time;
+
+                    new_meas_spot->scOrbitState.time = time;
+                    new_meas_spot->scOrbitState.rsat.Set(
+                        (double)x_pos[iframe]*0.001,
+                        (double)y_pos[iframe]*0.001,
+                        (double)z_pos[iframe]*0.001);
+
+                    new_meas_spot->scOrbitState.vsat.Set(
+                        (double)x_vel[iframe]*0.001,
+                        (double)y_vel[iframe]*0.001,
+                        (double)z_vel[iframe]*0.001);
+
+                    new_meas_spot->scAttitude.SetRPY(
+                        dtr*roll[iframe], dtr*pitch[iframe], dtr*yaw[iframe]);
 
                     // Skip HV, VH if do_quadpol == 0
                     if(!do_quadpol && ipol>=2)
@@ -511,8 +513,8 @@ int main(int argc, char* argv[]){
                             new_meas_spot->Append(new_meas);
                         } // slice loop
                     } // slice / footprint conditional
+                    l1b.frame.spotList.Append(new_meas_spot);
                 } // ipol loop
-                l1b.frame.spotList.Append(new_meas_spot);
             }
 
             int this_frame = iframe;
