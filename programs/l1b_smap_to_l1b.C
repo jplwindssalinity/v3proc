@@ -11,6 +11,7 @@
 #define QS_LANDMAP_FILE_KEYWORD "QS_LANDMAP_FILE"
 #define REV_START_TIME_KEYWORD "REV_START_TIME"
 #define REV_STOP_TIME_KEYWORD "REV_STOP_TIME"
+#define USE_FOOTPRINTS_KEYWORD "USE_FOOTPRINTS"
 
 //----------//
 // INCLUDES //
@@ -114,22 +115,6 @@ int main(int argc, char* argv[]){
     //-----------//
     const char* command = no_path(argv[0]);
     char* config_file = argv[1];
-    int do_footprint = 0;
-
-    //------------------------//
-    // parse the command line //
-    //------------------------//
-    ++optind;
-    while ((optind < argc) && (argv[optind][0]=='-')) {
-        std::string sw = argv[optind];
-        if ( sw == "-fp" ) {
-            do_footprint = 1;
-        } else {
-            fprintf(stderr,"%s: Unknown option\n", command);
-            exit(1);
-        }
-        ++optind;
-    }
 
     if(config_file == NULL) {
         fprintf(stderr,"%s: Must specify -c config_file\n", command );
@@ -173,6 +158,9 @@ int main(int argc, char* argv[]){
         fprintf(stderr, "%s: config file must specify L1B_FILE\n", command);
         exit(1);
     }
+
+    int do_footprint = 0;
+    config_list.GetInt(USE_FOOTPRINTS_KEYWORD, &do_footprint);
 
     QSLandMap qs_landmap;
     char* qslandmap_file = config_list.Get(QS_LANDMAP_FILE_KEYWORD);
