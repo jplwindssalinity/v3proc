@@ -265,30 +265,30 @@ int main(int argc, char* argv[]){
                 // Index into footprint-sized arrays
                 int fp_idx = iframe * nfootprints[ipart] + ifootprint;
 
+                MeasSpot* new_meas_spot = new MeasSpot();
+
+                // Is this good enough (interpolate within each scan)
+                new_meas_spot->time = time;
+
+                new_meas_spot->scOrbitState.time = time;
+                new_meas_spot->scOrbitState.rsat.Set(
+                    (double)x_pos[iframe]*0.001,
+                    (double)y_pos[iframe]*0.001,
+                    (double)z_pos[iframe]*0.001);
+
+                new_meas_spot->scOrbitState.vsat.Set(
+                    (double)x_vel[iframe]*0.001,
+                    (double)y_vel[iframe]*0.001,
+                    (double)z_vel[iframe]*0.001);
+
+                new_meas_spot->scAttitude.SetRPY(
+                    dtr*roll[iframe], dtr*pitch[iframe], dtr*yaw[iframe]);
+
                 for(int ipol=0; ipol<2; ++ipol){
 
                     // check flags
                     if(0x1 & tb_flag[ipol][fp_idx])
                         continue;
-
-                    MeasSpot* new_meas_spot = new MeasSpot();
-
-                    // Is this good enough (interpolate within each scan)
-                    new_meas_spot->time = time;
-
-                    new_meas_spot->scOrbitState.time = time;
-                    new_meas_spot->scOrbitState.rsat.Set(
-                        (double)x_pos[iframe]*0.001,
-                        (double)y_pos[iframe]*0.001,
-                        (double)z_pos[iframe]*0.001);
-
-                    new_meas_spot->scOrbitState.vsat.Set(
-                        (double)x_vel[iframe]*0.001,
-                        (double)y_vel[iframe]*0.001,
-                        (double)z_vel[iframe]*0.001);
-
-                    new_meas_spot->scAttitude.SetRPY(
-                        dtr*roll[iframe], dtr*pitch[iframe], dtr*yaw[iframe]);
 
                     Meas* new_meas = new Meas();
 
@@ -332,8 +332,12 @@ int main(int argc, char* argv[]){
                     new_meas->C = 0.0;
 
                     new_meas_spot->Append(new_meas);
-                    l1b.frame.spotList.Append(new_meas_spot);
                 }
+
+                if(new_meas_spot->NodeCount() > 0)
+                    l1b.frame.spotList.Append(new_meas_spot);
+                else
+                    delete new_meas_spot;
             }
 
             if(l1b.frame.spotList.NodeCount() == 0)
