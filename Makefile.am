@@ -588,7 +588,9 @@ libSim_a_SOURCES =                   \
     objs/WindVector.h                \
     objs/XTable.C                    \
     objs/XTable.h                    \
-    objs/YahyaAntenna.h
+    objs/YahyaAntenna.h              \
+    objs/CAPGMF.C                    \
+    objs/CAPGMF.h
 
 ########################################################################
 #ParameterList.o
