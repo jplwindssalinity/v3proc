@@ -1,4 +1,10 @@
+#include <math.h>
 #include "CAPGMF.h"
+
+
+// Will have two look up tables for passive:
+// flat TB as a function of sss, sst, inc, pol
+// excess surface emmisivity as a function of spd, dir, swh, inc, pol
 
 CAPGMF::CAPGMF() {
     return;
@@ -7,11 +13,3 @@ CAPGMF::CAPGMF() {
 CAPGMF::~CAPGMF() {
     return;
 }
-
-int CAPGMF::tb_flat(double sss, double sst, double inc, double frequency,
-                    int model, double* Tv, double* Th) {
-
-    // Stub for flat surface emmissivity model
-    return(1);
-}
-
