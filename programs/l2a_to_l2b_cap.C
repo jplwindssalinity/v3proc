@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <nlopt.hpp>
 #include "List.h"
 #include "BufferedList.h"
 #include "Misc.h"
@@ -53,6 +54,101 @@ template class std::map<string,string,Options::ltstr>;
 //--------------//
 // MAIN PROGRAM //
 //--------------//
+
+// For use with NLopt
+typedef struct {
+    MeasList* tb_ml;
+    MeasList* s0_ml;
+    WVC* s0_wvc;
+    double anc_sst;
+    double anc_swh;
+    double anc_rr;
+} CAPAncillary;
+
+// For use with NLopt
+double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
+
+    // optimization variables
+    double trial_spd = x[0];
+    double trial_dir = x[1];
+    double trial_sss = x[2];
+
+    CAPAncillary* cap_anc = (CAPAncillary*)data;
+
+    double obj = 0;
+
+    // Loop over TB observations
+    for(Meas* meas = cap_anc->tb_ml->GetHead(); meas;
+
+        meas = cap_anc->tb_ml->GetNext()){
+
+        // Compute model TB (replace this stub!!!)
+        double model_tb = 230;
+        double var = pow(meas->A-1.0, 2) * model_tb * model_tb;
+        obj += pow(meas->value - model_tb, 2) / var;
+    }
+
+    // Loop over s0 observations
+    for(Meas* meas = cap_anc->s0_ml->GetHead(); meas;
+
+        meas = cap_anc->s0_ml->GetNext()){
+
+        // Compute model S0 (replace this stub!!!)
+        double model_s0 = 0.01;
+        double var = pow(meas->A-1.0, 2) * model_s0 * model_s0;
+        obj += pow(meas->value - model_s0, 2) / var;
+    }
+
+    return(obj);
+}
+
+int retrieve_cap(MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, double anc_sst,
+                 double anc_swh, double anc_rr, double anc_sss, double* spd,
+                 double* dir, double* sss, double* min_obj) {
+
+    // Construct the optimization object
+    nlopt::opt opt(nlopt::LN_COBYLA, 3);
+
+    // Set contraints
+    std::vector<double> lb(3), ub(3);
+
+    lb[0] = 0; ub[0] = 100; // wind speed
+    lb[1] = 0; ub[1] = two_pi; // wind direction
+    lb[2] = 10; ub[2] = 40; // salinity
+
+    // Set the various ancillary stuff needed
+    CAPAncillary cap_anc;
+    cap_anc.tb_ml = tb_ml;
+    cap_anc.s0_ml = s0_ml;
+    cap_anc.s0_wvc = s0_wvc;
+    cap_anc.anc_sst = anc_sst;
+    cap_anc.anc_swh = anc_swh;
+    cap_anc.anc_rr = anc_rr;
+
+    // Config the optimization object for this problem
+    opt.set_lower_bounds(lb);
+    opt.set_upper_bounds(ub);
+    opt.set_min_objective(cap_obj_func, &cap_anc);
+
+    std::vector<double> x(3);
+
+    // init guess at radar-only DIRTH wind vector and ancillary SSS
+    x[0] = s0_wvc->specialVector->spd;
+    x[1] = s0_wvc->specialVector->dir;
+    x[2] = anc_sss;
+
+    // Solve it!
+    double minf;
+    nlopt::result result = opt.optimize(x, minf);
+
+    // Copy outputs
+    *spd = x[0];
+    *dir = x[1];
+    *sss = x[2];
+    *min_obj = minf;
+
+    return(1);
+}
 
 int main(int argc, char* argv[]) {
 
@@ -153,32 +249,6 @@ int main(int argc, char* argv[]) {
 
     return(0);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
