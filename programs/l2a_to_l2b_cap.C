@@ -5,6 +5,7 @@
 
 #define L2A_TB_FILE_KEYWORD "L2A_TB_FILE"
 #define L2B_CAP_FILE_KEYWORD "L2B_CAP_FILE"
+#define FILL_VALUE -9999
 
 //----------//
 // INCLUDES //
@@ -123,7 +124,32 @@ int main(int argc, char* argv[]) {
     l2b_s0.ReadDataRec();
     l2b_s0.Close();
 
-    // Do stuff...
+    float cap_spd[ncti][nati];
+    float cap_dir[ncti][nati];
+    float cap_sss[ncti][nati];
+
+    for(int ati=0; ati<nati; ++ati) {
+        for(int cti=0; cti<ncti; ++cti) {
+
+            // init with fill value
+            cap_spd[cti][ati] = FILL_VALUE;
+            cap_dir[cti][ati] = FILL_VALUE;
+            cap_sss[cti][ati] = FILL_VALUE;
+
+            WVC* s0_wvc = l2b_s0.frame.swath.GetWVC(cti, ati);
+            if(!s0_wvc || !l2a_tb_swath[cti][ati] || !l2a_s0_swath[cti][ati])
+                continue;
+
+            MeasList* tb_ml = &(l2a_tb_swath[cti][ati]->measList);
+            MeasList* s0_ml = &(l2a_s0_swath[cti][ati]->measList);
+
+            // Do stuff...
+        }
+    }
+
+    // free the arrays
+    free_array((void *)l2a_tb_swath, 2, ncti, nati);
+    free_array((void *)l2a_s0_swath, 2, ncti, nati);
 
     return(0);
 }
