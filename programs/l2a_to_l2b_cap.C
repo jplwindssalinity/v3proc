@@ -5,6 +5,8 @@
 
 #define L2A_TB_FILE_KEYWORD "L2A_TB_FILE"
 #define L2B_CAP_FILE_KEYWORD "L2B_CAP_FILE"
+#define TB_FLAT_MODEL_FILE_KEYWORD "TB_FLAT_MODEL_FILE"
+#define TB_ROUGH_MODEL_FILE_KEYWORD "TB_ROUGH_MODEL_FILE"
 #define FILL_VALUE -9999
 
 //----------//
@@ -27,6 +29,8 @@
 #include "Tracking.h"
 #include "Array.h"
 #include "Meas.h"
+#include "CAPGMF.h"
+#include "GMF.h"
 
 //-----------//
 // TEMPLATES //
@@ -168,6 +172,16 @@ int main(int argc, char* argv[]) {
     char* l2a_s0_file = config_list.Get(L2A_FILE_KEYWORD);
     char* l2b_cap_file = config_list.Get(L2B_CAP_FILE_KEYWORD);
     char* l2b_s0_file = config_list.Get(L2B_FILE_KEYWORD);
+    char* tb_flat_file = config_list.Get(TB_FLAT_MODEL_FILE_KEYWORD);
+    char* tb_rough_file = config_list.Get(TB_ROUGH_MODEL_FILE_KEYWORD);
+
+    // Configure the model functions
+    GMF gmf;
+    ConfigGMF(&gmf, &config_list);
+
+    CAPGMF cap_gmf;
+    cap_gmf.ReadFlat(tb_flat_file);
+    cap_gmf.ReadRough(tb_rough_file);
 
     L2A l2a_s0, l2a_tb;
     l2a_s0.SetInputFilename(l2a_s0_file);
