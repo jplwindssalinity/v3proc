@@ -31,6 +31,7 @@
 #include "Meas.h"
 #include "CAPGMF.h"
 #include "GMF.h"
+#include "Constants.h"
 
 //-----------//
 // TEMPLATES //
@@ -64,6 +65,8 @@ typedef struct {
     MeasList* tb_ml;
     MeasList* s0_ml;
     WVC* s0_wvc;
+    GMF* gmf;
+    CAPGMF* cap_gmf;
     double anc_sst;
     double anc_swh;
     double anc_rr;
@@ -73,32 +76,39 @@ typedef struct {
 double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
 
     // optimization variables
-    double trial_spd = x[0];
-    double trial_dir = x[1];
-    double trial_sss = x[2];
+    float trial_spd = (float)x[0];
+    float trial_dir = (float)x[1];
+    float trial_sss = (float)x[2];
 
     CAPAncillary* cap_anc = (CAPAncillary*)data;
 
     double obj = 0;
-
     // Loop over TB observations
     for(Meas* meas = cap_anc->tb_ml->GetHead(); meas;
-
         meas = cap_anc->tb_ml->GetNext()){
 
-        // Compute model TB (replace this stub!!!)
-        double model_tb = 230;
+        float model_tb;
+        float chi = trial_dir - meas->eastAzimuth + pi;
+
+        cap_anc->cap_gmf->GetTB(
+            meas->measType, meas->incidenceAngle, cap_anc->anc_sst, trial_sss,
+            trial_spd, chi, &model_tb);
+
         double var = pow(meas->A-1.0, 2) * model_tb * model_tb;
         obj += pow(meas->value - model_tb, 2) / var;
     }
 
     // Loop over s0 observations
     for(Meas* meas = cap_anc->s0_ml->GetHead(); meas;
-
         meas = cap_anc->s0_ml->GetNext()){
 
         // Compute model S0 (replace this stub!!!)
-        double model_s0 = 0.01;
+        float model_s0;
+        float chi = trial_dir - meas->eastAzimuth + pi;
+
+        cap_anc->gmf->GetInterpolatedValue(
+            meas->measType, meas->incidenceAngle, trial_spd, chi, &model_s0);
+
         double var = pow(meas->A-1.0, 2) * model_s0 * model_s0;
         obj += pow(meas->value - model_s0, 2) / var;
     }
@@ -238,6 +248,10 @@ int main(int argc, char* argv[]) {
     float cap_dir[ncti][nati];
     float cap_sss[ncti][nati];
 
+    // Placeholders!!!
+    double anc_sst, anc_swh, anc_rr, anc_sss;
+
+
     for(int ati=0; ati<nati; ++ati) {
         for(int cti=0; cti<ncti; ++cti) {
 
@@ -253,9 +267,20 @@ int main(int argc, char* argv[]) {
             MeasList* tb_ml = &(l2a_tb_swath[cti][ati]->measList);
             MeasList* s0_ml = &(l2a_s0_swath[cti][ati]->measList);
 
-            // Do stuff...
+            double this_cap_spd, this_cap_dir, this_cap_sss, min_obj;
+
+            retrieve_cap(
+                tb_ml, s0_ml, s0_wvc, anc_sst, anc_swh, anc_rr, anc_sss,
+                &this_cap_spd, &this_cap_dir, &this_cap_sss, &min_obj);
+
+            // insert some QA here??
+            cap_spd[cti][ati] = this_cap_spd;
+            cap_dir[cti][ati] = this_cap_dir;
+            cap_sss[cti][ati] = this_cap_sss;
         }
     }
+
+    // Write out the results?...
 
     // free the arrays
     free_array((void *)l2a_tb_swath, 2, ncti, nati);
