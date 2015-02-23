@@ -574,8 +574,10 @@ MiscTable::_MetToIndex(
 		break;
 	case Meas::L_BAND_TBH_MEAS_TYPE:
 		idx = 7;
+		break;
 	case Meas::L_BAND_TBV_MEAS_TYPE:
 		idx = 8;
+		break;
 	default:
 		fprintf(stderr,
 			"MiscTable::_MetToIndex: invalid measurement type %d\n", met);
