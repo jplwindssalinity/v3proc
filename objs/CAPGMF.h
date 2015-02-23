@@ -9,19 +9,23 @@ public:
     int ReadFlat(const char* filename);
     int ReadRough(const char* filename);
 
+    int _MetToIndex(Meas::MeasTypeE met);
+
     int GetTBFlat(
         Meas::MeasTypeE met, float inc, float sst, float sss, float* tbflat);
 
     int GetDTB(
-        Meas::MeasTypeE met, float inc, float wspd, float relazi, float* dtb);
+        Meas::MeasTypeE met, float inc, float sst, float spd, float dir,
+        float* dtb);
 
     int GetTB(
-        Meas::MeasTypeE met, float inc, float sst, float sss, float wspd,
-        float relazi, float* tb);
+        Meas::MeasTypeE met, float inc, float sst, float sss, float spd,
+        float dir, float* tb);
 
 protected:
 
-    int _Allocate();
+    int _AllocateFlat();
+    int _AllocateRough();
     int _Deallocate();
 
     static const int _incCount = 11;
@@ -36,7 +40,16 @@ protected:
     static const float _sssMin = 0.0;
     static const float _sssStep = 1.0;
 
+    static const int _spdCount = 501;
+    static const float _spdMin = 0.0;
+    static const float _spdStep = 0.1;
+
+    static const int _dirCount = 360;
+    static const float _dirMin = 0.0;
+    static const float _dirStep = 1.0;
+
     static const int _metCount = 2;
 
     float**** _tbflat;
+    float**** _erough;
 };
