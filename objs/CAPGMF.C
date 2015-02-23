@@ -2,6 +2,7 @@
 #include "CAPGMF.h"
 #include "Meas.h"
 #include "Array.h"
+#include "Constants.h"
 
 CAPGMF::CAPGMF() :_tbflat(NULL), _erough(NULL) {
     return;
@@ -29,10 +30,10 @@ int CAPGMF::_MetToIndex(Meas::MeasTypeE met) {
 }
 
 int CAPGMF::GetTBFlat(
-    Meas::MeasTypeE met, float inc, float sst, float sss, float* tbflat) {
+    Meas::MeasTypeE met, float inc_in, float sst, float sss, float* tbflat) {
 
     // returns the flat surface brightness temp
-
+    float inc = inc_in * 180/pi;
     int met_idx = _MetToIndex(met);
 
     int isst0 = floor((sst-_sstMin)/_sstStep);
@@ -85,10 +86,16 @@ int CAPGMF::GetTBFlat(
 }
 
 int CAPGMF::GetDTB(
-        Meas::MeasTypeE met, float inc, float sst, float spd, float dir,
+        Meas::MeasTypeE met, float inc_in, float sst, float spd, float dir_in,
         float* dtb) {
 
     // returns the rough surface model emissivity from a look up table
+
+    float inc = inc_in * 180/pi;
+    float dir = dir_in * 180/pi;
+
+    while(dir<0) dir+= 360;
+    while(dir>=360) dir -= 360;
 
     int met_idx = _MetToIndex(met);
 
