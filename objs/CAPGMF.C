@@ -3,11 +3,7 @@
 #include "Meas.h"
 #include "Array.h"
 
-// Will have two look up tables for passive:
-// flat TB as a function of sss, sst, inc, pol
-// excess surface emmisivity as a function of spd, dir, swh, inc, pol
-
-CAPGMF::CAPGMF() :_tbflat(NULL) {
+CAPGMF::CAPGMF() :_tbflat(NULL), _erough(NULL) {
     return;
 }
 
@@ -34,6 +30,8 @@ int CAPGMF::_MetToIndex(Meas::MeasTypeE met) {
 
 int CAPGMF::GetTBFlat(
     Meas::MeasTypeE met, float inc, float sst, float sss, float* tbflat) {
+
+    // returns the flat surface brightness temp
 
     int met_idx = _MetToIndex(met);
 
@@ -89,6 +87,8 @@ int CAPGMF::GetTBFlat(
 int CAPGMF::GetDTB(
         Meas::MeasTypeE met, float inc, float sst, float spd, float dir,
         float* dtb) {
+
+    // returns the rough surface model emissivity from a look up table
 
     int met_idx = _MetToIndex(met);
 
