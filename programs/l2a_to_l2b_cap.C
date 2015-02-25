@@ -116,9 +116,10 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
     return(obj);
 }
 
-int retrieve_cap(MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, double anc_sst,
-                 double anc_swh, double anc_rr, double anc_sss, double* spd,
-                 double* dir, double* sss, double* min_obj) {
+int retrieve_cap(MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, GMF* gmf,
+                 CAPGMF* cap_gmf, double anc_sst, double anc_swh, double anc_rr,
+                 double anc_sss, double* spd, double* dir, double* sss,
+                 double* min_obj) {
 
     // Construct the optimization object
     nlopt::opt opt(nlopt::LN_COBYLA, 3);
@@ -135,6 +136,8 @@ int retrieve_cap(MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, double anc_sst,
     cap_anc.tb_ml = tb_ml;
     cap_anc.s0_ml = s0_ml;
     cap_anc.s0_wvc = s0_wvc;
+    cap_anc.gmf = gmf;
+    cap_anc.cap_gmf = cap_gmf;
     cap_anc.anc_sst = anc_sst;
     cap_anc.anc_swh = anc_swh;
     cap_anc.anc_rr = anc_rr;
@@ -244,13 +247,19 @@ int main(int argc, char* argv[]) {
     l2b_s0.ReadDataRec();
     l2b_s0.Close();
 
+    float lat[ncti][nati];
+    float lon[ncti][nati];
+    float s0_spd[ncti][nati];
+    float s0_dir[ncti][nati];
+    unsigned int s0_flg[ncti][nati];
+
     float cap_spd[ncti][nati];
     float cap_dir[ncti][nati];
     float cap_sss[ncti][nati];
+    char  cap_flg[ncti][nati];
 
     // Placeholders!!!
     double anc_sst, anc_swh, anc_rr, anc_sss;
-
 
     for(int ati=0; ati<nati; ++ati) {
         for(int cti=0; cti<ncti; ++cti) {
@@ -259,6 +268,7 @@ int main(int argc, char* argv[]) {
             cap_spd[cti][ati] = FILL_VALUE;
             cap_dir[cti][ati] = FILL_VALUE;
             cap_sss[cti][ati] = FILL_VALUE;
+            cap_flg[cti][ati] = 255;
 
             WVC* s0_wvc = l2b_s0.frame.swath.GetWVC(cti, ati);
             if(!s0_wvc || !l2a_tb_swath[cti][ati] || !l2a_s0_swath[cti][ati])
@@ -270,17 +280,46 @@ int main(int argc, char* argv[]) {
             double this_cap_spd, this_cap_dir, this_cap_sss, min_obj;
 
             retrieve_cap(
-                tb_ml, s0_ml, s0_wvc, anc_sst, anc_swh, anc_rr, anc_sss,
-                &this_cap_spd, &this_cap_dir, &this_cap_sss, &min_obj);
+                tb_ml, s0_ml, s0_wvc, &gmf, &cap_gmf, anc_sst, anc_swh, anc_rr,
+                anc_sss, &this_cap_spd, &this_cap_dir, &this_cap_sss, &min_obj);
 
-            // insert some QA here??
-            cap_spd[cti][ati] = this_cap_spd;
-            cap_dir[cti][ati] = this_cap_dir;
-            cap_sss[cti][ati] = this_cap_sss;
+            // switch back to clockwise from noth convention, to degrees, and wrap
+            float radar_only_dir = 450.0 - rtd * s0_wvc->specialVector->dir;
+            while(radar_only_dir>=180) radar_only_dir-=360;
+            while(radar_only_dir<180) radar_only_dir+=360;
+
+            this_cap_dir = 450 - rtd * this_cap_dir;
+            while(this_cap_dir>=180) this_cap_dir-=360;
+            while(this_cap_dir<180) this_cap_dir+=360;
+
+            float this_lon = s0_wvc->lonLat.longitude*rtd;
+            while(this_lon>=180) this_lon-=360;
+            while(this_lon<180) this_lon+=360;
+
+            // insert some QA here to set cap_flag???
+            lat[cti][ati] = s0_wvc->lonLat.latitude*rtd;
+            lon[cti][ati] = this_lon;
+            s0_spd[cti][ati] = s0_wvc->specialVector->spd;
+            s0_dir[cti][ati] = radar_only_dir;
+            s0_flg[cti][ati] = s0_wvc->qualFlag;
+            cap_spd[cti][ati] = (float)this_cap_spd;
+            cap_dir[cti][ati] = (float)this_cap_dir;
+            cap_sss[cti][ati] = (float)this_cap_sss;
         }
     }
 
-    // Write out the results?...
+    // Write it out
+    FILE* ofp = fopen(l2b_cap_file, "w");
+    fwrite(&lon[0][0], sizeof(float), ncti*nati, ofp);
+    fwrite(&lat[0][0], sizeof(float), ncti*nati, ofp);
+    fwrite(&s0_spd[0][0], sizeof(float), ncti*nati, ofp);
+    fwrite(&s0_dir[0][0], sizeof(float), ncti*nati, ofp);
+    fwrite(&s0_flg[0][0], sizeof(unsigned int), ncti*nati, ofp);
+    fwrite(&cap_spd[0][0], sizeof(float), ncti*nati, ofp);
+    fwrite(&cap_dir[0][0], sizeof(float), ncti*nati, ofp);
+    fwrite(&cap_sss[0][0], sizeof(float), ncti*nati, ofp);
+    fwrite(&cap_flg[0][0], sizeof(char), ncti*nati, ofp);
+    fclose(ofp);
 
     // free the arrays
     free_array((void *)l2a_tb_swath, 2, ncti, nati);
@@ -288,7 +327,3 @@ int main(int argc, char* argv[]) {
 
     return(0);
 }
-
-
-
-
