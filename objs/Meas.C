@@ -1431,8 +1431,8 @@ int32        pulseIndex)   // index of the pulses (max of 100)
     return(1);
 }
 
-#define COAST_NXSTEPS 10
-#define COAST_NYSTEPS 100
+#define COAST_NXSTEPS 5
+#define COAST_NYSTEPS 25
 
 int MeasSpot::ComputeLandFraction( LandMap*   lmap,
                                    QSLandMap* qs_lmap,
@@ -1561,11 +1561,11 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
         
         double theta,phi,range,g2;
         antenna_look.SphericalGet(&range,&theta,&phi);
-        if( !ant->beam[meas->beamIdx].GetPowerGainProduct(theta+dtheta,
-                                                          phi,
-                                                          rtt,
-                                                          ant->spinRate,
-                                                          &g2)) g2=0.0;
+        rtt  = 2.0 * range /speed_light_kps;
+
+        if( !ant->beam[meas->beamIdx].GetPowerGainProduct(
+            theta, phi, rtt, ant->spinRate, &g2)) g2=0.0;
+
          float dW = g2*dx*dy / (range*range*range*range);
          sum     += dW;
          landsum += lmap->IsLand(lon,lat) ? dW : 0;
