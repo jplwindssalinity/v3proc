@@ -296,7 +296,9 @@ public:
     int ComputeLandFraction( LandMap* lmap,
                              QSLandMap* qs_lmap,
                              Antenna* ant,
-                             float    freq_shift );
+                             float    freq_shift,
+                             double   spot_lon,
+                             double   spot_lat);
     
 	//-----------//
 	// variables //
