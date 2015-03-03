@@ -1431,6 +1431,26 @@ int32        pulseIndex)   // index of the pulses (max of 100)
     return(1);
 }
 
+int MeasSpot::ComputeRangeWidth(Meas* meas, float* range_width) {
+    // Computes the rate of change of base-band freq with range on ground,
+    // returns the range width corresponding to bandwidth of meas
+    Vector3 look = meas->centroid - scOrbitState.rsat;
+
+    // z is unit normal, y = z cross look, x = y cross z.
+    Vector3 zvec0 = meas->centroid.Normal();
+    Vector3 yvec0 = zvec0 & look;  yvec0 = yvec0 / yvec0.Magnitude();
+    Vector3 xvec0 = yvec0 & zvec0; xvec0 = xvec0 / xvec0.Magnitude();
+
+    float bbf1 = NominalQuikScatBaseBandFreq(meas->centroid+xvec0);
+    float bbf0 = NominalQuikScatBaseBandFreq(meas->centroid-xvec0);
+
+    // rate of change of base-band freq with range
+    float dbbfdx0 = (bbf1-bbf0)/2.0;
+
+    *range_width = meas->bandwidth / dbbfdx0;
+    return(1);
+}
+
 #define COAST_NXSTEPS 5
 #define COAST_NYSTEPS 25
 
