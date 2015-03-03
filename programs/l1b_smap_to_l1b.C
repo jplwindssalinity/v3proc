@@ -12,6 +12,10 @@
 #define REV_START_TIME_KEYWORD "REV_START_TIME"
 #define REV_STOP_TIME_KEYWORD "REV_STOP_TIME"
 #define USE_FOOTPRINTS_KEYWORD "USE_FOOTPRINTS"
+#define HH_ADJUST_KEYWORD "HH_ADJUST"
+#define HV_ADJUST_KEYWORD "HV_ADJUST"
+#define VH_ADJUST_KEYWORD "VH_ADJUST"
+#define VV_ADJUST_KEYWORD "VV_ADJUST"
 
 //----------//
 // INCLUDES //
@@ -165,6 +169,18 @@ int main(int argc, char* argv[]){
     QSLandMap qs_landmap;
     char* qslandmap_file = config_list.Get(QS_LANDMAP_FILE_KEYWORD);
     qs_landmap.Read(qslandmap_file);
+
+    float sigma0_adjust_factors[4];
+    config_list.GetFloat(VV_ADJUST_KEYWORD, &sigma0_adjust_factors[0]);
+    config_list.GetFloat(HH_ADJUST_KEYWORD, &sigma0_adjust_factors[1]);
+    config_list.GetFloat(VH_ADJUST_KEYWORD, &sigma0_adjust_factors[2]);
+    config_list.GetFloat(HV_ADJUST_KEYWORD, &sigma0_adjust_factors[3]);
+
+    // Convert them to linear scale factors from dB.
+    for(int ipol=0; ipol<4; ++ipol) {
+        sigma0_adjust_factors[ipol] =
+            pow(10.0, 0.1*sigma0_adjust_factors[ipol]);
+    }
 
     L1B l1b;
     if (l1b.OpenForWriting(output_file) == 0) {
@@ -408,7 +424,8 @@ int main(int argc, char* argv[]){
                             continue;
                         }
 
-                        new_meas->value = s0[ipol][fp_idx];
+                        new_meas->value =
+                            s0[ipol][fp_idx]*sigma0_adjust_factors[ipol];
                         new_meas->XK = xf[ipol][fp_idx];
                         new_meas->EnSlice = (
                             new_meas->value*new_meas->XK) /snr[ipol][fp_idx];
@@ -465,7 +482,8 @@ int main(int argc, char* argv[]){
                                 continue;
                             }
 
-                            new_meas->value = s0[ipol][slice_idx];
+                            new_meas->value =
+                                s0[ipol][slice_idx]*sigma0_adjust_factors[ipol];
                             new_meas->XK = xf[ipol][slice_idx];
                             new_meas->EnSlice = (
                                 new_meas->value*new_meas->XK) /
