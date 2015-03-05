@@ -132,6 +132,9 @@ int main(int argc, char* argv[]){
     char* qslandmap_file = config_list.Get(QS_LANDMAP_FILE_KEYWORD);
     qs_landmap.Read(qslandmap_file);
 
+    char* ephem_file = config_list.Get(EPHEMERIS_FILE_KEYWORD);
+    Ephemeris ephem(ephem_file, 10000);
+
     L1B l1b;
     char* output_file = config_list.Get(L1B_TB_FILE_KEYWORD);
     if (l1b.OpenForWriting(output_file) == 0) {
@@ -173,24 +176,12 @@ int main(int argc, char* argv[]){
 
         char antenna_scan_time_utc[nframes[ipart]][24];
 
-        std::vector<float> x_pos(nframes[ipart]);
-        std::vector<float> y_pos(nframes[ipart]);
-        std::vector<float> z_pos(nframes[ipart]);
-        std::vector<float> x_vel(nframes[ipart]);
-        std::vector<float> y_vel(nframes[ipart]);
-        std::vector<float> z_vel(nframes[ipart]);
         std::vector<float> yaw(nframes[ipart]);
         std::vector<float> pitch(nframes[ipart]);
         std::vector<float> roll(nframes[ipart]);
 
         read_SDS_h5(
             id, "/Spacecraft_Data/antenna_scan_time_utc", &antenna_scan_time_utc[0][0]);
-        H5LTread_dataset_float(id, "/Spacecraft_Data/x_pos", &x_pos[0]);
-        H5LTread_dataset_float(id, "/Spacecraft_Data/y_pos", &y_pos[0]);
-        H5LTread_dataset_float(id, "/Spacecraft_Data/z_pos", &z_pos[0]);
-        H5LTread_dataset_float(id, "/Spacecraft_Data/x_vel", &x_vel[0]);
-        H5LTread_dataset_float(id, "/Spacecraft_Data/y_vel", &y_vel[0]);
-        H5LTread_dataset_float(id, "/Spacecraft_Data/z_vel", &z_vel[0]);
         H5LTread_dataset_float(id, "/Spacecraft_Data/yaw", &yaw[0]);
         H5LTread_dataset_float(id, "/Spacecraft_Data/pitch", &pitch[0]);
         H5LTread_dataset_float(id, "/Spacecraft_Data/roll", &roll[0]);
@@ -271,15 +262,10 @@ int main(int argc, char* argv[]){
                 new_meas_spot->time = time;
 
                 new_meas_spot->scOrbitState.time = time;
-                new_meas_spot->scOrbitState.rsat.Set(
-                    (double)x_pos[iframe]*0.001,
-                    (double)y_pos[iframe]*0.001,
-                    (double)z_pos[iframe]*0.001);
 
-                new_meas_spot->scOrbitState.vsat.Set(
-                    (double)x_vel[iframe]*0.001,
-                    (double)y_vel[iframe]*0.001,
-                    (double)z_vel[iframe]*0.001);
+                ephem.GetOrbitState(
+                    time, EPHEMERIS_INTERP_ORDER,
+                    &new_meas_spot->scOrbitState);
 
                 new_meas_spot->scAttitude.SetRPY(
                     dtr*roll[iframe], dtr*pitch[iframe], dtr*yaw[iframe]);
