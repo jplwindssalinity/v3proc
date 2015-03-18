@@ -2190,6 +2190,7 @@ WindSwath::MedianFilterPass(
                     float tmp = wvc->directionRanges.GetNearestValue(wvp->dir);
                     wvp->dir = tmp;
                     wvp->spd = wvc->directionRanges.GetBestSpeed(tmp);
+                    wvp->obj = wvc->directionRanges.GetBestObj(tmp);
                 }
                 new_selected[cti][ati] = wvp;
             }  // Done with special==1 procedure
