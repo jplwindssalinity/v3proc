@@ -647,19 +647,11 @@ int main(int argc, char **argv) {
 
                 num_ambig_var->SetData(idx, wvc->numAmbiguities);
 
-                sel_obj_var->SetData(idx, sel_obj_fill);
-                num_in_fore_var->SetData(idx, num_in_fore_fill);
-                num_in_aft_var->SetData(idx, num_in_aft_fill);
-                num_out_fore_var->SetData(idx, num_out_fore_fill);
-                num_out_aft_var->SetData(idx, num_out_aft_fill);
-
-                /* Need to actually compute these
                 sel_obj_var->SetData(idx, wvc->selected->obj);
                 num_in_fore_var->SetData(idx, wvc->numInFore);
                 num_in_aft_var->SetData(idx, wvc->numInAft);
                 num_out_fore_var->SetData(idx, wvc->numOutFore);
                 num_out_aft_var->SetData(idx, wvc->numOutAft);
-                */
 
                 WindVectorPlus *wv = wvc_ambig->ambiguities.GetHead();
                 unsigned char num_ambiguities = wvc_ambig->ambiguities.NodeCount();
