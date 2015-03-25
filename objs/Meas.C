@@ -1460,7 +1460,8 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
                                    Antenna*   ant,
                                    float      freq_shift,
                                    double     spot_lon,
-                                   double     spot_lat) {
+                                   double     spot_lat,
+                                   LCRESMap*  lcres_map) {
   //printf("Length MeasSpot: %d\n",NodeCount());
   
   if( NodeCount() == 0 ) return(1);
@@ -1590,6 +1591,14 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
          float dW = g2*dx*dy / (range*range*range*range);
          sum     += dW;
          landsum += lmap->IsLand(lon,lat) ? dW : 0;
+
+         // Accumulate into the LCRES map if one is specified
+         if(lcres_map) {
+            int ipol = -1;
+            if(meas->measType == Meas::VV_MEAS_TYPE) ipol = 0;
+            if(meas->measType == Meas::HH_MEAS_TYPE) ipol = 1;
+            lcres_map->Add(&p, meas->eastAzimuth, dW, ipol, meas->value);
+         }
       } // iy loop
     }   // ix loop
     meas->bandwidth = landsum / sum; // Use EnSlice to hold land fraction values

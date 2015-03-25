@@ -8,7 +8,7 @@
 
 static const char rcs_id_meas_h[] =
     "@(#) $Id$";
-
+#include <vector>
 #include "mfhdf.h"
 
 #include "Antenna.h"
@@ -20,6 +20,7 @@ static const char rcs_id_meas_h[] =
 #include "math.h"
 #include "Sds.h"
 #include "ETime.h"
+#include "LCRESMap.h"
 
 #define GET_HDF_VAR(TYPE, VAR, START, EDGES, SCALE) \
     TYPE VAR##_tmp; \
@@ -300,7 +301,8 @@ public:
                              Antenna* ant,
                              float    freq_shift,
                              double   spot_lon,
-                             double   spot_lat);
+                             double   spot_lat,
+                             LCRESMap*  lcres_map = NULL);
     
 	//-----------//
 	// variables //
