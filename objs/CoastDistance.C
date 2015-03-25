@@ -26,7 +26,7 @@ int CoastDistance::Read(const char* filename) {
     return(1);
 }
 
-int CoastDistance::Get(double lon, double lat, float* distance) {
+int CoastDistance::Get(double lon, double lat, double* distance) {
     lon *= rtd;
     lat *= rtd;
 
@@ -39,12 +39,12 @@ int CoastDistance::Get(double lon, double lat, float* distance) {
     if(ilat<0 || ilat>=_nlat || ilon<0 || ilon>=_nlon) {
         return(0);
     } else {
-        *distance = (float)_distance[ilat][ilon];
+        *distance = (double)_distance[ilat][ilon];
         return(1);
     }
 }
 
-int CoastDistance::Get(EarthPosition* pos, float* distance) {
+int CoastDistance::Get(EarthPosition* pos, double* distance) {
     double lon, lat, alt;
     pos->GetAltLonGDLat(&alt,&lon,&lat);
     return Get(lon, lat, distance);

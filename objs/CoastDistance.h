@@ -19,8 +19,8 @@ class CoastDistance {
         ~CoastDistance();
 
         int Read(const char* filename);
-        int Get(double lon, double lat, float* distance);
-        int Get(EarthPosition* pos, float* distance);
+        int Get(double lon, double lat, double* distance);
+        int Get(EarthPosition* pos, double* distance);
 
     protected:
 
