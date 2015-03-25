@@ -58,6 +58,7 @@ static const char rcs_id[] =
 #define COASTAL_DISTANCE_FILE_KEYWORD   "COASTAL_DISTANCE_FILE"
 #define LCRES_ACCUM_FILE_KEYWORD        "LCRES_ACCUM_FILE"
 #define LCRES_MAP_FILE_KEYWORD          "LCRES_MAP_FILE"
+#define LCR_THRESHOLD_FLAG_KEYWORD      "LCR_THRESHOLD_FLAG"
 #define LCRES_THRESHOLD_FLAG_KEYWORD    "LCRES_THRESHOLD_FLAG"
 #define LCRES_THRESHOLD_CORR_KEYWORD    "LCRES_THRESHOLD_CORR"
 
@@ -576,7 +577,7 @@ main(
             coast_dist->Read(coast_dist_file);
 
             config_list.GetFloat(
-                "COASTAL_LAND_FRAC_THRESH",&land_frac_threshold);
+                LCR_THRESHOLD_FLAG_KEYWORD, &land_frac_threshold);
 
         // Land Contamination Ratio Expected Sigma0 threshold
         } else if (strcmp(method, "LCRES_FLAG")) {
