@@ -21,6 +21,7 @@ static const char rcs_id_meas_h[] =
 #include "Sds.h"
 #include "ETime.h"
 #include "LCRESMap.h"
+#include "CoastDistance.h"
 
 #define GET_HDF_VAR(TYPE, VAR, START, EDGES, SCALE) \
     TYPE VAR##_tmp; \
@@ -297,7 +298,7 @@ public:
     int ComputeRangeWidth(Meas* meas, float* range_width);
 
     int ComputeLandFraction( LandMap* lmap,
-                             QSLandMap* qs_lmap,
+                             CoastDistance* coast_dist,
                              Antenna* ant,
                              float    freq_shift,
                              double   spot_lon,

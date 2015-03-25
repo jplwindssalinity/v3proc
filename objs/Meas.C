@@ -1456,7 +1456,7 @@ int MeasSpot::ComputeRangeWidth(Meas* meas, float* range_width) {
 #define COAST_NYSTEPS 25
 
 int MeasSpot::ComputeLandFraction( LandMap*   lmap,
-                                   QSLandMap* qs_lmap,
+                                   CoastDistance* coast_dist,
                                    Antenna*   ant,
                                    float      freq_shift,
                                    double     spot_lon,
@@ -1532,13 +1532,14 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
   // Loop over Meas in this MeasSpot
   for( Meas* meas = GetHead(); meas; meas = GetNext() ) {
     // Only compute land fraction for coastal slices
-    double lon,lat,alt;
-    meas->centroid.GetAltLonGDLat(&alt,&lon,&lat);
     // If not near the coast, set land fraction to zero or one
     // depending on other land flag method.
-    int qs_lmap_bits;
-    qs_lmap_bits = qs_lmap->IsLand( lon, lat, -1 );
-    if (qs_lmap_bits==0||qs_lmap_bits==255)  {
+
+    double lon, lat, alt, dist;
+    meas->centroid.GetAltLonGDLat(&alt,&lon,&lat);
+    coast_dist->Get(&(meas->centroid), &dist);
+
+    if(fabs(dist)>50) {
       if( meas->landFlag==1 || meas->landFlag==3 ) {
         meas->bandwidth = 1;
       } else {
@@ -1546,7 +1547,7 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
       }
       continue;
     }
-    
+
     float  sum     = 0;
     float  landsum = 0;
     float  bbf0    = NominalQuikScatBaseBandFreq(meas->centroid);
