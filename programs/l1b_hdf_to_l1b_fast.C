@@ -54,6 +54,11 @@ static const char rcs_id[] =
 #define QS_LANDMAP_FILE_KEYWORD 		"QS_LANDMAP_FILE"
 #define QS_ICEMAP_FILE_KEYWORD	 		"QS_ICEMAP_FILE"
 #define DO_COASTAL_PROCESSING_KEYWORD   "DO_COASTAL_PROCESSING"
+#define COASTAL_DISTANCE_FILE_KEYWORD   "COASTAL_DISTANCE_FILE"
+#define LCRES_ACCUM_FILE_KEYWORD        "LCRES_ACCUM_FILE"
+#define LCRES_MAP_FILE_KEYWORD          "LCRES_MAP_FILE"
+#define LCRES_THRESHOLD_FLAG_KEYWORD    "LCRES_THRESHOLD_FLAG"
+#define LCRES_THRESHOLD_CORR_KEYWORD    "LCRES_THRESHOLD_CORR"
 
 //----------//
 // INCLUDES //
@@ -75,6 +80,8 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "SeaPac.h"
 #include "AttenMap.h"
+#include "CoastDistance.h"
+#include "LCRESMap.h"
 
 using std::list;
 using std::map;
@@ -495,6 +502,7 @@ main(
     Kp           kp;
     LandMap      lmap;
     Antenna      antenna;
+
     //QSKpr        qs_kpr;
 
     //------------------------//
@@ -621,12 +629,40 @@ main(
         exit(1);
       }
     }
-    
+
+    // Use pointers & new if desired, use massive amount of RAM
+    config_list.DoNothingForMissingKeywords();
+    char* coast_dist_file = config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD);
+    CoastDistance* coast_dist = NULL;
+    if(coast_dist_file) {
+        coast_dist = new CoastDistance();
+        coast_dist->Read(coast_dist_file);
+    }
+
+    char* lcres_accum_file = config_list.Get(LCRES_ACCUM_FILE_KEYWORD);
+    LCRESMap* lcres_accum = NULL;
+    if(lcres_accum_file) {
+        lcres_accum = new LCRESMap();
+        lcres_accum->Read(lcres_accum_file);
+    }
+
+    char* lcres_map_file = config_list.Get(LCRES_MAP_FILE_KEYWORD);
+    LCRESMap* lcres_map = NULL;
+    if(lcres_map_file) {
+        lcres_map = new LCRESMap();
+        lcres_map->Read(lcres_map_file);
+    }
+
+    float lcres_thresh_flag = 1;
+    float lcres_thresh_corr = 1;
+    config_list.GetFloat(LCRES_THRESHOLD_FLAG_KEYWORD, &lcres_thresh_flag);
+    config_list.GetFloat(LCRES_THRESHOLD_CORR_KEYWORD, &lcres_thresh_corr);
+
     //
     //------Done reading from config file.-------------------------------------
     //
 
-    L1B l1b;    
+    L1B l1b;
     // Prepare to write
     if (l1b.OpenForWriting(output_file) == 0) {
         fprintf(stderr, "%s: cannot open l1b file %s for output\n", command, output_file);
@@ -1027,9 +1063,9 @@ main(
           double spot_lon = double(cell_lon[pulse_ind])*dtr;
           double spot_lat = double(cell_lat[pulse_ind])*dtr;
 
-          new_meas_spot->ComputeLandFraction( &lmap, &qs_landmap, 
+          new_meas_spot->ComputeLandFraction( &lmap, coast_dist,
                                               &antenna, this_frequency_shift,
-                                              spot_lon, spot_lat);
+                                              spot_lon, spot_lat, lcres_accum);
           
           Meas* this_meas = new_meas_spot->GetHead();
           while( this_meas ) {
