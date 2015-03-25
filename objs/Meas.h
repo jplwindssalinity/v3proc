@@ -8,9 +8,8 @@
 
 static const char rcs_id_meas_h[] =
     "@(#) $Id$";
-#include <vector>
-#include "mfhdf.h"
 
+#include "mfhdf.h"
 #include "Antenna.h"
 #include "LonLat.h"
 #include "Ephemeris.h"
