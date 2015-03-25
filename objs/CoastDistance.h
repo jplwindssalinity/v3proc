@@ -1,3 +1,6 @@
+#ifndef COASTDISTANCE_H
+#define COASTDISTANCE_H
+
 #include <stdlib.h>
 #include <vector>
 #include "EarthPosition.h"
@@ -30,3 +33,5 @@ class CoastDistance {
         static const int _nlon = 36000;
         static const int _nlat = 18000;
 };
+
+#endif

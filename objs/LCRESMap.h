@@ -1,3 +1,6 @@
+#ifndef LCRESMap_H
+#define LCRESMap_H
+
 #include <stdlib.h>
 #include <vector>
 #include "EarthPosition.h"
@@ -34,3 +37,5 @@ class LCRESMap {
         static const float _dazi = 10.0;
         static const int _nazi = 36;
 };
+
+#endif
