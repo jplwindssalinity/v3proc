@@ -33,9 +33,15 @@ LCRESMap::~LCRESMap() {
 }
 
 int LCRESMap::Read(const char* filename) {
+    size_t n_read = _nlon*_nlat*_nazi*2;
+
     FILE* ifp = fopen(filename, "r");
-    fread(&_sum_dX[0][0][0][0], sizeof(float), _nlon*_nlat*_nazi*2, ifp);
-    fread(&_sum_dX_value[0][0][0][0], sizeof(float), _nlon*_nlat*_nazi*2, ifp);
+    if(!ifp ||
+       fread(&_sum_dX[0][0][0][0], sizeof(float), n_read, ifp) != n_read ||
+       fread(&_sum_dX_value[0][0][0][0], sizeof(float), n_read, ifp) != n_read){
+        fclose(ifp);
+        return(0);
+    }
     fclose(ifp);
     return(1);
 }
