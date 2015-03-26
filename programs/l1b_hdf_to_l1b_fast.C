@@ -671,8 +671,7 @@ main(
     printf("%s: Use compositing flag: %d\n", command, do_composite);
     
     // Check for Coastal maps & configure landmap if commanded
-    if(coastal_method == LCR || coastal_method == LCRES_ACCUM ||
-       coastal_method == LCRES_CORR) {
+    if(coastal_method != NONE) {
       if(!ConfigLandMap(&lmap,&config_list)) {
         fprintf(stderr,"%s: Error configuring LandMap\n",command);
         exit(1);
