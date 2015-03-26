@@ -70,6 +70,7 @@ static const char rcs_id[] =
 #include <unistd.h>
 #include <stdlib.h>
 #include <string>
+#include <fstream>
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ConfigList.h"
@@ -601,6 +602,7 @@ main(
             char* coast_dist_file = config_list.Get(
                 COASTAL_DISTANCE_FILE_KEYWORD);
             coast_dist = new CoastDistance();
+
             coast_dist->Read(coast_dist_file);
 
             config_list.GetFloat(
@@ -612,6 +614,7 @@ main(
 
             char* lcres_accum_file = config_list.Get(LCRES_ACCUM_FILE_KEYWORD);
             lcres_accum = new LCRESMap();
+
             lcres_accum->Read(lcres_accum_file);
 
             char* coast_dist_file = config_list.Get(
@@ -619,9 +622,9 @@ main(
             coast_dist = new CoastDistance();
             coast_dist->Read(coast_dist_file);
         }
-    }
 
-    config_list.DoNothingForMissingKeywords();
+        config_list.DoNothingForMissingKeywords();
+    }
 
     fprintf(stdout,"%s: Using QS LANDMAP %s\n",command,qslandmap_file);
     fprintf(stdout,"%s: Using QS ICEMAP %s\n",command,qsicemap_file);
@@ -1180,7 +1183,10 @@ main(
         printf("Wrote %d frames of %d\n", i_frame, num_l1b_frames);
         //if( i_frame == 1000 ) exit(1);
     }
-    
+
+    if(coastal_method == LCRES_ACCUM)
+        lcres_accum->Write(lcres_accum_file);
+
     fclose(eph_fp);
     
     //Free the calloc-ed arrays.
