@@ -572,10 +572,8 @@ main(
         if (strcmp(method, "LCR")){
             coastal_method = LCR;
 
-            char* coast_dist_file = config_list.Get(
-                COASTAL_DISTANCE_FILE_KEYWORD);
             coast_dist = new CoastDistance();
-            coast_dist->Read(coast_dist_file);
+            coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
 
             config_list.GetFloat(
                 LCR_THRESHOLD_FLAG_KEYWORD, &land_frac_threshold);
@@ -584,9 +582,8 @@ main(
         } else if (strcmp(method, "LCRES_FLAG")) {
             coastal_method = LCRES_FLAG;
 
-            char* lcres_map_file = config_list.Get(LCRES_MAP_FILE_KEYWORD);
             lcres_map = new LCRESMap();
-            lcres_map->Read(lcres_map_file);
+            lcres_map->Read(config_list.Get(LCRES_MAP_FILE_KEYWORD));
 
             config_list.GetFloat(
                 LCRES_THRESHOLD_FLAG_KEYWORD, &lcres_thresh_flag);
@@ -595,15 +592,11 @@ main(
         } else if (strcmp(method, "LCRES_CORR")) {
             coastal_method = LCRES_CORR;
 
-            char* lcres_map_file = config_list.Get(LCRES_MAP_FILE_KEYWORD);
             lcres_map = new LCRESMap();
-            lcres_map->Read(lcres_map_file);
+            lcres_map->Read(config_list.Get(LCRES_MAP_FILE_KEYWORD));
 
-            char* coast_dist_file = config_list.Get(
-                COASTAL_DISTANCE_FILE_KEYWORD);
             coast_dist = new CoastDistance();
-
-            coast_dist->Read(coast_dist_file);
+            coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
 
             config_list.GetFloat(
                 LCRES_THRESHOLD_CORR_KEYWORD, &lcres_thresh_corr);
@@ -612,15 +605,11 @@ main(
         } else if (strcmp(method, "LCRES_ACCUM")) {
             coastal_method = LCRES_ACCUM;
 
-            char* lcres_accum_file = config_list.Get(LCRES_ACCUM_FILE_KEYWORD);
             lcres_accum = new LCRESMap();
+            lcres_accum->Read(config_list.Get(LCRES_ACCUM_FILE_KEYWORD));
 
-            lcres_accum->Read(lcres_accum_file);
-
-            char* coast_dist_file = config_list.Get(
-                COASTAL_DISTANCE_FILE_KEYWORD);
             coast_dist = new CoastDistance();
-            coast_dist->Read(coast_dist_file);
+            coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
         }
 
         config_list.DoNothingForMissingKeywords();
@@ -1185,7 +1174,7 @@ main(
     }
 
     if(coastal_method == LCRES_ACCUM)
-        lcres_accum->Write(lcres_accum_file);
+        lcres_accum->Write(config_list.Get(LCRES_ACCUM_FILE_KEYWORD));
 
     fclose(eph_fp);
     
