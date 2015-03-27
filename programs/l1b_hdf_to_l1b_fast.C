@@ -567,9 +567,10 @@ main(
 
         // Determine which method to use
         const char* method = config_list.Get(COASTAL_METHOD_KEYWORD);
+        fprintf(stdout, "%s\n", method);
 
         // Land Contamination Ratio method (simple land fraction threshold).
-        if (strcmp(method, "LCR")){
+        if (strcmp(method, "LCR") == 0){
             coastal_method = LCR;
 
             coast_dist = new CoastDistance();
@@ -579,7 +580,7 @@ main(
                 LCR_THRESHOLD_FLAG_KEYWORD, &land_frac_threshold);
 
         // Land Contamination Ratio Expected Sigma0 threshold
-        } else if (strcmp(method, "LCRES_FLAG")) {
+        } else if (strcmp(method, "LCRES_FLAG") == 0) {
             coastal_method = LCRES_FLAG;
 
             lcres_map = new LCRESMap();
@@ -589,7 +590,7 @@ main(
                 LCRES_THRESHOLD_FLAG_KEYWORD, &lcres_thresh_flag);
 
         // Land Contamination Ratio Expected Sigma0 correction
-        } else if (strcmp(method, "LCRES_CORR")) {
+        } else if (strcmp(method, "LCRES_CORR") == 0) {
             coastal_method = LCRES_CORR;
 
             lcres_map = new LCRESMap();
@@ -602,11 +603,13 @@ main(
                 LCRES_THRESHOLD_CORR_KEYWORD, &lcres_thresh_corr);
 
         // Mode to accumulate the LCRES maps
-        } else if (strcmp(method, "LCRES_ACCUM")) {
+        } else if (strcmp(method, "LCRES_ACCUM") == 0) {
             coastal_method = LCRES_ACCUM;
 
             lcres_accum = new LCRESMap();
-            lcres_accum->Read(config_list.Get(LCRES_ACCUM_FILE_KEYWORD));
+            if(!lcres_accum->Read(config_list.Get(LCRES_ACCUM_FILE_KEYWORD))) {
+                fprintf(stderr, "Error reading lcres accum file\n");
+            }
 
             coast_dist = new CoastDistance();
             coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
