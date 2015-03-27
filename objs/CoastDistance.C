@@ -16,12 +16,11 @@ CoastDistance::~CoastDistance() {
 int CoastDistance::Read(const char* filename) {
     // resize the array
     _distance.resize(_nlat);
+    FILE* ifp = fopen(filename, "r");
     for(int ilat = 0; ilat<_nlat; ++ilat) {
         _distance[ilat].resize(_nlon);
+        fread(&_distance[ilat][0], sizeof(short), _nlon, ifp);
     }
-
-    FILE* ifp = fopen(filename, "r");
-    fread(&_distance[0][0], sizeof(unsigned short), _nlon*_nlat, ifp);
     fclose(ifp);
     return(1);
 }

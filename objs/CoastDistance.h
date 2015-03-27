@@ -24,12 +24,12 @@ class CoastDistance {
 
     protected:
 
-        std::vector<std::vector<unsigned short> > _distance;
+        std::vector<std::vector<short> > _distance;
 
-        static const float _lon_0 = -180;
-        static const float _lat_0 = 90;
         static const float _dlon = 0.01;
         static const float _dlat = -0.01;
+        static const float _lon_0 = -179.995;
+        static const float _lat_0 = 89.995;
         static const int _nlon = 36000;
         static const int _nlat = 18000;
 };
