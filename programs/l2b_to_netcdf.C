@@ -103,7 +103,7 @@ using namespace std;
 
 #define DATASET_TITLE "Rapidscat Level 2B Ocean Wind Vectors in 12.5km Slice Composites"
 #define BUILD_ID "v1_0_0:A"
-#define VERSION_ID "1"
+#define VERSION_ID "1.1"
 
 #define EPOCH    "1999-001T00:00:00.000 UTC"
 #define EPOCH_CF "1999-1-1 0:0:0"
@@ -415,7 +415,7 @@ int main(int argc, char **argv) {
         sel_obj_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", sel_obj_fill));
         sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", -199.0f));
         sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 0.0f));
-        sel_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "selected wind objective function value"));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "retrieved wind objective function value"));
         sel_obj_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         sel_obj_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         sel_obj_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
@@ -652,19 +652,11 @@ int main(int argc, char **argv) {
 
                 num_ambig_var->SetData(idx, wvc->numAmbiguities);
 
-                sel_obj_var->SetData(idx, sel_obj_fill);
-                num_in_fore_var->SetData(idx, num_in_fore_fill);
-                num_in_aft_var->SetData(idx, num_in_aft_fill);
-                num_out_fore_var->SetData(idx, num_out_fore_fill);
-                num_out_aft_var->SetData(idx, num_out_aft_fill);
-
-                /* Need to actually compute these
                 sel_obj_var->SetData(idx, wvc->selected->obj);
                 num_in_fore_var->SetData(idx, wvc->numInFore);
                 num_in_aft_var->SetData(idx, wvc->numInAft);
                 num_out_fore_var->SetData(idx, wvc->numOutFore);
                 num_out_aft_var->SetData(idx, wvc->numOutAft);
-                */
 
                 WindVectorPlus *wv = wvc_ambig->ambiguities.GetHead();
                 unsigned char num_ambiguities = wvc_ambig->ambiguities.NodeCount();

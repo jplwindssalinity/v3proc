@@ -801,19 +801,44 @@ main(
         new_meas_spot->time              = frame_time;
         new_meas_spot->scOrbitState.time = frame_time;
         
+        double this_pos[3], this_vel[3], this_yaw, this_pitch, this_roll;
+        double factor = (double)i_pulse/(double)100.0;
+
+        // other frame; interpolate if not last frame, else extrapolate.
+        int o_frame = i_frame + 1;
+        if(i_frame==num_l1b_frames-1) {
+            o_frame = i_frame - 1;
+            factor *= -1;
+        }
+
+        this_pos[0] = x_pos[i_frame] + factor*(x_pos[o_frame]-x_pos[i_frame]);
+        this_pos[1] = y_pos[i_frame] + factor*(y_pos[o_frame]-y_pos[i_frame]);
+        this_pos[2] = z_pos[i_frame] + factor*(z_pos[o_frame]-z_pos[i_frame]);
+
+        this_vel[0] = x_vel[i_frame] + factor*(x_vel[o_frame]-x_vel[i_frame]);
+        this_vel[1] = y_vel[i_frame] + factor*(y_vel[o_frame]-y_vel[i_frame]);
+        this_vel[2] = z_vel[i_frame] + factor*(z_vel[o_frame]-z_vel[i_frame]);
+
+        this_yaw = 1e-3*((float)yaw[i_frame] + factor*(
+            (float)yaw[i_frame]-(float)yaw[o_frame]));
+
+        this_pitch = 1e-3*((float)pitch[i_frame] + factor*(
+            (float)pitch[i_frame]-(float)pitch[o_frame]));
+
+        this_roll = 1e-3*((float)roll[i_frame] + factor*(
+            (float)roll[i_frame]-(float)roll[o_frame]));
+
         // Set ephemeris
-        new_meas_spot->scOrbitState.rsat.Set( double(x_pos[i_frame]*1e-3), // convert to km
-                                              double(y_pos[i_frame]*1e-3),
-                                              double(z_pos[i_frame]*1e-3) );
+        new_meas_spot->scOrbitState.rsat.Set(
+            this_pos[0]*1e-3, this_pos[1]*1e-3, this_pos[2]*1e-3);
                                               
-        new_meas_spot->scOrbitState.vsat.Set( double(x_vel[i_frame]*1e-3), // convert to km/s
-                                              double(y_vel[i_frame]*1e-3),
-                                              double(z_vel[i_frame]*1e-3) );
+        new_meas_spot->scOrbitState.vsat.Set(
+            this_vel[0]*1e-3, this_vel[1]*1e-3, this_vel[2]*1e-3);
+
         // Set attitude
-        new_meas_spot->scAttitude.SetRPY( float(roll[i_frame] )*1e-3*dtr,
-                                          float(pitch[i_frame])*1e-3*dtr,
-                                          float(yaw[i_frame]  )*1e-3*dtr );
-        
+        new_meas_spot->scAttitude.SetRPY(
+            this_roll*dtr, this_pitch*dtr, this_yaw*dtr);
+
         for( int i_slice = 0; i_slice < 8; ++i_slice )
         {
            // Using 1d arrays 
@@ -999,9 +1024,12 @@ main(
         // Optionally compute land fractions
         if( compute_land_frac ) {
           float this_frequency_shift = (float)frequency_shift[pulse_ind];
-          
+          double spot_lon = double(cell_lon[pulse_ind])*dtr;
+          double spot_lat = double(cell_lat[pulse_ind])*dtr;
+
           new_meas_spot->ComputeLandFraction( &lmap, &qs_landmap, 
-                                              &antenna, this_frequency_shift );
+                                              &antenna, this_frequency_shift,
+                                              spot_lon, spot_lat);
           
           Meas* this_meas = new_meas_spot->GetHead();
           while( this_meas ) {

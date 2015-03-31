@@ -159,6 +159,7 @@ public:
     int  ReadL2B_v3(FILE* fp); // BWS added 11/29/2010
     int  ReadL2B_v4(FILE* fp); // TAW added 03/03/2010
     int  ReadL2B_v5(FILE* fp); // TAW added 03/18/2010
+    int  ReadL2B_v6(FILE* fp);
     int  WriteVctr(FILE* fp, const int rank);    // 0 = selected
     int  WriteAscii(FILE* fp);
     int  WriteFlower(FILE* fp);

@@ -1431,38 +1431,43 @@ int32        pulseIndex)   // index of the pulses (max of 100)
     return(1);
 }
 
-#define COAST_NXSTEPS 10
-#define COAST_NYSTEPS 100
+int MeasSpot::ComputeRangeWidth(Meas* meas, float* range_width) {
+    // Computes the rate of change of base-band freq with range on ground,
+    // returns the range width corresponding to bandwidth of meas
+    Vector3 look = meas->centroid - scOrbitState.rsat;
+
+    // z is unit normal, y = z cross look, x = y cross z.
+    // x is look direction projected onto local tangent plane.
+    Vector3 zvec0 = meas->centroid.Normal();
+    Vector3 yvec0 = zvec0 & look;  yvec0 = yvec0 / yvec0.Magnitude();
+    Vector3 xvec0 = yvec0 & zvec0; xvec0 = xvec0 / xvec0.Magnitude();
+
+    float bbf1 = NominalQuikScatBaseBandFreq(meas->centroid+xvec0);
+    float bbf0 = NominalQuikScatBaseBandFreq(meas->centroid-xvec0);
+
+    // rate of change of base-band freq with range
+    float dbbfdx0 = (bbf1-bbf0)/2.0;
+
+    *range_width = meas->bandwidth / dbbfdx0;
+    return(1);
+}
+
+#define COAST_NXSTEPS 5
+#define COAST_NYSTEPS 25
 
 int MeasSpot::ComputeLandFraction( LandMap*   lmap,
                                    QSLandMap* qs_lmap,
                                    Antenna*   ant,
-                                   float      freq_shift ) {
+                                   float      freq_shift,
+                                   double     spot_lon,
+                                   double     spot_lat) {
   //printf("Length MeasSpot: %d\n",NodeCount());
   
   if( NodeCount() == 0 ) return(1);
-  
-  // compute slice center footprint location
-  Meas* center_meas[2];
-  int   slice_idx[2] = {-10,10};
-  
   Meas* first_meas = GetHead();
-  
-  for( Meas* this_meas=GetHead(); this_meas; this_meas=GetNext() ) {
-    if( this_meas->startSliceIdx<0 && this_meas->startSliceIdx>slice_idx[0] ) {
-      slice_idx[0]   = this_meas->startSliceIdx;
-      center_meas[0] = this_meas;
-    } else if ( this_meas->startSliceIdx>0 && this_meas->startSliceIdx<slice_idx[1]) {
-      slice_idx[1]   = this_meas->startSliceIdx;
-      center_meas[1] = this_meas;    
-    }
-  }
-  
+
   EarthPosition spot_centroid;
-  spot_centroid = center_meas[0]->centroid 
-                + ( center_meas[1]->centroid - center_meas[0]->centroid )
-                * ( (float)0 - (float)slice_idx[0] ) 
-                / ( (float)slice_idx[1]-(float)slice_idx[0] );
+  spot_centroid.SetAltLonGDLat(0.0, spot_lon, spot_lat);
   
   Vector3 look = spot_centroid - scOrbitState.rsat;
   float   rtt  = 2*look.Magnitude()/speed_light_kps;
@@ -1577,11 +1582,11 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
         
         double theta,phi,range,g2;
         antenna_look.SphericalGet(&range,&theta,&phi);
-        if( !ant->beam[meas->beamIdx].GetPowerGainProduct(theta+dtheta,
-                                                          phi,
-                                                          rtt,
-                                                          ant->spinRate,
-                                                          &g2)) g2=0.0;
+        rtt  = 2.0 * range /speed_light_kps;
+
+        if( !ant->beam[meas->beamIdx].GetPowerGainProduct(
+            theta, phi, rtt, ant->spinRate, &g2)) g2=0.0;
+
          float dW = g2*dx*dy / (range*range*range*range);
          sum     += dW;
          landsum += lmap->IsLand(lon,lat) ? dW : 0;
