@@ -116,8 +116,8 @@ enum {
     WIND_RETRIEVAL_MASK       = 0x0200,
     HIGH_WIND_MASK            = 0x0400,
     LOW_WIND_MASK             = 0x0800,
-    RAIN_IMPACT_UNUSABLE_MASK = 0x1000,
-    RAIN_IMPACT_MASK          = 0x2000,
+    RAIN_FLAG_UNUSABLE_MASK   = 0x1000,
+    RAIN_FLAG_MASK            = 0x2000,
     AVAILABLE_DATA_MASK       = 0x4000,
     RESERVED_BITS_MASK        = 0x007C
 };
@@ -175,7 +175,7 @@ static struct timeval epoch;
 
 static int16_t flag_masks[] = {SIGMA0_MASK, AZIMUTH_DIV_MASK, COASTAL_MASK,
     ICE_EDGE_MASK, WIND_RETRIEVAL_MASK, HIGH_WIND_MASK, LOW_WIND_MASK,
-    RAIN_IMPACT_UNUSABLE_MASK, RAIN_IMPACT_MASK, AVAILABLE_DATA_MASK};
+    RAIN_FLAG_UNUSABLE_MASK, RAIN_FLAG_MASK, AVAILABLE_DATA_MASK};
 static int16_t eflag_masks[] = {RAIN_CORR_NOT_APPL_MASK, NEG_WIND_SPEED_MASK,
     ALL_AMBIG_CONTRIB_MASK, RAIN_CORR_LARGE_MASK};
 
@@ -568,8 +568,8 @@ int main(int argc, char **argv) {
                 UNSET_IF(flags, COASTAL_MASK, IS_NOT_SET(wvc->landiceFlagBits, LAND_ICE_FLAG_COAST));
                 UNSET_IF(flags, ICE_EDGE_MASK, IS_NOT_SET(wvc->landiceFlagBits, LAND_ICE_FLAG_ICE));
 
-                UNSET_IF(flags, RAIN_IMPACT_UNUSABLE_MASK, IS_NOT_SET(wvc->rainFlagBits, RAIN_FLAG_UNUSABLE));
-                UNSET_IF(flags, RAIN_IMPACT_MASK, IS_NOT_SET(wvc->rainFlagBits, RAIN_FLAG_RAIN));
+                UNSET_IF(flags, RAIN_FLAG_UNUSABLE_MASK, IS_NOT_SET(wvc->rainFlagBits, RAIN_FLAG_UNUSABLE));
+                UNSET_IF(flags, RAIN_FLAG_MASK, IS_NOT_SET(wvc->rainFlagBits, RAIN_FLAG_RAIN));
 
                 UNSET_IF(flags, HIGH_WIND_MASK, wvc->selected->spd <= 30);
                 UNSET_IF(flags, LOW_WIND_MASK, wvc->selected->spd >= 3);
