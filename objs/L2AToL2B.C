@@ -1839,15 +1839,15 @@ L2AToL2B::GenSigma0Flags( MeasList* meas_list, GMF *gmf, WVC* wvc ) {
       if( antazi >= 180 ) antazi -= 360;
       if( meas->measType == Meas::VV_MEAS_TYPE ) {
         if( fabs(antazi) < 90 )
-          foreOuterFound = 1;
+          foreOuterFound++;
         else
-          aftOuterFound = 1;
+          aftOuterFound++;
       }
       else {
         if( fabs(antazi) < 90 )
-          foreInnerFound = 1;
+          foreInnerFound++;
         else
-          aftInnerFound = 1;
+          aftInnerFound++;
       }
       s0_azi_vector[count_good_s0] = meas->eastAzimuth;
       count_good_s0++;
@@ -1863,6 +1863,12 @@ L2AToL2B::GenSigma0Flags( MeasList* meas_list, GMF *gmf, WVC* wvc ) {
     }
   }
   
+  // Set flavor count
+  wvc->numInFore = foreInnerFound;
+  wvc->numInAft = aftInnerFound;
+  wvc->numOutFore = foreOuterFound;
+  wvc->numOutAft = aftOuterFound;
+
   int allfour = foreOuterFound*aftOuterFound*foreInnerFound*aftInnerFound;
   
   // Set flags

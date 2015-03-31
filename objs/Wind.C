@@ -303,6 +303,15 @@ int
 WVC::WriteL2B(
     FILE*  fp)
 {       
+    // for v6 L2B
+    if(fwrite((void *)&numInFore, sizeof(unsigned char), 1, fp) != 1 ||
+       fwrite((void *)&numInAft, sizeof(unsigned char), 1, fp) != 1 ||
+       fwrite((void *)&numOutFore, sizeof(unsigned char), 1, fp) != 1 ||
+       fwrite((void *)&numOutAft, sizeof(unsigned char), 1, fp) != 1){
+        fprintf(stderr,"WVC::WriteL2B: Error writing flavor counts!\n");
+        return(0);
+    }
+
     //-- Begin TAW modifications for v5 of l2b data file 03/18/2011
     if( fwrite( (void *)&numAmbiguities, sizeof(int),     1, fp) != 1 )
     {
@@ -428,6 +437,27 @@ WVC::WriteL2B(
         return(0);
    
     return(1);
+}
+
+//-----------------//
+// WVC::ReadL2B_v6 //
+//-----------------//
+
+int
+WVC::ReadL2B_v6(
+    FILE*  fp)
+{
+    // Reads v6 of the WVC from the L2B data file
+    if( fread((void *)&numInFore, sizeof(unsigned char), 1, fp) != 1 ||
+        fread((void *)&numInAft, sizeof(unsigned char), 1, fp) != 1 ||
+        fread((void *)&numOutFore, sizeof(unsigned char), 1, fp) != 1 ||
+        fread((void *)&numOutAft, sizeof(unsigned char), 1, fp) != 1 )
+    {
+        fprintf(stderr,"In WVC::ReadL2B_v6: ERROR reading flavor counts!\n");
+        return(0);
+    }
+    // read the rest of it
+    return(ReadL2B_v5(fp));
 }
 
 //-----------------//

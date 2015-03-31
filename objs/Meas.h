@@ -293,10 +293,14 @@ public:
                       int32       hdfIndex,    // index in the HDF
                       int32       pulseIndex); //index of the pulses(100)
 
+    int ComputeRangeWidth(Meas* meas, float* range_width);
+
     int ComputeLandFraction( LandMap* lmap,
                              QSLandMap* qs_lmap,
                              Antenna* ant,
-                             float    freq_shift );
+                             float    freq_shift,
+                             double   spot_lon,
+                             double   spot_lat);
     
 	//-----------//
 	// variables //
