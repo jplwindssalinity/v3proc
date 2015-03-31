@@ -626,7 +626,7 @@ int main(int argc, char **argv) {
                     atm_spd_bias_var->SetData(idx, 0);
 
                     if(IS_NOT_SET(flags, RAIN_FLAG_UNUSABLE_MASK) &&
-                       IS_SET(flags, RAIN_FLAG_MASK) {
+                       IS_SET(flags, RAIN_FLAG_MASK)) {
                         retrieved_speed_var->SetData(idx, retrieved_speed_fill);
                        }
                 }
