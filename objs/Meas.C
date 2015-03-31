@@ -1536,10 +1536,9 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
     // depending on other land flag method.
 
     double lon, lat, alt, dist;
-    meas->centroid.GetAltLonGDLat(&alt,&lon,&lat);
     coast_dist->Get(&(meas->centroid), &dist);
 
-    if(fabs(dist)>50) {
+    if(fabs(dist)>35) {
       if( meas->landFlag==1 || meas->landFlag==3 ) {
         meas->bandwidth = 1;
       } else {

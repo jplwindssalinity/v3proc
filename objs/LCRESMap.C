@@ -1,30 +1,19 @@
 #include <stdio.h>
 #include <math.h>
-#include <vector>
+#include <Eigen/SparseCore>
 #include "LCRESMap.h"
 #include "Constants.h"
 #include "EarthPosition.h"
 
 LCRESMap::LCRESMap() {
+    _sum_dX.resize(2*_nazi);
+    _sum_dX_value.resize(2*_nazi);
 
-    // Allocate the huge arrays for expected sigma0 maps
-    _sum_dX.resize(_nazi);
-    _sum_dX_value.resize(_nazi);
-
-    for(int iazi=0; iazi<_nazi; ++iazi) {
-        _sum_dX[iazi].resize(_nlat);
-        _sum_dX_value[iazi].resize(_nlat);
-
-        for(int ilat=0; ilat<_nlat; ++ilat) {
-            _sum_dX[iazi][ilat].resize(_nlon);
-            _sum_dX_value[iazi][ilat].resize(_nlon);
-
-            for(int ilon=0; ilon<_nlon; ++ilon) {
-                _sum_dX[iazi][ilat][ilon].resize(2);
-                _sum_dX_value[iazi][ilat][ilon].resize(2);
-            }
-        }
+    for(int iarray = 0; iarray < 2*_nazi; ++iarray) {
+        _sum_dX[iarray].resize(_nlon, _nlat);
+        _sum_dX_value[iarray].resize(_nlon, _nlat);
     }
+
     return;
 }
 
@@ -33,14 +22,45 @@ LCRESMap::~LCRESMap() {
 }
 
 int LCRESMap::Read(const char* filename) {
-    size_t n_read = _nlon*_nlat*_nazi*2;
 
     FILE* ifp = fopen(filename, "r");
-    if(!ifp ||
-       fread(&_sum_dX[0][0][0][0], sizeof(float), n_read, ifp) != n_read ||
-       fread(&_sum_dX_value[0][0][0][0], sizeof(float), n_read, ifp) != n_read){
-        fclose(ifp);
+    if(!ifp)
         return(0);
+
+    for(int iarray = 0; iarray < 2*_nazi; ++iarray) {
+        int num_entries;
+        fread(&num_entries, sizeof(int), 1, ifp);
+
+        if(!num_entries)
+            continue;
+
+        int ilons[num_entries], ilats[num_entries];
+        float sum_dX[num_entries], sum_dX_value[num_entries];
+
+        fread(&ilons[0], sizeof(int), num_entries, ifp);
+        fread(&ilats[0], sizeof(int), num_entries, ifp);
+        fread(&sum_dX[0], sizeof(float), num_entries, ifp);
+        fread(&sum_dX_value[0], sizeof(float), num_entries, ifp);
+
+        std::vector<Eigen::Triplet<float> > sum_dX_triplet;
+        std::vector<Eigen::Triplet<float> > sum_dX_value_triplet;
+
+        sum_dX_triplet.reserve(num_entries);
+        sum_dX_value_triplet.reserve(num_entries);
+
+        for(int ii=0; ii< num_entries; ++ii) {
+            sum_dX_triplet.push_back(
+                Eigen::Triplet<float>(ilons[ii], ilats[ii], sum_dX[ii]));
+
+            sum_dX_value_triplet.push_back(
+                Eigen::Triplet<float>(ilons[ii], ilats[ii], sum_dX_value[ii]));
+        }
+
+        _sum_dX[iarray].setFromTriplets(
+            sum_dX_triplet.begin(), sum_dX_triplet.end());
+
+        _sum_dX_value[iarray].setFromTriplets(
+            sum_dX_value_triplet.begin(), sum_dX_value_triplet.end());
     }
     fclose(ifp);
     return(1);
@@ -48,9 +68,35 @@ int LCRESMap::Read(const char* filename) {
 
 int LCRESMap::Write(const char* filename) {
     FILE* ofp = fopen(filename, "w");
-    fwrite(&_sum_dX[0][0][0][0], sizeof(float), _nlon*_nlat*_nazi*2, ofp);
-    fwrite(&_sum_dX_value[0][0][0][0], sizeof(float), _nlon*_nlat*_nazi*2, ofp);
-    fclose(ofp);
+    if(!ofp)
+        return(0);
+
+    for(int iarray = 0; iarray < 2*_nazi; ++iarray) {
+
+        std::vector<int> ilon, ilat;
+        std::vector<float> sum_dX, sum_dX_value;
+
+        for(int k=0; k<_sum_dX[iarray].outerSize(); ++k) {
+            for(Eigen::SparseMatrix<float>::InnerIterator 
+                it(_sum_dX[iarray], k); it; ++it) {
+
+                ilon.push_back(it.row());
+                ilat.push_back(it.col());
+                sum_dX.push_back(it.value());
+                sum_dX_value.push_back(
+                    _sum_dX_value[iarray].coeffRef(it.row(), it.col()));
+            }
+        }
+
+        int num_entries = ilon.size();
+
+        fwrite(&num_entries, sizeof(int), 1, ofp);
+        fwrite(&ilon[0], sizeof(int), num_entries, ofp);
+        fwrite(&ilat[0], sizeof(int), num_entries, ofp);
+        fwrite(&sum_dX[0], sizeof(float), num_entries, ofp);
+        fwrite(&sum_dX_value[0], sizeof(float), num_entries, ofp);
+    }
+
     return(1);
 }
 
@@ -66,8 +112,10 @@ int LCRESMap::Add(EarthPosition* pos, float east_azi, float dX,
     if(!_GetIdx(pos, east_azi, &iazi, &ilon, &ilat) || ipol<0 || ipol>1) {
         return(0);
     } else {
-        _sum_dX[iazi][ilat][ilon][ipol] += dX;
-        _sum_dX_value[iazi][ilat][ilon][ipol] += dX * value;
+        int array_idx = iazi*2 + ipol;
+
+        _sum_dX[array_idx].coeffRef(ilon, ilat) += dX;
+        _sum_dX_value[array_idx].coeffRef(ilon, ilat) += dX * value;
         return(1);
     }
 }
@@ -77,8 +125,11 @@ int LCRESMap::Get(EarthPosition* pos, float east_azi, int ipol, float* value) {
     int ilon, ilat, iazi;
     _GetIdx(pos, east_azi, &iazi, &ilon, &ilat);
 
+    int array_idx = iazi*2 + ipol;
+
     *value = 
-        _sum_dX_value[iazi][ilat][ilon][ipol] / _sum_dX[iazi][ilat][ilon][ipol];
+        _sum_dX_value[array_idx].coeff(ilon, ilat) /
+        _sum_dX[array_idx].coeff(ilon, ilat);
 
     return(1);
 }
