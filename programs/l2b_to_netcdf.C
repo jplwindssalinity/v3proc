@@ -624,7 +624,9 @@ int main(int argc, char **argv) {
                 if (IS_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
                     wind_speed_uncorr_var->SetData(idx, wvc->selected->spd);
                     atm_spd_bias_var->SetData(idx, 0);
+                }
 
+                if(IS_SET(eflags, ALL_AMBIG_CONTRIB_MASK)) {
                     if(IS_NOT_SET(flags, RAIN_FLAG_UNUSABLE_MASK) &&
                        IS_SET(flags, RAIN_FLAG_MASK)) {
                         retrieved_speed_var->SetData(idx, retrieved_speed_fill);
