@@ -626,11 +626,10 @@ int main(int argc, char **argv) {
                     atm_spd_bias_var->SetData(idx, 0);
                 }
 
-                if(IS_SET(eflags, ALL_AMBIG_CONTRIB_MASK)) {
-                    if(IS_NOT_SET(flags, RAIN_FLAG_UNUSABLE_MASK) &&
-                       IS_SET(flags, RAIN_FLAG_MASK)) {
-                        retrieved_speed_var->SetData(idx, retrieved_speed_fill);
-                       }
+                if(IS_SET(flags, AVAILABLE_DATA_MASK) &&
+                   wvc->rainFlagBits & RAIN_FLAG_UNUSABLE == 0 &&
+                   wvc->rainFlagBits & RAIN_FLAG_RAIN > 0 ) {
+                    retrieved_speed_var->SetData(idx, retrieved_speed_fill);
                 }
 
                 conversion = 450.0f - (wvc->selected->dir)*180.0f/(float)(M_PI);
