@@ -9,6 +9,7 @@
 #define L1C_S0_HIRES_DEC_FILE_KEYWORD "L1C_S0_HIRES_DEC_FILE"
 #define DO_QUADPOL_PROCESSING_KEYWORD "DO_QUADPOL_PROCESSING"
 #define QS_LANDMAP_FILE_KEYWORD "QS_LANDMAP_FILE"
+#define QS_ICEMAP_FILE_KEYWORD  "QS_ICEMAP_FILE"
 #define REV_START_TIME_KEYWORD "REV_START_TIME"
 #define REV_STOP_TIME_KEYWORD "REV_STOP_TIME"
 #define USE_FOOTPRINTS_KEYWORD "USE_FOOTPRINTS"
@@ -169,6 +170,10 @@ int main(int argc, char* argv[]){
     QSLandMap qs_landmap;
     char* qslandmap_file = config_list.Get(QS_LANDMAP_FILE_KEYWORD);
     qs_landmap.Read(qslandmap_file);
+
+    QSIceMap qs_icemap;
+    char* qsicemap_file  = config_list.Get(QS_ICEMAP_FILE_KEYWORD);
+    qs_icemap.Read( qsicemap_file );
 
     char* ephem_file = config_list.Get(EPHEMERIS_FILE_KEYWORD);
     Ephemeris ephem(ephem_file, 10000);
@@ -436,6 +441,10 @@ int main(int argc, char* argv[]){
                         if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0))
                             new_meas->landFlag += 1; // bit 0 for land
 
+                        // Get Ice map value
+                        if( qs_icemap.IsIce(tmp_lon, tmp_lat, 0) )
+                            new_meas->landFlag += 2; // bit 1 for ice
+
                         // Need to figure out the KP (a, b, c) terms.
                         new_meas->A = 1.0 + pow(kp[ipol][fp_idx], 2);
                         new_meas->B = 0.0;
@@ -495,6 +504,10 @@ int main(int argc, char* argv[]){
 
                             if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0))
                                 new_meas->landFlag += 1; // bit 0 for land
+
+                            // Get Ice map value
+                            if( qs_icemap.IsIce(tmp_lon, tmp_lat, 0) )
+                                new_meas->landFlag += 2; // bit 1 for ice
 
                             // Need to figure out the KP (a, b, c) terms.
                             new_meas->A = pow(kp[ipol][slice_idx], 2);
