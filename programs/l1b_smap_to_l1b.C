@@ -428,7 +428,7 @@ int main(int argc, char* argv[]){
 
                         new_meas->incidenceAngle = dtr*inc[fp_idx];
                         new_meas->eastAzimuth = (450.0*dtr - dtr*azi[fp_idx]);
-                        new_meas->scanAngle = dtr * antazi[fp_idx];
+                        new_meas->scanAngle = dtr * (360-antazi[fp_idx]);
                         new_meas->beamIdx = 0;
                         new_meas->numSlices = -1;
                         new_meas->startSliceIdx = -1;
@@ -492,7 +492,7 @@ int main(int argc, char* argv[]){
 
                             new_meas->incidenceAngle = dtr*inc[slice_idx];
                             new_meas->eastAzimuth = (450.0*dtr - dtr*azi[fp_idx]);
-                            new_meas->scanAngle = dtr * antazi[fp_idx];
+                            new_meas->scanAngle = dtr * (360-antazi[fp_idx]);
                             new_meas->beamIdx = 0;
                             new_meas->numSlices = 1;
                             new_meas->startSliceIdx = islice;
