@@ -1437,6 +1437,7 @@ int MeasSpot::ComputeRangeWidth(Meas* meas, float* range_width) {
     Vector3 look = meas->centroid - scOrbitState.rsat;
 
     // z is unit normal, y = z cross look, x = y cross z.
+    // x is look direction projected onto local tangent plane.
     Vector3 zvec0 = meas->centroid.Normal();
     Vector3 yvec0 = zvec0 & look;  yvec0 = yvec0 / yvec0.Magnitude();
     Vector3 xvec0 = yvec0 & zvec0; xvec0 = xvec0 / xvec0.Magnitude();
