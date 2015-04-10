@@ -150,6 +150,7 @@ int main(int argc, char* argv[]){
     double long_asc_node = -999;
     int file_hour_interval = 6;
     int do_neutral = 0;
+    int do_ncep = 0;
     int use_bigE = 0;
 
     int optind=1;
@@ -182,6 +183,9 @@ int main(int argc, char* argv[]){
         } else if(sw == "-n"){
             do_neutral = 1;
             file_hour_interval = 3;
+
+        } else if(sw == "-nwp1"){
+            do_ncep = 1;
 
         } else if(sw == "-bigE"){
             use_bigE = 1;
@@ -299,6 +303,7 @@ int main(int argc, char* argv[]){
 
         char nwp_char = '3';
         if(do_neutral) nwp_char = '4';
+        if(do_ncep) nwp_char = '1';
         sprintf(ecmwf_file_1, "%s/SNWP%c%4.4d%3.3d%2.2d", ecmwf_dir, nwp_char,
             year_1, doy_1, hour_1);
         sprintf(ecmwf_file_2, "%s/SNWP%c%4.4d%3.3d%2.2d", ecmwf_dir, nwp_char,
