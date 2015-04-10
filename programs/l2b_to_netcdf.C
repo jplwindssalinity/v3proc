@@ -103,7 +103,7 @@ using namespace std;
 
 #define DATASET_TITLE "Rapidscat Level 2B Ocean Wind Vectors in 12.5km Slice Composites"
 #define BUILD_ID "v1_0_0:A"
-#define VERSION_ID "1"
+#define VERSION_ID "1.1"
 
 #define EPOCH    "1999-001T00:00:00.000 UTC"
 #define EPOCH_CF "1999-1-1 0:0:0"
@@ -116,8 +116,8 @@ enum {
     WIND_RETRIEVAL_MASK       = 0x0200,
     HIGH_WIND_MASK            = 0x0400,
     LOW_WIND_MASK             = 0x0800,
-    RAIN_IMPACT_UNUSABLE_MASK = 0x1000,
-    RAIN_IMPACT_MASK          = 0x2000,
+    RAIN_FLAG_UNUSABLE_MASK   = 0x1000,
+    RAIN_FLAG_MASK            = 0x2000,
     AVAILABLE_DATA_MASK       = 0x4000,
     RESERVED_BITS_MASK        = 0x007C
 };
@@ -175,7 +175,7 @@ static struct timeval epoch;
 
 static int16_t flag_masks[] = {SIGMA0_MASK, AZIMUTH_DIV_MASK, COASTAL_MASK,
     ICE_EDGE_MASK, WIND_RETRIEVAL_MASK, HIGH_WIND_MASK, LOW_WIND_MASK,
-    RAIN_IMPACT_UNUSABLE_MASK, RAIN_IMPACT_MASK, AVAILABLE_DATA_MASK};
+    RAIN_FLAG_UNUSABLE_MASK, RAIN_FLAG_MASK, AVAILABLE_DATA_MASK};
 static int16_t eflag_masks[] = {RAIN_CORR_NOT_APPL_MASK, NEG_WIND_SPEED_MASK,
     ALL_AMBIG_CONTRIB_MASK, RAIN_CORR_LARGE_MASK};
 
@@ -415,7 +415,7 @@ int main(int argc, char **argv) {
         sel_obj_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", sel_obj_fill));
         sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", -199.0f));
         sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 0.0f));
-        sel_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "selected wind objective function value"));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "retrieved wind objective function value"));
         sel_obj_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         sel_obj_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         sel_obj_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
@@ -568,8 +568,8 @@ int main(int argc, char **argv) {
                 UNSET_IF(flags, COASTAL_MASK, IS_NOT_SET(wvc->landiceFlagBits, LAND_ICE_FLAG_COAST));
                 UNSET_IF(flags, ICE_EDGE_MASK, IS_NOT_SET(wvc->landiceFlagBits, LAND_ICE_FLAG_ICE));
 
-                UNSET_IF(flags, RAIN_IMPACT_UNUSABLE_MASK, IS_NOT_SET(wvc->rainFlagBits, RAIN_FLAG_UNUSABLE));
-                UNSET_IF(flags, RAIN_IMPACT_MASK, IS_NOT_SET(wvc->rainFlagBits, RAIN_FLAG_RAIN));
+                UNSET_IF(flags, RAIN_FLAG_UNUSABLE_MASK, IS_NOT_SET(wvc->rainFlagBits, RAIN_FLAG_UNUSABLE));
+                UNSET_IF(flags, RAIN_FLAG_MASK, IS_NOT_SET(wvc->rainFlagBits, RAIN_FLAG_RAIN));
 
                 UNSET_IF(flags, HIGH_WIND_MASK, wvc->selected->spd <= 30);
                 UNSET_IF(flags, LOW_WIND_MASK, wvc->selected->spd >= 3);
@@ -624,6 +624,12 @@ int main(int argc, char **argv) {
                 if (IS_SET(eflags, RAIN_CORR_NOT_APPL_MASK)) {
                     wind_speed_uncorr_var->SetData(idx, wvc->selected->spd);
                     atm_spd_bias_var->SetData(idx, 0);
+                }
+
+                if(IS_SET(flags, AVAILABLE_DATA_MASK) &&
+                   wvc->rainFlagBits & RAIN_FLAG_UNUSABLE == 0 &&
+                   wvc->rainFlagBits & RAIN_FLAG_RAIN > 0 ) {
+                    retrieved_speed_var->SetData(idx, retrieved_speed_fill);
                 }
 
                 conversion = 450.0f - (wvc->selected->dir)*180.0f/(float)(M_PI);
