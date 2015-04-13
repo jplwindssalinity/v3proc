@@ -99,7 +99,7 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
             meas->measType, meas->incidenceAngle, cap_anc->anc_sst, trial_sss,
             trial_spd, chi, &model_tb);
 
-        double var = pow(meas->A-1.0, 2) * model_tb * model_tb;
+        double var = (meas->A-1.0) * model_tb * model_tb;
         obj += pow(meas->value - model_tb, 2) / var;
     }
 
@@ -114,7 +114,7 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
         cap_anc->gmf->GetInterpolatedValue(
             meas->measType, meas->incidenceAngle, trial_spd, chi, &model_s0);
 
-        double var = pow(meas->A-1.0, 2) * model_s0 * model_s0;
+        double var = (meas->A-1.0) * model_s0 * model_s0;
         obj += pow(meas->value - model_s0, 2) / var;
     }
 
@@ -182,7 +182,7 @@ double wind_obj_func(unsigned n, const double* x, double* grad, void* data) {
             meas->measType, meas->incidenceAngle, cap_anc->anc_sst,
             cap_anc->anc_sss, trial_spd, chi, &model_tb);
 
-        double var = pow(meas->A, 2);
+        double var = (meas->A-1.0) * model_tb * model_tb;
         obj += pow(meas->value - model_tb, 2) / var;
     }
 
@@ -201,7 +201,7 @@ double wind_obj_func(unsigned n, const double* x, double* grad, void* data) {
 //         float var = cap_anc->gmf->GetVariance(
 //             meas, trial_spd, chi, model_s0, cap_anc->kp);
 
-        double var = pow(meas->A-1.0, 2) * model_s0 * model_s0;
+        double var = (meas->A-1.0) * model_s0 * model_s0;
 
         // 0.16 factor cribbed from Aquarius CAP objective function
         obj += 0.16 * pow(meas->value - model_s0, 2) / var;
@@ -372,7 +372,8 @@ int main(int argc, char* argv[]) {
     fclose(ifp);
 
     for(int ati=0; ati<nati; ++ati) {
-        fprintf(stdout, "%d of %d\n", ati, nati);
+        if(ati%100 == 0)
+            fprintf(stdout, "%d of %d\n", ati, nati);
 
         for(int cti=0; cti<ncti; ++cti) {
 
