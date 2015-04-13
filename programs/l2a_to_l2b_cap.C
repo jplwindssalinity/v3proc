@@ -197,15 +197,15 @@ double wind_obj_func(unsigned n, const double* x, double* grad, void* data) {
         cap_anc->gmf->GetInterpolatedValue(
             meas->measType, meas->incidenceAngle, trial_spd, chi, &model_s0);
 
+// This uses KP in addition to meas errors.
 //         float var = cap_anc->gmf->GetVariance(
 //             meas, trial_spd, chi, model_s0, cap_anc->kp);
 
         double var = pow(meas->A-1.0, 2) * model_s0 * model_s0;
+
+        // 0.16 factor cribbed from Aquarius CAP objective function
         obj += 0.16 * pow(meas->value - model_s0, 2) / var;
     }
-
-//     printf("spd, dir, obj: %f %f %f\n", x[0], x[1], 10*log10(obj));
-
     return(obj);
 }
 
