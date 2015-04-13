@@ -7,6 +7,8 @@
 #define L2B_CAP_FILE_KEYWORD "L2B_CAP_FILE"
 #define TB_FLAT_MODEL_FILE_KEYWORD "TB_FLAT_MODEL_FILE"
 #define TB_ROUGH_MODEL_FILE_KEYWORD "TB_ROUGH_MODEL_FILE"
+#define ANC_SSS_FILE_KEYWORD "ANC_SSS_FILE"
+#define ANC_SST_FILE_KEYWORD "ANC_SST_FILE"
 #define FILL_VALUE -9999
 
 //----------//
@@ -23,6 +25,7 @@
 #include "Misc.h"
 #include "ConfigList.h"
 #include "L2A.h"
+#include "Kp.h"
 #include "ConfigSim.h"
 #include "L2B.h"
 #include "L2AToL2B.h"
@@ -66,8 +69,10 @@ typedef struct {
     MeasList* s0_ml;
     WVC* s0_wvc;
     GMF* gmf;
+    Kp* kp;
     CAPGMF* cap_gmf;
     double anc_sst;
+    double anc_sss;
     double anc_swh;
     double anc_rr;
 } CAPAncillary;
@@ -116,9 +121,7 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
     return(obj);
 }
 
-int retrieve_cap(MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, GMF* gmf,
-                 CAPGMF* cap_gmf, double anc_sst, double anc_swh, double anc_rr,
-                 double anc_sss, double* spd, double* dir, double* sss,
+int retrieve_cap(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
                  double* min_obj) {
 
     // Construct the optimization object
@@ -131,17 +134,6 @@ int retrieve_cap(MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, GMF* gmf,
     lb[1] = 0; ub[1] = two_pi; // wind direction
     lb[2] = 10; ub[2] = 40; // salinity
 
-    // Set the various ancillary stuff needed
-    CAPAncillary cap_anc;
-    cap_anc.tb_ml = tb_ml;
-    cap_anc.s0_ml = s0_ml;
-    cap_anc.s0_wvc = s0_wvc;
-    cap_anc.gmf = gmf;
-    cap_anc.cap_gmf = cap_gmf;
-    cap_anc.anc_sst = anc_sst;
-    cap_anc.anc_swh = anc_swh;
-    cap_anc.anc_rr = anc_rr;
-
     // Config the optimization object for this problem
     opt.set_lower_bounds(lb);
     opt.set_upper_bounds(ub);
@@ -150,9 +142,9 @@ int retrieve_cap(MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, GMF* gmf,
     std::vector<double> x(3);
 
     // init guess at radar-only DIRTH wind vector and ancillary SSS
-    x[0] = s0_wvc->specialVector->spd;
-    x[1] = s0_wvc->specialVector->dir;
-    x[2] = anc_sss;
+    x[0] = cap_anc->s0_wvc->selected->spd;
+    x[1] = cap_anc->s0_wvc->selected->dir;
+    x[2] = cap_anc->anc_sss;
 
     // Solve it!
     double minf;
@@ -166,6 +158,100 @@ int retrieve_cap(MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, GMF* gmf,
 
     return(1);
 }
+
+double wind_obj_func(unsigned n, const double* x, double* grad, void* data) {
+
+    // optimization variables
+    float trial_spd = (float)x[0];
+    float trial_dir = (float)x[1];
+
+    if(trial_spd!=trial_spd || trial_dir!=trial_dir)
+        return HUGE_VAL;
+
+    CAPAncillary* cap_anc = (CAPAncillary*)data;
+
+    double obj = 0;
+    // Loop over TB observations
+    for(Meas* meas = cap_anc->tb_ml->GetHead(); meas;
+        meas = cap_anc->tb_ml->GetNext()){
+
+        float model_tb;
+        float chi = trial_dir - meas->eastAzimuth + pi;
+
+        cap_anc->cap_gmf->GetTB(
+            meas->measType, meas->incidenceAngle, cap_anc->anc_sst,
+            cap_anc->anc_sss, trial_spd, chi, &model_tb);
+
+        double var = pow(meas->A, 2);
+        obj += pow(meas->value - model_tb, 2) / var;
+    }
+
+    // Loop over s0 observations
+    for(Meas* meas = cap_anc->s0_ml->GetHead(); meas;
+        meas = cap_anc->s0_ml->GetNext()){
+
+        // Compute model S0 (replace this stub!!!)
+        float model_s0;
+        float chi = trial_dir - meas->eastAzimuth + pi;
+
+        cap_anc->gmf->GetInterpolatedValue(
+            meas->measType, meas->incidenceAngle, trial_spd, chi, &model_s0);
+
+//         float var = cap_anc->gmf->GetVariance(
+//             meas, trial_spd, chi, model_s0, cap_anc->kp);
+
+        double var = pow(meas->A-1.0, 2) * model_s0 * model_s0;
+        obj += 0.16 * pow(meas->value - model_s0, 2) / var;
+    }
+
+//     printf("spd, dir, obj: %f %f %f\n", x[0], x[1], 10*log10(obj));
+
+    return(obj);
+}
+
+int retrieve_wind(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
+                  double* min_obj) {
+
+    // Construct the optimization object
+    nlopt::opt opt(nlopt::LN_COBYLA, 2);
+
+    // Set contraints
+    std::vector<double> lb(2), ub(2);
+
+    lb[0] = 0; ub[0] = 100; // wind speed
+    lb[1] = 0; ub[1] = two_pi; // wind direction
+
+    // Config the optimization object for this problem
+    opt.set_lower_bounds(lb);
+    opt.set_upper_bounds(ub);
+    opt.set_min_objective(wind_obj_func, cap_anc);
+    opt.set_xtol_rel(0.01);
+
+    std::vector<double> x(2);
+
+    // init guess at radar-only DIRTH wind vector and ancillary SSS
+    x[0] = cap_anc->s0_wvc->selected->spd;
+    x[1] = cap_anc->s0_wvc->selected->dir;
+
+    if(x[0]<0.5) x[0] = 0.5;
+    if(x[0]>50) x[0] = 50;
+
+    while(x[1]>two_pi) x[1] -= two_pi;
+    while(x[1]<0) x[1] += two_pi;
+
+    // Solve it!
+    double minf;
+    nlopt::result result = opt.optimize(x, minf);
+
+    // Copy outputs
+    *spd = x[0];
+    *dir = x[1];
+    *sss = cap_anc->anc_sss;
+    *min_obj = minf;
+
+    return(1);
+}
+
 
 int main(int argc, char* argv[]) {
 
@@ -187,6 +273,8 @@ int main(int argc, char* argv[]) {
     char* l2b_s0_file = config_list.Get(L2B_FILE_KEYWORD);
     char* tb_flat_file = config_list.Get(TB_FLAT_MODEL_FILE_KEYWORD);
     char* tb_rough_file = config_list.Get(TB_ROUGH_MODEL_FILE_KEYWORD);
+    char* anc_sss_file = config_list.Get(ANC_SSS_FILE_KEYWORD);
+    char* anc_sst_file = config_list.Get(ANC_SST_FILE_KEYWORD);
 
     // Configure the model functions
     GMF gmf;
@@ -195,6 +283,10 @@ int main(int argc, char* argv[]) {
     CAPGMF cap_gmf;
     cap_gmf.ReadFlat(tb_flat_file);
     cap_gmf.ReadRough(tb_rough_file);
+
+    // Config the Kp object
+    Kp kp;
+    ConfigKp(&kp, &config_list);
 
     L2A l2a_s0, l2a_tb;
     l2a_s0.SetInputFilename(l2a_s0_file);
@@ -212,6 +304,10 @@ int main(int argc, char* argv[]) {
     l2a_s0.ReadHeader();
     l2a_tb.ReadHeader();
     l2b_s0.ReadHeader();
+
+    // Read in L2B radar-only file
+    l2b_s0.ReadDataRec();
+    l2b_s0.Close();
 
     int ncti = l2b_s0.frame.swath.GetCrossTrackBins();
     int nati = l2b_s0.frame.swath.GetAlongTrackBins();
@@ -243,28 +339,49 @@ int main(int argc, char* argv[]) {
     }
     l2a_s0.Close();
 
-    // Read in L2B radar-only file
-    l2b_s0.ReadDataRec();
-    l2b_s0.Close();
+    float** lat = (float**)make_array(sizeof(float), 2, ncti, nati);
+    float** lon = (float**)make_array(sizeof(float), 2, ncti, nati);
+    float** s0_spd = (float**)make_array(sizeof(float), 2, ncti, nati);
+    float** s0_dir = (float**)make_array(sizeof(float), 2, ncti, nati);
 
-    float lat[ncti][nati];
-    float lon[ncti][nati];
-    float s0_spd[ncti][nati];
-    float s0_dir[ncti][nati];
-    unsigned int s0_flg[ncti][nati];
+    unsigned int** s0_flg = (unsigned int**)make_array(
+        sizeof(unsigned int), 2, ncti, nati);
 
-    float cap_spd[ncti][nati];
-    float cap_dir[ncti][nati];
-    float cap_sss[ncti][nati];
-    char  cap_flg[ncti][nati];
+    float** cap_spd = (float**)make_array(sizeof(float), 2, ncti, nati);
+    float** cap_dir = (float**)make_array(sizeof(float), 2, ncti, nati);
+    float** cap_sss = (float**)make_array(sizeof(float), 2, ncti, nati);
+    unsigned char** cap_flg = (unsigned char**)make_array(
+        sizeof(unsigned char), 2, ncti, nati);
 
-    // Placeholders!!!
-    double anc_sst, anc_swh, anc_rr, anc_sss;
+    // note transposed order as in the E2B files
+    float** anc_sss = (float**)make_array(sizeof(float), 2, nati, ncti);
+    float** anc_sst = (float**)make_array(sizeof(float), 2, nati, ncti);
+
+    FILE* ifp = fopen(anc_sss_file, "r");
+    if(!read_array(ifp, &anc_sss[0], sizeof(float), 2, nati, ncti)) {
+        fprintf(stderr, "Error reading ancillary SSS file: %s\n", anc_sss_file);
+        exit(1);
+    }
+    fclose(ifp);
+
+    ifp = fopen(anc_sst_file, "r");
+    if(!read_array(ifp, &anc_sst[0], sizeof(float), 2, nati, ncti)) {
+        fprintf(stderr, "Error reading ancillary SST file: %s\n", anc_sst_file);
+        exit(1);
+    }
+    fclose(ifp);
 
     for(int ati=0; ati<nati; ++ati) {
+        fprintf(stdout, "%d of %d\n", ati, nati);
+
         for(int cti=0; cti<ncti; ++cti) {
 
             // init with fill value
+            lat[cti][ati] = FILL_VALUE;
+            lon[cti][ati] = FILL_VALUE;
+            s0_spd[cti][ati] = FILL_VALUE;
+            s0_dir[cti][ati] = FILL_VALUE;
+            s0_flg[cti][ati] = 0;
             cap_spd[cti][ati] = FILL_VALUE;
             cap_dir[cti][ati] = FILL_VALUE;
             cap_sss[cti][ati] = FILL_VALUE;
@@ -277,31 +394,55 @@ int main(int argc, char* argv[]) {
             MeasList* tb_ml = &(l2a_tb_swath[cti][ati]->measList);
             MeasList* s0_ml = &(l2a_s0_swath[cti][ati]->measList);
 
+            double this_anc_sss = (double)anc_sss[ati][cti];
+            double this_anc_sst = (double)anc_sst[ati][cti];
+            double this_anc_swh = -9999;
+            double this_anc_rr = -9999;
+
+            if(this_anc_sss<0 || this_anc_sst<-10)
+                continue;
+
             double this_cap_spd, this_cap_dir, this_cap_sss, min_obj;
 
-            retrieve_cap(
-                tb_ml, s0_ml, s0_wvc, &gmf, &cap_gmf, anc_sst, anc_swh, anc_rr,
-                anc_sss, &this_cap_spd, &this_cap_dir, &this_cap_sss, &min_obj);
+            CAPAncillary cap_anc;
+            cap_anc.tb_ml = tb_ml;
+            cap_anc.s0_ml = s0_ml;
+            cap_anc.s0_wvc = s0_wvc;
+            cap_anc.gmf = &gmf;
+            cap_anc.kp = &kp;
+            cap_anc.cap_gmf = &cap_gmf;
+            cap_anc.anc_sst = this_anc_sst;
+            cap_anc.anc_sss = this_anc_sss;
+            cap_anc.anc_swh = this_anc_swh;
+            cap_anc.anc_rr = this_anc_rr;
+
+            retrieve_wind(
+                &cap_anc, &this_cap_spd,
+                &this_cap_dir, &this_cap_sss, &min_obj);
 
             // switch back to clockwise from noth convention, to degrees, and wrap
-            float radar_only_dir = 450.0 - rtd * s0_wvc->specialVector->dir;
+            float radar_only_dir = 450.0 - rtd * s0_wvc->selected->dir;
             while(radar_only_dir>=180) radar_only_dir-=360;
-            while(radar_only_dir<180) radar_only_dir+=360;
+            while(radar_only_dir<-180) radar_only_dir+=360;
 
             this_cap_dir = 450 - rtd * this_cap_dir;
             while(this_cap_dir>=180) this_cap_dir-=360;
-            while(this_cap_dir<180) this_cap_dir+=360;
+            while(this_cap_dir<-180) this_cap_dir+=360;
 
             float this_lon = s0_wvc->lonLat.longitude*rtd;
             while(this_lon>=180) this_lon-=360;
-            while(this_lon<180) this_lon+=360;
+            while(this_lon<-180) this_lon+=360;
 
-            // insert some QA here to set cap_flag???
             lat[cti][ati] = s0_wvc->lonLat.latitude*rtd;
             lon[cti][ati] = this_lon;
-            s0_spd[cti][ati] = s0_wvc->specialVector->spd;
+            s0_spd[cti][ati] = s0_wvc->selected->spd;
             s0_dir[cti][ati] = radar_only_dir;
             s0_flg[cti][ati] = s0_wvc->qualFlag;
+
+//             printf("%d %d %f %f %f %f\n", cti, ati, s0_wvc->selected->spd, 
+//                 radar_only_dir, this_cap_spd, this_cap_dir);
+
+            // insert some QA here to set cap_flag???
             cap_spd[cti][ati] = (float)this_cap_spd;
             cap_dir[cti][ati] = (float)this_cap_dir;
             cap_sss[cti][ati] = (float)this_cap_sss;
@@ -310,20 +451,32 @@ int main(int argc, char* argv[]) {
 
     // Write it out
     FILE* ofp = fopen(l2b_cap_file, "w");
-    fwrite(&lon[0][0], sizeof(float), ncti*nati, ofp);
-    fwrite(&lat[0][0], sizeof(float), ncti*nati, ofp);
-    fwrite(&s0_spd[0][0], sizeof(float), ncti*nati, ofp);
-    fwrite(&s0_dir[0][0], sizeof(float), ncti*nati, ofp);
-    fwrite(&s0_flg[0][0], sizeof(unsigned int), ncti*nati, ofp);
-    fwrite(&cap_spd[0][0], sizeof(float), ncti*nati, ofp);
-    fwrite(&cap_dir[0][0], sizeof(float), ncti*nati, ofp);
-    fwrite(&cap_sss[0][0], sizeof(float), ncti*nati, ofp);
-    fwrite(&cap_flg[0][0], sizeof(char), ncti*nati, ofp);
+    write_array(ofp, &lon[0], sizeof(float), 2, ncti, nati);
+    write_array(ofp, &lat[0], sizeof(float), 2, ncti, nati);
+    write_array(ofp, &s0_spd[0], sizeof(float), 2, ncti, nati);
+    write_array(ofp, &s0_dir[0], sizeof(float), 2, ncti, nati);
+    write_array(ofp, &s0_flg[0], sizeof(unsigned int), 2, ncti, nati);
+    write_array(ofp, &cap_spd[0], sizeof(float), 2, ncti, nati);
+    write_array(ofp, &cap_dir[0], sizeof(float), 2, ncti, nati);
+    write_array(ofp, &cap_sss[0], sizeof(float), 2, ncti, nati);
+    write_array(ofp, &cap_flg[0], sizeof(unsigned char), 2, ncti, nati);
     fclose(ofp);
 
     // free the arrays
     free_array((void *)l2a_tb_swath, 2, ncti, nati);
     free_array((void *)l2a_s0_swath, 2, ncti, nati);
+
+    free_array(lat, 2, ncti, nati);
+    free_array(lon, 2, ncti, nati);
+    free_array(s0_spd, 2, ncti, nati);
+    free_array(s0_dir, 2, ncti, nati);
+    free_array(s0_flg, 2, ncti, nati);
+    free_array(cap_spd, 2, ncti, nati);
+    free_array(cap_dir, 2, ncti, nati);
+    free_array(cap_sss, 2, ncti, nati);
+    free_array(cap_flg, 2, ncti, nati);
+    free_array(anc_sss, 2, nati, ncti);
+    free_array(anc_sst, 2, nati, ncti);
 
     return(0);
 }
