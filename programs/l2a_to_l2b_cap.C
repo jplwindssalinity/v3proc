@@ -132,12 +132,13 @@ int retrieve_cap(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
 
     lb[0] = 0; ub[0] = 100; // wind speed
     lb[1] = 0; ub[1] = two_pi; // wind direction
-    lb[2] = 10; ub[2] = 40; // salinity
+    lb[2] = 28; ub[2] = 42; // salinity
 
     // Config the optimization object for this problem
     opt.set_lower_bounds(lb);
     opt.set_upper_bounds(ub);
     opt.set_min_objective(cap_obj_func, &cap_anc);
+    opt.set_xtol_rel(0.01);
 
     std::vector<double> x(3);
 
@@ -420,6 +421,10 @@ int main(int argc, char* argv[]) {
             retrieve_wind(
                 &cap_anc, &this_cap_spd,
                 &this_cap_dir, &this_cap_sss, &min_obj);
+
+//             retrieve_cap(
+//                 &cap_anc, &this_cap_spd,
+//                 &this_cap_dir, &this_cap_sss, &min_obj);
 
             // switch back to clockwise from noth convention, to degrees, and wrap
             float radar_only_dir = 450.0 - rtd * s0_wvc->selected->dir;
