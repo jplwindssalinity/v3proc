@@ -85,6 +85,9 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
     float trial_dir = (float)x[1];
     float trial_sss = (float)x[2];
 
+    if(trial_spd!=trial_spd || trial_dir!=trial_dir || trial_sss!=trial_sss)
+        return HUGE_VAL;
+
     CAPAncillary* cap_anc = (CAPAncillary*)data;
 
     double obj = 0;
@@ -115,7 +118,7 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
             meas->measType, meas->incidenceAngle, trial_spd, chi, &model_s0);
 
         double var = (meas->A-1.0) * model_s0 * model_s0;
-        obj += pow(meas->value - model_s0, 2) / var;
+        obj += 0.16 * pow(meas->value - model_s0, 2) / var;
     }
 
     return(obj);
@@ -137,7 +140,7 @@ int retrieve_cap(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
     // Config the optimization object for this problem
     opt.set_lower_bounds(lb);
     opt.set_upper_bounds(ub);
-    opt.set_min_objective(cap_obj_func, &cap_anc);
+    opt.set_min_objective(cap_obj_func, cap_anc);
     opt.set_xtol_rel(0.01);
 
     std::vector<double> x(3);
@@ -146,6 +149,15 @@ int retrieve_cap(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
     x[0] = cap_anc->s0_wvc->selected->spd;
     x[1] = cap_anc->s0_wvc->selected->dir;
     x[2] = cap_anc->anc_sss;
+
+    if(x[0]<0.5) x[0] = 0.5;
+    if(x[0]>50) x[0] = 50;
+
+    while(x[1]>two_pi) x[1] -= two_pi;
+    while(x[1]<0) x[1] += two_pi;
+
+    if(x[2]<30) x[2] = 30;
+    if(x[2]>40) x[2] = 40;
 
     // Solve it!
     double minf;
@@ -418,13 +430,13 @@ int main(int argc, char* argv[]) {
             cap_anc.anc_swh = this_anc_swh;
             cap_anc.anc_rr = this_anc_rr;
 
-            retrieve_wind(
-                &cap_anc, &this_cap_spd,
-                &this_cap_dir, &this_cap_sss, &min_obj);
-
-//             retrieve_cap(
+//             retrieve_wind(
 //                 &cap_anc, &this_cap_spd,
 //                 &this_cap_dir, &this_cap_sss, &min_obj);
+
+            retrieve_cap(
+                &cap_anc, &this_cap_spd,
+                &this_cap_dir, &this_cap_sss, &min_obj);
 
             // switch back to clockwise from noth convention, to degrees, and wrap
             float radar_only_dir = 450.0 - rtd * s0_wvc->selected->dir;
