@@ -309,6 +309,9 @@ int main(int argc, char* argv[]){
                     new_meas->startSliceIdx = -1;
                     new_meas->landFlag = 0;
 
+                    while(new_meas->eastAzimuth>two_pi)
+                        new_meas->eastAzimuth-=two_pi;
+
                     // WAG based on radiometer 3dB fp of 39x47 km
                     new_meas->azimuth_width = 39;
                     new_meas->range_width = 47;
