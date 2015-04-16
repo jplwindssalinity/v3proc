@@ -210,7 +210,6 @@ double wind_obj_func(unsigned n, const double* x, double* grad, void* data) {
         cap_anc->gmf->GetInterpolatedValue(
             meas->measType, meas->incidenceAngle, trial_spd, chi, &model_s0);
 
-// This uses KP in addition to meas errors.
         double var = (meas->A-1.0) * model_s0 * model_s0;
 
         // 0.16 factor cribbed from Aquarius CAP objective function
