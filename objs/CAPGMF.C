@@ -13,6 +13,41 @@ CAPGMF::~CAPGMF() {
     return;
 }
 
+float CAPGMF::ObjectiveFunctionCAP(
+    MeasList* tb_ml, MeasList* s0_ml, float trial_spd, float trial_dir,
+    float trial_sss, float anc_swh, float anc_sst) {
+
+    float obj = 0;
+    for(Meas* meas = tb_ml->GetHead(); meas; meas = tb_ml->GetNext()){
+
+        float model_tb;
+        float chi = trial_dir - meas->eastAzimuth + pi;
+
+        GetTB(
+            meas->measType, meas->incidenceAngle, anc_sst, trial_sss,
+            trial_spd, chi, anc_swh, &model_tb);
+
+        double var = meas->A;
+        obj += pow(meas->value - model_tb, 2) / var;
+    }
+
+    // Loop over s0 observations
+    for(Meas* meas = s0_ml->GetHead(); meas; meas = s0_ml->GetNext()){
+
+        // Compute model S0 (replace this stub!!!)
+        float model_s0;
+        float chi = trial_dir - meas->eastAzimuth + pi;
+
+        GetModelS0(
+            meas->measType, meas->incidenceAngle, trial_spd, chi, anc_swh,
+            &model_s0);
+
+        double var = (meas->A-1.0) * model_s0 * model_s0;
+        obj += 0.16 * pow(meas->value - model_s0, 2) / var;
+    }
+    return(obj);
+}
+
 int CAPGMF::_MetToIndex(Meas::MeasTypeE met) {
     int idx = 0;
     switch(met) {

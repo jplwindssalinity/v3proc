@@ -12,6 +12,10 @@ public:
 
     int _MetToIndex(Meas::MeasTypeE met);
 
+    float ObjectiveFunctionCAP(
+        MeasList* tb_ml, MeasList* s0_ml, float trial_spd, float trial_dir,
+        float trial_sss, float anc_swh, float anc_sst);
+
     int GetTBFlat(
         Meas::MeasTypeE met, float inc, float sst, float sss, float* tbflat);
 
