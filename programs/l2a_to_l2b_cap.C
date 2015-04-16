@@ -9,6 +9,7 @@
 #define TB_ROUGH_MODEL_FILE_KEYWORD "TB_ROUGH_MODEL_FILE"
 #define ANC_SSS_FILE_KEYWORD "ANC_SSS_FILE"
 #define ANC_SST_FILE_KEYWORD "ANC_SST_FILE"
+#define ANC_SWH_FILE_KEYWORD "ANC_SWH_FILE"
 #define FILL_VALUE -9999
 
 //----------//
@@ -100,7 +101,7 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
 
         cap_anc->cap_gmf->GetTB(
             meas->measType, meas->incidenceAngle, cap_anc->anc_sst, trial_sss,
-            trial_spd, chi, &model_tb);
+            trial_spd, chi, cap_anc->anc_swh, &model_tb);
 
         double var = (meas->A-1.0) * model_tb * model_tb;
         obj += pow(meas->value - model_tb, 2) / var;
@@ -114,8 +115,9 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
         float model_s0;
         float chi = trial_dir - meas->eastAzimuth + pi;
 
-        cap_anc->gmf->GetInterpolatedValue(
-            meas->measType, meas->incidenceAngle, trial_spd, chi, &model_s0);
+        cap_anc->cap_gmf->GetModelS0(
+            meas->measType, meas->incidenceAngle, trial_spd, chi,
+            cap_anc->anc_swh, &model_s0);
 
         double var = (meas->A-1.0) * model_s0 * model_s0;
         obj += 0.16 * pow(meas->value - model_s0, 2) / var;
@@ -193,7 +195,7 @@ double wind_obj_func(unsigned n, const double* x, double* grad, void* data) {
 
         cap_anc->cap_gmf->GetTB(
             meas->measType, meas->incidenceAngle, cap_anc->anc_sst,
-            cap_anc->anc_sss, trial_spd, chi, &model_tb);
+            cap_anc->anc_sss, trial_spd, chi, cap_anc->anc_swh, &model_tb);
 
         double var = meas->A;
         obj += pow(meas->value - model_tb, 2) / var;
@@ -207,8 +209,9 @@ double wind_obj_func(unsigned n, const double* x, double* grad, void* data) {
         float model_s0;
         float chi = trial_dir - meas->eastAzimuth + pi;
 
-        cap_anc->gmf->GetInterpolatedValue(
-            meas->measType, meas->incidenceAngle, trial_spd, chi, &model_s0);
+        cap_anc->cap_gmf->GetModelS0(
+            meas->measType, meas->incidenceAngle, trial_spd, chi,
+            cap_anc->anc_swh, &model_s0);
 
         double var = (meas->A-1.0) * model_s0 * model_s0;
 
@@ -425,11 +428,7 @@ int main(int argc, char* argv[]) {
             cap_anc.anc_swh = this_anc_swh;
             cap_anc.anc_rr = this_anc_rr;
 
-//             retrieve_wind(
-//                 &cap_anc, &this_cap_spd,
-//                 &this_cap_dir, &this_cap_sss, &min_obj);
-
-            retrieve_wind_uv(
+            retrieve_wind(
                 &cap_anc, &this_cap_spd,
                 &this_cap_dir, &this_cap_sss, &min_obj);
 

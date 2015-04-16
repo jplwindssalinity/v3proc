@@ -8,6 +8,7 @@ public:
 
     int ReadFlat(const char* filename);
     int ReadRough(const char* filename);
+    int ReadModelS0(const char* filename);
 
     int _MetToIndex(Meas::MeasTypeE met);
 
@@ -16,16 +17,25 @@ public:
 
     int GetDTB(
         Meas::MeasTypeE met, float inc, float sst, float spd, float dir,
-        float* dtb);
+        float swh, float* dtb);
+
+    int GetModelS0(
+        Meas::MeasTypeE met, float inc_in, float spd, float dir_in, float swh,
+        float* model_s0);
+
+    int _InterpolateTable(
+        Meas::MeasTypeE met, float inc_in, float spd, float dir_in, float swh,
+        float***** table, float* interpolated_value);
 
     int GetTB(
         Meas::MeasTypeE met, float inc, float sst, float sss, float spd,
-        float dir, float* tb);
+        float dir, float swh, float* tb);
 
 protected:
 
     int _AllocateFlat();
     int _AllocateRough();
+    int _AllocateModelS0();
     int _Deallocate();
 
     static const int _incCount = 11;
@@ -48,8 +58,14 @@ protected:
     static const float _dirMin = 0.0;
     static const float _dirStep = 1.0;
 
-    static const int _metCount = 2;
+    static const int _swhCount = 8;
+    static const float _swhMin = 0.5;
+    static const float _swhStep = 1;
+
+    static const int _metCountTB = 2;
+    static const int _metCountS0 = 4;
 
     float**** _tbflat;
-    float**** _erough;
+    float***** _erough;
+    float***** _model_s0;
 };

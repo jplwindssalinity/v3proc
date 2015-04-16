@@ -16,6 +16,18 @@ CAPGMF::~CAPGMF() {
 int CAPGMF::_MetToIndex(Meas::MeasTypeE met) {
     int idx = 0;
     switch(met) {
+        case Meas::VV_MEAS_TYPE:
+            idx = 0;
+            break;
+        case Meas::HH_MEAS_TYPE:
+            idx = 1;
+            break;
+        case Meas::VH_MEAS_TYPE:
+            idx = 2;
+            break;
+        case Meas::HV_MEAS_TYPE:
+            idx = 3;
+            break;
         case Meas::L_BAND_TBV_MEAS_TYPE:
             idx = 0;
             break;
@@ -31,6 +43,12 @@ int CAPGMF::_MetToIndex(Meas::MeasTypeE met) {
 
 int CAPGMF::GetTBFlat(
     Meas::MeasTypeE met, float inc_in, float sst, float sss, float* tbflat) {
+
+    // check meas type
+    if(met != Meas::L_BAND_TBV_MEAS_TYPE && met != Meas::L_BAND_TBH_MEAS_TYPE) {
+        fprintf(stderr, "Invalid MeasType: %d\n in CAPGMF::GetTBFlat", met);
+        return(0);
+    }
 
     // returns the flat surface brightness temp
     float inc = inc_in * 180/pi;
@@ -82,14 +100,45 @@ int CAPGMF::GetTBFlat(
         sstb * sssb * inca * _tbflat[met_idx][isss1][isst1][iinc0] +
         sstb * sssb * incb * _tbflat[met_idx][isss1][isst1][iinc1];
 
-    return(0);
+    return(1);
+}
+
+int CAPGMF::GetModelS0(
+        Meas::MeasTypeE met, float inc_in, float spd, float dir_in, float swh,
+        float* model_s0) {
+
+    // check meas type
+    if(met != Meas::VV_MEAS_TYPE && met != Meas::HH_MEAS_TYPE &&
+       met != Meas::VH_MEAS_TYPE && met != Meas::HV_MEAS_TYPE) {
+        fprintf(stderr, "Invalid MeasType: %d in CAPGMF::GetModelS0\n", met);
+        return(0);
+    }
+
+    _InterpolateTable(met, inc_in, spd, dir_in, swh, _model_s0, model_s0);
+    return(1);
 }
 
 int CAPGMF::GetDTB(
         Meas::MeasTypeE met, float inc_in, float sst, float spd, float dir_in,
-        float* dtb) {
+        float swh, float* dtb) {
 
-    // returns the rough surface model emissivity from a look up table
+    // check meas type
+    if(met != Meas::L_BAND_TBV_MEAS_TYPE && met != Meas::L_BAND_TBH_MEAS_TYPE) {
+        fprintf(stderr, "Invalid MeasType: %d\n in CAPGMF::GetDTB", met);
+        return(0);
+    }
+
+    float erough;
+    _InterpolateTable(met, inc_in, spd, dir_in, swh, _erough, &erough);
+    *dtb = sst * erough;
+    return(1);
+}
+
+int CAPGMF::_InterpolateTable(
+        Meas::MeasTypeE met, float inc_in, float spd, float dir_in, float swh,
+        float***** table, float* interpolated_value) {
+
+    // returns the rough surface model for TB or sigma0 from a look up table
 
     float inc = inc_in * 180/pi;
     float dir = dir_in * 180/pi;
@@ -97,6 +146,7 @@ int CAPGMF::GetDTB(
     while(dir<0) dir+= 360;
     while(dir>=360) dir -= 360;
 
+    // determine the measurement flavor (TB or sigma0)
     int met_idx = _MetToIndex(met);
 
     int idir0 = floor((dir-_dirMin)/_dirStep);
@@ -135,34 +185,53 @@ int CAPGMF::GetDTB(
     float inca = 1-(inc-inc0)/(inc1-inc0);
     float incb = 1-inca;
 
-    float e_rough =
-        dira * spda * inca * _erough[met_idx][idir0][ispd0][iinc0] +
-        dira * spda * incb * _erough[met_idx][idir0][ispd0][iinc1] +
-        dira * spdb * inca * _erough[met_idx][idir0][ispd1][iinc0] +
-        dira * spdb * incb * _erough[met_idx][idir0][ispd1][iinc1] +
-        dirb * spda * inca * _erough[met_idx][idir1][ispd0][iinc0] +
-        dirb * spda * incb * _erough[met_idx][idir1][ispd0][iinc1] +
-        dirb * spdb * inca * _erough[met_idx][idir1][ispd1][iinc0] +
-        dirb * spdb * incb * _erough[met_idx][idir1][ispd1][iinc1];
+    int iswh0 = floor((swh-_swhMin)/_swhStep);
+    if(iswh0<0)
+        iswh0 = 0;
+    if(iswh0>_spdCount-2)
+        iswh0 = _spdCount-2;
+    int iswh1 = iswh0 + 1;
 
-    *dtb = sst * e_rough;
+    float swh0 = _swhMin + _swhStep*(float)iswh0;
+    float swh1 = _swhMin + _swhStep*(float)iswh1;
+    float swha = 1-(swh-swh0)/(swh1-swh0);
+    float swhb = 1-swha;
 
-    return(0);
+    float value =
+        swha * dira * spda * inca * table[met_idx][iswh0][idir0][ispd0][iinc0] +
+        swha * dira * spda * incb * table[met_idx][iswh0][idir0][ispd0][iinc1] +
+        swha * dira * spdb * inca * table[met_idx][iswh0][idir0][ispd1][iinc0] +
+        swha * dira * spdb * incb * table[met_idx][iswh0][idir0][ispd1][iinc1] +
+        swha * dirb * spda * inca * table[met_idx][iswh0][idir1][ispd0][iinc0] +
+        swha * dirb * spda * incb * table[met_idx][iswh0][idir1][ispd0][iinc1] +
+        swha * dirb * spdb * inca * table[met_idx][iswh0][idir1][ispd1][iinc0] +
+        swha * dirb * spdb * incb * table[met_idx][iswh0][idir1][ispd1][iinc1] +
+        swhb * dira * spda * inca * table[met_idx][iswh1][idir0][ispd0][iinc0] +
+        swhb * dira * spda * incb * table[met_idx][iswh1][idir0][ispd0][iinc1] +
+        swhb * dira * spdb * inca * table[met_idx][iswh1][idir0][ispd1][iinc0] +
+        swhb * dira * spdb * incb * table[met_idx][iswh1][idir0][ispd1][iinc1] +
+        swhb * dirb * spda * inca * table[met_idx][iswh1][idir1][ispd0][iinc0] +
+        swhb * dirb * spda * incb * table[met_idx][iswh1][idir1][ispd0][iinc1] +
+        swhb * dirb * spdb * inca * table[met_idx][iswh1][idir1][ispd1][iinc0] +
+        swhb * dirb * spdb * incb * table[met_idx][iswh1][idir1][ispd1][iinc1];
+
+    *interpolated_value = value;
+    return(1);
 }
 
 int CAPGMF::GetTB(
         Meas::MeasTypeE met, float inc, float sst, float sss, float spd,
-        float dir, float* tb) {
+        float dir, float swh, float* tb) {
 
     float tbflat, dtb;
 
     if(GetTBFlat(met, inc, sst, sss, &tbflat)||
-       GetDTB(met, inc, sst, spd, dir, &dtb)) {
-        return(1);
+       GetDTB(met, inc, sst, spd, dir, swh, &dtb)) {
+        return(0);
     }
 
     *tb = tbflat + dtb;
-    return(0);
+    return(1);
 }
 
 int CAPGMF::ReadFlat(const char*  filename) {
@@ -172,7 +241,7 @@ int CAPGMF::ReadFlat(const char*  filename) {
 
     FILE* ifp = fopen(filename, "r");
 
-    for(int met_idx = 0; met_idx < _metCount; ++met_idx) {
+    for(int met_idx = 0; met_idx < _metCountTB; ++met_idx) {
         for(int sss_idx = 0; sss_idx < _sssCount; ++sss_idx) {
             for(int sst_idx = 0; sst_idx < _sstCount; ++sst_idx) {
                 float values[_incCount];
@@ -192,7 +261,7 @@ int CAPGMF::ReadFlat(const char*  filename) {
 
 int CAPGMF::_AllocateFlat() {
     _tbflat = (float ****)make_array(
-        sizeof(float), 4, _metCount, _sssCount, _sstCount, _incCount);
+        sizeof(float), 4, _metCountTB, _sssCount, _sstCount, _incCount);
 
     if(!_tbflat)
         return(0);
@@ -207,16 +276,20 @@ int CAPGMF::ReadRough(const char*  filename) {
 
     FILE* ifp = fopen(filename, "r");
 
-    for(int met_idx = 0; met_idx < _metCount; ++met_idx) {
-        for(int dir_idx = 0; dir_idx < _dirCount; ++dir_idx) {
-            for(int spd_idx = 0; spd_idx < _spdCount; ++spd_idx) {
-                float values[_incCount];
-                if(fread(&values, sizeof(float), _incCount, ifp) != _incCount) {
-                    fclose(ifp);
-                    return(0);
-                }
-                for(int inc_idx = 0; inc_idx < _incCount; ++inc_idx) {
-                    _erough[met_idx][dir_idx][spd_idx][inc_idx] = values[inc_idx];
+    for(int met_idx = 0; met_idx < _metCountTB; ++met_idx) {
+        for(int swh_idx = 0; swh_idx < _swhCount; ++swh_idx) {
+            for(int dir_idx = 0; dir_idx < _dirCount; ++dir_idx) {
+                for(int spd_idx = 0; spd_idx < _spdCount; ++spd_idx) {
+                    float values[_incCount];
+                    if(fread(&values, sizeof(float), _incCount, ifp) != 
+                        _incCount) {
+                        fclose(ifp);
+                        return(0);
+                    }
+                    for(int inc_idx = 0; inc_idx < _incCount; ++inc_idx) {
+                        _erough[met_idx][swh_idx][dir_idx][spd_idx][inc_idx] =
+                            values[inc_idx];
+                    }
                 }
             }
         }
@@ -226,8 +299,49 @@ int CAPGMF::ReadRough(const char*  filename) {
 }
 
 int CAPGMF::_AllocateRough() {
-    _erough = (float ****)make_array(
-        sizeof(float), 4, _metCount, _dirCount, _spdCount, _incCount);
+    _erough = (float *****)make_array(
+        sizeof(float), 5, _metCountTB, _swhCount, _dirCount, _spdCount,
+        _incCount);
+
+    if(!_erough)
+        return(0);
+
+    return(1);
+}
+
+int CAPGMF::ReadModelS0(const char*  filename) {
+
+    if(!_erough)
+        _AllocateRough();
+
+    FILE* ifp = fopen(filename, "r");
+
+    for(int met_idx = 0; met_idx < _metCountS0; ++met_idx) {
+        for(int swh_idx = 0; swh_idx < _swhCount; ++swh_idx) {
+            for(int dir_idx = 0; dir_idx < _dirCount; ++dir_idx) {
+                for(int spd_idx = 0; spd_idx < _spdCount; ++spd_idx) {
+                    float values[_incCount];
+                    if(fread(&values, sizeof(float), _incCount, ifp) != 
+                        _incCount) {
+                        fclose(ifp);
+                        return(0);
+                    }
+                    for(int inc_idx = 0; inc_idx < _incCount; ++inc_idx) {
+                        _model_s0[met_idx][swh_idx][dir_idx][spd_idx][inc_idx] =
+                            values[inc_idx];
+                    }
+                }
+            }
+        }
+    }
+    fclose(ifp);
+    return(1);
+}
+
+int CAPGMF::_AllocateModelS0() {
+    _model_s0 = (float *****)make_array(
+        sizeof(float), 5, _metCountS0, _swhCount, _dirCount, _spdCount,
+        _incCount);
 
     if(!_erough)
         return(0);
@@ -239,14 +353,22 @@ int CAPGMF::_Deallocate() {
 
     if (_tbflat) {
         free_array(
-            (void *)_tbflat, 4, _metCount, _sssCount, _sstCount, _incCount);
+            (void *)_tbflat, 4, _metCountTB, _sssCount, _sstCount, _incCount);
         _tbflat = NULL;
     }
 
     if (_erough) {
         free_array(
-            (void *)_erough, 4, _metCount, _dirCount, _spdCount, _incCount);
+            (void *)_erough, 5, _metCountTB, _swhCount, _dirCount, _spdCount,
+            _incCount);
         _erough = NULL;
+    }
+
+    if (_model_s0) {
+        free_array(
+            (void *)_model_s0, 5, _metCountS0, _swhCount, _dirCount, _spdCount,
+            _incCount);
+        _model_s0 = NULL;
     }
 
     return(1);
