@@ -10,11 +10,17 @@ public:
     int ReadRough(const char* filename);
     int ReadModelS0(const char* filename);
 
-    int _MetToIndex(Meas::MeasTypeE met);
-
     float ObjectiveFunctionCAP(
         MeasList* tb_ml, MeasList* s0_ml, float trial_spd, float trial_dir,
-        float trial_sss, float anc_swh, float anc_sst);
+        float trial_sss, float anc_swh, float anc_sst, float active_weight = 1,
+        float passive_weight = 1);
+
+    float ObjectiveFunctionActive(
+        MeasList* s0_ml, float trial_spd, float trial_dir, float anc_swh);
+
+    float ObjectiveFunctionPassive(
+        MeasList* tb_ml, float trial_spd, float trial_dir, float trial_sss,
+        float anc_swh, float anc_sst);
 
     int GetTBFlat(
         Meas::MeasTypeE met, float inc, float sst, float sss, float* tbflat);
@@ -27,10 +33,6 @@ public:
         Meas::MeasTypeE met, float inc_in, float spd, float dir_in, float swh,
         float* model_s0);
 
-    int _InterpolateTable(
-        Meas::MeasTypeE met, float inc_in, float spd, float dir_in, float swh,
-        float***** table, float* interpolated_value);
-
     int GetTB(
         Meas::MeasTypeE met, float inc, float sst, float sss, float spd,
         float dir, float swh, float* tb);
@@ -41,6 +43,14 @@ protected:
     int _AllocateRough();
     int _AllocateModelS0();
     int _Deallocate();
+
+    int _MetToIndex(Meas::MeasTypeE met);
+    int _IsActive(Meas::MeasTypeE met);
+    int _IsPassive(Meas::MeasTypeE met);
+
+    int _InterpolateTable(
+        Meas::MeasTypeE met, float inc_in, float spd, float dir_in, float swh,
+        float***** table, float* interpolated_value);
 
     static const int _incCount = 11;
     static const float _incMin = 35;

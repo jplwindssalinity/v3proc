@@ -15,7 +15,21 @@ CAPGMF::~CAPGMF() {
 
 float CAPGMF::ObjectiveFunctionCAP(
     MeasList* tb_ml, MeasList* s0_ml, float trial_spd, float trial_dir,
-    float trial_sss, float anc_swh, float anc_sst) {
+    float trial_sss, float anc_swh, float anc_sst, float active_weight,
+    float passive_weight) {
+
+    float passive_obj = ObjectiveFunctionPassive(
+        tb_ml, trial_spd, trial_dir, trial_sss, anc_swh, anc_sst);
+
+    float active_obj = ObjectiveFunctionActive(
+        s0_ml, trial_spd, trial_dir, anc_swh);
+
+    return(passive_weight * passive_obj + active_weight * active_obj);
+}
+
+float CAPGMF::ObjectiveFunctionPassive(
+    MeasList* tb_ml, float trial_spd, float trial_dir, float trial_sss,
+    float anc_swh, float anc_sst) {
 
     float obj = 0;
     for(Meas* meas = tb_ml->GetHead(); meas; meas = tb_ml->GetNext()){
@@ -30,8 +44,13 @@ float CAPGMF::ObjectiveFunctionCAP(
         double var = meas->A;
         obj += pow(meas->value - model_tb, 2) / var;
     }
+    return(obj);
+}
 
-    // Loop over s0 observations
+float CAPGMF::ObjectiveFunctionActive(
+    MeasList* s0_ml, float trial_spd, float trial_dir, float anc_swh) {
+
+    float obj = 0;
     for(Meas* meas = s0_ml->GetHead(); meas; meas = s0_ml->GetNext()){
 
         // Compute model S0 (replace this stub!!!)
@@ -43,44 +62,62 @@ float CAPGMF::ObjectiveFunctionCAP(
             &model_s0);
 
         double var = (meas->A-1.0) * model_s0 * model_s0;
-        obj += 0.16 * pow(meas->value - model_s0, 2) / var;
+        obj += pow(meas->value - model_s0, 2) / var;
     }
     return(obj);
 }
 
-int CAPGMF::_MetToIndex(Meas::MeasTypeE met) {
-    int idx = 0;
-    switch(met) {
-        case Meas::VV_MEAS_TYPE:
-            idx = 0;
-            break;
-        case Meas::HH_MEAS_TYPE:
-            idx = 1;
-            break;
-        case Meas::VH_MEAS_TYPE:
-            idx = 2;
-            break;
-        case Meas::HV_MEAS_TYPE:
-            idx = 3;
-            break;
-        case Meas::L_BAND_TBV_MEAS_TYPE:
-            idx = 0;
-            break;
-        case Meas::L_BAND_TBH_MEAS_TYPE:
-            idx = 1;
-            break;
-        default:
-            fprintf(stderr, "CAPGMF::_MetToIndex: invalid meas type %d\n", met);
-            exit(1);
+
+int CAPGMF::GetModelS0(
+        Meas::MeasTypeE met, float inc_in, float spd, float dir_in, float swh,
+        float* model_s0) {
+
+    // check meas type
+    if(!_IsActive(met)) {
+        fprintf(stderr, "Invalid MeasType: %d in CAPGMF::GetModelS0\n", met);
+        return(0);
     }
-    return(idx);
+
+    _InterpolateTable(met, inc_in, spd, dir_in, swh, _model_s0, model_s0);
+    return(1);
+}
+
+int CAPGMF::GetTB(
+        Meas::MeasTypeE met, float inc, float sst, float sss, float spd,
+        float dir, float swh, float* tb) {
+
+    float tbflat, dtb;
+
+    if(GetTBFlat(met, inc, sst, sss, &tbflat)||
+       GetDTB(met, inc, sst, spd, dir, swh, &dtb)) {
+        return(0);
+    }
+
+    *tb = tbflat + dtb;
+    return(1);
+}
+
+int CAPGMF::GetDTB(
+        Meas::MeasTypeE met, float inc_in, float sst, float spd, float dir_in,
+        float swh, float* dtb) {
+
+    // check meas type
+    if(!_IsPassive(met)) {
+        fprintf(stderr, "Invalid MeasType: %d\n in CAPGMF::GetDTB", met);
+        return(0);
+    }
+
+    float erough;
+    _InterpolateTable(met, inc_in, spd, dir_in, swh, _erough, &erough);
+    *dtb = sst * erough;
+    return(1);
 }
 
 int CAPGMF::GetTBFlat(
     Meas::MeasTypeE met, float inc_in, float sst, float sss, float* tbflat) {
 
     // check meas type
-    if(met != Meas::L_BAND_TBV_MEAS_TYPE && met != Meas::L_BAND_TBH_MEAS_TYPE) {
+    if(!_IsPassive(met)) {
         fprintf(stderr, "Invalid MeasType: %d\n in CAPGMF::GetTBFlat", met);
         return(0);
     }
@@ -135,37 +172,6 @@ int CAPGMF::GetTBFlat(
         sstb * sssb * inca * _tbflat[met_idx][isss1][isst1][iinc0] +
         sstb * sssb * incb * _tbflat[met_idx][isss1][isst1][iinc1];
 
-    return(1);
-}
-
-int CAPGMF::GetModelS0(
-        Meas::MeasTypeE met, float inc_in, float spd, float dir_in, float swh,
-        float* model_s0) {
-
-    // check meas type
-    if(met != Meas::VV_MEAS_TYPE && met != Meas::HH_MEAS_TYPE &&
-       met != Meas::VH_MEAS_TYPE && met != Meas::HV_MEAS_TYPE) {
-        fprintf(stderr, "Invalid MeasType: %d in CAPGMF::GetModelS0\n", met);
-        return(0);
-    }
-
-    _InterpolateTable(met, inc_in, spd, dir_in, swh, _model_s0, model_s0);
-    return(1);
-}
-
-int CAPGMF::GetDTB(
-        Meas::MeasTypeE met, float inc_in, float sst, float spd, float dir_in,
-        float swh, float* dtb) {
-
-    // check meas type
-    if(met != Meas::L_BAND_TBV_MEAS_TYPE && met != Meas::L_BAND_TBH_MEAS_TYPE) {
-        fprintf(stderr, "Invalid MeasType: %d\n in CAPGMF::GetDTB", met);
-        return(0);
-    }
-
-    float erough;
-    _InterpolateTable(met, inc_in, spd, dir_in, swh, _erough, &erough);
-    *dtb = sst * erough;
     return(1);
 }
 
@@ -254,21 +260,6 @@ int CAPGMF::_InterpolateTable(
     return(1);
 }
 
-int CAPGMF::GetTB(
-        Meas::MeasTypeE met, float inc, float sst, float sss, float spd,
-        float dir, float swh, float* tb) {
-
-    float tbflat, dtb;
-
-    if(GetTBFlat(met, inc, sst, sss, &tbflat)||
-       GetDTB(met, inc, sst, spd, dir, swh, &dtb)) {
-        return(0);
-    }
-
-    *tb = tbflat + dtb;
-    return(1);
-}
-
 int CAPGMF::ReadFlat(const char*  filename) {
 
     if(!_tbflat)
@@ -291,16 +282,6 @@ int CAPGMF::ReadFlat(const char*  filename) {
         }
     }
     fclose(ifp);
-    return(1);
-}
-
-int CAPGMF::_AllocateFlat() {
-    _tbflat = (float ****)make_array(
-        sizeof(float), 4, _metCountTB, _sssCount, _sstCount, _incCount);
-
-    if(!_tbflat)
-        return(0);
-
     return(1);
 }
 
@@ -333,17 +314,6 @@ int CAPGMF::ReadRough(const char*  filename) {
     return(1);
 }
 
-int CAPGMF::_AllocateRough() {
-    _erough = (float *****)make_array(
-        sizeof(float), 5, _metCountTB, _swhCount, _dirCount, _spdCount,
-        _incCount);
-
-    if(!_erough)
-        return(0);
-
-    return(1);
-}
-
 int CAPGMF::ReadModelS0(const char*  filename) {
 
     if(!_erough)
@@ -370,6 +340,70 @@ int CAPGMF::ReadModelS0(const char*  filename) {
         }
     }
     fclose(ifp);
+    return(1);
+}
+
+int CAPGMF::_MetToIndex(Meas::MeasTypeE met) {
+    int idx = 0;
+    switch(met) {
+        case Meas::VV_MEAS_TYPE:
+            idx = 0;
+            break;
+        case Meas::HH_MEAS_TYPE:
+            idx = 1;
+            break;
+        case Meas::VH_MEAS_TYPE:
+            idx = 2;
+            break;
+        case Meas::HV_MEAS_TYPE:
+            idx = 3;
+            break;
+        case Meas::L_BAND_TBV_MEAS_TYPE:
+            idx = 0;
+            break;
+        case Meas::L_BAND_TBH_MEAS_TYPE:
+            idx = 1;
+            break;
+        default:
+            fprintf(stderr, "CAPGMF::_MetToIndex: invalid meas type %d\n", met);
+            exit(1);
+    }
+    return(idx);
+}
+
+int CAPGMF::_IsPassive(Meas::MeasTypeE met) {
+    if(met == Meas::L_BAND_TBV_MEAS_TYPE && met == Meas::L_BAND_TBH_MEAS_TYPE)
+        return(1);
+    else
+        return(0);
+}
+
+int CAPGMF::_IsActive(Meas::MeasTypeE met) {
+    if(met != Meas::VV_MEAS_TYPE && met != Meas::HH_MEAS_TYPE &&
+       met != Meas::VH_MEAS_TYPE && met != Meas::HV_MEAS_TYPE)
+        return(1);
+    else
+        return(0);
+}
+
+int CAPGMF::_AllocateFlat() {
+    _tbflat = (float ****)make_array(
+        sizeof(float), 4, _metCountTB, _sssCount, _sstCount, _incCount);
+
+    if(!_tbflat)
+        return(0);
+
+    return(1);
+}
+
+int CAPGMF::_AllocateRough() {
+    _erough = (float *****)make_array(
+        sizeof(float), 5, _metCountTB, _swhCount, _dirCount, _spdCount,
+        _incCount);
+
+    if(!_erough)
+        return(0);
+
     return(1);
 }
 

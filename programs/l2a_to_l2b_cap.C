@@ -86,42 +86,17 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
     float trial_dir = (float)x[1];
     float trial_sss = (float)x[2];
 
+    float active_weight = 1;
+    float passive_weight = 1;
+
     if(trial_spd!=trial_spd || trial_dir!=trial_dir || trial_sss!=trial_sss)
         return HUGE_VAL;
 
     CAPAncillary* cap_anc = (CAPAncillary*)data;
 
-    double obj = 0;
-    // Loop over TB observations
-    for(Meas* meas = cap_anc->tb_ml->GetHead(); meas;
-        meas = cap_anc->tb_ml->GetNext()){
-
-        float model_tb;
-        float chi = trial_dir - meas->eastAzimuth + pi;
-
-        cap_anc->cap_gmf->GetTB(
-            meas->measType, meas->incidenceAngle, cap_anc->anc_sst, trial_sss,
-            trial_spd, chi, cap_anc->anc_swh, &model_tb);
-
-        double var = (meas->A-1.0) * model_tb * model_tb;
-        obj += pow(meas->value - model_tb, 2) / var;
-    }
-
-    // Loop over s0 observations
-    for(Meas* meas = cap_anc->s0_ml->GetHead(); meas;
-        meas = cap_anc->s0_ml->GetNext()){
-
-        // Compute model S0 (replace this stub!!!)
-        float model_s0;
-        float chi = trial_dir - meas->eastAzimuth + pi;
-
-        cap_anc->cap_gmf->GetModelS0(
-            meas->measType, meas->incidenceAngle, trial_spd, chi,
-            cap_anc->anc_swh, &model_s0);
-
-        double var = (meas->A-1.0) * model_s0 * model_s0;
-        obj += 0.16 * pow(meas->value - model_s0, 2) / var;
-    }
+    double obj = cap_anc->cap_gmf->ObjectiveFunctionCAP(
+        cap_anc->tb_ml, cap_anc->s0_ml, trial_spd, trial_dir, trial_sss,
+        cap_anc->anc_swh, cap_anc->anc_sst, active_weight, passive_weight);
 
     return(obj);
 }
@@ -180,44 +155,18 @@ double wind_obj_func(unsigned n, const double* x, double* grad, void* data) {
     float trial_spd = (float)x[0];
     float trial_dir = (float)x[1];
 
+    float active_weight = 1;
+    float passive_weight = 1;
+
     if(trial_spd!=trial_spd || trial_dir!=trial_dir)
         return HUGE_VAL;
 
     CAPAncillary* cap_anc = (CAPAncillary*)data;
 
-    double obj = 0;
-    // Loop over TB observations
-    for(Meas* meas = cap_anc->tb_ml->GetHead(); meas;
-        meas = cap_anc->tb_ml->GetNext()){
+    double obj = cap_anc->cap_gmf->ObjectiveFunctionCAP(
+        cap_anc->tb_ml, cap_anc->s0_ml, trial_spd, trial_dir, cap_anc->anc_sss,
+        cap_anc->anc_swh, cap_anc->anc_sst, active_weight, passive_weight);
 
-        float model_tb;
-        float chi = trial_dir - meas->eastAzimuth + pi;
-
-        cap_anc->cap_gmf->GetTB(
-            meas->measType, meas->incidenceAngle, cap_anc->anc_sst,
-            cap_anc->anc_sss, trial_spd, chi, cap_anc->anc_swh, &model_tb);
-
-        double var = meas->A;
-        obj += pow(meas->value - model_tb, 2) / var;
-    }
-
-    // Loop over s0 observations
-    for(Meas* meas = cap_anc->s0_ml->GetHead(); meas;
-        meas = cap_anc->s0_ml->GetNext()){
-
-        // Compute model S0 (replace this stub!!!)
-        float model_s0;
-        float chi = trial_dir - meas->eastAzimuth + pi;
-
-        cap_anc->cap_gmf->GetModelS0(
-            meas->measType, meas->incidenceAngle, trial_spd, chi,
-            cap_anc->anc_swh, &model_s0);
-
-        double var = (meas->A-1.0) * model_s0 * model_s0;
-
-        // 0.16 factor cribbed from Aquarius CAP objective function
-        obj += 0.16 * pow(meas->value - model_s0, 2) / var;
-    }
     return(obj);
 }
 
