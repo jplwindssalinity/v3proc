@@ -211,9 +211,6 @@ double wind_obj_func(unsigned n, const double* x, double* grad, void* data) {
             meas->measType, meas->incidenceAngle, trial_spd, chi, &model_s0);
 
 // This uses KP in addition to meas errors.
-//         float var = cap_anc->gmf->GetVariance(
-//             meas, trial_spd, chi, model_s0, cap_anc->kp);
-
         double var = (meas->A-1.0) * model_s0 * model_s0;
 
         // 0.16 factor cribbed from Aquarius CAP objective function
@@ -264,94 +261,6 @@ int retrieve_wind(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
 
     return(1);
 }
-
-double wind_obj_func_uv(unsigned n, const double* x, double* grad, void* data) {
-
-    // optimization variables
-    float trial_spd = (float)sqrt(x[0]*x[0] + x[1]*x[1]);
-    float trial_dir = atan2(x[1], x[0]);
-
-    if(trial_spd!=trial_spd || trial_dir!=trial_dir)
-        return HUGE_VAL;
-
-    CAPAncillary* cap_anc = (CAPAncillary*)data;
-
-    double obj = 0;
-    // Loop over TB observations
-    for(Meas* meas = cap_anc->tb_ml->GetHead(); meas;
-        meas = cap_anc->tb_ml->GetNext()){
-
-        float model_tb;
-        float chi = trial_dir - meas->eastAzimuth + pi;
-
-        cap_anc->cap_gmf->GetTB(
-            meas->measType, meas->incidenceAngle, cap_anc->anc_sst,
-            cap_anc->anc_sss, trial_spd, chi, &model_tb);
-
-        double var = (meas->A-1.0) * model_tb * model_tb;
-        obj += pow(meas->value - model_tb, 2) / var;
-    }
-
-    // Loop over s0 observations
-//     for(Meas* meas = cap_anc->s0_ml->GetHead(); meas;
-//         meas = cap_anc->s0_ml->GetNext()){
-// 
-//         // Compute model S0 (replace this stub!!!)
-//         float model_s0;
-//         float chi = trial_dir - meas->eastAzimuth + pi;
-// 
-//         cap_anc->gmf->GetInterpolatedValue(
-//             meas->measType, meas->incidenceAngle, trial_spd, chi, &model_s0);
-// 
-// // This uses KP in addition to meas errors.
-// //         float var = cap_anc->gmf->GetVariance(
-// //             meas, trial_spd, chi, model_s0, cap_anc->kp);
-// 
-//         double var = (meas->A-1.0) * model_s0 * model_s0;
-// 
-//         // 0.16 factor cribbed from Aquarius CAP objective function
-//         obj += pow(meas->value - model_s0, 2) / var;
-//     }
-    return(obj);
-}
-
-int retrieve_wind_uv(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
-                  double* min_obj) {
-
-    // Construct the optimization object
-    nlopt::opt opt(nlopt::LN_COBYLA, 2);
-
-    // Set contraints
-    std::vector<double> lb(2), ub(2);
-
-    lb[0] = -100; ub[0] = 100; // u
-    lb[1] = -100; ub[1] = 100; // v
-
-    // Config the optimization object for this problem
-    opt.set_lower_bounds(lb);
-    opt.set_upper_bounds(ub);
-    opt.set_min_objective(wind_obj_func_uv, cap_anc);
-    opt.set_xtol_rel(0.01);
-
-    std::vector<double> x(2);
-
-    // init guess at radar-only DIRTH wind vector and ancillary SSS
-    x[0] = cap_anc->s0_wvc->selected->spd * cos(cap_anc->s0_wvc->selected->dir);
-    x[1] = cap_anc->s0_wvc->selected->spd * sin(cap_anc->s0_wvc->selected->dir);
-
-    // Solve it!
-    double minf;
-    nlopt::result result = opt.optimize(x, minf);
-
-    // Copy outputs
-    *spd = sqrt(x[0]*x[0] + x[1]*x[1]);
-    *dir = atan2(x[1], x[0]);
-    *sss = cap_anc->anc_sss;
-    *min_obj = minf;
-
-    return(1);
-}
-
 
 int main(int argc, char* argv[]) {
 
