@@ -323,8 +323,7 @@ int main(int argc, char* argv[]){
                         new_meas->landFlag += 2; // bit 1 for ice
 
                     // Need to figure out the KP (a, b, c) terms.
-                    new_meas->A = 1.0 + pow(
-                        nedt[ipol][fp_idx]/tb[ipol][fp_idx], 2);
+                    new_meas->A = pow(nedt[ipol][fp_idx], 2);
                     new_meas->B = 0.0;
                     new_meas->C = 0.0;
 
