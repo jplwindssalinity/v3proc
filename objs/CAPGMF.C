@@ -372,15 +372,15 @@ int CAPGMF::_MetToIndex(Meas::MeasTypeE met) {
 }
 
 int CAPGMF::_IsPassive(Meas::MeasTypeE met) {
-    if(met == Meas::L_BAND_TBV_MEAS_TYPE && met == Meas::L_BAND_TBH_MEAS_TYPE)
+    if(met == Meas::L_BAND_TBV_MEAS_TYPE || met == Meas::L_BAND_TBH_MEAS_TYPE)
         return(1);
     else
         return(0);
 }
 
 int CAPGMF::_IsActive(Meas::MeasTypeE met) {
-    if(met != Meas::VV_MEAS_TYPE && met != Meas::HH_MEAS_TYPE &&
-       met != Meas::VH_MEAS_TYPE && met != Meas::HV_MEAS_TYPE)
+    if(met == Meas::VV_MEAS_TYPE || met == Meas::HH_MEAS_TYPE &&
+       met == Meas::VH_MEAS_TYPE || met == Meas::HV_MEAS_TYPE)
         return(1);
     else
         return(0);
