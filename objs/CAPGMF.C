@@ -4,7 +4,7 @@
 #include "Array.h"
 #include "Constants.h"
 
-CAPGMF::CAPGMF() :_tbflat(NULL), _erough(NULL) {
+CAPGMF::CAPGMF() :_tbflat(NULL), _erough(NULL), _model_s0(NULL) {
     return;
 }
 
@@ -66,7 +66,6 @@ float CAPGMF::ObjectiveFunctionActive(
     }
     return(obj);
 }
-
 
 int CAPGMF::GetModelS0(
         Meas::MeasTypeE met, float inc_in, float spd, float dir_in, float swh,
