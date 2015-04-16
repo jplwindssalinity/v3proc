@@ -235,6 +235,7 @@ int main(int argc, char* argv[]) {
     char* tb_rough_file = config_list.Get(TB_ROUGH_MODEL_FILE_KEYWORD);
     char* anc_sss_file = config_list.Get(ANC_SSS_FILE_KEYWORD);
     char* anc_sst_file = config_list.Get(ANC_SST_FILE_KEYWORD);
+    char* anc_swh_file = config_list.Get(ANC_SWH_FILE_KEYWORD);
 
     // Configure the model functions
     GMF gmf;
@@ -316,6 +317,7 @@ int main(int argc, char* argv[]) {
     // note transposed order as in the E2B files
     float** anc_sss = (float**)make_array(sizeof(float), 2, nati, ncti);
     float** anc_sst = (float**)make_array(sizeof(float), 2, nati, ncti);
+    float** anc_swh = (float**)make_array(sizeof(float), 2, nati, ncti);
 
     FILE* ifp = fopen(anc_sss_file, "r");
     if(!read_array(ifp, &anc_sss[0], sizeof(float), 2, nati, ncti)) {
@@ -327,6 +329,13 @@ int main(int argc, char* argv[]) {
     ifp = fopen(anc_sst_file, "r");
     if(!read_array(ifp, &anc_sst[0], sizeof(float), 2, nati, ncti)) {
         fprintf(stderr, "Error reading ancillary SST file: %s\n", anc_sst_file);
+        exit(1);
+    }
+    fclose(ifp);
+
+    ifp = fopen(anc_swh_file, "r");
+    if(!read_array(ifp, &anc_swh[0], sizeof(float), 2, nati, ncti)) {
+        fprintf(stderr, "Error reading ancillary SWH file: %s\n", anc_swh_file);
         exit(1);
     }
     fclose(ifp);
@@ -357,7 +366,7 @@ int main(int argc, char* argv[]) {
 
             double this_anc_sss = (double)anc_sss[ati][cti];
             double this_anc_sst = (double)anc_sst[ati][cti];
-            double this_anc_swh = -9999;
+            double this_anc_swh = (double)anc_swh[ati][cti];
             double this_anc_rr = -9999;
 
             if(this_anc_sss<0 || this_anc_sst<-10)
@@ -442,6 +451,7 @@ int main(int argc, char* argv[]) {
     free_array(cap_flg, 2, ncti, nati);
     free_array(anc_sss, 2, nati, ncti);
     free_array(anc_sst, 2, nati, ncti);
+    free_array(anc_swh, 2, nati, ncti);
 
     return(0);
 }
