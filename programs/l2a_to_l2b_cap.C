@@ -314,31 +314,9 @@ int main(int argc, char* argv[]) {
     unsigned char** cap_flg = (unsigned char**)make_array(
         sizeof(unsigned char), 2, ncti, nati);
 
-    // note transposed order as in the E2B files
-    float** anc_sss = (float**)make_array(sizeof(float), 2, nati, ncti);
-    float** anc_sst = (float**)make_array(sizeof(float), 2, nati, ncti);
-    float** anc_swh = (float**)make_array(sizeof(float), 2, nati, ncti);
-
-    FILE* ifp = fopen(anc_sss_file, "r");
-    if(!read_array(ifp, &anc_sss[0], sizeof(float), 2, nati, ncti)) {
-        fprintf(stderr, "Error reading ancillary SSS file: %s\n", anc_sss_file);
-        exit(1);
-    }
-    fclose(ifp);
-
-    ifp = fopen(anc_sst_file, "r");
-    if(!read_array(ifp, &anc_sst[0], sizeof(float), 2, nati, ncti)) {
-        fprintf(stderr, "Error reading ancillary SST file: %s\n", anc_sst_file);
-        exit(1);
-    }
-    fclose(ifp);
-
-    ifp = fopen(anc_swh_file, "r");
-    if(!read_array(ifp, &anc_swh[0], sizeof(float), 2, nati, ncti)) {
-        fprintf(stderr, "Error reading ancillary SWH file: %s\n", anc_swh_file);
-        exit(1);
-    }
-    fclose(ifp);
+    CAP_ANC_L2B anc_sss(anc_sss_file);
+    CAP_ANC_L2B anc_sst(anc_sst_file);
+    CAP_ANC_L2B anc_swh(anc_swh_file);
 
     for(int ati=0; ati<nati; ++ati) {
         if(ati%100 == 0)
@@ -364,9 +342,9 @@ int main(int argc, char* argv[]) {
             MeasList* tb_ml = &(l2a_tb_swath[cti][ati]->measList);
             MeasList* s0_ml = &(l2a_s0_swath[cti][ati]->measList);
 
-            double this_anc_sss = (double)anc_sss[ati][cti];
-            double this_anc_sst = (double)anc_sst[ati][cti];
-            double this_anc_swh = (double)anc_swh[ati][cti];
+            double this_anc_sss = (double)anc_sss.data[ati][cti];
+            double this_anc_sst = (double)anc_sst.data[ati][cti];
+            double this_anc_swh = (double)anc_swh.data[ati][cti];
             double this_anc_rr = -9999;
 
             if(this_anc_sss<0 || this_anc_sst<-10)
@@ -449,9 +427,6 @@ int main(int argc, char* argv[]) {
     free_array(cap_dir, 2, ncti, nati);
     free_array(cap_sss, 2, ncti, nati);
     free_array(cap_flg, 2, ncti, nati);
-    free_array(anc_sss, 2, nati, ncti);
-    free_array(anc_sst, 2, nati, ncti);
-    free_array(anc_swh, 2, nati, ncti);
 
     return(0);
 }
