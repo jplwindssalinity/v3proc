@@ -4,6 +4,56 @@
 #include "Array.h"
 #include "Constants.h"
 
+CAP_ANC_L1B::CAP_ANC_L1B(const char* filename) : data(NULL) {
+    Read(filename);
+    return;
+}
+
+CAP_ANC_L1B::~CAP_ANC_L1B() {
+    if(data)
+        free_array((void*)data, 2, nframes, nfootprints);
+
+    return;
+}
+
+int CAP_ANC_L1B::Read(const char* filename) {
+    FILE* ifp = fopen(filename, "r");
+    fread(&nframes, sizeof(int), 1, ifp);
+    fread(&nfootprints, sizeof(int), 1, ifp);
+    data = (float**)make_array(sizeof(float), 2, nframes, nfootprints);
+    if(!data) {
+        fclose(ifp);
+        return(0);
+    }
+    read_array(ifp, &data[0], sizeof(float), 2, nframes, nfootprints);
+    fclose(ifp);
+    return(1);
+}
+
+CAP_ANC_L2B::CAP_ANC_L2B(const char* filename) : data(NULL) {
+    Read(filename);
+    return;
+}
+
+CAP_ANC_L2B::~CAP_ANC_L2B() {
+    if(data)
+        free_array((void*)data, 2, nati, ncti);
+
+    return;
+}
+
+int CAP_ANC_L2B::Read(const char* filename) {
+
+    data = (float**)make_array(sizeof(float), 2, nati, ncti);
+    if(!data)
+        return(0);
+
+    FILE* ifp = fopen(filename, "r");
+    read_array(ifp, &data[0], sizeof(float), 2, nati, ncti);
+    fclose(ifp);
+    return(1);
+}
+
 CAPGMF::CAPGMF() :_tbflat(NULL), _erough(NULL), _model_s0(NULL) {
     return;
 }

@@ -1,6 +1,32 @@
 #include "Meas.h"
 #include "Array.h"
 
+class CAP_ANC_L1B {
+public:
+    CAP_ANC_L1B(const char* filename);
+    ~CAP_ANC_L1B();
+
+    int Read(const char* filename);
+
+    int nframes;
+    int nfootprints;
+
+    float** data;
+};
+
+class CAP_ANC_L2B {
+public:
+    CAP_ANC_L2B(const char* filename);
+    ~CAP_ANC_L2B();
+
+    int Read(const char* filename);
+
+    static const int nati = 3248;
+    static const int ncti = 152;
+
+    float** data;
+};
+
 class CAPGMF {
 public:
     CAPGMF();
