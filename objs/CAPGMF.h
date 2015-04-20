@@ -10,8 +10,9 @@ public:
 
     int nframes;
     int nfootprints;
+    int narrays;
 
-    float** data;
+    float*** data;
 };
 
 class CAP_ANC_L2B {
@@ -23,8 +24,9 @@ public:
 
     static const int nati = 3248;
     static const int ncti = 152;
+    int narrays;
 
-    float** data;
+    float*** data;
 };
 
 class CAPGMF {

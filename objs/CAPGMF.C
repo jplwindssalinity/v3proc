@@ -11,21 +11,37 @@ CAP_ANC_L1B::CAP_ANC_L1B(const char* filename) : data(NULL) {
 
 CAP_ANC_L1B::~CAP_ANC_L1B() {
     if(data)
-        free_array((void*)data, 2, nframes, nfootprints);
+        free_array((void*)data, 3, nframes, nfootprints, narrays);
 
     return;
 }
 
 int CAP_ANC_L1B::Read(const char* filename) {
     FILE* ifp = fopen(filename, "r");
+    fseek(ifp, 0, SEEK_END);
+    size_t file_size = ftell(ifp);
+    fseek(ifp, 0, SEEK_SET);
     fread(&nframes, sizeof(int), 1, ifp);
     fread(&nfootprints, sizeof(int), 1, ifp);
-    data = (float**)make_array(sizeof(float), 2, nframes, nfootprints);
+
+    narrays = (file_size-4*2)/(nframes*nfootprints*4);
+    if(file_size-4*2 != narrays*nframes*nfootprints*4) {
+        fprintf(
+            stderr, "CAP_ANC_L1B::Read: Unexpected file size in %s\n",
+            filename);
+        fclose(ifp);
+        return(0);
+    }
+
+    data = (float***)make_array(
+        sizeof(float), 3, nframes, nfootprints, narrays);
     if(!data) {
         fclose(ifp);
         return(0);
     }
-    read_array(ifp, &data[0], sizeof(float), 2, nframes, nfootprints);
+
+    read_array(
+        ifp, &data[0], sizeof(float), 3, nframes, nfootprints, narrays);
     fclose(ifp);
     return(1);
 }
@@ -37,19 +53,34 @@ CAP_ANC_L2B::CAP_ANC_L2B(const char* filename) : data(NULL) {
 
 CAP_ANC_L2B::~CAP_ANC_L2B() {
     if(data)
-        free_array((void*)data, 2, nati, ncti);
+        free_array((void*)data, 3, nati, ncti, narrays);
 
     return;
 }
 
 int CAP_ANC_L2B::Read(const char* filename) {
 
-    data = (float**)make_array(sizeof(float), 2, nati, ncti);
-    if(!data)
-        return(0);
-
     FILE* ifp = fopen(filename, "r");
-    read_array(ifp, &data[0], sizeof(float), 2, nati, ncti);
+    fseek(ifp, 0, SEEK_END);
+    size_t file_size = ftell(ifp);
+    fseek(ifp, 0, SEEK_SET);
+
+    narrays = file_size/(4*nati*ncti);
+    if(file_size != 4*nati*ncti*narrays) {
+        fprintf(
+            stderr, "CAP_ANC_L1B::Read: Unexpected file size in %s\n",
+            filename);
+        fclose(ifp);
+        return(0);
+    }
+
+    data = (float***)make_array(sizeof(float), 3, nati, ncti, narrays);
+    if(!data) {
+        fclose(ifp);
+        return(0);
+    }
+
+    read_array(ifp, &data[0], sizeof(float), 3, nati, ncti, narrays);
     fclose(ifp);
     return(1);
 }

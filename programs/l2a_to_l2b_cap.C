@@ -342,9 +342,9 @@ int main(int argc, char* argv[]) {
             MeasList* tb_ml = &(l2a_tb_swath[cti][ati]->measList);
             MeasList* s0_ml = &(l2a_s0_swath[cti][ati]->measList);
 
-            double this_anc_sss = (double)anc_sss.data[ati][cti];
-            double this_anc_sst = (double)anc_sst.data[ati][cti];
-            double this_anc_swh = (double)anc_swh.data[ati][cti];
+            double this_anc_sss = (double)anc_sss.data[ati][cti][0];
+            double this_anc_sst = (double)anc_sst.data[ati][cti][0];
+            double this_anc_swh = (double)anc_swh.data[ati][cti][0];
             double this_anc_rr = -9999;
 
             if(this_anc_sss<0 || this_anc_sst<-10)
