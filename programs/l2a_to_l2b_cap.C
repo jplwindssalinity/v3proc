@@ -425,11 +425,7 @@ int main(int argc, char* argv[]) {
             cap_anc.anc_swh = this_anc_swh;
             cap_anc.anc_rr = this_anc_rr;
 
-//             retrieve_wind(
-//                 &cap_anc, &this_cap_spd,
-//                 &this_cap_dir, &this_cap_sss, &min_obj);
-
-            retrieve_wind_uv(
+            retrieve_wind(
                 &cap_anc, &this_cap_spd,
                 &this_cap_dir, &this_cap_sss, &min_obj);
 
