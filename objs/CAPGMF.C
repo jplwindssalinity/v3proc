@@ -96,6 +96,113 @@ CAPGMF::~CAPGMF() {
     return;
 }
 
+int CAPGMF::Retrieve(
+    MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, float anc_sst, float anc_sss,
+    float anc_swh, float anc_rr, CAPRetrievalMode mode, float* spd, float* dir,
+    float* sss, float* obj) {
+ 
+    int n_dims;
+    switch(mode) {
+        case RETRIEVE_SPEED_ONLY:
+            n_dims = 1;
+            break;
+
+        case RETRIEVE_SPEED_DIRECTION:
+            n_dims = 2;
+            break;
+
+        case RETRIEVE_SPEED_DIRECTION_SALINITY:
+            n_dims = 3;
+            break;
+
+        default:
+            fprintf(stderr, "CAPGMF::Retrieve: Unknown CAPRetrievalMode: %d\n",
+                    mode);
+            return(0);
+            break;
+    }
+
+    // Construct the optimization object
+    nlopt::opt opt(nlopt::LN_COBYLA, n_dims);
+
+    // Check bounds on initial guesses
+    double init_spd = (double)s0_wvc->selected->spd;
+    if(init_spd<0.5) init_spd = 0.5;
+    if(init_spd>50) init_spd = 50;
+
+    double init_dir = (double)s0_wvc->selected->dir;
+    while(init_dir>two_pi) init_dir -= two_pi;
+    while(init_dir<0) init_dir += two_pi;
+
+    double init_sss = (double)anc_sss;
+    if(init_sss<30) init_sss = 30;
+    if(init_sss>40) init_sss = 40;
+
+    // Set contraints and initial guesses
+    std::vector<double> lb(n_dims), ub(n_dims), x(n_dims);
+
+    if(mode == RETRIEVE_SPEED_ONLY) {
+        lb[0] = 0; ub[0] = 100;
+        x[0] = init_spd;
+
+    } else if (mode == RETRIEVE_SPEED_DIRECTION) {
+        lb[0] = 0; ub[0] = 100;
+        lb[1] = 0; ub[1] = two_pi;
+
+        x[0] = init_spd;
+        x[1] = init_dir;
+
+    } else if (mode == RETRIEVE_SPEED_DIRECTION_SALINITY) {
+        lb[0] = 0; ub[0] = 100;
+        lb[1] = 0; ub[1] = two_pi;
+        lb[2] = 28; ub[2] = 42; // salinity
+
+        x[0] = init_spd;
+        x[1] = init_dir;
+        x[2] = init_sss;
+    }
+
+    CAPAncillary cap_anc;
+    cap_anc.tb_ml = tb_ml;
+    cap_anc.s0_ml = s0_ml;
+    cap_anc.s0_wvc = s0_wvc;
+    cap_anc.cap_gmf = this;
+    cap_anc.anc_sst = anc_sst;
+    cap_anc.anc_sss = anc_sss;
+    cap_anc.anc_swh = anc_swh;
+    cap_anc.anc_rr = anc_rr;
+    cap_anc.mode = mode;
+
+    // Config the optimization object for this problem
+    opt.set_lower_bounds(lb);
+    opt.set_upper_bounds(ub);
+    opt.set_min_objective(cap_obj_func, &cap_anc);
+    opt.set_xtol_rel(0.01);
+
+    // Solve it!
+    double minf;
+    nlopt::result result = opt.optimize(x, minf);
+
+    // Copy outputs
+    *obj = (float)minf;
+
+    if(mode == RETRIEVE_SPEED_ONLY) {
+        *spd = (float)x[0];
+        *dir = s0_wvc->selected->dir;
+        *sss = anc_sss;
+
+    } else if(mode == RETRIEVE_SPEED_DIRECTION) {
+        *spd = (float)x[0];
+        *dir = (float)x[1];
+        *sss = anc_sss;
+
+    } else if(mode == RETRIEVE_SPEED_DIRECTION_SALINITY) {
+        *spd = (float)x[0];
+        *dir = (float)x[1];
+        *sss = (float)x[2];
+    }
+    return(1);
+}
 float CAPGMF::ObjectiveFunctionCAP(
     MeasList* tb_ml, MeasList* s0_ml, float trial_spd, float trial_dir,
     float trial_sss, float anc_swh, float anc_sst, float active_weight,
@@ -526,6 +633,7 @@ int CAPGMF::_Deallocate() {
 }
 
 double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
+    // Need this call structure for NLopt library call
 
     CAPAncillary* cap_anc = (CAPAncillary*)data;
 
@@ -550,79 +658,3 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
 
     return(obj);
 }
-
-int retrieve_cap(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
-                 double* min_obj) {
-
-    int n_dims = cap_anc->mode + 1;
-
-    // Construct the optimization object
-    nlopt::opt opt(nlopt::LN_COBYLA, n_dims);
-
-    // Check bounds on initial guesses
-    double init_spd = cap_anc->s0_wvc->selected->spd;
-    if(init_spd<0.5) init_spd = 0.5;
-    if(init_spd>50) init_spd = 50;
-
-    double init_dir = cap_anc->s0_wvc->selected->dir;
-    while(init_dir>two_pi) init_dir -= two_pi;
-    while(init_dir<0) init_dir += two_pi;
-
-    double init_sss = cap_anc->anc_sss;
-    if(init_sss<30) init_sss = 30;
-    if(init_sss>40) init_sss = 40;
-
-    // Set contraints and initial guesses
-    std::vector<double> lb(n_dims), ub(n_dims), x(n_dims);
-    if(cap_anc->mode == CAPGMF::SPEED_ONLY) {
-        lb[0] = 0; ub[0] = 100;
-        x[0] = init_spd;
-
-    } else if (cap_anc->mode == CAPGMF::SPEED_DIRECTION) {
-        lb[0] = 0; ub[0] = 100;
-        lb[1] = 0; ub[1] = two_pi;
-
-        x[0] = init_spd;
-        x[1] = init_dir;
-
-    } else if (cap_anc->mode == CAPGMF::SPEED_DIRECTION_SALINITY) {
-        lb[0] = 0; ub[0] = 100;
-        lb[1] = 0; ub[1] = two_pi;
-        lb[2] = 28; ub[2] = 42; // salinity
-
-        x[0] = init_spd;
-        x[1] = init_dir;
-        x[2] = init_sss;
-    }
-
-    // Config the optimization object for this problem
-    opt.set_lower_bounds(lb);
-    opt.set_upper_bounds(ub);
-    opt.set_min_objective(cap_obj_func, cap_anc);
-    opt.set_xtol_rel(0.01);
-
-    // Solve it!
-    double minf;
-    nlopt::result result = opt.optimize(x, minf);
-
-    // Copy outputs
-    *min_obj = minf;
-
-    if(cap_anc->mode == CAPGMF::SPEED_ONLY) {
-        *spd = x[0];
-        *dir = cap_anc->s0_wvc->selected->dir;
-        *sss = cap_anc->anc_sss;
-
-    } else if(cap_anc->mode == CAPGMF::SPEED_DIRECTION) {
-        *spd = x[0];
-        *dir = x[1];
-        *sss = cap_anc->anc_sss;
-
-    } else if(cap_anc->mode == CAPGMF::SPEED_DIRECTION_SALINITY) {
-        *spd = x[0];
-        *dir = x[1];
-        *sss = x[2];
-    }
-    return(1);
-}
-

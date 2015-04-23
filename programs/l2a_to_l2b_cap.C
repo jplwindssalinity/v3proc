@@ -192,29 +192,19 @@ int main(int argc, char* argv[]) {
             MeasList* tb_ml = &(l2a_tb_swath[cti][ati]->measList);
             MeasList* s0_ml = &(l2a_s0_swath[cti][ati]->measList);
 
-            double this_anc_sss = (double)anc_sss.data[ati][cti][0];
-            double this_anc_sst = (double)anc_sst.data[ati][cti][0];
-            double this_anc_swh = (double)anc_swh.data[ati][cti][0];
-            double this_anc_rr = -9999;
+            float this_anc_sss = anc_sss.data[ati][cti][0];
+            float this_anc_sst = anc_sst.data[ati][cti][0];
+            float this_anc_swh = anc_swh.data[ati][cti][0];
+            float this_anc_rr = -9999;
 
             if(this_anc_sss<0 || this_anc_sst<-10)
                 continue;
 
-            double this_cap_spd, this_cap_dir, this_cap_sss, min_obj;
+            float this_cap_spd, this_cap_dir, this_cap_sss, min_obj;
 
-            CAPAncillary cap_anc;
-            cap_anc.tb_ml = tb_ml;
-            cap_anc.s0_ml = s0_ml;
-            cap_anc.s0_wvc = s0_wvc;
-            cap_anc.cap_gmf = &cap_gmf;
-            cap_anc.anc_sst = this_anc_sst;
-            cap_anc.anc_sss = this_anc_sss;
-            cap_anc.anc_swh = this_anc_swh;
-            cap_anc.anc_rr = this_anc_rr;
-            cap_anc.mode = CAPGMF::SPEED_DIRECTION;
-
-            retrieve_cap(
-                &cap_anc, &this_cap_spd,
+            cap_gmf.Retrieve(
+                tb_ml, s0_ml, s0_wvc, this_anc_sst, this_anc_sss, this_anc_swh,
+                this_anc_rr, CAPGMF::RETRIEVE_SPEED_ONLY, &this_cap_spd,
                 &this_cap_dir, &this_cap_sss, &min_obj);
 
             // switch back to clockwise from noth convention, to degrees, and wrap
@@ -240,9 +230,9 @@ int main(int argc, char* argv[]) {
 //                 radar_only_dir, this_cap_spd, this_cap_dir);
 
             // insert some QA here to set cap_flag???
-            cap_spd[cti][ati] = (float)this_cap_spd;
-            cap_dir[cti][ati] = (float)this_cap_dir;
-            cap_sss[cti][ati] = (float)this_cap_sss;
+            cap_spd[cti][ati] = this_cap_spd;
+            cap_dir[cti][ati] = this_cap_dir;
+            cap_sss[cti][ati] = this_cap_sss;
         }
     }
 

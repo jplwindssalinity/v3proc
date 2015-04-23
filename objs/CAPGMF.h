@@ -38,6 +38,10 @@ public:
     CAPGMF();
     ~CAPGMF();
 
+    enum CAPRetrievalMode {
+        RETRIEVE_SPEED_ONLY, RETRIEVE_SPEED_DIRECTION,
+        RETRIEVE_SPEED_DIRECTION_SALINITY};
+
     int ReadFlat(const char* filename);
     int ReadRough(const char* filename);
     int ReadModelS0(const char* filename);
@@ -69,9 +73,10 @@ public:
         Meas::MeasTypeE met, float inc, float sst, float sss, float spd,
         float dir, float swh, float* tb);
 
-    enum CAPRetrievalMode {
-        SPEED_ONLY, SPEED_DIRECTION, SPEED_DIRECTION_SALINITY};
-
+    int Retrieve(
+        MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, float anc_sst,
+        float anc_sss, float anc_swh, float anc_rr, CAPRetrievalMode mode,
+        float* spd, float* dir, float* sss, float* obj);
 
 protected:
 
@@ -133,9 +138,7 @@ typedef struct {
     CAPGMF::CAPRetrievalMode mode;
 } CAPAncillary;
 
+// For NLopt
 double cap_obj_func(unsigned n, const double* x, double* grad, void* data);
-
-int retrieve_cap(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
-                 double* min_obj);
 
 #endif
