@@ -98,8 +98,8 @@ CAPGMF::~CAPGMF() {
 
 int CAPGMF::Retrieve(
     MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, float anc_sst, float anc_sss,
-    float anc_swh, float anc_rr, CAPRetrievalMode mode, float* spd, float* dir,
-    float* sss, float* obj) {
+    float anc_swh, float anc_rr, float active_weight, float passive_weight,
+    CAPRetrievalMode mode, float* spd, float* dir, float* sss, float* obj) {
  
     int n_dims;
     switch(mode) {
@@ -655,8 +655,8 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
         trial_sss = (float)x[2];
     }
 
-    float active_weight = 1;
-    float passive_weight = 1;
+    float active_weight = (float)cap_anc->active_weight;
+    float passive_weight = (float)cap_anc->passive_weight;
 
     if(trial_spd!=trial_spd || trial_dir!=trial_dir || trial_sss!=trial_sss)
         return HUGE_VAL;

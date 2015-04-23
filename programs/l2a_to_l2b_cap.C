@@ -202,10 +202,14 @@ int main(int argc, char* argv[]) {
 
             float this_cap_spd, this_cap_dir, this_cap_sss, min_obj;
 
+            float active_weight = 1;
+            float passive_weight = 1;
+
             cap_gmf.Retrieve(
                 tb_ml, s0_ml, s0_wvc, this_anc_sst, this_anc_sss, this_anc_swh,
-                this_anc_rr, CAPGMF::RETRIEVE_SPEED_ONLY, &this_cap_spd,
-                &this_cap_dir, &this_cap_sss, &min_obj);
+                this_anc_rr, active_weight, passive_weight,
+                CAPGMF::RETRIEVE_SPEED_ONLY, &this_cap_spd, &this_cap_dir,
+                &this_cap_sss, &min_obj);
 
             // switch back to clockwise from noth convention, to degrees, and wrap
             float radar_only_dir = 450.0 - rtd * s0_wvc->selected->dir;

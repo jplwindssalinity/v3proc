@@ -75,8 +75,9 @@ public:
 
     int Retrieve(
         MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, float anc_sst,
-        float anc_sss, float anc_swh, float anc_rr, CAPRetrievalMode mode,
-        float* spd, float* dir, float* sss, float* obj);
+        float anc_sss, float anc_swh, float anc_rr, float active_weight,
+        float passive_weight, CAPRetrievalMode mode, float* spd, float* dir,
+        float* sss, float* obj);
 
 protected:
 
@@ -135,6 +136,8 @@ typedef struct {
     double anc_sss;
     double anc_swh;
     double anc_rr;
+    double active_weight;
+    double passive_weight;
     CAPGMF::CAPRetrievalMode mode;
 } CAPAncillary;
 
