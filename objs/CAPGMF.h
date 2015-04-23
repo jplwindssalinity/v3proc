@@ -1,4 +1,8 @@
+#ifndef CAPGMF_H
+#define CAPGMF_H
+
 #include "Meas.h"
+#include "Wind.h"
 #include "Array.h"
 
 class CAP_ANC_L1B {
@@ -111,3 +115,25 @@ protected:
     float***** _erough;
     float***** _model_s0;
 };
+
+enum CAPRetrievalMode {SPEED_ONLY, SPEED_DIRECTION, SPEED_DIRECTION_SALINITY};
+
+// For use with NLopt
+typedef struct {
+    MeasList* tb_ml;
+    MeasList* s0_ml;
+    WVC* s0_wvc;
+    CAPGMF* cap_gmf;
+    double anc_sst;
+    double anc_sss;
+    double anc_swh;
+    double anc_rr;
+    CAPRetrievalMode mode;
+} CAPAncillary;
+
+double cap_obj_func(unsigned n, const double* x, double* grad, void* data);
+
+int retrieve_cap(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
+                 double* min_obj);
+
+#endif

@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <nlopt.hpp>
 #include "List.h"
 #include "BufferedList.h"
 #include "Misc.h"
@@ -63,155 +62,6 @@ template class std::map<string,string,Options::ltstr>;
 //--------------//
 // MAIN PROGRAM //
 //--------------//
-
-// For use with NLopt
-typedef struct {
-    MeasList* tb_ml;
-    MeasList* s0_ml;
-    WVC* s0_wvc;
-    GMF* gmf;
-    Kp* kp;
-    CAPGMF* cap_gmf;
-    double anc_sst;
-    double anc_sss;
-    double anc_swh;
-    double anc_rr;
-} CAPAncillary;
-
-// For use with NLopt
-double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
-
-    // optimization variables
-    float trial_spd = (float)x[0];
-    float trial_dir = (float)x[1];
-    float trial_sss = (float)x[2];
-
-    float active_weight = 1;
-    float passive_weight = 1;
-
-    if(trial_spd!=trial_spd || trial_dir!=trial_dir || trial_sss!=trial_sss)
-        return HUGE_VAL;
-
-    CAPAncillary* cap_anc = (CAPAncillary*)data;
-
-    double obj = cap_anc->cap_gmf->ObjectiveFunctionCAP(
-        cap_anc->tb_ml, cap_anc->s0_ml, trial_spd, trial_dir, trial_sss,
-        cap_anc->anc_swh, cap_anc->anc_sst, active_weight, passive_weight);
-
-    return(obj);
-}
-
-int retrieve_cap(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
-                 double* min_obj) {
-
-    // Construct the optimization object
-    nlopt::opt opt(nlopt::LN_COBYLA, 3);
-
-    // Set contraints
-    std::vector<double> lb(3), ub(3);
-
-    lb[0] = 0; ub[0] = 100; // wind speed
-    lb[1] = 0; ub[1] = two_pi; // wind direction
-    lb[2] = 28; ub[2] = 42; // salinity
-
-    // Config the optimization object for this problem
-    opt.set_lower_bounds(lb);
-    opt.set_upper_bounds(ub);
-    opt.set_min_objective(cap_obj_func, cap_anc);
-    opt.set_xtol_rel(0.01);
-
-    std::vector<double> x(3);
-
-    // init guess at radar-only DIRTH wind vector and ancillary SSS
-    x[0] = cap_anc->s0_wvc->selected->spd;
-    x[1] = cap_anc->s0_wvc->selected->dir;
-    x[2] = cap_anc->anc_sss;
-
-    if(x[0]<0.5) x[0] = 0.5;
-    if(x[0]>50) x[0] = 50;
-
-    while(x[1]>two_pi) x[1] -= two_pi;
-    while(x[1]<0) x[1] += two_pi;
-
-    if(x[2]<30) x[2] = 30;
-    if(x[2]>40) x[2] = 40;
-
-    // Solve it!
-    double minf;
-    nlopt::result result = opt.optimize(x, minf);
-
-    // Copy outputs
-    *spd = x[0];
-    *dir = x[1];
-    *sss = x[2];
-    *min_obj = minf;
-
-    return(1);
-}
-
-double wind_obj_func(unsigned n, const double* x, double* grad, void* data) {
-
-    // optimization variables
-    float trial_spd = (float)x[0];
-    float trial_dir = (float)x[1];
-
-    float active_weight = 1;
-    float passive_weight = 1;
-
-    if(trial_spd!=trial_spd || trial_dir!=trial_dir)
-        return HUGE_VAL;
-
-    CAPAncillary* cap_anc = (CAPAncillary*)data;
-
-    double obj = cap_anc->cap_gmf->ObjectiveFunctionCAP(
-        cap_anc->tb_ml, cap_anc->s0_ml, trial_spd, trial_dir, cap_anc->anc_sss,
-        cap_anc->anc_swh, cap_anc->anc_sst, active_weight, passive_weight);
-
-    return(obj);
-}
-
-int retrieve_wind(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
-                  double* min_obj) {
-
-    // Construct the optimization object
-    nlopt::opt opt(nlopt::LN_COBYLA, 2);
-
-    // Set contraints
-    std::vector<double> lb(2), ub(2);
-
-    lb[0] = 0; ub[0] = 100; // wind speed
-    lb[1] = 0; ub[1] = two_pi; // wind direction
-
-    // Config the optimization object for this problem
-    opt.set_lower_bounds(lb);
-    opt.set_upper_bounds(ub);
-    opt.set_min_objective(wind_obj_func, cap_anc);
-    opt.set_xtol_rel(0.01);
-
-    std::vector<double> x(2);
-
-    // init guess at radar-only DIRTH wind vector and ancillary SSS
-    x[0] = cap_anc->s0_wvc->selected->spd;
-    x[1] = cap_anc->s0_wvc->selected->dir;
-
-    if(x[0]<0.5) x[0] = 0.5;
-    if(x[0]>50) x[0] = 50;
-
-    while(x[1]>two_pi) x[1] -= two_pi;
-    while(x[1]<0) x[1] += two_pi;
-
-    // Solve it!
-    double minf;
-    nlopt::result result = opt.optimize(x, minf);
-
-    // Copy outputs
-    *spd = x[0];
-    *dir = x[1];
-    *sss = cap_anc->anc_sss;
-    *min_obj = minf;
-
-    return(1);
-}
 
 int main(int argc, char* argv[]) {
 
@@ -356,21 +206,16 @@ int main(int argc, char* argv[]) {
             cap_anc.tb_ml = tb_ml;
             cap_anc.s0_ml = s0_ml;
             cap_anc.s0_wvc = s0_wvc;
-            cap_anc.gmf = &gmf;
-            cap_anc.kp = &kp;
             cap_anc.cap_gmf = &cap_gmf;
             cap_anc.anc_sst = this_anc_sst;
             cap_anc.anc_sss = this_anc_sss;
             cap_anc.anc_swh = this_anc_swh;
             cap_anc.anc_rr = this_anc_rr;
+            cap_anc.mode = SPEED_DIRECTION;
 
-            retrieve_wind(
+            retrieve_cap(
                 &cap_anc, &this_cap_spd,
                 &this_cap_dir, &this_cap_sss, &min_obj);
-
-//             retrieve_cap(
-//                 &cap_anc, &this_cap_spd,
-//                 &this_cap_dir, &this_cap_sss, &min_obj);
 
             // switch back to clockwise from noth convention, to degrees, and wrap
             float radar_only_dir = 450.0 - rtd * s0_wvc->selected->dir;
