@@ -203,6 +203,7 @@ int CAPGMF::Retrieve(
     }
     return(1);
 }
+
 float CAPGMF::ObjectiveFunctionCAP(
     MeasList* tb_ml, MeasList* s0_ml, float trial_spd, float trial_dir,
     float trial_sss, float anc_swh, float anc_sst, float active_weight,
@@ -637,14 +638,22 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
 
     CAPAncillary* cap_anc = (CAPAncillary*)data;
 
-    float trial_spd = (float)x[0];
-    float trial_dir = cap_anc->s0_wvc->selected->dir;
-    float trial_sss = cap_anc->anc_sss;
+    float trial_spd, trial_dir, trial_sss;
+    if(cap_anc->mode == CAPGMF::RETRIEVE_SPEED_ONLY) {
+        trial_spd = (float)x[0];
+        trial_dir = cap_anc->s0_wvc->selected->dir;
+        trial_sss = cap_anc->anc_sss;
 
-    if(cap_anc->mode>0)
+    } else if(cap_anc->mode == CAPGMF::RETRIEVE_SPEED_DIRECTION) {
+        trial_spd = (float)x[0];
         trial_dir = (float)x[1];
-    if(cap_anc->mode>1)
+        trial_sss = cap_anc->anc_sss;
+
+    } else if(cap_anc->mode == CAPGMF::RETRIEVE_SPEED_DIRECTION_SALINITY) {
+        trial_spd = (float)x[0];
+        trial_dir = (float)x[1];
         trial_sss = (float)x[2];
+    }
 
     float active_weight = 1;
     float passive_weight = 1;
@@ -652,7 +661,7 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
     if(trial_spd!=trial_spd || trial_dir!=trial_dir || trial_sss!=trial_sss)
         return HUGE_VAL;
 
-    double obj = cap_anc->cap_gmf->ObjectiveFunctionCAP(
+    double obj = (double)cap_anc->cap_gmf->ObjectiveFunctionCAP(
         cap_anc->tb_ml, cap_anc->s0_ml, trial_spd, trial_dir, trial_sss,
         cap_anc->anc_swh, cap_anc->anc_sst, active_weight, passive_weight);
 
