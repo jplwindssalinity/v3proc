@@ -69,6 +69,10 @@ public:
         Meas::MeasTypeE met, float inc, float sst, float sss, float spd,
         float dir, float swh, float* tb);
 
+    enum CAPRetrievalMode {
+        SPEED_ONLY, SPEED_DIRECTION, SPEED_DIRECTION_SALINITY};
+
+
 protected:
 
     int _AllocateFlat();
@@ -116,8 +120,6 @@ protected:
     float***** _model_s0;
 };
 
-enum CAPRetrievalMode {SPEED_ONLY, SPEED_DIRECTION, SPEED_DIRECTION_SALINITY};
-
 // For use with NLopt
 typedef struct {
     MeasList* tb_ml;
@@ -128,7 +130,7 @@ typedef struct {
     double anc_sss;
     double anc_swh;
     double anc_rr;
-    CAPRetrievalMode mode;
+    CAPGMF::CAPRetrievalMode mode;
 } CAPAncillary;
 
 double cap_obj_func(unsigned n, const double* x, double* grad, void* data);

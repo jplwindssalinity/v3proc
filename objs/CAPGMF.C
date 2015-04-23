@@ -574,18 +574,18 @@ int retrieve_cap(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
 
     // Set contraints and initial guesses
     std::vector<double> lb(n_dims), ub(n_dims), x(n_dims);
-    if(cap_anc->mode == SPEED_ONLY) {
+    if(cap_anc->mode == CAPGMF::SPEED_ONLY) {
         lb[0] = 0; ub[0] = 100;
         x[0] = init_spd;
 
-    } else if (cap_anc->mode == SPEED_DIRECTION) {
+    } else if (cap_anc->mode == CAPGMF::SPEED_DIRECTION) {
         lb[0] = 0; ub[0] = 100;
         lb[1] = 0; ub[1] = two_pi;
 
         x[0] = init_spd;
         x[1] = init_dir;
 
-    } else if (cap_anc->mode == SPEED_DIRECTION_SALINITY) {
+    } else if (cap_anc->mode == CAPGMF::SPEED_DIRECTION_SALINITY) {
         lb[0] = 0; ub[0] = 100;
         lb[1] = 0; ub[1] = two_pi;
         lb[2] = 28; ub[2] = 42; // salinity
@@ -608,17 +608,17 @@ int retrieve_cap(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
     // Copy outputs
     *min_obj = minf;
 
-    if(cap_anc->mode == SPEED_ONLY) {
+    if(cap_anc->mode == CAPGMF::SPEED_ONLY) {
         *spd = x[0];
         *dir = cap_anc->s0_wvc->selected->dir;
         *sss = cap_anc->anc_sss;
 
-    } else if(cap_anc->mode == SPEED_DIRECTION) {
+    } else if(cap_anc->mode == CAPGMF::SPEED_DIRECTION) {
         *spd = x[0];
         *dir = x[1];
         *sss = cap_anc->anc_sss;
 
-    } else if(cap_anc->mode == SPEED_DIRECTION_SALINITY) {
+    } else if(cap_anc->mode == CAPGMF::SPEED_DIRECTION_SALINITY) {
         *spd = x[0];
         *dir = x[1];
         *sss = x[2];

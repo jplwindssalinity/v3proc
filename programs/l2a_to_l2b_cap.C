@@ -211,7 +211,7 @@ int main(int argc, char* argv[]) {
             cap_anc.anc_sss = this_anc_sss;
             cap_anc.anc_swh = this_anc_swh;
             cap_anc.anc_rr = this_anc_rr;
-            cap_anc.mode = SPEED_DIRECTION;
+            cap_anc.mode = CAPGMF::SPEED_DIRECTION;
 
             retrieve_cap(
                 &cap_anc, &this_cap_spd,
