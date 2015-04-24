@@ -205,10 +205,12 @@ int main(int argc, char* argv[]) {
             float active_weight = 1;
             float passive_weight = 1;
 
+            this_anc_swh = -9999;
+
             cap_gmf.Retrieve(
                 tb_ml, s0_ml, s0_wvc, this_anc_sst, this_anc_sss, this_anc_swh,
                 this_anc_rr, active_weight, passive_weight,
-                CAPGMF::RETRIEVE_SPEED_DIRECTION, &this_cap_spd, &this_cap_dir,
+                CAPGMF::RETRIEVE_SPEED_ONLY, &this_cap_spd, &this_cap_dir,
                 &this_cap_sss, &min_obj);
 
             // switch back to clockwise from noth convention, to degrees, and wrap
