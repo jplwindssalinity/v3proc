@@ -506,8 +506,8 @@ int CAPGMF::ReadRough(const char*  filename) {
 
 int CAPGMF::ReadModelS0(const char*  filename) {
 
-    if(!_erough)
-        _AllocateRough();
+    if(!_model_s0)
+        _AllocateModelS0();
 
     FILE* ifp = fopen(filename, "r");
 
@@ -569,7 +569,7 @@ int CAPGMF::_IsPassive(Meas::MeasTypeE met) {
 }
 
 int CAPGMF::_IsActive(Meas::MeasTypeE met) {
-    if(met == Meas::VV_MEAS_TYPE || met == Meas::HH_MEAS_TYPE &&
+    if(met == Meas::VV_MEAS_TYPE || met == Meas::HH_MEAS_TYPE ||
        met == Meas::VH_MEAS_TYPE || met == Meas::HV_MEAS_TYPE)
         return(1);
     else
