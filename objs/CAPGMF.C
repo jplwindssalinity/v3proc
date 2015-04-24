@@ -419,8 +419,8 @@ int CAPGMF::_InterpolateTable(
     int iswh0 = floor((swh-_swhMin)/_swhStep);
     if(iswh0<0)
         iswh0 = 0;
-    if(iswh0>_spdCount-2)
-        iswh0 = _spdCount-2;
+    if(iswh0>_swhCount-2)
+        iswh0 = _swhCount-2;
     int iswh1 = iswh0 + 1;
 
     float swh0 = _swhMin + _swhStep*(float)iswh0;
