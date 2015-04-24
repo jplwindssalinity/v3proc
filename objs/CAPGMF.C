@@ -172,12 +172,14 @@ int CAPGMF::Retrieve(
     cap_anc.anc_swh = anc_swh;
     cap_anc.anc_rr = anc_rr;
     cap_anc.mode = mode;
+    cap_anc.active_weight = active_weight;
+    cap_anc.passive_weight = passive_weight;
 
     // Config the optimization object for this problem
     opt.set_lower_bounds(lb);
     opt.set_upper_bounds(ub);
     opt.set_min_objective(cap_obj_func, &cap_anc);
-    opt.set_xtol_rel(0.01);
+    opt.set_xtol_rel(0.0001);
 
     // Solve it!
     double minf;
