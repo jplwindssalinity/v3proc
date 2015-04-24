@@ -7,6 +7,7 @@
 #define L2B_CAP_FILE_KEYWORD "L2B_CAP_FILE"
 #define TB_FLAT_MODEL_FILE_KEYWORD "TB_FLAT_MODEL_FILE"
 #define TB_ROUGH_MODEL_FILE_KEYWORD "TB_ROUGH_MODEL_FILE"
+#define S0_ROUGH_MODEL_FILE_KEYWORD "S0_ROUGH_MODEL_FILE"
 #define ANC_SSS_FILE_KEYWORD "ANC_SSS_FILE"
 #define ANC_SST_FILE_KEYWORD "ANC_SST_FILE"
 #define ANC_SWH_FILE_KEYWORD "ANC_SWH_FILE"
@@ -83,17 +84,16 @@ int main(int argc, char* argv[]) {
     char* l2b_s0_file = config_list.Get(L2B_FILE_KEYWORD);
     char* tb_flat_file = config_list.Get(TB_FLAT_MODEL_FILE_KEYWORD);
     char* tb_rough_file = config_list.Get(TB_ROUGH_MODEL_FILE_KEYWORD);
+    char* s0_rough_file = config_list.Get(S0_ROUGH_MODEL_FILE_KEYWORD);
     char* anc_sss_file = config_list.Get(ANC_SSS_FILE_KEYWORD);
     char* anc_sst_file = config_list.Get(ANC_SST_FILE_KEYWORD);
     char* anc_swh_file = config_list.Get(ANC_SWH_FILE_KEYWORD);
 
     // Configure the model functions
-    GMF gmf;
-    ConfigGMF(&gmf, &config_list);
-
     CAPGMF cap_gmf;
     cap_gmf.ReadFlat(tb_flat_file);
     cap_gmf.ReadRough(tb_rough_file);
+    cap_gmf.ReadModelS0(s0_rough_file);
 
     // Config the Kp object
     Kp kp;
@@ -208,7 +208,7 @@ int main(int argc, char* argv[]) {
             cap_gmf.Retrieve(
                 tb_ml, s0_ml, s0_wvc, this_anc_sst, this_anc_sss, this_anc_swh,
                 this_anc_rr, active_weight, passive_weight,
-                CAPGMF::RETRIEVE_SPEED_ONLY, &this_cap_spd, &this_cap_dir,
+                CAPGMF::RETRIEVE_SPEED_DIRECTION, &this_cap_spd, &this_cap_dir,
                 &this_cap_sss, &min_obj);
 
             // switch back to clockwise from noth convention, to degrees, and wrap
