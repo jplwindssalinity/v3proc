@@ -7,8 +7,10 @@
 #define L2B_CAP_FILE_KEYWORD "L2B_CAP_FILE"
 #define TB_FLAT_MODEL_FILE_KEYWORD "TB_FLAT_MODEL_FILE"
 #define TB_ROUGH_MODEL_FILE_KEYWORD "TB_ROUGH_MODEL_FILE"
+#define S0_ROUGH_MODEL_FILE_KEYWORD "S0_ROUGH_MODEL_FILE"
 #define ANC_SSS_FILE_KEYWORD "ANC_SSS_FILE"
 #define ANC_SST_FILE_KEYWORD "ANC_SST_FILE"
+#define ANC_SWH_FILE_KEYWORD "ANC_SWH_FILE"
 #define FILL_VALUE -9999
 
 //----------//
@@ -19,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <nlopt.hpp>
 #include "List.h"
 #include "BufferedList.h"
 #include "Misc.h"
@@ -63,204 +64,6 @@ template class std::map<string,string,Options::ltstr>;
 // MAIN PROGRAM //
 //--------------//
 
-// For use with NLopt
-typedef struct {
-    MeasList* tb_ml;
-    MeasList* s0_ml;
-    WVC* s0_wvc;
-    GMF* gmf;
-    Kp* kp;
-    CAPGMF* cap_gmf;
-    double anc_sst;
-    double anc_sss;
-    double anc_swh;
-    double anc_rr;
-} CAPAncillary;
-
-// For use with NLopt
-double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
-
-    // optimization variables
-    float trial_spd = (float)x[0];
-    float trial_dir = (float)x[1];
-    float trial_sss = (float)x[2];
-
-    if(trial_spd!=trial_spd || trial_dir!=trial_dir || trial_sss!=trial_sss)
-        return HUGE_VAL;
-
-    CAPAncillary* cap_anc = (CAPAncillary*)data;
-
-    double obj = 0;
-    // Loop over TB observations
-    for(Meas* meas = cap_anc->tb_ml->GetHead(); meas;
-        meas = cap_anc->tb_ml->GetNext()){
-
-        float model_tb;
-        float chi = trial_dir - meas->eastAzimuth + pi;
-
-        cap_anc->cap_gmf->GetTB(
-            meas->measType, meas->incidenceAngle, cap_anc->anc_sst, trial_sss,
-            trial_spd, chi, &model_tb);
-
-        double var = (meas->A-1.0) * model_tb * model_tb;
-        obj += pow(meas->value - model_tb, 2) / var;
-    }
-
-    // Loop over s0 observations
-    for(Meas* meas = cap_anc->s0_ml->GetHead(); meas;
-        meas = cap_anc->s0_ml->GetNext()){
-
-        // Compute model S0 (replace this stub!!!)
-        float model_s0;
-        float chi = trial_dir - meas->eastAzimuth + pi;
-
-        cap_anc->gmf->GetInterpolatedValue(
-            meas->measType, meas->incidenceAngle, trial_spd, chi, &model_s0);
-
-        double var = (meas->A-1.0) * model_s0 * model_s0;
-        obj += 0.16 * pow(meas->value - model_s0, 2) / var;
-    }
-
-    return(obj);
-}
-
-int retrieve_cap(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
-                 double* min_obj) {
-
-    // Construct the optimization object
-    nlopt::opt opt(nlopt::LN_COBYLA, 3);
-
-    // Set contraints
-    std::vector<double> lb(3), ub(3);
-
-    lb[0] = 0; ub[0] = 100; // wind speed
-    lb[1] = 0; ub[1] = two_pi; // wind direction
-    lb[2] = 28; ub[2] = 42; // salinity
-
-    // Config the optimization object for this problem
-    opt.set_lower_bounds(lb);
-    opt.set_upper_bounds(ub);
-    opt.set_min_objective(cap_obj_func, cap_anc);
-    opt.set_xtol_rel(0.01);
-
-    std::vector<double> x(3);
-
-    // init guess at radar-only DIRTH wind vector and ancillary SSS
-    x[0] = cap_anc->s0_wvc->selected->spd;
-    x[1] = cap_anc->s0_wvc->selected->dir;
-    x[2] = cap_anc->anc_sss;
-
-    if(x[0]<0.5) x[0] = 0.5;
-    if(x[0]>50) x[0] = 50;
-
-    while(x[1]>two_pi) x[1] -= two_pi;
-    while(x[1]<0) x[1] += two_pi;
-
-    if(x[2]<30) x[2] = 30;
-    if(x[2]>40) x[2] = 40;
-
-    // Solve it!
-    double minf;
-    nlopt::result result = opt.optimize(x, minf);
-
-    // Copy outputs
-    *spd = x[0];
-    *dir = x[1];
-    *sss = x[2];
-    *min_obj = minf;
-
-    return(1);
-}
-
-double wind_obj_func(unsigned n, const double* x, double* grad, void* data) {
-
-    // optimization variables
-    float trial_spd = (float)x[0];
-    float trial_dir = (float)x[1];
-
-    if(trial_spd!=trial_spd || trial_dir!=trial_dir)
-        return HUGE_VAL;
-
-    CAPAncillary* cap_anc = (CAPAncillary*)data;
-
-    double obj = 0;
-    // Loop over TB observations
-    for(Meas* meas = cap_anc->tb_ml->GetHead(); meas;
-        meas = cap_anc->tb_ml->GetNext()){
-
-        float model_tb;
-        float chi = trial_dir - meas->eastAzimuth + pi;
-
-        cap_anc->cap_gmf->GetTB(
-            meas->measType, meas->incidenceAngle, cap_anc->anc_sst,
-            cap_anc->anc_sss, trial_spd, chi, &model_tb);
-
-        double var = meas->A;
-        obj += pow(meas->value - model_tb, 2) / var;
-    }
-
-    // Loop over s0 observations
-    for(Meas* meas = cap_anc->s0_ml->GetHead(); meas;
-        meas = cap_anc->s0_ml->GetNext()){
-
-        // Compute model S0 (replace this stub!!!)
-        float model_s0;
-        float chi = trial_dir - meas->eastAzimuth + pi;
-
-        cap_anc->gmf->GetInterpolatedValue(
-            meas->measType, meas->incidenceAngle, trial_spd, chi, &model_s0);
-
-        double var = (meas->A-1.0) * model_s0 * model_s0;
-
-        // 0.16 factor cribbed from Aquarius CAP objective function
-        obj += 0.16 * pow(meas->value - model_s0, 2) / var;
-    }
-    return(obj);
-}
-
-int retrieve_wind(CAPAncillary* cap_anc, double* spd, double* dir, double* sss,
-                  double* min_obj) {
-
-    // Construct the optimization object
-    nlopt::opt opt(nlopt::LN_COBYLA, 2);
-
-    // Set contraints
-    std::vector<double> lb(2), ub(2);
-
-    lb[0] = 0; ub[0] = 100; // wind speed
-    lb[1] = 0; ub[1] = two_pi; // wind direction
-
-    // Config the optimization object for this problem
-    opt.set_lower_bounds(lb);
-    opt.set_upper_bounds(ub);
-    opt.set_min_objective(wind_obj_func, cap_anc);
-    opt.set_xtol_rel(0.01);
-
-    std::vector<double> x(2);
-
-    // init guess at radar-only DIRTH wind vector and ancillary SSS
-    x[0] = cap_anc->s0_wvc->selected->spd;
-    x[1] = cap_anc->s0_wvc->selected->dir;
-
-    if(x[0]<0.5) x[0] = 0.5;
-    if(x[0]>50) x[0] = 50;
-
-    while(x[1]>two_pi) x[1] -= two_pi;
-    while(x[1]<0) x[1] += two_pi;
-
-    // Solve it!
-    double minf;
-    nlopt::result result = opt.optimize(x, minf);
-
-    // Copy outputs
-    *spd = x[0];
-    *dir = x[1];
-    *sss = cap_anc->anc_sss;
-    *min_obj = minf;
-
-    return(1);
-}
-
 int main(int argc, char* argv[]) {
 
     const char* command = no_path(argv[0]);
@@ -281,16 +84,16 @@ int main(int argc, char* argv[]) {
     char* l2b_s0_file = config_list.Get(L2B_FILE_KEYWORD);
     char* tb_flat_file = config_list.Get(TB_FLAT_MODEL_FILE_KEYWORD);
     char* tb_rough_file = config_list.Get(TB_ROUGH_MODEL_FILE_KEYWORD);
+    char* s0_rough_file = config_list.Get(S0_ROUGH_MODEL_FILE_KEYWORD);
     char* anc_sss_file = config_list.Get(ANC_SSS_FILE_KEYWORD);
     char* anc_sst_file = config_list.Get(ANC_SST_FILE_KEYWORD);
+    char* anc_swh_file = config_list.Get(ANC_SWH_FILE_KEYWORD);
 
     // Configure the model functions
-    GMF gmf;
-    ConfigGMF(&gmf, &config_list);
-
     CAPGMF cap_gmf;
     cap_gmf.ReadFlat(tb_flat_file);
     cap_gmf.ReadRough(tb_rough_file);
+    cap_gmf.ReadModelS0(s0_rough_file);
 
     // Config the Kp object
     Kp kp;
@@ -361,23 +164,9 @@ int main(int argc, char* argv[]) {
     unsigned char** cap_flg = (unsigned char**)make_array(
         sizeof(unsigned char), 2, ncti, nati);
 
-    // note transposed order as in the E2B files
-    float** anc_sss = (float**)make_array(sizeof(float), 2, nati, ncti);
-    float** anc_sst = (float**)make_array(sizeof(float), 2, nati, ncti);
-
-    FILE* ifp = fopen(anc_sss_file, "r");
-    if(!read_array(ifp, &anc_sss[0], sizeof(float), 2, nati, ncti)) {
-        fprintf(stderr, "Error reading ancillary SSS file: %s\n", anc_sss_file);
-        exit(1);
-    }
-    fclose(ifp);
-
-    ifp = fopen(anc_sst_file, "r");
-    if(!read_array(ifp, &anc_sst[0], sizeof(float), 2, nati, ncti)) {
-        fprintf(stderr, "Error reading ancillary SST file: %s\n", anc_sst_file);
-        exit(1);
-    }
-    fclose(ifp);
+    CAP_ANC_L2B anc_sss(anc_sss_file);
+    CAP_ANC_L2B anc_sst(anc_sst_file);
+    CAP_ANC_L2B anc_swh(anc_swh_file);
 
     for(int ati=0; ati<nati; ++ati) {
         if(ati%100 == 0)
@@ -403,35 +192,26 @@ int main(int argc, char* argv[]) {
             MeasList* tb_ml = &(l2a_tb_swath[cti][ati]->measList);
             MeasList* s0_ml = &(l2a_s0_swath[cti][ati]->measList);
 
-            double this_anc_sss = (double)anc_sss[ati][cti];
-            double this_anc_sst = (double)anc_sst[ati][cti];
-            double this_anc_swh = -9999;
-            double this_anc_rr = -9999;
+            float this_anc_sss = anc_sss.data[ati][cti][0];
+            float this_anc_sst = anc_sst.data[ati][cti][0];
+            float this_anc_swh = anc_swh.data[ati][cti][0];
+            float this_anc_rr = -9999;
 
             if(this_anc_sss<0 || this_anc_sst<-10)
                 continue;
 
-            double this_cap_spd, this_cap_dir, this_cap_sss, min_obj;
+            float this_cap_spd, this_cap_dir, this_cap_sss, min_obj;
 
-            CAPAncillary cap_anc;
-            cap_anc.tb_ml = tb_ml;
-            cap_anc.s0_ml = s0_ml;
-            cap_anc.s0_wvc = s0_wvc;
-            cap_anc.gmf = &gmf;
-            cap_anc.kp = &kp;
-            cap_anc.cap_gmf = &cap_gmf;
-            cap_anc.anc_sst = this_anc_sst;
-            cap_anc.anc_sss = this_anc_sss;
-            cap_anc.anc_swh = this_anc_swh;
-            cap_anc.anc_rr = this_anc_rr;
+            float active_weight = 1;
+            float passive_weight = 1;
 
-            retrieve_wind(
-                &cap_anc, &this_cap_spd,
-                &this_cap_dir, &this_cap_sss, &min_obj);
+            this_anc_swh = -9999;
 
-//             retrieve_cap(
-//                 &cap_anc, &this_cap_spd,
-//                 &this_cap_dir, &this_cap_sss, &min_obj);
+            cap_gmf.Retrieve(
+                tb_ml, s0_ml, s0_wvc, this_anc_sst, this_anc_sss, this_anc_swh,
+                this_anc_rr, active_weight, passive_weight,
+                CAPGMF::RETRIEVE_SPEED_ONLY, &this_cap_spd, &this_cap_dir,
+                &this_cap_sss, &min_obj);
 
             // switch back to clockwise from noth convention, to degrees, and wrap
             float radar_only_dir = 450.0 - rtd * s0_wvc->selected->dir;
@@ -456,9 +236,9 @@ int main(int argc, char* argv[]) {
 //                 radar_only_dir, this_cap_spd, this_cap_dir);
 
             // insert some QA here to set cap_flag???
-            cap_spd[cti][ati] = (float)this_cap_spd;
-            cap_dir[cti][ati] = (float)this_cap_dir;
-            cap_sss[cti][ati] = (float)this_cap_sss;
+            cap_spd[cti][ati] = this_cap_spd;
+            cap_dir[cti][ati] = this_cap_dir;
+            cap_sss[cti][ati] = this_cap_sss;
         }
     }
 
@@ -488,8 +268,6 @@ int main(int argc, char* argv[]) {
     free_array(cap_dir, 2, ncti, nati);
     free_array(cap_sss, 2, ncti, nati);
     free_array(cap_flg, 2, ncti, nati);
-    free_array(anc_sss, 2, nati, ncti);
-    free_array(anc_sst, 2, nati, ncti);
 
     return(0);
 }
