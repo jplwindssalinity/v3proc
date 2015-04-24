@@ -234,7 +234,7 @@ float CAPGMF::ObjectiveFunctionPassive(
             meas->measType, meas->incidenceAngle, anc_sst, trial_sss,
             trial_spd, chi, anc_swh, &model_tb);
 
-        double var = meas->A;
+        double var = meas->A + pow(kpm * model_tb, 2);
         obj += pow(meas->value - model_tb, 2) / var;
     }
     return(obj);
@@ -254,7 +254,8 @@ float CAPGMF::ObjectiveFunctionActive(
             meas->measType, meas->incidenceAngle, trial_spd, chi, anc_swh,
             &model_s0);
 
-        double var = (meas->A-1.0) * model_s0 * model_s0;
+        double kp_tot = (1 + pow(kpm, 2)) * meas->A - 1;
+        double var = kp_tot * model_s0 * model_s0;
         obj += pow(meas->value - model_s0, 2) / var;
     }
     return(obj);

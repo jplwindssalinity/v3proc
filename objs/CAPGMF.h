@@ -123,6 +123,8 @@ protected:
     static const int _metCountTB = 2;
     static const int _metCountS0 = 4;
 
+    static const float kpm = 0.16;
+
     float**** _tbflat;
     float***** _erough;
     float***** _model_s0;
