@@ -114,6 +114,8 @@ protected:
     static const float _dirMin = 0.0;
     static const float _dirStep = 1.0;
 
+    // Note 9 SWH bins in GMF tables, last is reserved for missing significant
+    // wave height; uses GMF tables developed without any condition on SWH.
     static const int _swhCount = 8;
     static const float _swhMin = 0.5;
     static const float _swhStep = 1;

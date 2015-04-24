@@ -418,17 +418,31 @@ int CAPGMF::_InterpolateTable(
     float inca = 1-(inc-inc0)/(inc1-inc0);
     float incb = 1-inca;
 
-    int iswh0 = floor((swh-_swhMin)/_swhStep);
-    if(iswh0<0)
-        iswh0 = 0;
-    if(iswh0>_swhCount-2)
-        iswh0 = _swhCount-2;
-    int iswh1 = iswh0 + 1;
+    int iswh0, iswh1;
+    float swh0, swh1, swha, swhb;
+    if (swh < 0) {
+        // The last swh index for missing swh, uses GMFs without significant
+        // wave height.
+        iswh0 = _swhCount;
+        iswh1 = _swhCount;
 
-    float swh0 = _swhMin + _swhStep*(float)iswh0;
-    float swh1 = _swhMin + _swhStep*(float)iswh1;
-    float swha = 1-(swh-swh0)/(swh1-swh0);
-    float swhb = 1-swha;
+        swha = 1;
+        swhb = 0;
+
+    } else {
+        iswh0 = floor((swh-_swhMin)/_swhStep);
+        if(iswh0<0)
+            iswh0 = 0;
+        if(iswh0>_swhCount-2)
+            iswh0 = _swhCount-2;
+        iswh1 = iswh0 + 1;
+
+        swh0 = _swhMin + _swhStep*(float)iswh0;
+        swh1 = _swhMin + _swhStep*(float)iswh1;
+        swha = 1-(swh-swh0)/(swh1-swh0);
+        swhb = 1-swha;
+    }
+
 
     float value =
         swha * dira * spda * inca * table[met_idx][iswh0][idir0][ispd0][iinc0] +
@@ -485,7 +499,7 @@ int CAPGMF::ReadRough(const char*  filename) {
     FILE* ifp = fopen(filename, "r");
 
     for(int met_idx = 0; met_idx < _metCountTB; ++met_idx) {
-        for(int swh_idx = 0; swh_idx < _swhCount; ++swh_idx) {
+        for(int swh_idx = 0; swh_idx < _swhCount+1; ++swh_idx) {
             for(int dir_idx = 0; dir_idx < _dirCount; ++dir_idx) {
                 for(int spd_idx = 0; spd_idx < _spdCount; ++spd_idx) {
                     float values[_incCount];
@@ -514,7 +528,7 @@ int CAPGMF::ReadModelS0(const char*  filename) {
     FILE* ifp = fopen(filename, "r");
 
     for(int met_idx = 0; met_idx < _metCountS0; ++met_idx) {
-        for(int swh_idx = 0; swh_idx < _swhCount; ++swh_idx) {
+        for(int swh_idx = 0; swh_idx < _swhCount+1; ++swh_idx) {
             for(int dir_idx = 0; dir_idx < _dirCount; ++dir_idx) {
                 for(int spd_idx = 0; spd_idx < _spdCount; ++spd_idx) {
                     float values[_incCount];
@@ -590,7 +604,7 @@ int CAPGMF::_AllocateFlat() {
 
 int CAPGMF::_AllocateRough() {
     _erough = (float *****)make_array(
-        sizeof(float), 5, _metCountTB, _swhCount, _dirCount, _spdCount,
+        sizeof(float), 5, _metCountTB, _swhCount+1, _dirCount, _spdCount,
         _incCount);
 
     if(!_erough)
@@ -601,7 +615,7 @@ int CAPGMF::_AllocateRough() {
 
 int CAPGMF::_AllocateModelS0() {
     _model_s0 = (float *****)make_array(
-        sizeof(float), 5, _metCountS0, _swhCount, _dirCount, _spdCount,
+        sizeof(float), 5, _metCountS0, _swhCount+1, _dirCount, _spdCount,
         _incCount);
 
     if(!_erough)
@@ -620,14 +634,14 @@ int CAPGMF::_Deallocate() {
 
     if (_erough) {
         free_array(
-            (void *)_erough, 5, _metCountTB, _swhCount, _dirCount, _spdCount,
+            (void *)_erough, 5, _metCountTB, _swhCount+1, _dirCount, _spdCount,
             _incCount);
         _erough = NULL;
     }
 
     if (_model_s0) {
         free_array(
-            (void *)_model_s0, 5, _metCountS0, _swhCount, _dirCount, _spdCount,
+            (void *)_model_s0, 5, _metCountS0, _swhCount+1, _dirCount, _spdCount,
             _incCount);
         _model_s0 = NULL;
     }
