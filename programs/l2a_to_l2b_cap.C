@@ -205,6 +205,9 @@ int main(int argc, char* argv[]) {
             float active_weight = 1;
             float passive_weight = 1;
 
+            if(this_anc_swh<0 || this_anc_swh > 20)
+                this_anc_swh = -9999;
+
             this_anc_swh = -9999;
 
             cap_gmf.Retrieve(
