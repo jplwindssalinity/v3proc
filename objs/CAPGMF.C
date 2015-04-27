@@ -111,6 +111,10 @@ int CAPGMF::Retrieve(
             n_dims = 2;
             break;
 
+        case RETRIEVE_SPEED_SALINITY:
+            n_dims = 2;
+            break;
+
         case RETRIEVE_SPEED_DIRECTION_SALINITY:
             n_dims = 3;
             break;
@@ -152,6 +156,14 @@ int CAPGMF::Retrieve(
         x[0] = init_spd;
         x[1] = init_dir;
 
+    } else if (mode == RETRIEVE_SPEED_SALINITY) {
+        lb[0] = 0; ub[0] = 100;
+        lb[1] = 28; ub[1] = 42; // salinity
+
+        x[0] = init_spd;
+        x[1] = init_dir;
+        x[2] = init_sss;
+
     } else if (mode == RETRIEVE_SPEED_DIRECTION_SALINITY) {
         lb[0] = 0; ub[0] = 100;
         lb[1] = 0; ub[1] = two_pi;
@@ -179,7 +191,7 @@ int CAPGMF::Retrieve(
     opt.set_lower_bounds(lb);
     opt.set_upper_bounds(ub);
     opt.set_min_objective(cap_obj_func, &cap_anc);
-    opt.set_xtol_rel(0.0001);
+    opt.set_xtol_rel(0.01);
 
     // Solve it!
     double minf;
@@ -197,6 +209,11 @@ int CAPGMF::Retrieve(
         *spd = (float)x[0];
         *dir = (float)x[1];
         *sss = anc_sss;
+
+    } else if(mode == RETRIEVE_SPEED_SALINITY) {
+        *spd = (float)x[0];
+        *dir = s0_wvc->selected->dir;
+        *sss = (float)x[1];
 
     } else if(mode == RETRIEVE_SPEED_DIRECTION_SALINITY) {
         *spd = (float)x[0];
@@ -444,7 +461,6 @@ int CAPGMF::_InterpolateTable(
         swhb = 1-swha;
     }
 
-
     float value =
         swha * dira * spda * inca * table[met_idx][iswh0][idir0][ispd0][iinc0] +
         swha * dira * spda * incb * table[met_idx][iswh0][idir0][ispd0][iinc1] +
@@ -665,6 +681,11 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
         trial_spd = (float)x[0];
         trial_dir = (float)x[1];
         trial_sss = cap_anc->anc_sss;
+
+    } else if(cap_anc->mode == CAPGMF::RETRIEVE_SPEED_SALINITY) {
+        trial_spd = (float)x[0];
+        trial_dir = cap_anc->s0_wvc->selected->dir;
+        trial_sss = (float)x[1];
 
     } else if(cap_anc->mode == CAPGMF::RETRIEVE_SPEED_DIRECTION_SALINITY) {
         trial_spd = (float)x[0];

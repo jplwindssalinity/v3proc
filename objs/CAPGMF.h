@@ -40,7 +40,7 @@ public:
 
     enum CAPRetrievalMode {
         RETRIEVE_SPEED_ONLY, RETRIEVE_SPEED_DIRECTION,
-        RETRIEVE_SPEED_DIRECTION_SALINITY};
+        RETRIEVE_SPEED_DIRECTION_SALINITY, RETRIEVE_SPEED_SALINITY};
 
     int ReadFlat(const char* filename);
     int ReadRough(const char* filename);
