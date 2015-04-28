@@ -192,12 +192,14 @@ int main(int argc, char* argv[]) {
             MeasList* tb_ml = &(l2a_tb_swath[cti][ati]->measList);
             MeasList* s0_ml = &(l2a_s0_swath[cti][ati]->measList);
 
-            float this_anc_sss = anc_sss.data[ati][cti][0];
+            float init_spd = s0_wvc->selected->spd;
+            float init_dir = s0_wvc->selected->dir;
+            float init_sss = anc_sss.data[ati][cti][0];
             float this_anc_sst = anc_sst.data[ati][cti][0];
             float this_anc_swh = anc_swh.data[ati][cti][0];
             float this_anc_rr = -9999;
 
-            if(this_anc_sss<0 || this_anc_sst<-10)
+            if(init_sss<0 || this_anc_sst<-10)
                 continue;
 
             float this_cap_spd, this_cap_dir, this_cap_sss, min_obj;
@@ -211,8 +213,8 @@ int main(int argc, char* argv[]) {
             this_anc_swh = -9999;
 
             cap_gmf.Retrieve(
-                tb_ml, s0_ml, s0_wvc, this_anc_sst, this_anc_sss, this_anc_swh,
-                this_anc_rr, active_weight, passive_weight,
+                tb_ml, s0_ml, init_spd, init_dir, init_sss, this_anc_sst,
+                this_anc_swh, this_anc_rr, active_weight, passive_weight,
                 CAPGMF::RETRIEVE_SPEED_ONLY, &this_cap_spd, &this_cap_dir,
                 &this_cap_sss, &min_obj);
 

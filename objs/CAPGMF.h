@@ -74,10 +74,16 @@ public:
         float dir, float swh, float* tb);
 
     int Retrieve(
-        MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, float anc_sst,
-        float anc_sss, float anc_swh, float anc_rr, float active_weight,
-        float passive_weight, CAPRetrievalMode mode, float* spd, float* dir,
-        float* sss, float* obj);
+        MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_dir,
+        float init_sss, float anc_sst, float anc_swh, float anc_rr,
+        float active_weight, float passive_weight, CAPRetrievalMode mode,
+        float* spd, float* dir, float* sss, float* obj);
+
+    int BuildSolutionCurves(
+        MeasList* tb_ml, MeasList* s0_ml, float init_spd, float angle,
+        float init_sss, float anc_sst, float anc_swh, float anc_rr,
+        float active_weight, float passive_weight,
+        float* best_spd, float* best_sss, float* best_obj);
 
 protected:
 
@@ -134,10 +140,11 @@ protected:
 typedef struct {
     MeasList* tb_ml;
     MeasList* s0_ml;
-    WVC* s0_wvc;
     CAPGMF* cap_gmf;
+    double init_spd;
+    double init_dir;
+    double init_sss;
     double anc_sst;
-    double anc_sss;
     double anc_swh;
     double anc_rr;
     double active_weight;

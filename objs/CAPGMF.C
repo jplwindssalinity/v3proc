@@ -96,11 +96,35 @@ CAPGMF::~CAPGMF() {
     return;
 }
 
+int CAPGMF::BuildSolutionCurves(
+    MeasList* tb_ml, MeasList* s0_ml, float init_spd, float angle,
+    float init_sss, float anc_sst, float anc_swh, float anc_rr,
+    float active_weight, float passive_weight,
+    float* best_spd, float* best_sss, float* best_obj) {
+
+    // best_spd, best_sss, best_obj are pointers to float[360] arrays.
+    for(int iazi = 0; iazi < 360; ++iazi) {
+        float this_angle = (float)iazi;
+        float spd, dir, sss, obj;
+
+        Retrieve(
+            tb_ml, s0_ml, init_spd, this_angle, init_sss, anc_sst, anc_swh,
+            anc_rr, active_weight, passive_weight, RETRIEVE_SPEED_SALINITY,
+            &spd, &dir, &sss, &obj);
+
+        best_spd[iazi] = spd;
+        best_sss[iazi] = sss;
+        best_obj[iazi] = obj;
+    }
+    return(1);
+}
+
 int CAPGMF::Retrieve(
-    MeasList* tb_ml, MeasList* s0_ml, WVC* s0_wvc, float anc_sst, float anc_sss,
-    float anc_swh, float anc_rr, float active_weight, float passive_weight,
-    CAPRetrievalMode mode, float* spd, float* dir, float* sss, float* obj) {
- 
+    MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_dir,
+    float init_sss, float anc_sst, float anc_swh, float anc_rr,
+    float active_weight, float passive_weight, CAPRetrievalMode mode,
+    float* spd, float* dir, float* sss, float* obj) {
+
     int n_dims;
     switch(mode) {
         case RETRIEVE_SPEED_ONLY:
@@ -130,15 +154,12 @@ int CAPGMF::Retrieve(
     nlopt::opt opt(nlopt::LN_COBYLA, n_dims);
 
     // Check bounds on initial guesses
-    double init_spd = (double)s0_wvc->selected->spd;
     if(init_spd<0.5) init_spd = 0.5;
     if(init_spd>50) init_spd = 50;
 
-    double init_dir = (double)s0_wvc->selected->dir;
     while(init_dir>two_pi) init_dir -= two_pi;
     while(init_dir<0) init_dir += two_pi;
 
-    double init_sss = (double)anc_sss;
     if(init_sss<30) init_sss = 30;
     if(init_sss>40) init_sss = 40;
 
@@ -177,10 +198,11 @@ int CAPGMF::Retrieve(
     CAPAncillary cap_anc;
     cap_anc.tb_ml = tb_ml;
     cap_anc.s0_ml = s0_ml;
-    cap_anc.s0_wvc = s0_wvc;
+    cap_anc.init_spd = init_spd;
+    cap_anc.init_dir = init_dir;
+    cap_anc.init_sss = init_sss;
     cap_anc.cap_gmf = this;
     cap_anc.anc_sst = anc_sst;
-    cap_anc.anc_sss = anc_sss;
     cap_anc.anc_swh = anc_swh;
     cap_anc.anc_rr = anc_rr;
     cap_anc.mode = mode;
@@ -202,17 +224,17 @@ int CAPGMF::Retrieve(
 
     if(mode == RETRIEVE_SPEED_ONLY) {
         *spd = (float)x[0];
-        *dir = s0_wvc->selected->dir;
-        *sss = anc_sss;
+        *dir = init_dir;
+        *sss = init_sss;
 
     } else if(mode == RETRIEVE_SPEED_DIRECTION) {
         *spd = (float)x[0];
         *dir = (float)x[1];
-        *sss = anc_sss;
+        *sss = init_sss;
 
     } else if(mode == RETRIEVE_SPEED_SALINITY) {
         *spd = (float)x[0];
-        *dir = s0_wvc->selected->dir;
+        *dir = init_dir;
         *sss = (float)x[1];
 
     } else if(mode == RETRIEVE_SPEED_DIRECTION_SALINITY) {
@@ -674,17 +696,17 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
     float trial_spd, trial_dir, trial_sss;
     if(cap_anc->mode == CAPGMF::RETRIEVE_SPEED_ONLY) {
         trial_spd = (float)x[0];
-        trial_dir = cap_anc->s0_wvc->selected->dir;
-        trial_sss = cap_anc->anc_sss;
+        trial_dir = cap_anc->init_dir;
+        trial_sss = cap_anc->init_sss;
 
     } else if(cap_anc->mode == CAPGMF::RETRIEVE_SPEED_DIRECTION) {
         trial_spd = (float)x[0];
         trial_dir = (float)x[1];
-        trial_sss = cap_anc->anc_sss;
+        trial_sss = cap_anc->init_sss;
 
     } else if(cap_anc->mode == CAPGMF::RETRIEVE_SPEED_SALINITY) {
         trial_spd = (float)x[0];
-        trial_dir = cap_anc->s0_wvc->selected->dir;
+        trial_dir = cap_anc->init_dir;
         trial_sss = (float)x[1];
 
     } else if(cap_anc->mode == CAPGMF::RETRIEVE_SPEED_DIRECTION_SALINITY) {
