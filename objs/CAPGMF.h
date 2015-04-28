@@ -4,6 +4,7 @@
 #include "Meas.h"
 #include "Wind.h"
 #include "Array.h"
+#include "CAPWind.h"
 
 class CAP_ANC_L1B {
 public:
@@ -83,7 +84,7 @@ public:
         MeasList* tb_ml, MeasList* s0_ml, float init_spd, float angle,
         float init_sss, float anc_sst, float anc_swh, float anc_rr,
         float active_weight, float passive_weight,
-        float* best_spd, float* best_sss, float* best_obj);
+        CAPWVC* cap_wvc);
 
 protected:
 
