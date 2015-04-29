@@ -2,11 +2,31 @@
 #include "CAPWind.h"
 #include "Misc.h"
 
-CAPWVC::CAPWVC() : nudgeWV(NULL) {
+CAPWVC::CAPWVC() : nudgeWV(NULL), selected(NULL), selected_allocated(0) {
     return;
 }
 
 CAPWVC::~CAPWVC() {
+
+    CAPWindVectorPlus* wvp;
+    ambiguities.GotoHead();
+
+    while ((wvp = ambiguities.RemoveCurrent()) != NULL) {
+        if (wvp == selected)
+            selected_allocated = 0;
+        delete wvp;
+    }
+
+    if (selected_allocated) {
+        if (selected != NULL)
+            delete selected;
+    }
+
+    if (nudgeWV) {
+        delete nudgeWV;
+        nudgeWV = NULL;
+    }
+
     return;
 }
 
@@ -38,19 +58,22 @@ int CAPWVC::GetBestSolution(
     return(1);
 }
 
-int CAPWVC::GetNearestAmbig(float direction, CAPWindVectorPlus* nearest_wvp) {
+CAPWindVectorPlus* CAPWVC::GetNearestAmbig(float direction, int rank_idx) {
 
     float min_diff = 9999;
+    CAPWindVectorPlus* nearest_wvp;
+    int rank = 0;
     for(CAPWindVectorPlus* wvp = ambiguities.GetHead(); wvp;
         wvp = ambiguities.GetNext()){
 
         float this_diff = ANGDIF(wvp->dir, direction);
-        if(this_diff < min_diff) {
+        if(this_diff < min_diff && rank < rank_idx) {
             nearest_wvp = wvp;
             min_diff = this_diff;
         }
+        rank++;
     }
-    return(1);
+    return(nearest_wvp);
 }
 
 int CAPWVC::BuildSolutions() {
