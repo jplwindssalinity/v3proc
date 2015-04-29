@@ -108,7 +108,7 @@ int CAPGMF::BuildSolutionCurves(
 
         Retrieve(
             tb_ml, s0_ml, init_spd, this_angle, init_sss, anc_sst, anc_swh,
-            anc_rr, active_weight, passive_weight, RETRIEVE_SPEED_SALINITY,
+            anc_rr, active_weight, passive_weight, RETRIEVE_SPEED_ONLY,
             &spd, &dir, &sss, &obj);
 
         cap_wvc->best_spd[iazi] = spd;
@@ -183,8 +183,7 @@ int CAPGMF::Retrieve(
         lb[1] = 28; ub[1] = 42; // salinity
 
         x[0] = init_spd;
-        x[1] = init_dir;
-        x[2] = init_sss;
+        x[1] = init_sss;
 
     } else if (mode == RETRIEVE_SPEED_DIRECTION_SALINITY) {
         lb[0] = 0; ub[0] = 100;

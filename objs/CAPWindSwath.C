@@ -5,7 +5,7 @@
 
 #define FLIPPING_WITHIN_RANGE_THRESHOLD  (5.0*dtr)
 
-CAPWindSwath::CAPWindSwath() {
+CAPWindSwath::CAPWindSwath() : swath(NULL) {
     return;
 }
 
