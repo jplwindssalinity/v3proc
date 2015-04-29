@@ -25,9 +25,11 @@ public:
     CAPWindVectorPlus* GetNearestAmbig(float direction, int rank_idx = 4);
     int GetBestSolution(float direction, float* spd, float* sss, float* obj);
 
-    float best_spd[360];
-    float best_obj[360];
-    float best_sss[360];
+    static const int n_azi = 72;
+
+    float best_spd[n_azi];
+    float best_obj[n_azi];
+    float best_sss[n_azi];
 
     WindVectorPlus* nudgeWV;
     List<CAPWindVectorPlus> ambiguities;

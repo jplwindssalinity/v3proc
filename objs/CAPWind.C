@@ -42,11 +42,13 @@ void CAPWVC::FreeContents() {
 int CAPWVC::GetBestSolution(
     float direction, float* spd, float* sss, float* obj) {
 
-    float fazi = direction * rtd;
-    while(fazi<0) fazi += 360;
-    while(fazi>=360) fazi -= 360;
+    float azi_spacing = 360/(float)n_azi;
 
-    float dazi = fazi - floor(fazi);
+    float fazi = direction * rtd / azi_spacing;
+    while(fazi<0) fazi += n_azi;
+    while(fazi>=n_azi) fazi -= n_azi;
+
+    float dazi = (fazi - floor(fazi))/azi_spacing;
 
     int iazi0 = (int)floor(fazi);
     int iazi1 = iazi0 + 1;
@@ -80,12 +82,12 @@ int CAPWVC::BuildSolutions() {
 
     FreeContents();
 
-    float pdf[360], sum_pdf = 0;
+    float pdf[n_azi], sum_pdf = 0;
 
     // search through best (spd, sss, obj) curves
-    for(int iazi = 0; iazi < 360; ++iazi) {
-        int previdx = (iazi==0) ? 359 : iazi - 1;
-        int nextidx = (iazi==359) ? 0 : iazi + 1;
+    for(int iazi = 0; iazi < n_azi; ++iazi) {
+        int previdx = (iazi==0) ? n_azi-1 : iazi - 1;
+        int nextidx = (iazi==n_azi-1) ? 0 : iazi + 1;
 
         if(best_obj[iazi] > best_obj[previdx] &&
            best_obj[iazi] > best_obj[nextidx]) {
@@ -136,8 +138,8 @@ int CAPWVC::BuildSolutions() {
         for(int iamb = 0; iamb < ambiguities.NodeCount(); ++iamb) {
 
             // Step them out 1 degree on each side
-            int left_ = (left_idx[iamb] == 0) ? 359 : left_idx[iamb] - 1;
-            int right_ = (right_idx[iamb] == 359) ? 0 : right_idx[iamb] + 1;
+            int left_ = (left_idx[iamb] == 0) ? n_azi-1 : left_idx[iamb] - 1;
+            int right_ = (right_idx[iamb] == n_azi-1) ? 0 : right_idx[iamb] + 1;
 
             // Check for angle intervals hitting each other
             int step_out_left = 1;
