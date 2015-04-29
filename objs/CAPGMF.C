@@ -97,9 +97,9 @@ CAPGMF::~CAPGMF() {
 }
 
 int CAPGMF::BuildSolutionCurves(
-    MeasList* tb_ml, MeasList* s0_ml, float init_spd, float angle,
-    float init_sss, float anc_sst, float anc_swh, float anc_rr,
-    float active_weight, float passive_weight, CAPWVC* cap_wvc) {
+    MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_sss,
+    float anc_sst, float anc_swh, float anc_rr, float active_weight,
+    float passive_weight, CAPWVC* cap_wvc) {
 
     // best_spd, best_sss, best_obj are pointers to float[360] arrays.
     for(int iazi = 0; iazi < 360; ++iazi) {
