@@ -593,7 +593,9 @@ libSim_a_SOURCES =                   \
     objs/CAPGMF.C                    \
     objs/CAPGMF.h                    \
     objs/CAPWind.C                   \
-    objs.CAPWind.h
+    objs.CAPWind.h                   \
+    objs/CAPWindSwath.C              \
+    objs.CAPWindSwath.h
 
 ########################################################################
 #ParameterList.o
