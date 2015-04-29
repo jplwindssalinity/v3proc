@@ -20,6 +20,7 @@ public:
 
     void FreeContents();
     int BuildSolutions();
+    int SortByObj();
 
     float best_spd[360];
     float best_obj[360];

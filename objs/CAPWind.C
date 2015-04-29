@@ -24,34 +24,51 @@ int CAPWVC::BuildSolutions() {
 
     float pdf[360], sum_pdf = 0;
 
-    std::vector<int> left_idx;
-    std::vector<int> right_idx;
-
     // search through best (spd, sss, obj) curves
     for(int iazi = 0; iazi < 360; ++iazi) {
         int previdx = (iazi==0) ? 359 : iazi - 1;
         int nextidx = (iazi==359) ? 0 : iazi + 1;
 
-        if(best_obj[iazi] < best_obj[previdx] &&
-           best_obj[iazi] < best_obj[nextidx]) {
+        if(best_obj[iazi] > best_obj[previdx] &&
+           best_obj[iazi] > best_obj[nextidx]) {
 
-            // Found a local minima, append it to ambiguities
+            // Found a local maxima, append it to ambiguities
             CAPWindVectorPlus* this_ambig = new CAPWindVectorPlus();
             this_ambig->spd = best_spd[iazi];
             this_ambig->dir = dtr * (float)iazi;
             this_ambig->sss = best_sss[iazi];
             this_ambig->obj = best_obj[iazi];
             ambiguities.Append(this_ambig);
-            left_idx.push_back(iazi);
-            right_idx.push_back(iazi);
         }
-        pdf[iazi] = exp(-best_obj[iazi]);
+        pdf[iazi] = exp(best_obj[iazi]);
         sum_pdf += pdf[iazi];
+    }
+
+    // Sort by objective function value
+    SortByObj();
+
+    // Remove the smallest obj ambigs if more than 4
+    if(ambiguities.NodeCount() > 4) {
+        CAPWindVectorPlus* wvp = NULL;
+
+        ambiguities.GotoHead();
+        for(int iamb = 0; iamb < 4; ++iamb)
+            wvp = ambiguities.GetNext();
+
+        while(wvp != NULL) {
+            wvp = ambiguities.RemoveCurrent();
+            delete(wvp);
+        }
     }
 
     // Build out the direction ranges
     float pdf_included = 0;
+    std::vector<int> left_idx;
+    std::vector<int> right_idx;
     for(int iamb = 0; iamb < ambiguities.NodeCount(); ++iamb) {
+        CAPWindVectorPlus* wvp = ambiguities.GetCurrent();
+        left_idx.push_back((int)round(rtd * wvp->dir));
+        right_idx.push_back((int)round(rtd * wvp->dir));
         pdf_included += pdf[left_idx[iamb]];
     }
 
@@ -59,8 +76,8 @@ int CAPWVC::BuildSolutions() {
         for(int iamb = 0; iamb < ambiguities.NodeCount(); ++iamb) {
 
             // Step them out 1 degree on each side
-            int left_ = (left_idx[iamb]==0) ? 359 : left_idx[iamb] - 1;
-            int right_ = (right_idx[iamb]==359) ? 0 : right_idx[iamb] + 1;
+            int left_ = (left_idx[iamb] == 0) ? 359 : left_idx[iamb] - 1;
+            int right_ = (right_idx[iamb] == 359) ? 0 : right_idx[iamb] + 1;
 
             // Check for angle intervals hitting each other
             int step_out_left = 1;
@@ -68,10 +85,10 @@ int CAPWVC::BuildSolutions() {
 
             for(int jamb = 0; jamb < ambiguities.NodeCount(); ++jamb) {
                 if(jamb != iamb) {
-                    if(left_ == left_idx[jamb])
+                    if(left_ == right_idx[jamb])
                         step_out_left = 0;
 
-                    if(right_ == right_idx[jamb])
+                    if(right_ == left_idx[jamb])
                         step_out_right = 0;
                 }
             }
@@ -95,6 +112,27 @@ int CAPWVC::BuildSolutions() {
         directionRanges.Append(this_dir_range);
     }
 
+    return(1);
+}
+
+// cribbed from Wind.C
+int CAPWVC::SortByObj() {
+    int need_sorting;
+    do {
+        need_sorting = 0;
+        for(CAPWindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+            wvp = ambiguities.GetNext()) {
+
+            CAPWindVectorPlus* next_wvp = ambiguities.GetNext();
+            if (next_wvp) {
+                ambiguities.GotoPrev();
+                if (next_wvp->obj > wvp->obj) {
+                    ambiguities.SwapCurrentAndNext();
+                    need_sorting = 1;
+                }
+            }
+        }
+    } while (need_sorting);
     return(1);
 }
 

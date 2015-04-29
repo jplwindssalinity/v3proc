@@ -113,7 +113,9 @@ int CAPGMF::BuildSolutionCurves(
 
         cap_wvc->best_spd[iazi] = spd;
         cap_wvc->best_sss[iazi] = sss;
-        cap_wvc->best_obj[iazi] = obj;
+
+        // Swap sign on objective function value
+        cap_wvc->best_obj[iazi] = -obj;
     }
     return(1);
 }
