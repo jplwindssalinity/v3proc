@@ -14,12 +14,8 @@ public:
     int ThreshNudge(float thres);
     int MedianFilter(int half_window_size, int max_passes);
     int MedianFilterPass(
-        int half_window_size, CAPWindVectorPlus*** selected, char** change,
-        char** influence);
-
-    int DIRFilter(int half_window_size, int max_passes);
-    int DIRFilterPass(int half_window_size, CAPWindVectorPlus*** selected);
-
+        int half_window_size, CAPWindVectorPlus*** new_selected, char** change,
+        char** filter, char** influence, int special);
 
     int DeleteEntireSwath();
     int DeleteWVCs();
