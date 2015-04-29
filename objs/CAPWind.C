@@ -1,5 +1,6 @@
 #include <vector>
 #include "CAPWind.h"
+#include "Misc.h"
 
 CAPWVC::CAPWVC() : nudgeWV(NULL) {
     return;
@@ -16,6 +17,40 @@ void CAPWVC::FreeContents() {
     while ((wvp = ambiguities.RemoveCurrent()))
         delete wvp;
     return;
+}
+
+int CAPWVC::GetBestSolution(
+    float direction, float* spd, float* sss, float* obj) {
+
+    float fazi = direction * rtd;
+    while(fazi<0) fazi += 360;
+    while(fazi>=360) fazi -= 360;
+
+    float dazi = fazi - floor(fazi);
+
+    int iazi0 = (int)floor(fazi);
+    int iazi1 = iazi0 + 1;
+
+    *spd = best_spd[iazi0]*(1-dazi) + dazi*best_spd[iazi1];
+    *sss = best_sss[iazi0]*(1-dazi) + dazi*best_sss[iazi1];
+    *obj = best_obj[iazi0]*(1-dazi) + dazi*best_obj[iazi1];
+
+    return(1);
+}
+
+int CAPWVC::GetNearestAmbig(float direction, CAPWindVectorPlus* nearest_wvp) {
+
+    float min_diff = 9999;
+    for(CAPWindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+        wvp = ambiguities.GetNext()){
+
+        float this_diff = ANGDIF(wvp->dir, direction);
+        if(this_diff < min_diff) {
+            nearest_wvp = wvp;
+            min_diff = this_diff;
+        }
+    }
+    return(1);
 }
 
 int CAPWVC::BuildSolutions() {
@@ -65,11 +100,13 @@ int CAPWVC::BuildSolutions() {
     float pdf_included = 0;
     std::vector<int> left_idx;
     std::vector<int> right_idx;
-    for(int iamb = 0; iamb < ambiguities.NodeCount(); ++iamb) {
-        CAPWindVectorPlus* wvp = ambiguities.GetCurrent();
-        left_idx.push_back((int)round(rtd * wvp->dir));
-        right_idx.push_back((int)round(rtd * wvp->dir));
-        pdf_included += pdf[left_idx[iamb]];
+    for(CAPWindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+        wvp = ambiguities.GetNext()){
+
+        int idx = (int)round(rtd * wvp->dir);
+        left_idx.push_back(idx);
+        right_idx.push_back(idx);
+        pdf_included += pdf[idx];
     }
 
     while(pdf_included < 0.99 * sum_pdf) {
@@ -105,13 +142,15 @@ int CAPWVC::BuildSolutions() {
         }
     }
 
-    directionRanges.FreeContents();
-    for(int iamb = 0; iamb < ambiguities.NodeCount(); ++iamb) {
-        AngleInterval* this_dir_range = new AngleInterval();
-        this_dir_range->SetLeftRight(left_idx[iamb]*dtr, right_idx[iamb]*dtr);
-        directionRanges.Append(this_dir_range);
-    }
+    int this_ambig = 0;
+    for(CAPWindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+        wvp = ambiguities.GetNext()){
 
+        wvp->directionRange.SetLeftRight(
+            left_idx[this_ambig]*dtr, right_idx[this_ambig]*dtr);
+
+        this_ambig++;
+    }
     return(1);
 }
 

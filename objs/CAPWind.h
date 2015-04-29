@@ -9,6 +9,7 @@ public:
     CAPWindVectorPlus();
     ~CAPWindVectorPlus();
 
+    AngleInterval directionRange;
     float sss;
 };
 
@@ -21,6 +22,8 @@ public:
     void FreeContents();
     int BuildSolutions();
     int SortByObj();
+    int GetNearestAmbig(float direction, CAPWindVectorPlus* nearest_wvp);
+    int GetBestSolution(float direction, float* spd, float* sss, float* obj);
 
     float best_spd[360];
     float best_obj[360];
@@ -28,7 +31,6 @@ public:
 
     WindVectorPlus* nudgeWV;
     List<CAPWindVectorPlus> ambiguities;
-    AngleIntervalList directionRanges;
 
     unsigned int s0_flag;
     unsigned char cap_flag;
