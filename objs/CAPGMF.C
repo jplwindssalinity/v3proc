@@ -104,7 +104,7 @@ int CAPGMF::BuildSolutionCurves(
     // best_spd, best_sss, best_obj are pointers to float[360] arrays.
     for(int iazi = 0; iazi < cap_wvc->n_azi; ++iazi) {
         float azi_spacing = 360 / (float)cap_wvc->n_azi;
-        float this_angle = azi_spacing * (float)iazi;
+        float this_angle = azi_spacing * (float)iazi * dtr;
         float spd, dir, sss, obj;
 
         Retrieve(

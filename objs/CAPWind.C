@@ -81,7 +81,7 @@ CAPWindVectorPlus* CAPWVC::GetNearestAmbig(float direction, int rank_idx) {
 int CAPWVC::BuildSolutions() {
 
     FreeContents();
-
+    float azi_spacing = 360 / (float)n_azi;
     float pdf[n_azi], sum_pdf = 0;
 
     // search through best (spd, sss, obj) curves
@@ -95,7 +95,7 @@ int CAPWVC::BuildSolutions() {
             // Found a local maxima, append it to ambiguities
             CAPWindVectorPlus* this_ambig = new CAPWindVectorPlus();
             this_ambig->spd = best_spd[iazi];
-            this_ambig->dir = dtr * (float)iazi;
+            this_ambig->dir = dtr * (float)iazi * azi_spacing;
             this_ambig->sss = best_sss[iazi];
             this_ambig->obj = best_obj[iazi];
             ambiguities.Append(this_ambig);
@@ -172,7 +172,8 @@ int CAPWVC::BuildSolutions() {
         wvp = ambiguities.GetNext()){
 
         wvp->directionRange.SetLeftRight(
-            left_idx[this_ambig]*dtr, right_idx[this_ambig]*dtr);
+            (float)left_idx[this_ambig]*azi_spacing*dtr,
+            (float)right_idx[this_ambig]*azi_spacing*dtr);
 
         this_ambig++;
     }
