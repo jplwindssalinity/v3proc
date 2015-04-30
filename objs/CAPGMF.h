@@ -72,7 +72,7 @@ public:
 
     int GetTB(
         Meas::MeasTypeE met, float inc, float sst, float sss, float spd,
-        float dir, float swh, float* tb);
+        float dir, float swh, float* tb_flat, float* dtb);
 
     int Retrieve(
         MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_dir,

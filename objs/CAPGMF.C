@@ -267,14 +267,16 @@ float CAPGMF::ObjectiveFunctionPassive(
     float obj = 0;
     for(Meas* meas = tb_ml->GetHead(); meas; meas = tb_ml->GetNext()){
 
-        float model_tb;
+        float tb_flat, dtb, model_tb;
         float chi = trial_dir - meas->eastAzimuth + pi;
 
         GetTB(
             meas->measType, meas->incidenceAngle, anc_sst, trial_sss,
-            trial_spd, chi, anc_swh, &model_tb);
+            trial_spd, chi, anc_swh, &tb_flat, &dtb);
 
-        double var = meas->A + pow(kpm * model_tb, 2);
+        model_tb = tb_flat + dtb;
+
+        double var = meas->A + pow(kpm * dtb, 2);
         obj += pow(meas->value - model_tb, 2) / var;
     }
     return(obj);
@@ -317,16 +319,16 @@ int CAPGMF::GetModelS0(
 
 int CAPGMF::GetTB(
         Meas::MeasTypeE met, float inc, float sst, float sss, float spd,
-        float dir, float swh, float* tb) {
+        float dir, float swh, float* tb_flat, float* dtb) {
 
-    float tbflat, dtb;
+    float tbflat_, dtb_;
 
-    if(GetTBFlat(met, inc, sst, sss, &tbflat)||
-       GetDTB(met, inc, sst, spd, dir, swh, &dtb)) {
+    if(!GetTBFlat(met, inc, sst, sss, &tbflat_)||
+       !GetDTB(met, inc, sst, spd, dir, swh, &dtb_)) {
         return(0);
     }
-
-    *tb = tbflat + dtb;
+    *dtb = dtb_;
+    *tb_flat = tbflat_;
     return(1);
 }
 
@@ -354,6 +356,8 @@ int CAPGMF::GetTBFlat(
         fprintf(stderr, "Invalid MeasType: %d\n in CAPGMF::GetTBFlat", met);
         return(0);
     }
+
+    sst = sst - 273.16;
 
     // returns the flat surface brightness temp
     float inc = inc_in * 180/pi;

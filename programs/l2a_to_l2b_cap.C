@@ -34,6 +34,8 @@
 #include "Array.h"
 #include "Meas.h"
 #include "CAPGMF.h"
+#include "CAPWind.h"
+#include "CAPWindSwath.h"
 #include "GMF.h"
 #include "Constants.h"
 
@@ -150,40 +152,18 @@ int main(int argc, char* argv[]) {
     }
     l2a_s0.Close();
 
-    float** lat = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** lon = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** s0_spd = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** s0_dir = (float**)make_array(sizeof(float), 2, ncti, nati);
-
-    unsigned int** s0_flg = (unsigned int**)make_array(
-        sizeof(unsigned int), 2, ncti, nati);
-
-    float** cap_spd = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** cap_dir = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** cap_sss = (float**)make_array(sizeof(float), 2, ncti, nati);
-    unsigned char** cap_flg = (unsigned char**)make_array(
-        sizeof(unsigned char), 2, ncti, nati);
-
     CAP_ANC_L2B anc_sss(anc_sss_file);
     CAP_ANC_L2B anc_sst(anc_sst_file);
     CAP_ANC_L2B anc_swh(anc_swh_file);
 
+    CAPWindSwath cap_wind_swath;
+    cap_wind_swath.Allocate(ncti, nati);
+
     for(int ati=0; ati<nati; ++ati) {
-        if(ati%100 == 0)
+        if(ati%50 == 0)
             fprintf(stdout, "%d of %d\n", ati, nati);
 
         for(int cti=0; cti<ncti; ++cti) {
-
-            // init with fill value
-            lat[cti][ati] = FILL_VALUE;
-            lon[cti][ati] = FILL_VALUE;
-            s0_spd[cti][ati] = FILL_VALUE;
-            s0_dir[cti][ati] = FILL_VALUE;
-            s0_flg[cti][ati] = 0;
-            cap_spd[cti][ati] = FILL_VALUE;
-            cap_dir[cti][ati] = FILL_VALUE;
-            cap_sss[cti][ati] = FILL_VALUE;
-            cap_flg[cti][ati] = 255;
 
             WVC* s0_wvc = l2b_s0.frame.swath.GetWVC(cti, ati);
             if(!s0_wvc || !l2a_tb_swath[cti][ati] || !l2a_s0_swath[cti][ati])
@@ -202,8 +182,6 @@ int main(int argc, char* argv[]) {
             if(init_sss<0 || this_anc_sst<-10)
                 continue;
 
-            float this_cap_spd, this_cap_dir, this_cap_sss, min_obj;
-
             float active_weight = 1;
             float passive_weight = 1;
 
@@ -212,18 +190,75 @@ int main(int argc, char* argv[]) {
 
             this_anc_swh = -9999;
 
-            cap_gmf.Retrieve(
-                tb_ml, s0_ml, init_spd, init_dir, init_sss, this_anc_sst,
-                this_anc_swh, this_anc_rr, active_weight, passive_weight,
-                CAPGMF::RETRIEVE_SPEED_ONLY, &this_cap_spd, &this_cap_dir,
-                &this_cap_sss, &min_obj);
+            CAPWVC* wvc = new CAPWVC();
+            WindVectorPlus* nudgeWV = new WindVectorPlus();
+            nudgeWV->spd = s0_wvc->nudgeWV->spd;
+            nudgeWV->dir = s0_wvc->nudgeWV->dir;
+
+            wvc->nudgeWV = nudgeWV;
+            wvc->s0_flag = s0_wvc->qualFlag;
+
+            cap_gmf.BuildSolutionCurves(
+                tb_ml, s0_ml, init_spd, init_sss, this_anc_sst, this_anc_swh,
+                this_anc_rr, active_weight, passive_weight, wvc);
+
+            wvc->BuildSolutions();
+
+            if(wvc->ambiguities.NodeCount() > 0) {
+                cap_wind_swath.Add(cti, ati, wvc);
+                wvc->selected = wvc->GetNearestAmbig(s0_wvc->selected->dir);
+            } else {
+                delete wvc;
+            }
+
+            int aasdf = 0; // breakpoint
+        }
+    }
+
+//     cap_wind_swath.ThreshNudge(0.05);
+    cap_wind_swath.MedianFilter(3, 200);
+
+    // Write outputs
+    float** lat = (float**)make_array(sizeof(float), 2, ncti, nati);
+    float** lon = (float**)make_array(sizeof(float), 2, ncti, nati);
+    float** s0_spd = (float**)make_array(sizeof(float), 2, ncti, nati);
+    float** s0_dir = (float**)make_array(sizeof(float), 2, ncti, nati);
+
+    unsigned int** s0_flg = (unsigned int**)make_array(
+        sizeof(unsigned int), 2, ncti, nati);
+
+    float** cap_spd = (float**)make_array(sizeof(float), 2, ncti, nati);
+    float** cap_dir = (float**)make_array(sizeof(float), 2, ncti, nati);
+    float** cap_sss = (float**)make_array(sizeof(float), 2, ncti, nati);
+    unsigned char** cap_flg = (unsigned char**)make_array(
+        sizeof(unsigned char), 2, ncti, nati);
+
+    for(int ati=0; ati<nati; ++ati) {
+        for(int cti=0; cti<ncti; ++cti) {
+
+            // init with fill value
+            lat[cti][ati] = FILL_VALUE;
+            lon[cti][ati] = FILL_VALUE;
+            s0_spd[cti][ati] = FILL_VALUE;
+            s0_dir[cti][ati] = FILL_VALUE;
+            s0_flg[cti][ati] = 0;
+            cap_spd[cti][ati] = FILL_VALUE;
+            cap_dir[cti][ati] = FILL_VALUE;
+            cap_sss[cti][ati] = FILL_VALUE;
+            cap_flg[cti][ati] = 255;
+
+            WVC* s0_wvc = l2b_s0.frame.swath.GetWVC(cti, ati);
+            CAPWVC* wvc = cap_wind_swath.swath[cti][ati];
+
+            if(!wvc || !s0_wvc)
+                continue;
 
             // switch back to clockwise from noth convention, to degrees, and wrap
             float radar_only_dir = 450.0 - rtd * s0_wvc->selected->dir;
             while(radar_only_dir>=180) radar_only_dir-=360;
             while(radar_only_dir<-180) radar_only_dir+=360;
 
-            this_cap_dir = 450 - rtd * this_cap_dir;
+            float this_cap_dir = 450 - rtd * wvc->selected->dir;
             while(this_cap_dir>=180) this_cap_dir-=360;
             while(this_cap_dir<-180) this_cap_dir+=360;
 
@@ -237,13 +272,10 @@ int main(int argc, char* argv[]) {
             s0_dir[cti][ati] = radar_only_dir;
             s0_flg[cti][ati] = s0_wvc->qualFlag;
 
-//             printf("%d %d %f %f %f %f\n", cti, ati, s0_wvc->selected->spd, 
-//                 radar_only_dir, this_cap_spd, this_cap_dir);
-
             // insert some QA here to set cap_flag???
-            cap_spd[cti][ati] = this_cap_spd;
+            cap_spd[cti][ati] = wvc->selected->spd;
             cap_dir[cti][ati] = this_cap_dir;
-            cap_sss[cti][ati] = this_cap_sss;
+            cap_sss[cti][ati] = wvc->selected->sss;
         }
     }
 

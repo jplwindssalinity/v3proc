@@ -232,9 +232,12 @@ int main(int argc, char* argv[]){
                     while(relazi<0) relazi += two_pi;
                     while(relazi>=two_pi) relazi -= two_pi;
 
-                    float model_tb;
+                    float model_tb, tb_flat, dtb;
                     cap_gmf.GetTB(
-                        met, this_inc, sst, sss, spd, relazi, swh, &model_tb);
+                        met, this_inc, sst, sss, spd, relazi, swh, &tb_flat,
+                        &dtb);
+
+                    model_tb = tb_flat + dtb;
 
                     // Accumulate delta tb
                     sum_dtb[ipol] += tb[ipol][fp_idx] - model_tb;
