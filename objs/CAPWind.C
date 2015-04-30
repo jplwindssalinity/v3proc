@@ -82,15 +82,22 @@ int CAPWVC::BuildSolutions() {
 
     FreeContents();
     float azi_spacing = 360 / (float)n_azi;
-    float pdf[n_azi], sum_pdf = 0;
+
+    float obj_smooth[n_azi];
+    for(int iazi = 0; iazi < n_azi; ++iazi) {
+        int previdx = (iazi==0) ? n_azi-1 : iazi - 1;
+        int nextidx = (iazi==n_azi-1) ? 0 : iazi + 1;
+        obj_smooth[iazi] = (
+            best_obj[previdx]+best_obj[iazi]+best_obj[nextidx]) / 3.0;
+    }
 
     // search through best (spd, sss, obj) curves
     for(int iazi = 0; iazi < n_azi; ++iazi) {
         int previdx = (iazi==0) ? n_azi-1 : iazi - 1;
         int nextidx = (iazi==n_azi-1) ? 0 : iazi + 1;
 
-        if(best_obj[iazi] > best_obj[previdx] &&
-           best_obj[iazi] > best_obj[nextidx]) {
+        if(obj_smooth[iazi] > obj_smooth[previdx] &&
+           obj_smooth[iazi] > obj_smooth[nextidx]) {
 
             // Found a local maxima, append it to ambiguities
             CAPWindVectorPlus* this_ambig = new CAPWindVectorPlus();
@@ -100,8 +107,6 @@ int CAPWVC::BuildSolutions() {
             this_ambig->obj = best_obj[iazi];
             ambiguities.Append(this_ambig);
         }
-        pdf[iazi] = exp(best_obj[iazi]);
-        sum_pdf += pdf[iazi];
     }
 
     // Sort by objective function value
@@ -121,6 +126,23 @@ int CAPWVC::BuildSolutions() {
         }
     }
 
+    // Convert the objective function values to psuedo-PDF
+    float pdf[n_azi];
+    float max_obj = best_obj[0];
+
+    for(int iazi = 1; iazi < n_azi; ++iazi)
+        if(best_obj[iazi] > max_obj)
+            max_obj = best_obj[iazi];
+
+    float sum_pdf = 0;
+    for(int iazi = 0; iazi < n_azi; ++iazi) {
+        pdf[iazi] = exp((best_obj[iazi]-max_obj)/2);
+        sum_pdf += pdf[iazi];
+    }
+
+    for(int iazi = 0; iazi < n_azi; ++iazi)
+        pdf[iazi] /= sum_pdf;
+
     // Build out the direction ranges
     float pdf_included = 0;
     std::vector<int> left_idx;
@@ -134,10 +156,15 @@ int CAPWVC::BuildSolutions() {
         pdf_included += pdf[idx];
     }
 
-    while(pdf_included < 0.99 * sum_pdf) {
+    while(pdf_included < 0.99) {
+
+        float current_max_pdf = 0;
+        int current_max_idx;
+        int current_max_ambig;
+        int current_max_is_left;
+
         for(int iamb = 0; iamb < ambiguities.NodeCount(); ++iamb) {
 
-            // Step them out 1 degree on each side
             int left_ = (left_idx[iamb] == 0) ? n_azi-1 : left_idx[iamb] - 1;
             int right_ = (right_idx[iamb] == n_azi-1) ? 0 : right_idx[iamb] + 1;
 
@@ -155,15 +182,27 @@ int CAPWVC::BuildSolutions() {
                 }
             }
 
-            if(step_out_left) {
-                left_idx[iamb] = left_;
-                pdf_included += pdf[left_idx[iamb]];
+            if(step_out_left && pdf[left_] >= current_max_pdf) {
+                current_max_pdf = pdf[left_];
+                current_max_idx = left_;
+                current_max_ambig = iamb;
+                current_max_is_left = 1;
             }
 
-            if(step_out_right) {
-                right_idx[iamb] = right_;
-                pdf_included += pdf[right_idx[iamb]];
+            if(step_out_right && pdf[right_] >= current_max_pdf) {
+                current_max_pdf = pdf[right_];
+                current_max_idx = right_;
+                current_max_ambig = iamb;
+                current_max_is_left = 0;
             }
+        }
+
+        pdf_included += pdf[current_max_idx];
+
+        if(current_max_is_left) {
+            left_idx[current_max_ambig] = current_max_idx;
+        } else {
+            right_idx[current_max_ambig] = current_max_idx;
         }
     }
 
