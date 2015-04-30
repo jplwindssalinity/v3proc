@@ -128,7 +128,7 @@ int CAPWVC::BuildSolutions() {
     for(CAPWindVectorPlus* wvp = ambiguities.GetHead(); wvp;
         wvp = ambiguities.GetNext()){
 
-        int idx = (int)round(rtd * wvp->dir);
+        int idx = (int)round(rtd * wvp->dir / azi_spacing);
         left_idx.push_back(idx);
         right_idx.push_back(idx);
         pdf_included += pdf[idx];

@@ -261,29 +261,32 @@ int CAPWindSwath::MedianFilterPass(
                 }
 
                 float median_dir = atan2(y_med, x_med);
-                float new_direction;
+                float left_dir = wvc->selected->directionRange.left;
+                float right_dir = wvc->selected->directionRange.right;
 
-                // Pick nerest direction in wvc->selected
+                // allocate storage for filtered CAPWindVectorPlus
                 CAPWindVectorPlus* wvp = new CAPWindVectorPlus;
 
+                // Copy over direction range object
+                wvp->directionRange.SetLeftRight(left_dir, right_dir);
+
+                // Pick nerest direction in wvc->selected->directionRange
                 if(wvc->selected->directionRange.InRange(median_dir)) {
-                    new_direction = median_dir;
+                    wvp->dir = median_dir;
 
                 } else {
-                    float left_dir = wvc->selected->directionRange.left;
-                    float right_dir = wvc->selected->directionRange.right;
 
                     if(ANGDIF(left_dir, median_dir) <
                        ANGDIF(right_dir, median_dir)) {
-                        new_direction = wvc->selected->directionRange.left;
+                        wvp->dir = wvc->selected->directionRange.left;
 
                     } else {
-                        new_direction = wvc->selected->directionRange.right;
+                        wvp->dir = wvc->selected->directionRange.right;
                     }
                 }
 
-                wvc->GetBestSolution(
-                    new_direction, &wvp->spd, &wvp->sss, &wvp->obj);
+                // Interpolate spd, sss, obj to this direction
+                wvc->GetBestSolution(wvp->dir, &wvp->spd, &wvp->sss, &wvp->obj);
 
                 new_selected[cti][ati] = wvp;
             }
