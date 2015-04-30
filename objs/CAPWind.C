@@ -63,7 +63,7 @@ int CAPWVC::GetBestSolution(
 CAPWindVectorPlus* CAPWVC::GetNearestAmbig(float direction, int rank_idx) {
 
     float min_diff = 9999;
-    CAPWindVectorPlus* nearest_wvp;
+    CAPWindVectorPlus* nearest_wvp = NULL;
     int rank = 0;
     for(CAPWindVectorPlus* wvp = ambiguities.GetHead(); wvp;
         wvp = ambiguities.GetNext()){

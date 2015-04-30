@@ -72,7 +72,7 @@ int CAPWindSwath::ThreshNudge(float thres) {
 int CAPWindSwath::MedianFilter(int half_window, int max_passes) {
 
     CAPWindVectorPlus*** new_selected = (CAPWindVectorPlus***)make_array(
-        sizeof(WindVectorPlus*), 2, _crossTrackBins, _alongTrackBins);
+        sizeof(CAPWindVectorPlus*), 2, _crossTrackBins, _alongTrackBins);
 
     char** change = (char**)make_array(
         sizeof(char), 2, _crossTrackBins, _alongTrackBins);
