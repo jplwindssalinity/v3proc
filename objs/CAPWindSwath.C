@@ -261,6 +261,11 @@ int CAPWindSwath::MedianFilterPass(
                 }
 
                 float median_dir = atan2(y_med, x_med);
+
+                // wrap it to [0, two_pi) interval
+                if(median_dir<0) median_dir += two_pi;
+                if(median_dir>two_pi) median_dir -= two_pi;
+
                 float left_dir = wvc->selected->directionRange.left;
                 float right_dir = wvc->selected->directionRange.right;
 
@@ -276,8 +281,15 @@ int CAPWindSwath::MedianFilterPass(
 
                 } else {
 
-                    if(ANGDIF(left_dir, median_dir) <
-                       ANGDIF(right_dir, median_dir)) {
+                    float delta_left = left_dir - median_dir;
+                    while(delta_left>pi) delta_left -= two_pi;
+                    while(delta_left<pi) delta_left += two_pi;
+
+                    float delta_right = right_dir - median_dir;
+                    while(delta_right>pi) delta_right -= two_pi;
+                    while(delta_right<pi) delta_right += two_pi;
+
+                    if(fabs(delta_left) < fabs(delta_right)) {
                         wvp->dir = wvc->selected->directionRange.left;
 
                     } else {
