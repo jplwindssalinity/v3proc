@@ -101,6 +101,8 @@ int CAPGMF::BuildSolutionCurves(
     float anc_sst, float anc_swh, float anc_rr, float active_weight,
     float passive_weight, CAPWVC* cap_wvc) {
 
+    float start_speed = 8.0;
+
     // best_spd, best_sss, best_obj are pointers to float[360] arrays.
     for(int iazi = 0; iazi < cap_wvc->n_azi; ++iazi) {
         float azi_spacing = 360 / (float)cap_wvc->n_azi;
@@ -108,7 +110,7 @@ int CAPGMF::BuildSolutionCurves(
         float spd, dir, sss, obj;
 
         Retrieve(
-            tb_ml, s0_ml, init_spd, this_angle, init_sss, anc_sst, anc_swh,
+            tb_ml, s0_ml, start_speed, this_angle, init_sss, anc_sst, anc_swh,
             anc_rr, active_weight, passive_weight, RETRIEVE_SPEED_ONLY,
             &spd, &dir, &sss, &obj);
 
@@ -117,7 +119,10 @@ int CAPGMF::BuildSolutionCurves(
 
         // Swap sign on objective function value
         cap_wvc->best_obj[iazi] = -obj;
+
+        start_speed = spd;
     }
+    int asdf = 1;
     return(1);
 }
 
