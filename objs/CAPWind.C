@@ -91,6 +91,13 @@ int CAPWVC::BuildSolutions() {
             best_obj[previdx]+best_obj[iazi]+best_obj[nextidx]) / 3.0;
     }
 
+    for(int iazi = 0; iazi < n_azi; ++iazi) {
+        int previdx = (iazi==0) ? n_azi-1 : iazi - 1;
+        int nextidx = (iazi==n_azi-1) ? 0 : iazi + 1;
+        obj_smooth[iazi] = (
+            obj_smooth[previdx]+obj_smooth[iazi]+obj_smooth[nextidx]) / 3.0;
+    }
+
     // search through best (spd, sss, obj) curves
     for(int iazi = 0; iazi < n_azi; ++iazi) {
         int previdx = (iazi==0) ? n_azi-1 : iazi - 1;
@@ -104,7 +111,7 @@ int CAPWVC::BuildSolutions() {
             this_ambig->spd = best_spd[iazi];
             this_ambig->dir = dtr * (float)iazi * azi_spacing;
             this_ambig->sss = best_sss[iazi];
-            this_ambig->obj = best_obj[iazi];
+            this_ambig->obj = obj_smooth[iazi];
             ambiguities.Append(this_ambig);
         }
     }
@@ -128,15 +135,15 @@ int CAPWVC::BuildSolutions() {
 
     // Convert the objective function values to psuedo-PDF
     float pdf[n_azi];
-    float max_obj = best_obj[0];
+    float max_obj = obj_smooth[0];
 
     for(int iazi = 1; iazi < n_azi; ++iazi)
-        if(best_obj[iazi] > max_obj)
-            max_obj = best_obj[iazi];
+        if(obj_smooth[iazi] > max_obj)
+            max_obj = obj_smooth[iazi];
 
     float sum_pdf = 0;
     for(int iazi = 0; iazi < n_azi; ++iazi) {
-        pdf[iazi] = exp((best_obj[iazi]-max_obj)/2);
+        pdf[iazi] = exp((obj_smooth[iazi]-max_obj)/2);
         sum_pdf += pdf[iazi];
     }
 
