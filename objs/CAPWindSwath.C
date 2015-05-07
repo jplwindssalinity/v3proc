@@ -88,7 +88,7 @@ int CAPWindSwath::MedianFilter(int half_window, int max_passes) {
     // Pass 1: Only filter non-land/ice, ignore land/ice WVCs
     // Pass 2: Fix non-land/ice selections, filter land/ice WVCs
     // Pass 3: DIR processing
-    for(int ipass = 0; ipass < 3; ++ipass) {
+    for(int ipass = 2; ipass < 3; ++ipass) {
 
         // Do DIR on last pass
         int special = (ipass == 2) ? 1 : 0;
@@ -103,7 +103,7 @@ int CAPWindSwath::MedianFilter(int half_window, int max_passes) {
                     continue;
                 }
 
-                if(wvc->s0_flag & (L2B_QUAL_FLAG_LAND+L2B_QUAL_FLAG_ICE)) {
+                if(wvc->s0_flag & (L2B_QUAL_FLAG_LAND|L2B_QUAL_FLAG_ICE)) {
                     if(ipass == 0) {
                         change[cti][ati] = 0;
                         filter[cti][ati] = 0;

@@ -137,7 +137,7 @@ int CAPWVC::BuildSolutions() {
     }
 
     // quit if no ambigs (will segfault below)
-    if(ambiguities.NodeCount() == 4)
+    if(ambiguities.NodeCount() == 0)
         return(0);
 
     // Sort by objective function value
@@ -158,14 +158,14 @@ int CAPWVC::BuildSolutions() {
     }
 
     // Convert the objective function values to psuedo-PDF
-    float pdf[n_azi];
-    float max_obj = obj_smooth[0];
+    double pdf[n_azi];
+    double max_obj = obj_smooth[0];
 
     for(int iazi = 1; iazi < n_azi; ++iazi)
         if(obj_smooth[iazi] > max_obj)
             max_obj = obj_smooth[iazi];
 
-    float sum_pdf = 0;
+    double sum_pdf = 0;
     for(int iazi = 0; iazi < n_azi; ++iazi) {
         pdf[iazi] = exp((obj_smooth[iazi]-max_obj)/2);
         sum_pdf += pdf[iazi];
@@ -175,7 +175,7 @@ int CAPWVC::BuildSolutions() {
         pdf[iazi] /= sum_pdf;
 
     // Build out the direction ranges
-    float pdf_included = 0;
+    double pdf_included = 0;
     std::vector<int> left_idx;
     std::vector<int> right_idx;
     for(CAPWindVectorPlus* wvp = ambiguities.GetHead(); wvp;
@@ -189,7 +189,7 @@ int CAPWVC::BuildSolutions() {
 
     while(pdf_included < 0.99) {
 
-        float current_max_pdf = 0;
+        double current_max_pdf = 0;
         int current_max_idx;
         int current_max_ambig;
         int current_max_is_left;
