@@ -47,15 +47,15 @@ public:
     int ReadRough(const char* filename);
     int ReadModelS0(const char* filename);
 
-    float ObjectiveFunctionCAP(
+    double ObjectiveFunctionCAP(
         MeasList* tb_ml, MeasList* s0_ml, float trial_spd, float trial_dir,
         float trial_sss, float anc_swh, float anc_sst, float active_weight = 1,
         float passive_weight = 1);
 
-    float ObjectiveFunctionActive(
+    double ObjectiveFunctionActive(
         MeasList* s0_ml, float trial_spd, float trial_dir, float anc_swh);
 
-    float ObjectiveFunctionPassive(
+    double ObjectiveFunctionPassive(
         MeasList* tb_ml, float trial_spd, float trial_dir, float trial_sss,
         float anc_swh, float anc_sst);
 

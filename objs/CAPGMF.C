@@ -251,25 +251,27 @@ int CAPGMF::Retrieve(
     return(1);
 }
 
-float CAPGMF::ObjectiveFunctionCAP(
+double CAPGMF::ObjectiveFunctionCAP(
     MeasList* tb_ml, MeasList* s0_ml, float trial_spd, float trial_dir,
     float trial_sss, float anc_swh, float anc_sst, float active_weight,
     float passive_weight) {
 
-    float passive_obj = ObjectiveFunctionPassive(
+    double passive_obj = ObjectiveFunctionPassive(
         tb_ml, trial_spd, trial_dir, trial_sss, anc_swh, anc_sst);
 
-    float active_obj = ObjectiveFunctionActive(
+    double active_obj = ObjectiveFunctionActive(
         s0_ml, trial_spd, trial_dir, anc_swh);
 
-    return(passive_weight * passive_obj + active_weight * active_obj);
+    return(
+        (double)passive_weight * passive_obj +
+        (double)active_weight * active_obj);
 }
 
-float CAPGMF::ObjectiveFunctionPassive(
+double CAPGMF::ObjectiveFunctionPassive(
     MeasList* tb_ml, float trial_spd, float trial_dir, float trial_sss,
     float anc_swh, float anc_sst) {
 
-    float obj = 0;
+    double obj = 0;
     for(Meas* meas = tb_ml->GetHead(); meas; meas = tb_ml->GetNext()){
 
         float tb_flat, dtb, model_tb;
@@ -282,15 +284,15 @@ float CAPGMF::ObjectiveFunctionPassive(
         model_tb = tb_flat + dtb;
 
         double var = meas->A + pow(kpm * dtb, 2);
-        obj += pow(meas->value - model_tb, 2) / var;
+        obj += pow((double)(meas->value - model_tb), 2) / var;
     }
     return(obj);
 }
 
-float CAPGMF::ObjectiveFunctionActive(
+double CAPGMF::ObjectiveFunctionActive(
     MeasList* s0_ml, float trial_spd, float trial_dir, float anc_swh) {
 
-    float obj = 0;
+    double obj = 0;
     for(Meas* meas = s0_ml->GetHead(); meas; meas = s0_ml->GetNext()){
 
         // Compute model S0 (replace this stub!!!)
@@ -303,7 +305,7 @@ float CAPGMF::ObjectiveFunctionActive(
 
         double kp_tot = (1 + pow(kpm, 2)) * meas->A - 1;
         double var = kp_tot * model_s0 * model_s0;
-        obj += pow(meas->value - model_s0, 2) / var;
+        obj += pow((double)(meas->value - model_s0), 2) / var;
     }
     return(obj);
 }
