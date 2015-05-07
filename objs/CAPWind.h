@@ -25,7 +25,7 @@ public:
     CAPWindVectorPlus* GetNearestAmbig(float direction, int rank_idx = 4);
     int GetBestSolution(float direction, float* spd, float* sss, float* obj);
 
-    static const int n_azi = 180;
+    static const unsigned int n_azi = 180;
 
     float best_spd[n_azi];
     float best_obj[n_azi];

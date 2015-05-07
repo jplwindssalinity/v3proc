@@ -83,7 +83,7 @@ int CAPWVC::BuildSolutions() {
     FreeContents();
     float azi_spacing = 360 / (float)n_azi;
 
-    float obj_smooth[n_azi];
+    double obj_smooth[n_azi];
     for(int iazi = 0; iazi < n_azi; ++iazi) {
         int previdx = (iazi==0) ? n_azi-1 : iazi - 1;
         int nextidx = (iazi==n_azi-1) ? 0 : iazi + 1;
@@ -101,8 +101,11 @@ int CAPWVC::BuildSolutions() {
     // search through best (spd, sss, obj) curves
     for(int iazi = 0; iazi < n_azi; ++iazi) {
         int previdx = (iazi==0) ? n_azi-1 : iazi - 1;
+        int previdx2 = (previdx==0) ? n_azi-1 : previdx - 1;
+
         int nextidx = (iazi==n_azi-1) ? 0 : iazi + 1;
 
+        // check for maxima
         if(obj_smooth[iazi] > obj_smooth[previdx] &&
            obj_smooth[iazi] > obj_smooth[nextidx]) {
 
@@ -111,6 +114,23 @@ int CAPWVC::BuildSolutions() {
             this_ambig->spd = best_spd[iazi];
             this_ambig->dir = dtr * (float)iazi * azi_spacing;
             this_ambig->sss = best_sss[iazi];
+            this_ambig->obj = obj_smooth[iazi];
+            ambiguities.Append(this_ambig);
+
+        } else if(
+            // check for rare case when two have same max value (look backwards)
+            obj_smooth[iazi] == obj_smooth[previdx] &&
+            obj_smooth[iazi] > obj_smooth[nextidx] &&
+            obj_smooth[iazi] > obj_smooth[previdx2]) {
+
+            // put the ambig right in the middle
+            float this_dir = dtr * ((float)iazi-0.5) * azi_spacing;
+            if(this_dir<0) this_dir+=two_pi;
+
+            CAPWindVectorPlus* this_ambig = new CAPWindVectorPlus();
+            this_ambig->spd = 0.5*(best_spd[iazi]+best_spd[previdx]);
+            this_ambig->dir = this_dir;
+            this_ambig->sss = 0.5*(best_sss[iazi]+best_sss[previdx]);
             this_ambig->obj = obj_smooth[iazi];
             ambiguities.Append(this_ambig);
         }
