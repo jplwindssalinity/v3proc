@@ -136,6 +136,10 @@ int CAPWVC::BuildSolutions() {
         }
     }
 
+    // quit if no ambigs (will segfault below)
+    if(ambiguities.NodeCount() == 4)
+        return(0);
+
     // Sort by objective function value
     SortByObj();
 
