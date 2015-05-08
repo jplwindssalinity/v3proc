@@ -219,7 +219,7 @@ int CAPGMF::Retrieve(
     opt.set_lower_bounds(lb);
     opt.set_upper_bounds(ub);
     opt.set_min_objective(cap_obj_func, &cap_anc);
-    opt.set_xtol_rel(0.01);
+    opt.set_xtol_rel(0.0001);
 
     // Solve it!
     double minf;
