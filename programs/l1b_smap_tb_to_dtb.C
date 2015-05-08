@@ -8,11 +8,13 @@
 #define TB_ROUGH_MODEL_FILE_KEYWORD "TB_ROUGH_MODEL_FILE"
 #define QS_LANDMAP_FILE_KEYWORD "QS_LANDMAP_FILE"
 #define QS_ICEMAP_FILE_KEYWORD  "QS_ICEMAP_FILE"
-#define L1B_TB_ASC_ANC_SPD_FILE_KEYWORD "L1B_TB_ASC_ANC_SPD_FILE"
+#define L1B_TB_ASC_ANC_U10_FILE_KEYWORD "L1B_TB_ASC_ANC_U10_FILE"
+#define L1B_TB_ASC_ANC_V10_FILE_KEYWORD "L1B_TB_ASC_ANC_V10_FILE"
 #define L1B_TB_ASC_ANC_SSS_FILE_KEYWORD "L1B_TB_ASC_ANC_SSS_FILE"
 #define L1B_TB_ASC_ANC_SST_FILE_KEYWORD "L1B_TB_ASC_ANC_SST_FILE"
 #define L1B_TB_ASC_ANC_SWH_FILE_KEYWORD "L1B_TB_ASC_ANC_SWH_FILE"
-#define L1B_TB_DEC_ANC_SPD_FILE_KEYWORD "L1B_TB_DEC_ANC_SPD_FILE"
+#define L1B_TB_DEC_ANC_U10_FILE_KEYWORD "L1B_TB_DEC_ANC_U10_FILE"
+#define L1B_TB_DEC_ANC_V10_FILE_KEYWORD "L1B_TB_DEC_ANC_V10_FILE"
 #define L1B_TB_DEC_ANC_SSS_FILE_KEYWORD "L1B_TB_DEC_ANC_SSS_FILE"
 #define L1B_TB_DEC_ANC_SST_FILE_KEYWORD "L1B_TB_DEC_ANC_SST_FILE"
 #define L1B_TB_DEC_ANC_SWH_FILE_KEYWORD "L1B_TB_DEC_ANC_SWH_FILE"
@@ -104,11 +106,14 @@ int main(int argc, char* argv[]){
     config_list.ExitForMissingKeywords();
     l1b_tbfiles[0] = config_list.Get(L1B_TB_LORES_ASC_FILE_KEYWORD);
     l1b_tbfiles[1] = config_list.Get(L1B_TB_LORES_DEC_FILE_KEYWORD);
-    printf("l1b_tbfiles: %s %s\n", l1b_tbfiles[0], l1b_tbfiles[1]);
 
-    char* anc_spd_files[2] = {NULL, NULL};
-    anc_spd_files[0] = config_list.Get(L1B_TB_ASC_ANC_SPD_FILE_KEYWORD);
-    anc_spd_files[1] = config_list.Get(L1B_TB_DEC_ANC_SPD_FILE_KEYWORD);
+    char* anc_u10_files[2] = {NULL, NULL};
+    anc_u10_files[0] = config_list.Get(L1B_TB_ASC_ANC_U10_FILE_KEYWORD);
+    anc_u10_files[1] = config_list.Get(L1B_TB_DEC_ANC_U10_FILE_KEYWORD);
+
+    char* anc_v10_files[2] = {NULL, NULL};
+    anc_v10_files[0] = config_list.Get(L1B_TB_ASC_ANC_V10_FILE_KEYWORD);
+    anc_v10_files[1] = config_list.Get(L1B_TB_DEC_ANC_V10_FILE_KEYWORD);
 
     char* anc_sss_files[2] = {NULL, NULL};
     anc_sss_files[0] = config_list.Get(L1B_TB_ASC_ANC_SSS_FILE_KEYWORD);
@@ -185,10 +190,11 @@ int main(int argc, char* argv[]){
         read_SDS_h5(id, "/Brightness_Temperature/tb_qual_flag_v", &tb_flag[0][0]);
         read_SDS_h5(id, "/Brightness_Temperature/tb_qual_flag_h", &tb_flag[1][0]);
 
-        CAP_ANC_L1B anc_spd(anc_spd_files[ipart]);
+        CAP_ANC_L1B anc_u10(anc_u10_files[ipart]);
+        CAP_ANC_L1B anc_v10(anc_v10_files[ipart]);
         CAP_ANC_L1B anc_sss(anc_sss_files[ipart]);
         CAP_ANC_L1B anc_sst(anc_sst_files[ipart]);
-        CAP_ANC_L1B anc_swh(anc_swh_files[ipart]);
+//         CAP_ANC_L1B anc_swh(anc_swh_files[ipart]);
 
         // Iterate over scans
         for(int iframe = 0; iframe < nframes[ipart]; ++iframe) {
@@ -218,11 +224,18 @@ int main(int argc, char* argv[]){
                     else
                         met = Meas::L_BAND_TBH_MEAS_TYPE;
 
-                    float spd = anc_spd.data[iframe][ifootprint][0];
-                    float dir = anc_spd.data[iframe][ifootprint][1];
+                    float u10 = anc_u10.data[iframe][ifootprint][0];
+                    float v10 = anc_v10.data[iframe][ifootprint][0];
+
+                    float spd = sqrt(u10*u10 + v10*v10);
+
+                    // Met convention
+                    float dir = atan2(-u10, -v10);
+
                     float sss = anc_sss.data[iframe][ifootprint][0];
                     float sst = anc_sst.data[iframe][ifootprint][0];
-                    float swh = anc_swh.data[iframe][ifootprint][0];
+//                     float swh = anc_swh.data[iframe][ifootprint][0];
+                    float swh = -99999;
                     float this_inc = dtr*inc[fp_idx];
 
                     // Compute relative azimuth angle
@@ -232,12 +245,18 @@ int main(int argc, char* argv[]){
                     while(relazi<0) relazi += two_pi;
                     while(relazi>=two_pi) relazi -= two_pi;
 
+                    swh = -9999;
+
                     float model_tb, tb_flat, dtb;
                     cap_gmf.GetTB(
                         met, this_inc, sst, sss, spd, relazi, swh, &tb_flat,
                         &dtb);
 
                     model_tb = tb_flat + dtb;
+
+                    float this_delta = tb[ipol][fp_idx] - model_tb;
+                    if(fabs(this_delta) > 10)
+                        continue;
 
                     // Accumulate delta tb
                     sum_dtb[ipol] += tb[ipol][fp_idx] - model_tb;
@@ -248,12 +267,14 @@ int main(int argc, char* argv[]){
         H5Fclose(id);
     }
 
+    int revno;
+    config_list.GetInt("REVNO", &revno);
+
     FILE* ofp = fopen(out_file, "w");
-    for(int ipol = 0; ipol < 2; ++ipol) {
-        fprintf(
-            ofp, "%d, %d, %f, %f\n", ipol, counts[ipol],
-            sum_dtb[ipol]/(float)counts[ipol]);
-    }
+    fprintf(
+        ofp, "%d, %d, %f, %d, %f\n", revno, 
+        counts[0], sum_dtb[0]/(float)counts[0],
+        counts[1], sum_dtb[1]/(float)counts[1]);
     fclose(ofp);
     return(0);
 }
