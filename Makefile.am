@@ -175,7 +175,8 @@ bin_PROGRAMS = \
     programs/l1b_smap_to_l1b                      \
     programs/l1b_smap_tb_to_l1b                   \
     programs/l1b_smap_tb_to_dtb                   \
-    programs/l2a_to_l2b_cap
+    programs/l2a_to_l2b_cap                       \
+    programs/l2a_fix_SMAP_composites
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files
