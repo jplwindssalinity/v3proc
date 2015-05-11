@@ -213,6 +213,9 @@ int main(int argc, char* argv[]){
                     double tmp_lat = dtr*lat[fp_idx];
                     if(tmp_lon<0) tmp_lon += two_pi;
 
+                    if(fabs(lat[fp_idx])>50)
+                        continue;
+
                     // TBD Filtering on location, land, ice flags
                     if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0) ||
                        qs_icemap.IsIce(tmp_lon, tmp_lat, 0))
