@@ -114,6 +114,34 @@ int init_string( char* string, int length ) {
     return(1);
 }
 
+typedef struct {
+    float slice_imbal[2][36][11];
+} SliceImbal;
+
+int get_slice_imbal(
+    float antazi, int islice, int ipol, SliceImbal* slice_imbal, float* imbal) {
+
+    if(!slice_imbal) {
+        *imbal = 0;
+        return(0);
+    }
+
+    int iazi0 = floor(antazi/10);
+
+    if(iazi0==-1) iazi0 = 35;
+    if(iazi0==36) iazi0 = 0;
+
+    int iazi1 = 1 + iazi0;
+    if(iazi1==36) iazi1 = 0;
+
+    float a = antazi/10 - floor(antazi/10);
+
+    *imbal = slice_imbal->slice_imbal[ipol][iazi0][islice] * (1-a) + 
+        slice_imbal->slice_imbal[ipol][iazi1][islice] * a;
+
+    return(1);
+}
+
 int main(int argc, char* argv[]){
     //-----------//
     // variables //
@@ -183,6 +211,16 @@ int main(int argc, char* argv[]){
     config_list.GetFloat(HH_ADJUST_KEYWORD, &sigma0_adjust_factors[1]);
     config_list.GetFloat(VH_ADJUST_KEYWORD, &sigma0_adjust_factors[2]);
     config_list.GetFloat(HV_ADJUST_KEYWORD, &sigma0_adjust_factors[3]);
+
+    config_list.DoNothingForMissingKeywords();
+    SliceImbal* slice_imbal = NULL;
+    char* slice_imbal_file = config_list.Get("SLICE_ADJUST_FILE");
+    if(slice_imbal_file) {
+        slice_imbal = new SliceImbal;
+        FILE* ifp = fopen(slice_imbal_file, "r");
+        fread(&slice_imbal->slice_imbal[0][0][0], sizeof(float), 36*11*2, ifp);
+        fclose(ifp);
+    }
 
     // Convert them to linear scale factors from dB.
     for(int ipol=0; ipol<4; ++ipol) {
@@ -455,6 +493,19 @@ int main(int argc, char* argv[]){
 
                         new_meas_spot->Append(new_meas);
                     } else {
+
+                        // Only use up to 3 dB down from peak slice
+                        float max_xf = 0;
+                        for(int islice = 0; islice < nslices[ipart]; ++islice) {
+                            // Index into slice-sized arrays
+                            int slice_idx =
+                                iframe * nfootprints[ipart] * nslices[ipart] +
+                                ifootprint * nslices[ipart] + islice;
+
+                            if(xf[ipol][slice_idx]>max_xf)
+                                max_xf = xf[ipol][slice_idx];
+                        }
+
                         for(int islice = 0; islice < nslices[ipart]; ++islice) {
 
                             // Index into slice-sized arrays
@@ -462,7 +513,10 @@ int main(int argc, char* argv[]){
                                 iframe * nfootprints[ipart] * nslices[ipart] +
                                 ifootprint * nslices[ipart] + islice;
 
-                            if(0x1&s0_flag[ipol][slice_idx])
+                            if(0x1&s0_flag[ipol][slice_idx] || islice>10)
+                                continue;
+
+                            if(xf[ipol][slice_idx] < 0.5 * max_xf)
                                 continue;
 
                             Meas* new_meas = new Meas();
@@ -500,6 +554,16 @@ int main(int argc, char* argv[]){
                             new_meas->numSlices = 1;
                             new_meas->startSliceIdx = islice;
                             new_meas->landFlag = 0;
+
+                            float slice_adjust;
+
+                            get_slice_imbal(
+                                antazi[fp_idx], islice, ipol, slice_imbal,
+                                &slice_adjust);
+
+                            slice_adjust = pow(10.0, 0.1*slice_adjust);
+
+                            new_meas->value /= slice_adjust;
 
                             while(new_meas->eastAzimuth>two_pi)
                                 new_meas->eastAzimuth-=two_pi;
@@ -554,6 +618,10 @@ int main(int argc, char* argv[]){
         }
         H5Fclose(id);
     }
+
+    if(slice_imbal)
+        delete slice_imbal;
+
     return(0);
 }
 
