@@ -138,6 +138,10 @@ int CAPGMF::Retrieve(
             n_dims = 1;
             break;
 
+        case RETRIEVE_SALINITY_ONLY:
+            n_dims = 1;
+            break;
+
         case RETRIEVE_SPEED_DIRECTION:
             n_dims = 2;
             break;
@@ -176,6 +180,10 @@ int CAPGMF::Retrieve(
     if(mode == RETRIEVE_SPEED_ONLY) {
         lb[0] = 0; ub[0] = 100;
         x[0] = init_spd;
+
+    } else if (mode == RETRIEVE_SALINITY_ONLY) {
+        lb[1] = 28; ub[1] = 42; // salinity
+        x[0] = init_sss;
 
     } else if (mode == RETRIEVE_SPEED_DIRECTION) {
         lb[0] = 0; ub[0] = 100;
@@ -232,6 +240,11 @@ int CAPGMF::Retrieve(
         *spd = (float)x[0];
         *dir = init_dir;
         *sss = init_sss;
+
+    } else if(mode == RETRIEVE_SALINITY_ONLY) {
+        *sss = init_spd;
+        *dir = init_dir;
+        *sss = (float)x[0];
 
     } else if(mode == RETRIEVE_SPEED_DIRECTION) {
         *spd = (float)x[0];
@@ -710,6 +723,11 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
         trial_spd = (float)x[0];
         trial_dir = cap_anc->init_dir;
         trial_sss = cap_anc->init_sss;
+
+    } else if(cap_anc->mode == CAPGMF::RETRIEVE_SALINITY_ONLY) {
+        trial_spd = cap_anc->init_spd;
+        trial_dir = cap_anc->init_dir;
+        trial_sss = (float)x[0];
 
     } else if(cap_anc->mode == CAPGMF::RETRIEVE_SPEED_DIRECTION) {
         trial_spd = (float)x[0];
