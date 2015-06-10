@@ -103,8 +103,8 @@ int main(int argc, char* argv[]) {
             // set numSlices == -1 to indicate.
             if(meas->numSlices > 0) {
 
-                // KPR for SMAP?
-                double kpr_eu = 0;
+                // KPR for SMAP; WAG: 10*log10(1+0.07) = 0.3 dB
+                double kpr_eu = 0.07;
 
                 double kp_alpha = (1+kpr_eu*kpr_eu)*(1+meas->A);
 
