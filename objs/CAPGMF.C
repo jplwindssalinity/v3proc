@@ -96,6 +96,47 @@ CAPGMF::~CAPGMF() {
     return;
 }
 
+int CAPGMF::BuildSolutionCurvesTwoStep(
+    MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_sss,
+    float anc_sst, float anc_swh, float anc_rr, float active_weight,
+    float passive_weight, CAPWVC* cap_wvc) {
+
+    float start_speed = init_spd;
+
+    // best_spd, best_sss, best_obj are pointers to float[360] arrays.
+    for(int iazi = 0; iazi < cap_wvc->n_azi; ++iazi) {
+        float azi_spacing = 360 / (float)cap_wvc->n_azi;
+        float this_angle = azi_spacing * (float)iazi * dtr;
+        float spd, dir, sss, obj;
+
+        // First do wind speed
+        Retrieve(
+            tb_ml, s0_ml, start_speed, this_angle, init_sss, anc_sst, anc_swh,
+            anc_rr, active_weight, passive_weight, RETRIEVE_SPEED_ONLY,
+            &spd, &dir, &sss, &obj);
+
+        cap_wvc->best_spd[iazi] = spd;
+        cap_wvc->best_sss[iazi] = sss;
+
+        // Swap sign on objective function value
+        cap_wvc->best_obj[iazi] = -obj;
+
+        start_speed = spd;
+
+        float sss_active_weight = 0;
+        float sss_passive_weight = 1;
+
+        // Fix the wind speed and do TB-only SSS for that wind speed
+        Retrieve(
+            tb_ml, s0_ml, spd, this_angle, init_sss, anc_sst, anc_swh,
+            anc_rr, sss_active_weight, sss_passive_weight, RETRIEVE_SALINITY_ONLY,
+            &spd, &dir, &sss, &obj);
+
+        cap_wvc->best_sss[iazi] = sss;
+    }
+    return(1);
+}
+
 int CAPGMF::BuildSolutionCurves(
     MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_sss,
     float anc_sst, float anc_swh, float anc_rr, float active_weight,
@@ -121,8 +162,17 @@ int CAPGMF::BuildSolutionCurves(
         cap_wvc->best_obj[iazi] = -obj;
 
         start_speed = spd;
+
+        float sss_active_weight = 0;
+        float sss_passive_weight = 1;
+
+        Retrieve(
+            tb_ml, s0_ml, spd, this_angle, init_sss, anc_sst, anc_swh,
+            anc_rr, sss_active_weight, sss_passive_weight, RETRIEVE_SALINITY_ONLY,
+            &spd, &dir, &sss, &obj);
+
+        cap_wvc->best_sss[iazi] = sss;
     }
-    int asdf = 1;
     return(1);
 }
 
