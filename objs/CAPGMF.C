@@ -129,8 +129,8 @@ int CAPGMF::BuildSolutionCurvesTwoStep(
         // Fix the wind speed and do TB-only SSS for that wind speed
         Retrieve(
             tb_ml, s0_ml, spd, this_angle, init_sss, anc_sst, anc_swh,
-            anc_rr, sss_active_weight, sss_passive_weight, RETRIEVE_SALINITY_ONLY,
-            &spd, &dir, &sss, &obj);
+            anc_rr, sss_active_weight, sss_passive_weight,
+            RETRIEVE_SALINITY_ONLY, &spd, &dir, &sss, &obj);
 
         cap_wvc->best_sss[iazi] = sss;
     }
@@ -162,16 +162,6 @@ int CAPGMF::BuildSolutionCurves(
         cap_wvc->best_obj[iazi] = -obj;
 
         start_speed = spd;
-
-        float sss_active_weight = 0;
-        float sss_passive_weight = 1;
-
-        Retrieve(
-            tb_ml, s0_ml, spd, this_angle, init_sss, anc_sst, anc_swh,
-            anc_rr, sss_active_weight, sss_passive_weight, RETRIEVE_SALINITY_ONLY,
-            &spd, &dir, &sss, &obj);
-
-        cap_wvc->best_sss[iazi] = sss;
     }
     return(1);
 }
@@ -232,7 +222,7 @@ int CAPGMF::Retrieve(
         x[0] = init_spd;
 
     } else if (mode == RETRIEVE_SALINITY_ONLY) {
-        lb[1] = 28; ub[1] = 42; // salinity
+        lb[0] = 28; ub[0] = 42; // salinity
         x[0] = init_sss;
 
     } else if (mode == RETRIEVE_SPEED_DIRECTION) {
