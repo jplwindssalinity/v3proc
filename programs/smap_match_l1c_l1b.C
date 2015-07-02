@@ -189,6 +189,8 @@ int main(int argc, char* argv[]){
     }
 
     FILE* ofp = fopen(outfile, "w");
+    fwrite(&nscans, sizeof(int), 1, ofp);
+    fwrite(&nlris, sizeof(int), 1, ofp);
     fwrite(&match_hh[0], sizeof(float), l1b_size, ofp);
     fwrite(&match_vv[0], sizeof(float), l1b_size, ofp);
     fwrite(&match_xpol[0], sizeof(float), l1b_size, ofp);
