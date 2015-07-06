@@ -27,6 +27,13 @@ int main(int argc, char* argv[]){
     char* l1cfile = argv[2];
     char* outfile = argv[3];
 
+    FILE* fp = fopen(outfile, "r");
+    if(fp!=NULL) {
+        exit(1);
+    } else {
+        fclose(fp);
+    }
+
     hid_t l1b_id = H5Fopen(l1bfile, H5F_ACC_RDONLY, H5P_DEFAULT);
     hsize_t dims[2];
     H5T_class_t class_id;
