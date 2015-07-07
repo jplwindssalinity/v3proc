@@ -30,8 +30,6 @@ int main(int argc, char* argv[]){
     FILE* fp = fopen(outfile, "r");
     if(fp!=NULL) {
         exit(1);
-    } else {
-        fclose(fp);
     }
 
     hid_t l1b_id = H5Fopen(l1bfile, H5F_ACC_RDONLY, H5P_DEFAULT);
