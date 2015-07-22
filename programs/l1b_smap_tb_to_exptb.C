@@ -237,6 +237,7 @@ int main(int argc, char* argv[]){
 
                     float sss = anc_sss.data[iframe][ifootprint][0];
                     float sst = anc_sst.data[iframe][ifootprint][0];
+                    sst += 273.16;
 //                     float swh = anc_swh.data[iframe][ifootprint][0];
                     float swh = -99999;
                     float this_inc = dtr*inc[fp_idx];
