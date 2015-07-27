@@ -18,6 +18,7 @@
 #define L1B_TB_DEC_ANC_SSS_FILE_KEYWORD "L1B_TB_DEC_ANC_SSS_FILE"
 #define L1B_TB_DEC_ANC_SST_FILE_KEYWORD "L1B_TB_DEC_ANC_SST_FILE"
 #define L1B_TB_DEC_ANC_SWH_FILE_KEYWORD "L1B_TB_DEC_ANC_SWH_FILE"
+#define COASTAL_DISTANCE_FILE_KEYWORD "COASTAL_DISTANCE_FILE"
 
 //----------//
 // INCLUDES //
@@ -34,6 +35,7 @@
 #include "Array.h"
 #include "Meas.h"
 #include "CAPGMF.h"
+#include "CoastDistance.h"
 #include "hdf5.h"
 #include "hdf5_hl.h"
 
@@ -99,6 +101,9 @@ int main(int argc, char* argv[]){
     QSIceMap qs_icemap;
     char* qsicemap_file  = config_list.Get(QS_ICEMAP_FILE_KEYWORD);
     qs_icemap.Read(qsicemap_file);
+
+    CoastDistance coast_dist;
+    coast_dist.Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
 
     char* l1b_tbfiles[2] = {NULL, NULL};
 
@@ -213,7 +218,10 @@ int main(int argc, char* argv[]){
                     double tmp_lat = dtr*lat[fp_idx];
                     if(tmp_lon<0) tmp_lon += two_pi;
 
-                    if(fabs(lat[fp_idx])>50)
+                    double distance;
+                    coast_dist.Get(tmp_lon, tmp_lat, &distance);
+
+                    if(distance < 500 || fabs(lat[fp_idx])>40)
                         continue;
 
                     // TBD Filtering on location, land, ice flags
@@ -230,13 +238,13 @@ int main(int argc, char* argv[]){
                     float u10 = anc_u10.data[iframe][ifootprint][0];
                     float v10 = anc_v10.data[iframe][ifootprint][0];
 
-                    float spd = sqrt(u10*u10 + v10*v10);
+                    float spd = 1.03 * sqrt(u10*u10 + v10*v10);
 
                     // Met convention
                     float dir = atan2(-u10, -v10);
 
                     float sss = anc_sss.data[iframe][ifootprint][0];
-                    float sst = anc_sst.data[iframe][ifootprint][0];
+                    float sst = anc_sst.data[iframe][ifootprint][0] + 273.16;
 //                     float swh = anc_swh.data[iframe][ifootprint][0];
                     float swh = -99999;
                     float this_inc = dtr*inc[fp_idx];
@@ -257,12 +265,13 @@ int main(int argc, char* argv[]){
 
                     model_tb = tb_flat + dtb;
 
-                    float this_delta = tb[ipol][fp_idx] - model_tb;
-                    if(fabs(this_delta) > 10)
+                    if(model_tb < 65 || model_tb > 125)
                         continue;
 
+                    float this_delta = tb[ipol][fp_idx] - model_tb;
+
                     // Accumulate delta tb
-                    sum_dtb[ipol] += tb[ipol][fp_idx] - model_tb;
+                    sum_dtb[ipol] += this_delta;
                     counts[ipol] += 1;
                 }
             }
