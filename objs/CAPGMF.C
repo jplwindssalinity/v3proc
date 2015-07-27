@@ -282,7 +282,7 @@ int CAPGMF::Retrieve(
         *sss = init_sss;
 
     } else if(mode == RETRIEVE_SALINITY_ONLY) {
-        *sss = init_spd;
+        *spd = init_spd;
         *dir = init_dir;
         *sss = (float)x[0];
 
@@ -309,11 +309,18 @@ double CAPGMF::ObjectiveFunctionCAP(
     float trial_sss, float anc_swh, float anc_sst, float active_weight,
     float passive_weight) {
 
-    double passive_obj = ObjectiveFunctionPassive(
-        tb_ml, trial_spd, trial_dir, trial_sss, anc_swh, anc_sst);
+    double passive_obj = 0;
+    double active_obj = 0;
 
-    double active_obj = ObjectiveFunctionActive(
-        s0_ml, trial_spd, trial_dir, anc_swh);
+    if(tb_ml) {
+        passive_obj = ObjectiveFunctionPassive(
+            tb_ml, trial_spd, trial_dir, trial_sss, anc_swh, anc_sst);
+    }
+
+    if(s0_ml) {
+        active_obj = ObjectiveFunctionActive(
+            s0_ml, trial_spd, trial_dir, anc_swh);
+    }
 
     return(
         (double)passive_weight * passive_obj +
