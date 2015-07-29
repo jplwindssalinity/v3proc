@@ -175,15 +175,17 @@ int main(int argc, char* argv[]) {
             float init_spd = s0_wvc->selected->spd;
             float init_dir = s0_wvc->selected->dir;
             float init_sss = anc_sss.data[ati][cti][0];
+            float this_anc_spd = s0_wvc->nudgeWV->spd;
+            float this_anc_dir = s0_wvc->nudgeWV->dir;
             float this_anc_sst = anc_sst.data[ati][cti][0];
             float this_anc_swh = anc_swh.data[ati][cti][0];
             float this_anc_rr = -9999;
 
-            if(init_sss<0 || this_anc_sst<-10)
-                continue;
+//             if(init_sss<0 || this_anc_sst<-10)
+//                 continue;
 
             float active_weight = 1;
-            float passive_weight = 1;
+            float passive_weight = 0;
 
             if(this_anc_swh<0 || this_anc_swh > 20)
                 this_anc_swh = -9999;
@@ -198,9 +200,10 @@ int main(int argc, char* argv[]) {
             wvc->nudgeWV = nudgeWV;
             wvc->s0_flag = s0_wvc->qualFlag;
 
-            cap_gmf.BuildSolutionCurves(
-                tb_ml, s0_ml, init_spd, init_sss, this_anc_sst, this_anc_swh,
-                this_anc_rr, active_weight, passive_weight, wvc);
+            cap_gmf.CAPGMF::BuildSolutionCurvesTwoStep(
+                tb_ml, s0_ml, init_spd, init_sss, this_anc_spd, this_anc_dir,
+                this_anc_sst, this_anc_swh, this_anc_rr, active_weight,
+                passive_weight, wvc);
 
             wvc->BuildSolutions();
 
@@ -211,7 +214,7 @@ int main(int argc, char* argv[]) {
                 delete wvc;
             }
 
-            int aasdf = 0; // breakpoint
+            int aasdf = 0; // breakpoint NO COMMIT
         }
     }
 
