@@ -199,6 +199,7 @@ int main(int argc, char* argv[]) {
 
             // Average the tbs and inc/azimuth angle over the fore/aft looks.
             float sum_tb[2][2]; // [fore-0, aft-1][v-0, h-1]
+            float sum_A[2][2];
             int cnts[2][2];
 
             float sum_cos_azi[2]; // fore - 0; aft 1
@@ -211,6 +212,7 @@ int main(int argc, char* argv[]) {
                 sum_cos_azi[ilook] = 0;
                 for(int ipol = 0; ipol < 2; ++ipol) {
                     sum_tb[ilook][ipol] = 0;
+                    sum_A[ilook][ipol] = 0;
                     cnts[ilook][ipol] = 0;
                 }
             }
@@ -237,6 +239,7 @@ int main(int argc, char* argv[]) {
 
                 cnts[idx_look][idx_pol]++;
                 sum_tb[idx_look][idx_pol] += meas->value;
+                sum_A[idx_look][idx_pol] += meas->A;
                 sum_inc[idx_look] += meas->incidenceAngle;
                 sum_cos_azi[idx_look] += cos(meas->eastAzimuth);
                 sum_sin_azi[idx_look] += sin(meas->eastAzimuth);
@@ -265,7 +268,7 @@ int main(int argc, char* argv[]) {
                 this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_fore[cti][ati];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[cti][ati]);
-                this_meas->A = 1.1/(float)cnts[0][0];
+                this_meas->A = sum_A[0][0]/pow((float)cnts[0][0], 2);
                 tb_ml_avg.Append(this_meas);
             }
 
@@ -277,7 +280,7 @@ int main(int argc, char* argv[]) {
                 this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_aft[cti][ati];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[cti][ati]);
-                this_meas->A = 1.1/(float)cnts[1][0];
+                this_meas->A = sum_A[1][0]/pow((float)cnts[1][0], 2);
                 tb_ml_avg.Append(this_meas);
             }
 
@@ -289,7 +292,7 @@ int main(int argc, char* argv[]) {
                 this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_fore[cti][ati];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[cti][ati]);
-                this_meas->A = 1.1/(float)cnts[0][1];
+                this_meas->A = sum_A[0][1]/pow((float)cnts[0][1], 2);
                 tb_ml_avg.Append(this_meas);
             }
 
@@ -301,7 +304,7 @@ int main(int argc, char* argv[]) {
                 this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_aft[cti][ati];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[cti][ati]);
-                this_meas->A = 1.1/(float)cnts[1][1];
+                this_meas->A = sum_A[1][1]/pow((float)cnts[1][1], 2);
                 tb_ml_avg.Append(this_meas);
             }
 
