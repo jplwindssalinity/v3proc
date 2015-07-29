@@ -10,8 +10,6 @@
 #define QS_ICEMAP_FILE_KEYWORD  "QS_ICEMAP_FILE"
 #define REV_START_TIME_KEYWORD "REV_START_TIME"
 #define REV_STOP_TIME_KEYWORD "REV_STOP_TIME"
-#define TBH_ADJUST_KEYWORD "TBH_ADJUST"
-#define TBV_ADJUST_KEYWORD "TBV_ADJUST"
 
 //----------//
 // INCLUDES //
@@ -127,10 +125,6 @@ int main(int argc, char* argv[]){
     l1b_tbfiles[0] = config_list.Get(L1B_TB_LORES_ASC_FILE_KEYWORD);
     l1b_tbfiles[1] = config_list.Get(L1B_TB_LORES_DEC_FILE_KEYWORD);
     printf("l1b_tbfiles: %s %s\n", l1b_tbfiles[0], l1b_tbfiles[1]);
-
-    float tb_adjust[2] = {0, 0};
-    config_list.GetFloat(TBV_ADJUST_KEYWORD, &tb_adjust[0]);
-    config_list.GetFloat(TBH_ADJUST_KEYWORD, &tb_adjust[1]);
 
     QSLandMap qs_landmap;
     char* qslandmap_file = config_list.Get(QS_LANDMAP_FILE_KEYWORD);
@@ -291,7 +285,7 @@ int main(int argc, char* argv[]){
                     else
                         new_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
 
-                    new_meas->value = tb[ipol][fp_idx] + tb_adjust[ipol];
+                    new_meas->value = tb[ipol][fp_idx];
                     new_meas->XK = 1.0;
 
                     // Placeholder for surface temperature
