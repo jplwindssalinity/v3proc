@@ -74,12 +74,26 @@ int main(int argc, char* argv[]) {
     const char* command = no_path(argv[0]);
     char* config_file = argv[1];
 
+    float dtbv = 0;
+    float dtbh = 0;
+    if(argc == 4) {
+        dtbv = atof(argv[2]);
+        dtbh = atof(argv[3]);
+    }
+
     ConfigList config_list;
     if(!config_list.Read(config_file)) {
         fprintf(
             stderr, "%s: error reading config file %s\n", command, config_file);
         exit(1);
     }
+
+    // Get swath grid size
+    int is_25km = 0;
+    int along_track_resolution;
+    config_list.GetInt("ALONGTRACK_RESOLUTION", &along_track_resolution);
+    if(along_track_resolution == 25)
+        is_25km = 1;
 
     // Get filenames from config file
     config_list.ExitForMissingKeywords();
@@ -150,6 +164,10 @@ int main(int argc, char* argv[]) {
 
         for(int cti=0; cti<ncti; ++cti) {
 
+            // Hack to index into (approx) correct location in ancillary files.
+            int anc_cti = (is_25km) ? cti*2 : cti;
+            int anc_ati = (is_25km) ? ati*2 : ati;
+
             // Initialize to fill values
             lon[cti][ati] = FILL_VALUE;
             lat[cti][ati] = FILL_VALUE;
@@ -190,6 +208,7 @@ int main(int argc, char* argv[]) {
             for(int ilook = 0; ilook < 2; ++ilook) {
                 sum_inc[ilook] = 0;
                 sum_sin_azi[ilook] = 0;
+                sum_cos_azi[ilook] = 0;
                 for(int ipol = 0; ipol < 2; ++ipol) {
                     sum_tb[ilook][ipol] = 0;
                     cnts[ilook][ipol] = 0;
@@ -223,44 +242,92 @@ int main(int argc, char* argv[]) {
                 sum_sin_azi[idx_look] += sin(meas->eastAzimuth);
             }
 
-            if(cnts[0][0])
-                tb_v_fore[cti][ati] = sum_tb[0][0]/(float)cnts[0][0];
-
-            if(cnts[0][1])
-                tb_h_fore[cti][ati] = sum_tb[0][1]/(float)cnts[0][1];
-
-            if(cnts[1][0])
-                tb_v_aft[cti][ati] = sum_tb[1][0]/(float)cnts[1][0];
-
-            if(cnts[1][1])
-                tb_h_aft[cti][ati] = sum_tb[1][1]/(float)cnts[1][1];
-
+            // Compute averaged TB observations from four looks
+            // Angles computed in degrees and clockwise from north
             int cnts_fore = cnts[0][0] + cnts[0][1];
             if(cnts_fore>0) {
-                inc_fore[cti][ati] = sum_inc[0]/(float)cnts_fore;
-                azi_fore[cti][ati] = atan2(sum_sin_azi[0], sum_cos_azi[0]);
+                inc_fore[cti][ati] = rtd*sum_inc[0]/(float)cnts_fore;
+                azi_fore[cti][ati] = rtd*atan2(sum_cos_azi[0], sum_sin_azi[0]);
             }
 
             int cnts_aft = cnts[1][0] + cnts[1][1];
             if(cnts_aft>0) {
-                inc_aft[cti][ati] = sum_inc[0]/(float)cnts_aft;
-                azi_aft[cti][ati] = atan2(sum_sin_azi[0], sum_cos_azi[0]);
+                inc_aft[cti][ati] = rtd*sum_inc[1]/(float)cnts_aft;
+                azi_aft[cti][ati] = rtd*atan2(sum_cos_azi[1], sum_sin_azi[1]);
+            }
+
+            MeasList tb_ml_avg;
+            if(cnts[0][0]) {
+                tb_v_fore[cti][ati] = sum_tb[0][0]/(float)cnts[0][0];
+
+                Meas* this_meas = new Meas();
+                this_meas->value = tb_v_fore[cti][ati] - dtbv;
+                this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
+                this_meas->incidenceAngle = dtr * inc_fore[cti][ati];
+                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[cti][ati]);
+                this_meas->A = 1.1/(float)cnts[0][0];
+                tb_ml_avg.Append(this_meas);
+            }
+
+            if(cnts[1][0]) {
+                tb_v_aft[cti][ati] = sum_tb[1][0]/(float)cnts[1][0];
+
+                Meas* this_meas = new Meas();
+                this_meas->value = tb_v_aft[cti][ati] - dtbv;
+                this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
+                this_meas->incidenceAngle = dtr * inc_aft[cti][ati];
+                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[cti][ati]);
+                this_meas->A = 1.1/(float)cnts[1][0];
+                tb_ml_avg.Append(this_meas);
+            }
+
+            if(cnts[0][1]) {
+                tb_h_fore[cti][ati] = sum_tb[0][1]/(float)cnts[0][1];
+
+                Meas* this_meas = new Meas();
+                this_meas->value = tb_h_fore[cti][ati] - dtbh;
+                this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
+                this_meas->incidenceAngle = dtr * inc_fore[cti][ati];
+                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[cti][ati]);
+                this_meas->A = 1.1/(float)cnts[0][1];
+                tb_ml_avg.Append(this_meas);
+            }
+
+            if(cnts[1][1]) {
+                tb_h_aft[cti][ati] = sum_tb[1][1]/(float)cnts[1][1];
+
+                Meas* this_meas = new Meas();
+                this_meas->value = tb_h_aft[cti][ati] - dtbh;
+                this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
+                this_meas->incidenceAngle = dtr * inc_aft[cti][ati];
+                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[cti][ati]);
+                this_meas->A = 1.1/(float)cnts[1][1];
+                tb_ml_avg.Append(this_meas);
             }
 
             anc_spd[cti][ati] = sqrt(
-                pow(cap_anc_u10.data[ati][cti][0], 2) +
-                pow(cap_anc_v10.data[ati][cti][0], 2));
+                pow(cap_anc_u10.data[anc_ati][anc_cti][0], 2) +
+                pow(cap_anc_v10.data[anc_ati][anc_cti][0], 2));
 
             anc_dir[cti][ati] = rtd * atan2(
-                cap_anc_u10.data[ati][cti][0], cap_anc_v10.data[ati][cti][0]);
+                cap_anc_u10.data[anc_ati][anc_cti][0],
+                cap_anc_v10.data[anc_ati][anc_cti][0]);
 
-            anc_sst[cti][ati] = cap_anc_sst.data[ati][cti][0];
-            anc_sss[cti][ati] = cap_anc_sss.data[ati][cti][0];
+            anc_sst[cti][ati] = cap_anc_sst.data[anc_ati][anc_cti][0] + 273.16;
+            anc_sss[cti][ati] = cap_anc_sss.data[anc_ati][anc_cti][0];
 
-            // do stuff!!!
+            if(tb_ml_avg.NodeCount() > 0) {
+                float final_dir, final_spd, final_sss, final_obj;
+                cap_gmf.Retrieve(
+                    &tb_ml_avg, NULL, anc_spd[cti][ati], anc_dir[cti][ati],
+                    anc_sss[cti][ati], anc_spd[cti][ati], anc_dir[cti][ati], 
+                    anc_sst[cti][ati], -9999, 0, 0, 1,
+                    CAPGMF::RETRIEVE_SPEED_SALINITY,
+                    &final_spd, &final_dir, &final_sss, &final_obj);
 
-            
-
+                tb_sss[cti][ati] = final_sss;
+                tb_spd[cti][ati] = final_spd;
+            }
         }
     }
 
@@ -304,12 +371,4 @@ int main(int argc, char* argv[]) {
 
     return(0);
 }
-
-
-
-
-
-
-
-
 
