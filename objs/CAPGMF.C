@@ -98,8 +98,8 @@ CAPGMF::~CAPGMF() {
 
 int CAPGMF::BuildSolutionCurvesTwoStep(
     MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_sss,
-    float anc_sst, float anc_swh, float anc_rr, float active_weight,
-    float passive_weight, CAPWVC* cap_wvc) {
+    float anc_spd, float anc_dir, float anc_sst, float anc_swh, float anc_rr,
+    float active_weight, float passive_weight, CAPWVC* cap_wvc) {
 
     float start_speed = init_spd;
 
@@ -111,9 +111,9 @@ int CAPGMF::BuildSolutionCurvesTwoStep(
 
         // First do wind speed
         Retrieve(
-            tb_ml, s0_ml, start_speed, this_angle, init_sss, anc_sst, anc_swh,
-            anc_rr, active_weight, passive_weight, RETRIEVE_SPEED_ONLY,
-            &spd, &dir, &sss, &obj);
+            tb_ml, s0_ml, start_speed, this_angle, init_sss, anc_spd, anc_dir,
+            anc_sst, anc_swh, anc_rr, active_weight, passive_weight,
+            RETRIEVE_SPEED_ONLY, &spd, &dir, &sss, &obj);
 
         cap_wvc->best_spd[iazi] = spd;
         cap_wvc->best_sss[iazi] = sss;
@@ -128,8 +128,8 @@ int CAPGMF::BuildSolutionCurvesTwoStep(
 
         // Fix the wind speed and do TB-only SSS for that wind speed
         Retrieve(
-            tb_ml, s0_ml, spd, this_angle, init_sss, anc_sst, anc_swh,
-            anc_rr, sss_active_weight, sss_passive_weight,
+            tb_ml, s0_ml, spd, this_angle, init_sss, anc_spd, anc_dir, anc_sst,
+            anc_swh, anc_rr, sss_active_weight, sss_passive_weight,
             RETRIEVE_SALINITY_ONLY, &spd, &dir, &sss, &obj);
 
         cap_wvc->best_sss[iazi] = sss;
@@ -139,8 +139,8 @@ int CAPGMF::BuildSolutionCurvesTwoStep(
 
 int CAPGMF::BuildSolutionCurves(
     MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_sss,
-    float anc_sst, float anc_swh, float anc_rr, float active_weight,
-    float passive_weight, CAPWVC* cap_wvc) {
+    float anc_spd, float anc_dir, float anc_sst, float anc_swh, float anc_rr,
+    float active_weight, float passive_weight, CAPWVC* cap_wvc) {
 
     float start_speed = init_spd;
 
@@ -151,9 +151,9 @@ int CAPGMF::BuildSolutionCurves(
         float spd, dir, sss, obj;
 
         Retrieve(
-            tb_ml, s0_ml, start_speed, this_angle, init_sss, anc_sst, anc_swh,
-            anc_rr, active_weight, passive_weight, RETRIEVE_SPEED_ONLY,
-            &spd, &dir, &sss, &obj);
+            tb_ml, s0_ml, start_speed, this_angle, init_sss, anc_spd, anc_dir,
+            anc_sst, anc_swh, anc_rr, active_weight, passive_weight,
+            RETRIEVE_SPEED_ONLY, &spd, &dir, &sss, &obj);
 
         cap_wvc->best_spd[iazi] = spd;
         cap_wvc->best_sss[iazi] = sss;
@@ -168,9 +168,9 @@ int CAPGMF::BuildSolutionCurves(
 
 int CAPGMF::Retrieve(
     MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_dir,
-    float init_sss, float anc_sst, float anc_swh, float anc_rr,
-    float active_weight, float passive_weight, CAPRetrievalMode mode,
-    float* spd, float* dir, float* sss, float* obj) {
+    float init_sss, float anc_spd, float anc_dir, float anc_sst, float anc_swh,
+    float anc_rr, float active_weight, float passive_weight,
+    CAPRetrievalMode mode, float* spd, float* dir, float* sss, float* obj) {
 
     int n_dims;
     switch(mode) {
@@ -256,6 +256,8 @@ int CAPGMF::Retrieve(
     cap_anc.init_dir = init_dir;
     cap_anc.init_sss = init_sss;
     cap_anc.cap_gmf = this;
+    cap_anc.anc_spd = anc_spd;
+    cap_anc.anc_dir = anc_dir;
     cap_anc.anc_sst = anc_sst;
     cap_anc.anc_swh = anc_swh;
     cap_anc.anc_rr = anc_rr;
@@ -306,15 +308,16 @@ int CAPGMF::Retrieve(
 
 double CAPGMF::ObjectiveFunctionCAP(
     MeasList* tb_ml, MeasList* s0_ml, float trial_spd, float trial_dir,
-    float trial_sss, float anc_swh, float anc_sst, float active_weight,
-    float passive_weight) {
+    float trial_sss, float anc_spd, float anc_dir, float anc_swh, float anc_sst,
+    float active_weight, float passive_weight) {
 
     double passive_obj = 0;
     double active_obj = 0;
 
     if(tb_ml) {
         passive_obj = ObjectiveFunctionPassive(
-            tb_ml, trial_spd, trial_dir, trial_sss, anc_swh, anc_sst);
+            tb_ml, trial_spd, trial_dir, trial_sss, anc_spd, anc_dir, anc_swh,
+            anc_sst);
     }
 
     if(s0_ml) {
@@ -329,7 +332,7 @@ double CAPGMF::ObjectiveFunctionCAP(
 
 double CAPGMF::ObjectiveFunctionPassive(
     MeasList* tb_ml, float trial_spd, float trial_dir, float trial_sss,
-    float anc_swh, float anc_sst) {
+    float anc_spd, float anc_dir, float anc_swh, float anc_sst) {
 
     double obj = 0;
     for(Meas* meas = tb_ml->GetHead(); meas; meas = tb_ml->GetNext()){
@@ -346,6 +349,10 @@ double CAPGMF::ObjectiveFunctionPassive(
         double var = meas->A + pow(kpm * dtb, 2);
         obj += pow((double)(meas->value - model_tb), 2) / var;
     }
+
+    if(trial_spd > 0)
+        obj += pow((trial_spd - anc_spd)/1.5, 2);
+
     return(obj);
 }
 
@@ -800,7 +807,8 @@ double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
 
     double obj = (double)cap_anc->cap_gmf->ObjectiveFunctionCAP(
         cap_anc->tb_ml, cap_anc->s0_ml, trial_spd, trial_dir, trial_sss,
-        cap_anc->anc_swh, cap_anc->anc_sst, active_weight, passive_weight);
+        cap_anc->anc_spd, cap_anc->anc_dir, cap_anc->anc_swh, cap_anc->anc_sst,
+        active_weight, passive_weight);
 
     return(obj);
 }
