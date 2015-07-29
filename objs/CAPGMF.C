@@ -211,7 +211,7 @@ int CAPGMF::Retrieve(
     while(init_dir>two_pi) init_dir -= two_pi;
     while(init_dir<0) init_dir += two_pi;
 
-    if(init_sss<30) init_sss = 30;
+    if(init_sss<20) init_sss = 20;
     if(init_sss>40) init_sss = 40;
 
     // Set contraints and initial guesses
@@ -222,7 +222,7 @@ int CAPGMF::Retrieve(
         x[0] = init_spd;
 
     } else if (mode == RETRIEVE_SALINITY_ONLY) {
-        lb[0] = 28; ub[0] = 42; // salinity
+        lb[0] = 0; ub[0] = 40; // salinity
         x[0] = init_sss;
 
     } else if (mode == RETRIEVE_SPEED_DIRECTION) {
@@ -234,7 +234,7 @@ int CAPGMF::Retrieve(
 
     } else if (mode == RETRIEVE_SPEED_SALINITY) {
         lb[0] = 0; ub[0] = 100;
-        lb[1] = 28; ub[1] = 42; // salinity
+        lb[1] = 0; ub[1] = 40; // salinity
 
         x[0] = init_spd;
         x[1] = init_sss;
@@ -242,7 +242,7 @@ int CAPGMF::Retrieve(
     } else if (mode == RETRIEVE_SPEED_DIRECTION_SALINITY) {
         lb[0] = 0; ub[0] = 100;
         lb[1] = 0; ub[1] = two_pi;
-        lb[2] = 28; ub[2] = 42; // salinity
+        lb[0] = 0; ub[0] = 40; // salinity
 
         x[0] = init_spd;
         x[1] = init_dir;
