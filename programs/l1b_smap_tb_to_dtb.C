@@ -199,7 +199,7 @@ int main(int argc, char* argv[]){
         CAP_ANC_L1B anc_v10(anc_v10_files[ipart]);
         CAP_ANC_L1B anc_sss(anc_sss_files[ipart]);
         CAP_ANC_L1B anc_sst(anc_sst_files[ipart]);
-//         CAP_ANC_L1B anc_swh(anc_swh_files[ipart]);
+        CAP_ANC_L1B anc_swh(anc_swh_files[ipart]);
 
         // Iterate over scans
         for(int iframe = 0; iframe < nframes[ipart]; ++iframe) {
@@ -245,8 +245,10 @@ int main(int argc, char* argv[]){
 
                     float sss = anc_sss.data[iframe][ifootprint][0];
                     float sst = anc_sst.data[iframe][ifootprint][0] + 273.16;
-//                     float swh = anc_swh.data[iframe][ifootprint][0];
-                    float swh = -99999;
+                    float swh = anc_swh.data[iframe][ifootprint][0];
+                    if(swh > 10)
+                        swh = -99999;
+
                     float this_inc = dtr*inc[fp_idx];
 
                     // Compute relative azimuth angle
