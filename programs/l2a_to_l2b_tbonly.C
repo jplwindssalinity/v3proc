@@ -322,6 +322,10 @@ int main(int argc, char* argv[]) {
             anc_sss[cti][ati] = cap_anc_sss.data[anc_ati][anc_cti][0];
             anc_swh[cti][ati] = cap_anc_swh.data[anc_ati][anc_cti][0];
 
+            // Check validity of ancillary data
+            if(anc_swh[cti][ati]>10)
+                anc_swh[cti][ati] = FILL_VALUE;
+
             if(tb_ml_avg.NodeCount() > 0) {
                 float final_dir, final_spd, final_sss, final_obj;
                 cap_gmf.Retrieve(
