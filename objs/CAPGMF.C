@@ -474,14 +474,14 @@ int CAPGMF::GetTBFlat(
     float incb = 1-inca;
 
     *tbflat =
-        ssta * sssa * inca * _tbflat[met_idx][isss0][isst0][iinc0] +
-        ssta * sssa * incb * _tbflat[met_idx][isss0][isst0][iinc1] +
-        ssta * sssb * inca * _tbflat[met_idx][isss0][isst1][iinc0] +
-        ssta * sssb * incb * _tbflat[met_idx][isss0][isst1][iinc1] +
-        sstb * sssa * inca * _tbflat[met_idx][isss1][isst0][iinc0] +
-        sstb * sssa * incb * _tbflat[met_idx][isss1][isst0][iinc1] +
-        sstb * sssb * inca * _tbflat[met_idx][isss1][isst1][iinc0] +
-        sstb * sssb * incb * _tbflat[met_idx][isss1][isst1][iinc1];
+        sssa * ssta * inca * _tbflat[met_idx][isss0][isst0][iinc0] +
+        sssa * ssta * incb * _tbflat[met_idx][isss0][isst0][iinc1] +
+        sssa * sstb * inca * _tbflat[met_idx][isss0][isst1][iinc0] +
+        sssa * sstb * incb * _tbflat[met_idx][isss0][isst1][iinc1] +
+        sssb * ssta * inca * _tbflat[met_idx][isss1][isst0][iinc0] +
+        sssb * ssta * incb * _tbflat[met_idx][isss1][isst0][iinc1] +
+        sssb * sstb * inca * _tbflat[met_idx][isss1][isst1][iinc0] +
+        sssb * sstb * incb * _tbflat[met_idx][isss1][isst1][iinc1];
 
     return(1);
 }
