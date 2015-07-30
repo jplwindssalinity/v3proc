@@ -154,6 +154,7 @@ int main(int argc, char* argv[]) {
     float** anc_dir = (float**)make_array(sizeof(float), 2, ncti, nati);
     float** anc_sss = (float**)make_array(sizeof(float), 2, ncti, nati);
     float** anc_sst = (float**)make_array(sizeof(float), 2, ncti, nati);
+    float** anc_swh = (float**)make_array(sizeof(float), 2, ncti, nati);
     float** tb_spd = (float**)make_array(sizeof(float), 2, ncti, nati);
     float** tb_sss = (float**)make_array(sizeof(float), 2, ncti, nati);
 
@@ -183,6 +184,7 @@ int main(int argc, char* argv[]) {
             anc_dir[cti][ati] = FILL_VALUE;
             anc_sss[cti][ati] = FILL_VALUE;
             anc_sst[cti][ati] = FILL_VALUE;
+            anc_swh[cti][ati] = FILL_VALUE;
             tb_spd[cti][ati] = FILL_VALUE;
             tb_sss[cti][ati] = FILL_VALUE;
 
@@ -318,13 +320,14 @@ int main(int argc, char* argv[]) {
 
             anc_sst[cti][ati] = cap_anc_sst.data[anc_ati][anc_cti][0] + 273.16;
             anc_sss[cti][ati] = cap_anc_sss.data[anc_ati][anc_cti][0];
+            anc_swh[cti][ati] = cap_anc_swh.data[anc_ati][anc_cti][0];
 
             if(tb_ml_avg.NodeCount() > 0) {
                 float final_dir, final_spd, final_sss, final_obj;
                 cap_gmf.Retrieve(
                     &tb_ml_avg, NULL, anc_spd[cti][ati], anc_dir[cti][ati],
                     anc_sss[cti][ati], anc_spd[cti][ati], anc_dir[cti][ati], 
-                    anc_sst[cti][ati], -9999, 0, 0, 1,
+                    anc_sst[cti][ati], anc_swh[cti][ati], 0, 0, 1,
                     CAPGMF::RETRIEVE_SPEED_SALINITY,
                     &final_spd, &final_dir, &final_sss, &final_obj);
 
@@ -350,6 +353,7 @@ int main(int argc, char* argv[]) {
     write_array(ofp, &anc_dir[0], sizeof(float), 2, ncti, nati);
     write_array(ofp, &anc_sss[0], sizeof(float), 2, ncti, nati);
     write_array(ofp, &anc_sst[0], sizeof(float), 2, ncti, nati);
+    write_array(ofp, &anc_swh[0], sizeof(float), 2, ncti, nati);
     write_array(ofp, &tb_spd[0], sizeof(float), 2, ncti, nati);
     write_array(ofp, &tb_sss[0], sizeof(float), 2, ncti, nati);
     fclose(ofp);
@@ -369,6 +373,7 @@ int main(int argc, char* argv[]) {
     free_array(anc_dir, 2, ncti, nati);
     free_array(anc_sss, 2, ncti, nati);
     free_array(anc_sst, 2, ncti, nati);
+    free_array(anc_swh, 2, ncti, nati);
     free_array(tb_spd, 2, ncti, nati);
     free_array(tb_sss, 2, ncti, nati);
 
