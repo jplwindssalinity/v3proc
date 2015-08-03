@@ -162,7 +162,8 @@ int main(int argc, char* argv[]){
         std::vector<float> inc;
 
         std::vector< std::vector<float> > tb(2);
-        std::vector< std::vector<float> > nedt(2);
+        std::vector< std::vector<float> > ta(2);
+        std::vector< std::vector<float> > ta_f(2);
         std::vector< std::vector<uint16> > tb_flag(2);
 
         int data_size = nframes[ipart]*nfootprints[ipart];
@@ -175,7 +176,8 @@ int main(int argc, char* argv[]){
         // resize arrays for data dimensions
         for(int ipol = 0; ipol < 2; ++ipol) {
             tb[ipol].resize(data_size);
-            nedt[ipol].resize(data_size);
+            ta[ipol].resize(data_size);
+            ta_f[ipol].resize(data_size);
             tb_flag[ipol].resize(data_size);
         }
 
@@ -189,8 +191,11 @@ int main(int argc, char* argv[]){
         read_SDS_h5(id, "/Brightness_Temperature/tb_v", &tb[0][0]);
         read_SDS_h5(id, "/Brightness_Temperature/tb_h", &tb[1][0]);
 
-        read_SDS_h5(id, "/Brightness_Temperature/nedt_v", &nedt[0][0]);
-        read_SDS_h5(id, "/Brightness_Temperature/nedt_h", &nedt[1][0]);
+        read_SDS_h5(id, "/Brightness_Temperature/ta_v", &ta[0][0]);
+        read_SDS_h5(id, "/Brightness_Temperature/ta_h", &ta[1][0]);
+
+        read_SDS_h5(id, "/Brightness_Temperature/ta_filtered_v", &ta_f[0][0]);
+        read_SDS_h5(id, "/Brightness_Temperature/ta_filtered_h", &ta_f[1][0]);
 
         read_SDS_h5(id, "/Brightness_Temperature/tb_qual_flag_v", &tb_flag[0][0]);
         read_SDS_h5(id, "/Brightness_Temperature/tb_qual_flag_h", &tb_flag[1][0]);
@@ -221,14 +226,6 @@ int main(int argc, char* argv[]){
                     double distance;
                     coast_dist.Get(tmp_lon, tmp_lat, &distance);
 
-                    if(distance < 500 || fabs(lat[fp_idx])>40)
-                        continue;
-
-                    // TBD Filtering on location, land, ice flags
-                    if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0) ||
-                       qs_icemap.IsIce(tmp_lon, tmp_lat, 0))
-                        continue;
-
                     Meas::MeasTypeE met;
                     if(ipol==0)
                         met = Meas::L_BAND_TBV_MEAS_TYPE;
@@ -258,8 +255,6 @@ int main(int argc, char* argv[]){
                     while(relazi<0) relazi += two_pi;
                     while(relazi>=two_pi) relazi -= two_pi;
 
-                    swh = -9999;
-
                     float model_tb, tb_flat, dtb;
                     cap_gmf.GetTB(
                         met, this_inc, sst, sss, spd, relazi, swh, &tb_flat,
@@ -267,7 +262,19 @@ int main(int argc, char* argv[]){
 
                     model_tb = tb_flat + dtb;
 
-                    if(model_tb < 65 || model_tb > 125)
+                    float thresh_tb = (ipol == 0) ? 200 : 150;
+
+                    // Check things before adding to delta TB accumulation
+                    if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0) ||
+                       qs_icemap.IsIce(tmp_lon, tmp_lat, 0) ||
+                       distance < 500 ||
+                       spd < 0 || spd > 15 ||
+                       sst < 273.16 || sst > 373 ||
+                       fabs(inc[fp_idx]-40) > 0.5 ||
+                       fabs(ta[ipol][fp_idx]-ta_f[ipol][fp_idx]) > 1 ||
+                       fabs(lat[fp_idx]) > 50 ||
+                       model_tb < 65 || model_tb > 125 ||
+                       tb[ipol][fp_idx] > thresh_tb)
                         continue;
 
                     float this_delta = tb[ipol][fp_idx] - model_tb;
