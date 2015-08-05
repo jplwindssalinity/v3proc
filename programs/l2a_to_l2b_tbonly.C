@@ -354,172 +354,188 @@ int main(int argc, char* argv[]) {
     hid_t file_id = H5Fcreate(
         l2b_tb_file, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-    hid_t config_group = H5Gcreate(
-        file_id, "/config", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5LTset_attribute_string(file_id, "/", "REVNO", config_list.Get("REVNO"));
 
     H5LTset_attribute_string(
-        file_id, "/config", "REVNO",
-        config_list.Get("REVNO"));
+        file_id, "/", "REV_START_TIME", config_list.Get("REV_START_TIME"));
 
     H5LTset_attribute_string(
-        file_id, "/config", "REV_START_TIME",
-        config_list.Get("REV_START_TIME"));
+        file_id, "/", "REV_STOP_TIME", config_list.Get("REV_STOP_TIME"));
 
     H5LTset_attribute_string(
-        file_id, "/config", "REV_STOP_TIME",
-        config_list.Get("REV_STOP_TIME"));
+        file_id, "/", "TB_CRID", config_list.Get("TB_CRID"));
 
     H5LTset_attribute_string(
-        file_id, "/config", "TB_CRID",
-        config_list.Get("TB_CRID"));
-
-    H5LTset_attribute_string(
-        file_id, "/config", "L1B_TB_LORES_ASC_FILE",
+        file_id, "/", "L1B_TB_LORES_ASC_FILE",
         config_list.Get("L1B_TB_LORES_ASC_FILE"));
 
     H5LTset_attribute_string(
-        file_id, "/config", "L1B_TB_LORES_DEC_FILE",
+        file_id, "/", "L1B_TB_LORES_DEC_FILE",
         config_list.Get("L1B_TB_LORES_DEC_FILE"));
 
-    H5LTset_attribute_float(file_id, "/config", "Delta TBH", &dtbh, 1);
-    H5LTset_attribute_float(file_id, "/config", "Delta TBV", &dtbv, 1);
+    H5LTset_attribute_float(file_id, "/", "Delta TBH", &dtbh, 1);
+    H5LTset_attribute_float(file_id, "/", "Delta TBV", &dtbv, 1);
 
     H5LTset_attribute_string(
-        file_id, "/config", "QS_ICEMAP_FILE",
-        config_list.Get("QS_ICEMAP_FILE"));
+        file_id, "/", "QS_ICEMAP_FILE", config_list.Get("QS_ICEMAP_FILE"));
 
     H5LTset_attribute_string(
-        file_id, "/config", "NUDGE_WINDFIELD_FILE",
-        config_list.Get("NUDGE_WINDFIELD_FILE"));
-
-    H5LTset_attribute_string(
-        file_id, "/config", "TB_FLAT_MODEL_FILE",
+        file_id, "/", "TB_FLAT_MODEL_FILE",
         config_list.Get("TB_FLAT_MODEL_FILE"));
 
     H5LTset_attribute_string(
-        file_id, "/config", "TB_ROUGH_MODEL_FILE",
+        file_id, "/", "TB_ROUGH_MODEL_FILE",
         config_list.Get("TB_ROUGH_MODEL_FILE"));
 
     H5LTset_attribute_string(
-        file_id, "/config", "ANC_U10_FILE",
-        config_list.Get("ANC_U10_FILE"));
+        file_id, "/", "ANC_U10_FILE", config_list.Get("ANC_U10_FILE"));
 
     H5LTset_attribute_string(
-        file_id, "/config", "ANC_V10_FILE",
-        config_list.Get("ANC_V10_FILE"));
+        file_id, "/", "ANC_V10_FILE", config_list.Get("ANC_V10_FILE"));
 
     H5LTset_attribute_string(
-        file_id, "/config", "ANC_SSS_FILE",
-        config_list.Get("ANC_SSS_FILE"));
+        file_id, "/", "ANC_SSS_FILE", config_list.Get("ANC_SSS_FILE"));
 
     H5LTset_attribute_string(
-        file_id, "/config", "ANC_SST_FILE",
-        config_list.Get("ANC_SST_FILE"));
+        file_id, "/", "ANC_SST_FILE", config_list.Get("ANC_SST_FILE"));
 
     H5LTset_attribute_string(
-        file_id, "/config", "ANC_SWH_FILE",
-        config_list.Get("ANC_SWH_FILE"));
+        file_id, "/", "ANC_SWH_FILE", config_list.Get("ANC_SWH_FILE"));
+
+    H5LTset_attribute_string(
+        file_id, "/", "CROSSTRACK_RESOLUTION",
+        config_list.Get("CROSSTRACK_RESOLUTION"));
+
+    H5LTset_attribute_string(
+        file_id, "/", "ALONGTRACK_RESOLUTION",
+        config_list.Get("ALONGTRACK_RESOLUTION"));
+
+    float _fill_value = FILL_VALUE;
+    uint16 _ushort_fill_value = 65535;
 
     hsize_t dims[2] = {ncti, nati};
     H5LTmake_dataset(file_id, "lat", 2, dims, H5T_NATIVE_FLOAT, &lat[0]);
     H5LTset_attribute_string(file_id, "lat", "long_name", "latitude");
     H5LTset_attribute_string(file_id, "lat", "units", "Degrees");
+    H5LTset_attribute_float(file_id, "lat", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(file_id, "lon", 2, dims, H5T_NATIVE_FLOAT, &lon[0]);
     H5LTset_attribute_string(file_id, "lon", "long_name", "longitude");
     H5LTset_attribute_string(file_id, "lon", "units", "Degrees");
+    H5LTset_attribute_float(file_id, "lon", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(
         file_id, "tb_h_fore", 2, dims, H5T_NATIVE_FLOAT, &tb_h_fore[0]);
     H5LTset_attribute_string(
         file_id, "tb_h_fore", "long_name",
-        "Brightness temperature for H-pol fore look");
+        "Average brightness temperature for all H-pol fore looks");
     H5LTset_attribute_string(file_id, "tb_h_fore", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "tb_h_fore", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(
         file_id, "tb_h_aft", 2, dims, H5T_NATIVE_FLOAT, &tb_h_aft[0]);
     H5LTset_attribute_string(
         file_id, "tb_h_aft", "long_name",
-        "Brightness temperature for H-pol aft look");
+        "Average brightness temperature for all H-pol aft looks");
     H5LTset_attribute_string(file_id, "tb_h_aft", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "tb_h_aft", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(
-        file_id, "tb_v_fore", 2, dims, H5T_NATIVE_FLOAT, &tb_h_fore[0]);
+        file_id, "tb_v_fore", 2, dims, H5T_NATIVE_FLOAT, &tb_v_fore[0]);
     H5LTset_attribute_string(
         file_id, "tb_v_fore", "long_name",
-        "Brightness temperature for V-pol fore look");
+        "Average brightness temperature for all V-pol fore looks");
     H5LTset_attribute_string(file_id, "tb_v_fore", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "tb_v_fore", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(
-        file_id, "tb_v_aft", 2, dims, H5T_NATIVE_FLOAT, &tb_h_aft[0]);
+        file_id, "tb_v_aft", 2, dims, H5T_NATIVE_FLOAT, &tb_v_aft[0]);
     H5LTset_attribute_string(
         file_id, "tb_v_aft", "long_name",
-        "Brightness temperature for V-pol aft look");
+        "Average brightness temperature for all V-pol aft looks");
     H5LTset_attribute_string(file_id, "tb_v_aft", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "tb_v_aft", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(
         file_id, "inc_fore", 2, dims, H5T_NATIVE_FLOAT, &inc_fore[0]);
     H5LTset_attribute_string(
-        file_id, "inc_fore", "long_name", "Incidence angle fore look");
+        file_id, "inc_fore", "long_name", "Cell incidence angle fore look");
     H5LTset_attribute_string(file_id, "inc_fore", "units", "Degrees");
+    H5LTset_attribute_float(file_id, "inc_fore", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(
         file_id, "inc_aft", 2, dims, H5T_NATIVE_FLOAT, &inc_aft[0]);
     H5LTset_attribute_string(
-        file_id, "inc_aft", "long_name", "Incidence angle aft look");
+        file_id, "inc_aft", "long_name", "Cell incidence angle aft look");
     H5LTset_attribute_string(file_id, "inc_aft", "units", "Degrees");
+    H5LTset_attribute_float(file_id, "inc_aft", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(
         file_id, "azi_fore", 2, dims, H5T_NATIVE_FLOAT, &azi_fore[0]);
     H5LTset_attribute_string(
-        file_id, "azi_fore", "long_name", "Azimuth angle fore look");
+        file_id, "azi_fore", "long_name", "Cell azimuth angle fore look");
     H5LTset_attribute_string(file_id, "azi_fore", "units", "Degrees");
+    H5LTset_attribute_float(file_id, "azi_fore", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(file_id, "azi_aft", 2, dims, H5T_NATIVE_FLOAT, &azi_aft[0]);
     H5LTset_attribute_string(
-        file_id, "azi_aft", "long_name", "Azimuth angle aft look");
+        file_id, "azi_aft", "long_name", "Cell azimuth angle aft look");
     H5LTset_attribute_string(file_id, "azi_aft", "units", "Degrees");
+    H5LTset_attribute_float(file_id, "azi_aft", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(file_id, "anc_spd", 2, dims, H5T_NATIVE_FLOAT, &anc_spd[0]);
     H5LTset_attribute_string(
-        file_id, "anc_spd", "long_name", "NCEP wind speed (scaled by 1.03)");
+        file_id, "anc_spd", "long_name",
+        "10 meter NCEP wind speed (scaled by 1.03)");
     H5LTset_attribute_string(file_id, "anc_spd", "units", "Meters/second");
+    H5LTset_attribute_float(file_id, "anc_spd", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(file_id, "anc_dir", 2, dims, H5T_NATIVE_FLOAT, &anc_dir[0]);
     H5LTset_attribute_string(
-        file_id, "anc_dir", "long_name", "NCEP wind direction (oceanographic)");
+        file_id, "anc_dir", "long_name",
+        "NCEP wind direction (oceanographic convention)");
     H5LTset_attribute_string(file_id, "anc_dir", "units", "Degrees");
+    H5LTset_attribute_float(file_id, "anc_dir", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(file_id, "anc_sss", 2, dims, H5T_NATIVE_FLOAT, &anc_sss[0]);
     H5LTset_attribute_string(
         file_id, "anc_sss", "long_name", "HYCOM salinity");
     H5LTset_attribute_string(file_id, "anc_sss", "units", "PSU");
+    H5LTset_attribute_float(file_id, "anc_sss", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(file_id, "anc_sst", 2, dims, H5T_NATIVE_FLOAT, &anc_sst[0]);
     H5LTset_attribute_string(
-        file_id, "anc_sst", "long_name", "Sea surface temperature");
+        file_id, "anc_sst", "long_name",
+        "NOAA Optimum Interpolation sea surface temperature");
     H5LTset_attribute_string(file_id, "anc_sst", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "anc_sst", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(file_id, "anc_swh", 2, dims, H5T_NATIVE_FLOAT, &anc_swh[0]);
     H5LTset_attribute_string(
-        file_id, "anc_swh", "long_name", "Significant wave height");
+        file_id, "anc_swh", "long_name",
+        "NOAA WaveWatch III Significant wave height");
     H5LTset_attribute_string(file_id, "anc_swh", "units", "Meters");
+    H5LTset_attribute_float(file_id, "anc_swh", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(file_id, "tb_spd", 2, dims, H5T_NATIVE_FLOAT, &tb_spd[0]);
     H5LTset_attribute_string(
-        file_id, "tb_spd", "long_name", "SMAP Wind Speed");
+        file_id, "tb_spd", "long_name", "SMAP TB Wind Speed");
     H5LTset_attribute_string(file_id, "tb_spd", "units", "Meters/second");
+    H5LTset_attribute_float(file_id, "tb_spd", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(file_id, "tb_sss", 2, dims, H5T_NATIVE_FLOAT, &tb_sss[0]);
     H5LTset_attribute_string(
-        file_id, "tb_sss", "long_name", "SMAP Salinity");
+        file_id, "tb_sss", "long_name", "SMAP TB Salinity");
     H5LTset_attribute_string(file_id, "tb_sss", "units", "PSU");
+    H5LTset_attribute_float(file_id, "tb_sss", "_FillValue", &_fill_value, 1);
 
     H5LTmake_dataset(file_id, "tb_flg", 2, dims, H5T_NATIVE_USHORT, &tb_flg[0]);
     H5LTset_attribute_string(
-        file_id, "tb_flg", "long_name", "TB quality flag");
+        file_id, "tb_flg", "long_name", "Quality flag");
     H5LTset_attribute_string(
         file_id, "tb_flg", "Bit definitions", "TBD");
+    H5LTset_attribute_ushort(
+        file_id, "tb_flg", "_FillValue", &_ushort_fill_value, 1);
 
     H5Fclose(file_id);
     return(0);
