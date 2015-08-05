@@ -68,6 +68,12 @@ template class List<AngleInterval>;
 template class std::list<string>;
 template class std::map<string,string,Options::ltstr>;
 
+#define L2B_TB_FLAG_USEABLE 0x1
+#define L2B_TB_FLAG_FOUR_LOOKS 0x2
+#define L2B_TB_FLAG_SST_TOO_COLD 0x40
+#define L2B_TB_FLAG_LAND 0x80
+#define L2B_TB_FLAG_ICE 0x100
+
 //--------------//
 // MAIN PROGRAM //
 //--------------//
@@ -225,11 +231,21 @@ int main(int argc, char* argv[]) {
                 }
             }
 
+            int any_land = 0;
+            int any_ice = 0;
+
             for(Meas* meas = tb_ml->GetHead(); meas; meas = tb_ml->GetNext()) {
 
                 // Skip land flagged observations
-                if(meas->landFlag)
+                if(meas->landFlag) {
+                    if(meas->landFlag == 1 || meas->landFlag == 3)
+                        any_land = 1;
+
+                    if(meas->landFlag == 2 || meas->landFlag == 3)
+                        any_ice = 1;
+
                     continue;
+                }
 
                 int idx_look = 0;
                 int idx_pol = -1;
@@ -344,8 +360,30 @@ int main(int argc, char* argv[]) {
                 tb_sss[l2bidx] = final_sss;
                 tb_spd[l2bidx] = final_spd;
 
-                // Quality flag (TBD)
+                // Quality flagging
                 tb_flg[l2bidx] = 0;
+
+                // Check for all four looks
+                if(tb_ml_avg.NodeCount() != 4)
+                    tb_flg[l2bidx] |= L2B_TB_FLAG_FOUR_LOOKS;
+
+                // Check if any TBs tossed from this cell due to land
+                if(any_land)
+                    tb_flg[l2bidx] |= L2B_TB_FLAG_LAND;
+
+                // Check if any TBs tossed from this cell due to ice
+                if(any_ice)
+                    tb_flg[l2bidx] |= L2B_TB_FLAG_ICE;
+
+                // Check for low SST (poor salinity sensitivity at low SST)
+                if(anc_sst[l2bidx] < 278.16)
+                    tb_flg[l2bidx] |= L2B_TB_FLAG_SST_TOO_COLD;
+
+                // Overall data quality mask
+                uint16 QUAL_MASK = L2B_TB_FLAG_FOUR_LOOKS;
+                if(tb_flg[l2bidx] & QUAL_MASK)
+                    tb_flg[l2bidx] |= L2B_TB_FLAG_USEABLE;
+
             }
         }
     }
@@ -581,8 +619,28 @@ int main(int argc, char* argv[]) {
     H5LTmake_dataset(file_id, "tb_flg", 2, dims, H5T_NATIVE_USHORT, &tb_flg[0]);
     H5LTset_attribute_string(
         file_id, "tb_flg", "long_name", "Quality flag");
-    H5LTset_attribute_string(
-        file_id, "tb_flg", "Bit definitions", "TBD");
+
+    uint16 flag_bits;
+    flag_bits = L2B_TB_FLAG_USEABLE;
+    H5LTset_attribute_ushort(
+        file_id, "tb_flg", "L2B_TB_FLAG_USEABLE", &flag_bits, 1);
+
+    flag_bits = L2B_TB_FLAG_FOUR_LOOKS;
+    H5LTset_attribute_ushort(
+        file_id, "tb_flg", "L2B_TB_FLAG_FOUR_LOOKS", &flag_bits, 1);
+
+    flag_bits = L2B_TB_FLAG_LAND;
+    H5LTset_attribute_ushort(
+        file_id, "tb_flg", "L2B_TB_FLAG_LAND", &flag_bits, 1);
+
+    flag_bits = L2B_TB_FLAG_ICE;
+    H5LTset_attribute_ushort(
+        file_id, "tb_flg", "L2B_TB_FLAG_ICE", &flag_bits, 1);
+
+    flag_bits = L2B_TB_FLAG_SST_TOO_COLD;
+    H5LTset_attribute_ushort(
+        file_id, "tb_flg", "L2B_TB_FLAG_SST_TOO_COLD", &flag_bits, 1);
+
     H5LTset_attribute_ushort(
         file_id, "tb_flg", "_FillValue", &_ushort_fill_value, 1);
 
