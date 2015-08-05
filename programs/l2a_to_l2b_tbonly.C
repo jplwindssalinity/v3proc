@@ -23,6 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <vector>
+#include "hdf5.h"
+#include "hdf5_hl.h"
 #include "List.h"
 #include "BufferedList.h"
 #include "Misc.h"
@@ -140,24 +143,16 @@ int main(int argc, char* argv[]) {
     CAP_ANC_L2B cap_anc_v10(anc_v10_file);
 
     // Output arrays
-    float** lat = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** lon = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** tb_h_fore = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** tb_h_aft = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** tb_v_fore = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** tb_v_aft = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** inc_fore = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** inc_aft = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** azi_fore = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** azi_aft = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** anc_spd = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** anc_dir = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** anc_sss = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** anc_sst = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** anc_swh = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** tb_spd = (float**)make_array(sizeof(float), 2, ncti, nati);
-    float** tb_sss = (float**)make_array(sizeof(float), 2, ncti, nati);
-
+    int l2b_size = ncti * nati;
+    std::vector<float> lat(l2b_size), lon(l2b_size);
+    std::vector<float> tb_h_fore(l2b_size), tb_h_aft(l2b_size);
+    std::vector<float> tb_v_fore(l2b_size), tb_v_aft(l2b_size);
+    std::vector<float> inc_fore(l2b_size), inc_aft(l2b_size);
+    std::vector<float> azi_fore(l2b_size), azi_aft(l2b_size);
+    std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
+    std::vector<float> anc_sss(l2b_size), anc_sst(l2b_size), anc_swh(l2b_size);
+    std::vector<float> tb_sss(l2b_size), tb_spd(l2b_size);
+    std::vector<uint16> tb_flg(l2b_size);
 
     for(int ati=0; ati<nati; ++ati) {
         if(ati%50 == 0)
@@ -165,39 +160,50 @@ int main(int argc, char* argv[]) {
 
         for(int cti=0; cti<ncti; ++cti) {
 
+            int l2bidx = ati + nati*cti;
+
             // Hack to index into (approx) correct location in ancillary files.
             int anc_cti = (is_25km) ? cti*2 : cti;
             int anc_ati = (is_25km) ? ati*2 : ati;
 
             // Initialize to fill values
-            lon[cti][ati] = FILL_VALUE;
-            lat[cti][ati] = FILL_VALUE;
-            tb_h_fore[cti][ati] = FILL_VALUE;
-            tb_h_aft[cti][ati] = FILL_VALUE;
-            tb_v_fore[cti][ati] = FILL_VALUE;
-            tb_v_aft[cti][ati] = FILL_VALUE;
-            inc_fore[cti][ati] = FILL_VALUE;
-            inc_aft[cti][ati] = FILL_VALUE;
-            azi_fore[cti][ati] = FILL_VALUE;
-            azi_aft[cti][ati] = FILL_VALUE;
-            anc_spd[cti][ati] = FILL_VALUE;
-            anc_dir[cti][ati] = FILL_VALUE;
-            anc_sss[cti][ati] = FILL_VALUE;
-            anc_sst[cti][ati] = FILL_VALUE;
-            anc_swh[cti][ati] = FILL_VALUE;
-            tb_spd[cti][ati] = FILL_VALUE;
-            tb_sss[cti][ati] = FILL_VALUE;
+            lon[l2bidx] = FILL_VALUE;
+            lat[l2bidx] = FILL_VALUE;
+            tb_h_fore[l2bidx] = FILL_VALUE;
+            tb_h_aft[l2bidx] = FILL_VALUE;
+            tb_v_fore[l2bidx] = FILL_VALUE;
+            tb_v_aft[l2bidx] = FILL_VALUE;
+            inc_fore[l2bidx] = FILL_VALUE;
+            inc_aft[l2bidx] = FILL_VALUE;
+            azi_fore[l2bidx] = FILL_VALUE;
+            azi_aft[l2bidx] = FILL_VALUE;
+            anc_spd[l2bidx] = FILL_VALUE;
+            anc_dir[l2bidx] = FILL_VALUE;
+            anc_sss[l2bidx] = FILL_VALUE;
+            anc_sst[l2bidx] = FILL_VALUE;
+            anc_swh[l2bidx] = FILL_VALUE;
+            tb_sss[l2bidx] = FILL_VALUE;
+            tb_spd[l2bidx] = FILL_VALUE;
+            tb_flg[l2bidx] = 65535;
 
             // Check for valid measList at this WVC
             if(!l2a_tb_swath[cti][ati])
+                continue;
+
+            // Check for useable ancillary data
+            if(cap_anc_sst.data[anc_ati][anc_cti][0] < 0)
                 continue;
 
             MeasList* tb_ml = &(l2a_tb_swath[cti][ati]->measList);
 
             LonLat lonlat = tb_ml->AverageLonLat();
 
-            lon[cti][ati] = rtd * lonlat.longitude;
-            lat[cti][ati] = rtd * lonlat.latitude;
+            lon[l2bidx] = rtd * lonlat.longitude;
+            lat[l2bidx] = rtd * lonlat.latitude;
+
+            // wrap to [-180, 180) interval
+            while(lon[l2bidx]>=180) lon[l2bidx] -= 360;
+            while(lon[l2bidx]<-180) lon[l2bidx] += 360;
 
             // Average the tbs and inc/azimuth angle over the fore/aft looks.
             float sum_tb[2][2]; // [fore-0, aft-1][v-0, h-1]
@@ -251,136 +257,271 @@ int main(int argc, char* argv[]) {
             // Angles computed in degrees and clockwise from north
             int cnts_fore = cnts[0][0] + cnts[0][1];
             if(cnts_fore>0) {
-                inc_fore[cti][ati] = rtd*sum_inc[0]/(float)cnts_fore;
-                azi_fore[cti][ati] = rtd*atan2(sum_cos_azi[0], sum_sin_azi[0]);
+                inc_fore[l2bidx] = rtd*sum_inc[0]/(float)cnts_fore;
+                azi_fore[l2bidx] = rtd*atan2(sum_cos_azi[0], sum_sin_azi[0]);
             }
 
             int cnts_aft = cnts[1][0] + cnts[1][1];
             if(cnts_aft>0) {
-                inc_aft[cti][ati] = rtd*sum_inc[1]/(float)cnts_aft;
-                azi_aft[cti][ati] = rtd*atan2(sum_cos_azi[1], sum_sin_azi[1]);
+                inc_aft[l2bidx] = rtd*sum_inc[1]/(float)cnts_aft;
+                azi_aft[l2bidx] = rtd*atan2(sum_cos_azi[1], sum_sin_azi[1]);
             }
 
             MeasList tb_ml_avg;
             if(cnts[0][0]) {
-                tb_v_fore[cti][ati] = sum_tb[0][0]/(float)cnts[0][0];
+                tb_v_fore[l2bidx] = sum_tb[0][0]/(float)cnts[0][0];
 
                 Meas* this_meas = new Meas();
-                this_meas->value = tb_v_fore[cti][ati] - dtbv;
+                this_meas->value = tb_v_fore[l2bidx] - dtbv;
                 this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
-                this_meas->incidenceAngle = dtr * inc_fore[cti][ati];
-                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[cti][ati]);
+                this_meas->incidenceAngle = dtr * inc_fore[l2bidx];
+                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[l2bidx]);
                 this_meas->A = sum_A[0][0]/pow((float)cnts[0][0], 2);
                 tb_ml_avg.Append(this_meas);
             }
 
             if(cnts[1][0]) {
-                tb_v_aft[cti][ati] = sum_tb[1][0]/(float)cnts[1][0];
+                tb_v_aft[l2bidx] = sum_tb[1][0]/(float)cnts[1][0];
 
                 Meas* this_meas = new Meas();
-                this_meas->value = tb_v_aft[cti][ati] - dtbv;
+                this_meas->value = tb_v_aft[l2bidx] - dtbv;
                 this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
-                this_meas->incidenceAngle = dtr * inc_aft[cti][ati];
-                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[cti][ati]);
+                this_meas->incidenceAngle = dtr * inc_aft[l2bidx];
+                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[l2bidx]);
                 this_meas->A = sum_A[1][0]/pow((float)cnts[1][0], 2);
                 tb_ml_avg.Append(this_meas);
             }
 
             if(cnts[0][1]) {
-                tb_h_fore[cti][ati] = sum_tb[0][1]/(float)cnts[0][1];
+                tb_h_fore[l2bidx] = sum_tb[0][1]/(float)cnts[0][1];
 
                 Meas* this_meas = new Meas();
-                this_meas->value = tb_h_fore[cti][ati] - dtbh;
+                this_meas->value = tb_h_fore[l2bidx] - dtbh;
                 this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
-                this_meas->incidenceAngle = dtr * inc_fore[cti][ati];
-                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[cti][ati]);
+                this_meas->incidenceAngle = dtr * inc_fore[l2bidx];
+                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[l2bidx]);
                 this_meas->A = sum_A[0][1]/pow((float)cnts[0][1], 2);
                 tb_ml_avg.Append(this_meas);
             }
 
             if(cnts[1][1]) {
-                tb_h_aft[cti][ati] = sum_tb[1][1]/(float)cnts[1][1];
+                tb_h_aft[l2bidx] = sum_tb[1][1]/(float)cnts[1][1];
 
                 Meas* this_meas = new Meas();
-                this_meas->value = tb_h_aft[cti][ati] - dtbh;
+                this_meas->value = tb_h_aft[l2bidx] - dtbh;
                 this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
-                this_meas->incidenceAngle = dtr * inc_aft[cti][ati];
-                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[cti][ati]);
+                this_meas->incidenceAngle = dtr * inc_aft[l2bidx];
+                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[l2bidx]);
                 this_meas->A = sum_A[1][1]/pow((float)cnts[1][1], 2);
                 tb_ml_avg.Append(this_meas);
             }
 
-            anc_spd[cti][ati] = sqrt(
+            anc_spd[l2bidx] = sqrt(
                 pow(cap_anc_u10.data[anc_ati][anc_cti][0], 2) +
                 pow(cap_anc_v10.data[anc_ati][anc_cti][0], 2));
 
-            anc_dir[cti][ati] = rtd * atan2(
+            anc_dir[l2bidx] = rtd * atan2(
                 cap_anc_u10.data[anc_ati][anc_cti][0],
                 cap_anc_v10.data[anc_ati][anc_cti][0]);
 
-            anc_sst[cti][ati] = cap_anc_sst.data[anc_ati][anc_cti][0] + 273.16;
-            anc_sss[cti][ati] = cap_anc_sss.data[anc_ati][anc_cti][0];
-            anc_swh[cti][ati] = cap_anc_swh.data[anc_ati][anc_cti][0];
+            anc_sst[l2bidx] = cap_anc_sst.data[anc_ati][anc_cti][0] + 273.16;
+            anc_sss[l2bidx] = cap_anc_sss.data[anc_ati][anc_cti][0];
+            anc_swh[l2bidx] = cap_anc_swh.data[anc_ati][anc_cti][0];
 
             // Check validity of ancillary data
-            if(anc_swh[cti][ati]>10)
-                anc_swh[cti][ati] = FILL_VALUE;
+            if(anc_swh[l2bidx]>10)
+                anc_swh[l2bidx] = FILL_VALUE;
 
             if(tb_ml_avg.NodeCount() > 0) {
                 float final_dir, final_spd, final_sss, final_obj;
                 cap_gmf.Retrieve(
-                    &tb_ml_avg, NULL, anc_spd[cti][ati], anc_dir[cti][ati],
-                    anc_sss[cti][ati], anc_spd[cti][ati], anc_dir[cti][ati], 
-                    anc_sst[cti][ati], anc_swh[cti][ati], 0, 0, 1,
+                    &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
+                    anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx], 
+                    anc_sst[l2bidx], anc_swh[l2bidx], 0, 0, 1,
                     CAPGMF::RETRIEVE_SPEED_SALINITY,
                     &final_spd, &final_dir, &final_sss, &final_obj);
 
-                tb_sss[cti][ati] = final_sss;
-                tb_spd[cti][ati] = final_spd;
+                tb_sss[l2bidx] = final_sss;
+                tb_spd[l2bidx] = final_spd;
+
+                // Quality flag (TBD)
+                tb_flg[l2bidx] = 0;
             }
         }
     }
 
-    // Write it out
-    FILE* ofp = fopen(l2b_tb_file, "w");
-    write_array(ofp, &lon[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &lat[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &tb_h_fore[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &tb_h_aft[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &tb_v_fore[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &tb_v_aft[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &inc_fore[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &inc_aft[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &azi_fore[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &azi_aft[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &anc_spd[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &anc_dir[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &anc_sss[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &anc_sst[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &anc_swh[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &tb_spd[0], sizeof(float), 2, ncti, nati);
-    write_array(ofp, &tb_sss[0], sizeof(float), 2, ncti, nati);
-    fclose(ofp);
+    // Write out HDF5 file
+    hid_t file_id = H5Fcreate(
+        l2b_tb_file, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-    // free the arrays
-    free_array(lat, 2, ncti, nati);
-    free_array(lon, 2, ncti, nati);
-    free_array(tb_h_fore, 2, ncti, nati);
-    free_array(tb_h_aft, 2, ncti, nati);
-    free_array(tb_v_fore, 2, ncti, nati);
-    free_array(tb_v_aft, 2, ncti, nati);
-    free_array(inc_fore, 2, ncti, nati);
-    free_array(inc_aft, 2, ncti, nati);
-    free_array(azi_fore, 2, ncti, nati);
-    free_array(azi_aft, 2, ncti, nati);
-    free_array(anc_spd, 2, ncti, nati);
-    free_array(anc_dir, 2, ncti, nati);
-    free_array(anc_sss, 2, ncti, nati);
-    free_array(anc_sst, 2, ncti, nati);
-    free_array(anc_swh, 2, ncti, nati);
-    free_array(tb_spd, 2, ncti, nati);
-    free_array(tb_sss, 2, ncti, nati);
+    hid_t config_group = H5Gcreate(
+        file_id, "/config", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
+    H5LTset_attribute_string(
+        file_id, "/config", "REVNO",
+        config_list.Get("REVNO"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "REV_START_TIME",
+        config_list.Get("REV_START_TIME"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "REV_STOP_TIME",
+        config_list.Get("REV_STOP_TIME"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "TB_CRID",
+        config_list.Get("TB_CRID"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "L1B_TB_LORES_ASC_FILE",
+        config_list.Get("L1B_TB_LORES_ASC_FILE"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "L1B_TB_LORES_DEC_FILE",
+        config_list.Get("L1B_TB_LORES_DEC_FILE"));
+
+    H5LTset_attribute_float(file_id, "/config", "Delta TBH", &dtbh, 1);
+    H5LTset_attribute_float(file_id, "/config", "Delta TBV", &dtbv, 1);
+
+    H5LTset_attribute_string(
+        file_id, "/config", "QS_ICEMAP_FILE",
+        config_list.Get("QS_ICEMAP_FILE"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "NUDGE_WINDFIELD_FILE",
+        config_list.Get("NUDGE_WINDFIELD_FILE"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "TB_FLAT_MODEL_FILE",
+        config_list.Get("TB_FLAT_MODEL_FILE"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "TB_ROUGH_MODEL_FILE",
+        config_list.Get("TB_ROUGH_MODEL_FILE"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "ANC_U10_FILE",
+        config_list.Get("ANC_U10_FILE"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "ANC_V10_FILE",
+        config_list.Get("ANC_V10_FILE"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "ANC_SSS_FILE",
+        config_list.Get("ANC_SSS_FILE"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "ANC_SST_FILE",
+        config_list.Get("ANC_SST_FILE"));
+
+    H5LTset_attribute_string(
+        file_id, "/config", "ANC_SWH_FILE",
+        config_list.Get("ANC_SWH_FILE"));
+
+    hsize_t dims[2] = {ncti, nati};
+    H5LTmake_dataset(file_id, "lat", 2, dims, H5T_NATIVE_FLOAT, &lat[0]);
+    H5LTset_attribute_string(file_id, "lat", "long_name", "latitude");
+    H5LTset_attribute_string(file_id, "lat", "units", "Degrees");
+
+    H5LTmake_dataset(file_id, "lon", 2, dims, H5T_NATIVE_FLOAT, &lon[0]);
+    H5LTset_attribute_string(file_id, "lon", "long_name", "longitude");
+    H5LTset_attribute_string(file_id, "lon", "units", "Degrees");
+
+    H5LTmake_dataset(
+        file_id, "tb_h_fore", 2, dims, H5T_NATIVE_FLOAT, &tb_h_fore[0]);
+    H5LTset_attribute_string(
+        file_id, "tb_h_fore", "long_name",
+        "Brightness temperature for H-pol fore look");
+    H5LTset_attribute_string(file_id, "tb_h_fore", "units", "Degrees kelvin");
+
+    H5LTmake_dataset(
+        file_id, "tb_h_aft", 2, dims, H5T_NATIVE_FLOAT, &tb_h_aft[0]);
+    H5LTset_attribute_string(
+        file_id, "tb_h_aft", "long_name",
+        "Brightness temperature for H-pol aft look");
+    H5LTset_attribute_string(file_id, "tb_h_aft", "units", "Degrees kelvin");
+
+    H5LTmake_dataset(
+        file_id, "tb_v_fore", 2, dims, H5T_NATIVE_FLOAT, &tb_h_fore[0]);
+    H5LTset_attribute_string(
+        file_id, "tb_v_fore", "long_name",
+        "Brightness temperature for V-pol fore look");
+    H5LTset_attribute_string(file_id, "tb_v_fore", "units", "Degrees kelvin");
+
+    H5LTmake_dataset(
+        file_id, "tb_v_aft", 2, dims, H5T_NATIVE_FLOAT, &tb_h_aft[0]);
+    H5LTset_attribute_string(
+        file_id, "tb_v_aft", "long_name",
+        "Brightness temperature for V-pol aft look");
+    H5LTset_attribute_string(file_id, "tb_v_aft", "units", "Degrees kelvin");
+
+    H5LTmake_dataset(
+        file_id, "inc_fore", 2, dims, H5T_NATIVE_FLOAT, &inc_fore[0]);
+    H5LTset_attribute_string(
+        file_id, "inc_fore", "long_name", "Incidence angle fore look");
+    H5LTset_attribute_string(file_id, "inc_fore", "units", "Degrees");
+
+    H5LTmake_dataset(
+        file_id, "inc_aft", 2, dims, H5T_NATIVE_FLOAT, &inc_aft[0]);
+    H5LTset_attribute_string(
+        file_id, "inc_aft", "long_name", "Incidence angle aft look");
+    H5LTset_attribute_string(file_id, "inc_aft", "units", "Degrees");
+
+    H5LTmake_dataset(
+        file_id, "azi_fore", 2, dims, H5T_NATIVE_FLOAT, &azi_fore[0]);
+    H5LTset_attribute_string(
+        file_id, "azi_fore", "long_name", "Azimuth angle fore look");
+    H5LTset_attribute_string(file_id, "azi_fore", "units", "Degrees");
+
+    H5LTmake_dataset(file_id, "azi_aft", 2, dims, H5T_NATIVE_FLOAT, &azi_aft[0]);
+    H5LTset_attribute_string(
+        file_id, "azi_aft", "long_name", "Azimuth angle aft look");
+    H5LTset_attribute_string(file_id, "azi_aft", "units", "Degrees");
+
+    H5LTmake_dataset(file_id, "anc_spd", 2, dims, H5T_NATIVE_FLOAT, &anc_spd[0]);
+    H5LTset_attribute_string(
+        file_id, "anc_spd", "long_name", "NCEP wind speed (scaled by 1.03)");
+    H5LTset_attribute_string(file_id, "anc_spd", "units", "Meters/second");
+
+    H5LTmake_dataset(file_id, "anc_dir", 2, dims, H5T_NATIVE_FLOAT, &anc_dir[0]);
+    H5LTset_attribute_string(
+        file_id, "anc_dir", "long_name", "NCEP wind direction (oceanographic)");
+    H5LTset_attribute_string(file_id, "anc_dir", "units", "Degrees");
+
+    H5LTmake_dataset(file_id, "anc_sss", 2, dims, H5T_NATIVE_FLOAT, &anc_sss[0]);
+    H5LTset_attribute_string(
+        file_id, "anc_sss", "long_name", "HYCOM salinity");
+    H5LTset_attribute_string(file_id, "anc_sss", "units", "PSU");
+
+    H5LTmake_dataset(file_id, "anc_sst", 2, dims, H5T_NATIVE_FLOAT, &anc_sst[0]);
+    H5LTset_attribute_string(
+        file_id, "anc_sst", "long_name", "Sea surface temperature");
+    H5LTset_attribute_string(file_id, "anc_sst", "units", "Degrees kelvin");
+
+    H5LTmake_dataset(file_id, "anc_swh", 2, dims, H5T_NATIVE_FLOAT, &anc_swh[0]);
+    H5LTset_attribute_string(
+        file_id, "anc_swh", "long_name", "Significant wave height");
+    H5LTset_attribute_string(file_id, "anc_swh", "units", "Meters");
+
+    H5LTmake_dataset(file_id, "tb_spd", 2, dims, H5T_NATIVE_FLOAT, &tb_spd[0]);
+    H5LTset_attribute_string(
+        file_id, "tb_spd", "long_name", "SMAP Wind Speed");
+    H5LTset_attribute_string(file_id, "tb_spd", "units", "Meters/second");
+
+    H5LTmake_dataset(file_id, "tb_sss", 2, dims, H5T_NATIVE_FLOAT, &tb_sss[0]);
+    H5LTset_attribute_string(
+        file_id, "tb_sss", "long_name", "SMAP Salinity");
+    H5LTset_attribute_string(file_id, "tb_sss", "units", "PSU");
+
+    H5LTmake_dataset(file_id, "tb_flg", 2, dims, H5T_NATIVE_USHORT, &tb_flg[0]);
+    H5LTset_attribute_string(
+        file_id, "tb_flg", "long_name", "TB quality flag");
+    H5LTset_attribute_string(
+        file_id, "tb_flg", "Bit definitions", "TBD");
+
+    H5Fclose(file_id);
     return(0);
 }
 
