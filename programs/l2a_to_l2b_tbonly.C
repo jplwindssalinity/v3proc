@@ -413,17 +413,27 @@ int main(int argc, char* argv[]) {
     float _fill_value = FILL_VALUE;
     uint16 _ushort_fill_value = 65535;
 
+    float valid_max, valid_min;
+
     hsize_t dims[2] = {ncti, nati};
+
+    valid_max = 90; valid_min = -90;
     H5LTmake_dataset(file_id, "lat", 2, dims, H5T_NATIVE_FLOAT, &lat[0]);
     H5LTset_attribute_string(file_id, "lat", "long_name", "latitude");
     H5LTset_attribute_string(file_id, "lat", "units", "Degrees");
     H5LTset_attribute_float(file_id, "lat", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "lat", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "lat", "valid_min", &valid_min, 1);
 
+    valid_max = 180; valid_min = -180;
     H5LTmake_dataset(file_id, "lon", 2, dims, H5T_NATIVE_FLOAT, &lon[0]);
     H5LTset_attribute_string(file_id, "lon", "long_name", "longitude");
     H5LTset_attribute_string(file_id, "lon", "units", "Degrees");
     H5LTset_attribute_float(file_id, "lon", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "lon", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "lon", "valid_min", &valid_min, 1);
 
+    valid_max = 340; valid_min = 0;
     H5LTmake_dataset(
         file_id, "tb_h_fore", 2, dims, H5T_NATIVE_FLOAT, &tb_h_fore[0]);
     H5LTset_attribute_string(
@@ -431,6 +441,8 @@ int main(int argc, char* argv[]) {
         "Average brightness temperature for all H-pol fore looks");
     H5LTset_attribute_string(file_id, "tb_h_fore", "units", "Degrees kelvin");
     H5LTset_attribute_float(file_id, "tb_h_fore", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "tb_h_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "tb_h_fore", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
         file_id, "tb_h_aft", 2, dims, H5T_NATIVE_FLOAT, &tb_h_aft[0]);
@@ -439,6 +451,8 @@ int main(int argc, char* argv[]) {
         "Average brightness temperature for all H-pol aft looks");
     H5LTset_attribute_string(file_id, "tb_h_aft", "units", "Degrees kelvin");
     H5LTset_attribute_float(file_id, "tb_h_aft", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "tb_h_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "tb_h_aft", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
         file_id, "tb_v_fore", 2, dims, H5T_NATIVE_FLOAT, &tb_v_fore[0]);
@@ -447,6 +461,8 @@ int main(int argc, char* argv[]) {
         "Average brightness temperature for all V-pol fore looks");
     H5LTset_attribute_string(file_id, "tb_v_fore", "units", "Degrees kelvin");
     H5LTset_attribute_float(file_id, "tb_v_fore", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "tb_v_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "tb_v_fore", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
         file_id, "tb_v_aft", 2, dims, H5T_NATIVE_FLOAT, &tb_v_aft[0]);
@@ -455,13 +471,18 @@ int main(int argc, char* argv[]) {
         "Average brightness temperature for all V-pol aft looks");
     H5LTset_attribute_string(file_id, "tb_v_aft", "units", "Degrees kelvin");
     H5LTset_attribute_float(file_id, "tb_v_aft", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "tb_v_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "tb_v_aft", "valid_min", &valid_min, 1);
 
+    valid_max = 90; valid_min = 0;
     H5LTmake_dataset(
         file_id, "inc_fore", 2, dims, H5T_NATIVE_FLOAT, &inc_fore[0]);
     H5LTset_attribute_string(
         file_id, "inc_fore", "long_name", "Cell incidence angle fore look");
     H5LTset_attribute_string(file_id, "inc_fore", "units", "Degrees");
     H5LTset_attribute_float(file_id, "inc_fore", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "inc_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "inc_fore", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
         file_id, "inc_aft", 2, dims, H5T_NATIVE_FLOAT, &inc_aft[0]);
@@ -469,65 +490,93 @@ int main(int argc, char* argv[]) {
         file_id, "inc_aft", "long_name", "Cell incidence angle aft look");
     H5LTset_attribute_string(file_id, "inc_aft", "units", "Degrees");
     H5LTset_attribute_float(file_id, "inc_aft", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "inc_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "inc_aft", "valid_min", &valid_min, 1);
 
+    valid_max = 180; valid_min = -180;
     H5LTmake_dataset(
         file_id, "azi_fore", 2, dims, H5T_NATIVE_FLOAT, &azi_fore[0]);
     H5LTset_attribute_string(
         file_id, "azi_fore", "long_name", "Cell azimuth angle fore look");
     H5LTset_attribute_string(file_id, "azi_fore", "units", "Degrees");
     H5LTset_attribute_float(file_id, "azi_fore", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "azi_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "azi_fore", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(file_id, "azi_aft", 2, dims, H5T_NATIVE_FLOAT, &azi_aft[0]);
     H5LTset_attribute_string(
         file_id, "azi_aft", "long_name", "Cell azimuth angle aft look");
     H5LTset_attribute_string(file_id, "azi_aft", "units", "Degrees");
     H5LTset_attribute_float(file_id, "azi_aft", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "azi_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "azi_aft", "valid_min", &valid_min, 1);
 
+    valid_max = 50; valid_min = 0;
     H5LTmake_dataset(file_id, "anc_spd", 2, dims, H5T_NATIVE_FLOAT, &anc_spd[0]);
     H5LTset_attribute_string(
         file_id, "anc_spd", "long_name",
         "10 meter NCEP wind speed (scaled by 1.03)");
     H5LTset_attribute_string(file_id, "anc_spd", "units", "Meters/second");
     H5LTset_attribute_float(file_id, "anc_spd", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "anc_spd", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "anc_spd", "valid_min", &valid_min, 1);
 
+    valid_max = 180; valid_min = -180;
     H5LTmake_dataset(file_id, "anc_dir", 2, dims, H5T_NATIVE_FLOAT, &anc_dir[0]);
     H5LTset_attribute_string(
         file_id, "anc_dir", "long_name",
         "NCEP wind direction (oceanographic convention)");
     H5LTset_attribute_string(file_id, "anc_dir", "units", "Degrees");
     H5LTset_attribute_float(file_id, "anc_dir", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "anc_dir", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "anc_dir", "valid_min", &valid_min, 1);
 
+    valid_max = 40; valid_min = 0;
     H5LTmake_dataset(file_id, "anc_sss", 2, dims, H5T_NATIVE_FLOAT, &anc_sss[0]);
     H5LTset_attribute_string(
         file_id, "anc_sss", "long_name", "HYCOM salinity");
     H5LTset_attribute_string(file_id, "anc_sss", "units", "PSU");
     H5LTset_attribute_float(file_id, "anc_sss", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "anc_sss", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "anc_sss", "valid_min", &valid_min, 1);
 
+    valid_max = 340; valid_min = 0;
     H5LTmake_dataset(file_id, "anc_sst", 2, dims, H5T_NATIVE_FLOAT, &anc_sst[0]);
     H5LTset_attribute_string(
         file_id, "anc_sst", "long_name",
         "NOAA Optimum Interpolation sea surface temperature");
     H5LTset_attribute_string(file_id, "anc_sst", "units", "Degrees kelvin");
     H5LTset_attribute_float(file_id, "anc_sst", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "anc_sst", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "anc_sst", "valid_min", &valid_min, 1);
 
+    valid_max = 25; valid_min = 0;
     H5LTmake_dataset(file_id, "anc_swh", 2, dims, H5T_NATIVE_FLOAT, &anc_swh[0]);
     H5LTset_attribute_string(
         file_id, "anc_swh", "long_name",
         "NOAA WaveWatch III Significant wave height");
     H5LTset_attribute_string(file_id, "anc_swh", "units", "Meters");
     H5LTset_attribute_float(file_id, "anc_swh", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "anc_swh", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "anc_swh", "valid_min", &valid_min, 1);
 
+    valid_max = 50; valid_min = 0;
     H5LTmake_dataset(file_id, "tb_spd", 2, dims, H5T_NATIVE_FLOAT, &tb_spd[0]);
     H5LTset_attribute_string(
         file_id, "tb_spd", "long_name", "SMAP TB Wind Speed");
     H5LTset_attribute_string(file_id, "tb_spd", "units", "Meters/second");
     H5LTset_attribute_float(file_id, "tb_spd", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "tb_spd", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "tb_spd", "valid_min", &valid_min, 1);
 
+    valid_max = 40; valid_min = 0;
     H5LTmake_dataset(file_id, "tb_sss", 2, dims, H5T_NATIVE_FLOAT, &tb_sss[0]);
     H5LTset_attribute_string(
         file_id, "tb_sss", "long_name", "SMAP TB Salinity");
     H5LTset_attribute_string(file_id, "tb_sss", "units", "PSU");
     H5LTset_attribute_float(file_id, "tb_sss", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "tb_sss", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "tb_sss", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(file_id, "tb_flg", 2, dims, H5T_NATIVE_USHORT, &tb_flg[0]);
     H5LTset_attribute_string(
