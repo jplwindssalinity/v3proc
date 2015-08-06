@@ -350,12 +350,24 @@ int main(int argc, char* argv[]) {
 
             if(tb_ml_avg.NodeCount() > 0) {
                 float final_dir, final_spd, final_sss, final_obj;
+
+                // Combined SSS and SPD
+                float anc_spd_std_prior = 1.5;
                 cap_gmf.Retrieve(
                     &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
-                    anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx], 
-                    anc_sst[l2bidx], anc_swh[l2bidx], 0, 0, 1,
-                    CAPGMF::RETRIEVE_SPEED_SALINITY,
+                    anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
+                    anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
+                    1, CAPGMF::RETRIEVE_SPEED_SALINITY,
                     &final_spd, &final_dir, &final_sss, &final_obj);
+
+                // SPD only
+//                 float anc_spd_std_prior = 100;
+//                 cap_gmf.Retrieve(
+//                     &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
+//                     anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
+//                     anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
+//                     1, CAPGMF::RETRIEVE_SPEED_ONLY,
+//                     &final_spd, &final_dir, &final_sss, &final_obj);
 
                 tb_sss[l2bidx] = final_sss;
                 tb_spd[l2bidx] = final_spd;

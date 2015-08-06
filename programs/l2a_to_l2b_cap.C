@@ -200,10 +200,12 @@ int main(int argc, char* argv[]) {
             wvc->nudgeWV = nudgeWV;
             wvc->s0_flag = s0_wvc->qualFlag;
 
+            float anc_spd_std_prior = 100;
+
             cap_gmf.CAPGMF::BuildSolutionCurvesTwoStep(
                 tb_ml, s0_ml, init_spd, init_sss, this_anc_spd, this_anc_dir,
-                this_anc_sst, this_anc_swh, this_anc_rr, active_weight,
-                passive_weight, wvc);
+                this_anc_sst, this_anc_swh, this_anc_rr, anc_spd_std_prior,
+                active_weight, passive_weight, wvc);
 
             wvc->BuildSolutions();
 

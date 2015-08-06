@@ -50,14 +50,16 @@ public:
     double ObjectiveFunctionCAP(
         MeasList* tb_ml, MeasList* s0_ml, float trial_spd, float trial_dir,
         float trial_sss, float anc_spd, float anc_dir, float anc_swh,
-        float anc_sst, float active_weight = 1, float passive_weight = 1);
+        float anc_sst, float anc_spd_std_prior, float active_weight = 1,
+        float passive_weight = 1);
 
     double ObjectiveFunctionActive(
         MeasList* s0_ml, float trial_spd, float trial_dir, float anc_swh);
 
     double ObjectiveFunctionPassive(
         MeasList* tb_ml, float trial_spd, float trial_dir, float trial_sss,
-        float anc_spd, float anc_dir, float anc_swh, float anc_sst);
+        float anc_spd, float anc_dir, float anc_swh, float anc_sst,
+        float anc_spd_std_prior);
 
     int GetTBFlat(
         Meas::MeasTypeE met, float inc, float sst, float sss, float* tbflat);
@@ -77,20 +79,21 @@ public:
     int Retrieve(
         MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_dir,
         float init_sss, float anc_spd, float anc_dir, float anc_sst,
-        float anc_swh, float anc_rr, float active_weight, float passive_weight,
-        CAPRetrievalMode mode, float* spd, float* dir, float* sss, float* obj);
+        float anc_swh, float anc_rr, float anc_spd_std_prior,
+        float active_weight, float passive_weight, CAPRetrievalMode mode,
+        float* spd, float* dir, float* sss, float* obj);
 
     int BuildSolutionCurves(
         MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_sss,
         float anc_spd, float anc_dir, float anc_sst, float anc_swh,
-        float anc_rr, float active_weight, float passive_weight,
-        CAPWVC* cap_wvc);
+        float anc_rr, float anc_spd_std_prior, float active_weight,
+        float passive_weight, CAPWVC* cap_wvc);
 
     int BuildSolutionCurvesTwoStep(
         MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_sss,
         float anc_spd, float anc_dir, float anc_sst, float anc_swh,
-        float anc_rr, float active_weight, float passive_weight,
-        CAPWVC* cap_wvc);
+        float anc_rr, float anc_spd_std_prior, float active_weight,
+        float passive_weight, CAPWVC* cap_wvc);
 
 protected:
 
@@ -156,6 +159,7 @@ typedef struct {
     double anc_sst;
     double anc_swh;
     double anc_rr;
+    double anc_spd_std_prior;
     double active_weight;
     double passive_weight;
     CAPGMF::CAPRetrievalMode mode;
