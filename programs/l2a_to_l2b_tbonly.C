@@ -199,11 +199,12 @@ int main(int argc, char* argv[]) {
             anc_swh[l2bidx] = FILL_VALUE;
             tb_sss[l2bidx] = FILL_VALUE;
             tb_spd[l2bidx] = FILL_VALUE;
-            n_h_fore[l2bidx] = 255;
-            n_h_aft[l2bidx] = 255;
-            n_v_fore[l2bidx] = 255;
-            n_v_aft[l2bidx] = 255;
+            n_h_fore[l2bidx] = 0;
+            n_h_aft[l2bidx] = 0;
+            n_v_fore[l2bidx] = 0;
+            n_v_aft[l2bidx] = 0;
             tb_flg[l2bidx] = 65535;
+            tb_sss_v[l2bidx] = FILL_VALUE;
 
             // Check for valid measList at this WVC
             if(!l2a_tb_swath[cti][ati])
@@ -387,6 +388,29 @@ int main(int argc, char* argv[]) {
 
                 tb_sss[l2bidx] = final_sss;
                 tb_spd[l2bidx] = final_spd;
+
+                // Discard H-pol observations
+                for(Meas* meas = tb_ml_avg.GetHead(); meas; ) {
+                    if(meas->measType == Meas::L_BAND_TBH_MEAS_TYPE) {
+                        meas = tb_ml_avg.RemoveCurrent();
+                        delete meas;
+                        meas = tb_ml_avg.GetCurrent();
+                    } else {
+                        meas = tb_ml_avg.GetNext();
+                    }
+                }
+
+                // SSS only with only V-pol
+                if(tb_ml_avg.NodeCount() > 0) {
+                    cap_gmf.Retrieve(
+                        &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
+                        anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
+                        anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
+                        1, CAPGMF::RETRIEVE_SALINITY_ONLY,
+                        &final_spd, &final_dir, &final_sss, &final_obj);
+
+                    tb_sss_v[l2bidx] = final_sss;
+                }
 
                 // Quality flagging
                 tb_flg[l2bidx] = 0;
@@ -581,7 +605,7 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "nedt_v_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "nedt_v_aft", "valid_min", &valid_min, 1);
 
-    unsigned char uchar_fill_value = 255;
+    unsigned char uchar_fill_value = 0;
     H5LTmake_dataset(
         file_id, "n_h_fore", 2, dims, H5T_NATIVE_UCHAR, &n_h_fore[0]);
     H5LTset_attribute_string(
@@ -741,6 +765,8 @@ int main(int argc, char* argv[]) {
 
     H5LTset_attribute_ushort(
         file_id, "tb_flg", "_FillValue", &_ushort_fill_value, 1);
+
+    H5LTmake_dataset(file_id, "tb_sss_v", 2, dims, H5T_NATIVE_FLOAT, &tb_sss_v[0]);
 
     H5Fclose(file_id);
     return(0);
