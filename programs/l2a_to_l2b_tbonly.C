@@ -153,11 +153,16 @@ int main(int argc, char* argv[]) {
     std::vector<float> lat(l2b_size), lon(l2b_size);
     std::vector<float> tb_h_fore(l2b_size), tb_h_aft(l2b_size);
     std::vector<float> tb_v_fore(l2b_size), tb_v_aft(l2b_size);
+    std::vector<float> nedt_h_fore(l2b_size), nedt_h_aft(l2b_size);
+    std::vector<float> nedt_v_fore(l2b_size), nedt_v_aft(l2b_size);
+    std::vector<uint8> n_h_fore(l2b_size), n_h_aft(l2b_size);
+    std::vector<uint8> n_v_fore(l2b_size), n_v_aft(l2b_size);
     std::vector<float> inc_fore(l2b_size), inc_aft(l2b_size);
     std::vector<float> azi_fore(l2b_size), azi_aft(l2b_size);
     std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
     std::vector<float> anc_sss(l2b_size), anc_sst(l2b_size), anc_swh(l2b_size);
     std::vector<float> tb_sss(l2b_size), tb_spd(l2b_size);
+    std::vector<float> tb_sss_v(l2b_size);
     std::vector<uint16> tb_flg(l2b_size);
 
     for(int ati=0; ati<nati; ++ati) {
@@ -179,6 +184,10 @@ int main(int argc, char* argv[]) {
             tb_h_aft[l2bidx] = FILL_VALUE;
             tb_v_fore[l2bidx] = FILL_VALUE;
             tb_v_aft[l2bidx] = FILL_VALUE;
+            nedt_h_fore[l2bidx] = FILL_VALUE;
+            nedt_h_aft[l2bidx] = FILL_VALUE;
+            nedt_v_fore[l2bidx] = FILL_VALUE;
+            nedt_v_aft[l2bidx] = FILL_VALUE;
             inc_fore[l2bidx] = FILL_VALUE;
             inc_aft[l2bidx] = FILL_VALUE;
             azi_fore[l2bidx] = FILL_VALUE;
@@ -190,6 +199,10 @@ int main(int argc, char* argv[]) {
             anc_swh[l2bidx] = FILL_VALUE;
             tb_sss[l2bidx] = FILL_VALUE;
             tb_spd[l2bidx] = FILL_VALUE;
+            n_h_fore[l2bidx] = 255;
+            n_h_aft[l2bidx] = 255;
+            n_v_fore[l2bidx] = 255;
+            n_v_aft[l2bidx] = 255;
             tb_flg[l2bidx] = 65535;
 
             // Check for valid measList at this WVC
@@ -286,6 +299,9 @@ int main(int argc, char* argv[]) {
             MeasList tb_ml_avg;
             if(cnts[0][0]) {
                 tb_v_fore[l2bidx] = sum_tb[0][0]/(float)cnts[0][0];
+                nedt_v_fore[l2bidx] = sqrt(
+                    sum_A[0][0]/pow((float)cnts[0][0], 2));
+                n_v_fore[l2bidx] = cnts[0][0];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_v_fore[l2bidx] - dtbv;
@@ -298,6 +314,9 @@ int main(int argc, char* argv[]) {
 
             if(cnts[1][0]) {
                 tb_v_aft[l2bidx] = sum_tb[1][0]/(float)cnts[1][0];
+                nedt_v_aft[l2bidx] = sqrt(
+                    sum_A[1][0]/pow((float)cnts[1][0], 2));
+                n_v_aft[l2bidx] = cnts[1][0];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_v_aft[l2bidx] - dtbv;
@@ -310,6 +329,9 @@ int main(int argc, char* argv[]) {
 
             if(cnts[0][1]) {
                 tb_h_fore[l2bidx] = sum_tb[0][1]/(float)cnts[0][1];
+                nedt_h_fore[l2bidx] = sqrt(
+                    sum_A[0][1]/pow((float)cnts[0][1], 2));
+                n_h_fore[l2bidx] = cnts[1][0];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_h_fore[l2bidx] - dtbh;
@@ -322,6 +344,9 @@ int main(int argc, char* argv[]) {
 
             if(cnts[1][1]) {
                 tb_h_aft[l2bidx] = sum_tb[1][1]/(float)cnts[1][1];
+                nedt_h_aft[l2bidx] = sqrt(
+                    sum_A[1][1]/pow((float)cnts[1][1], 2));
+                n_h_aft[l2bidx] = cnts[1][1];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_h_aft[l2bidx] - dtbh;
@@ -514,6 +539,76 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "tb_v_aft", "_FillValue", &_fill_value, 1);
     H5LTset_attribute_float(file_id, "tb_v_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "tb_v_aft", "valid_min", &valid_min, 1);
+
+    valid_max = 3; valid_min = 0;
+    H5LTmake_dataset(
+        file_id, "nedt_h_fore", 2, dims, H5T_NATIVE_FLOAT, &nedt_h_fore[0]);
+    H5LTset_attribute_string(
+        file_id, "nedt_h_fore", "long_name",
+        "Aggregated noise equivilent Delta T for H-pol fore look");
+    H5LTset_attribute_string(file_id, "nedt_h_fore", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "nedt_h_fore", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "nedt_h_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "nedt_h_fore", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "nedt_h_aft", 2, dims, H5T_NATIVE_FLOAT, &nedt_h_aft[0]);
+    H5LTset_attribute_string(
+        file_id, "nedt_h_aft", "long_name",
+        "Aggregated noise equivilent Delta T for H-pol aft look");
+    H5LTset_attribute_string(file_id, "nedt_h_aft", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "nedt_h_aft", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "nedt_h_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "nedt_h_aft", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "nedt_v_fore", 2, dims, H5T_NATIVE_FLOAT, &nedt_v_fore[0]);
+    H5LTset_attribute_string(
+        file_id, "nedt_v_fore", "long_name",
+        "Aggregated noise equivilent Delta T for V-pol fore look");
+    H5LTset_attribute_string(file_id, "nedt_v_fore", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "nedt_v_fore", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "nedt_v_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "nedt_v_fore", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "nedt_v_aft", 2, dims, H5T_NATIVE_FLOAT, &nedt_v_aft[0]);
+    H5LTset_attribute_string(
+        file_id, "nedt_v_aft", "long_name",
+        "Aggregated noise equivilent Delta T for V-pol aft look");
+    H5LTset_attribute_string(file_id, "nedt_v_aft", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "nedt_v_aft", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "nedt_v_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "nedt_v_aft", "valid_min", &valid_min, 1);
+
+    unsigned char uchar_fill_value = 255;
+    H5LTmake_dataset(
+        file_id, "n_h_fore", 2, dims, H5T_NATIVE_UCHAR, &n_h_fore[0]);
+    H5LTset_attribute_string(
+        file_id, "n_h_fore", "long_name",
+        "Number of L1B TBs aggregated into H-pol fore look");
+    H5LTset_attribute_uchar(file_id, "n_h_fore", "_FillValue", &uchar_fill_value, 1);
+
+    H5LTmake_dataset(
+        file_id, "n_h_aft", 2, dims, H5T_NATIVE_UCHAR, &n_h_aft[0]);
+    H5LTset_attribute_string(
+        file_id, "n_h_aft", "long_name",
+        "Number of L1B TBs aggregated into H-pol aft look");
+    H5LTset_attribute_uchar(file_id, "n_h_aft", "_FillValue", &uchar_fill_value, 1);
+
+    H5LTmake_dataset(
+        file_id, "n_v_fore", 2, dims, H5T_NATIVE_UCHAR, &n_v_fore[0]);
+    H5LTset_attribute_string(
+        file_id, "n_v_fore", "long_name",
+        "Number of L1B TBs aggregated into V-pol fore look");
+    H5LTset_attribute_uchar(file_id, "n_v_fore", "_FillValue", &uchar_fill_value, 1);
+
+    H5LTmake_dataset(
+        file_id, "n_v_aft", 2, dims, H5T_NATIVE_UCHAR, &n_v_aft[0]);
+    H5LTset_attribute_string(
+        file_id, "n_v_aft", "long_name",
+        "Number of L1B TBs aggregated into V-pol aft look");
+    H5LTset_attribute_uchar(file_id, "n_v_aft", "_FillValue", &uchar_fill_value, 1);
 
     valid_max = 90; valid_min = 0;
     H5LTmake_dataset(
