@@ -332,7 +332,7 @@ int main(int argc, char* argv[]) {
                 tb_ml_avg.Append(this_meas);
             }
 
-            anc_spd[l2bidx] = sqrt(
+            anc_spd[l2bidx] = 1.03 * sqrt(
                 pow(cap_anc_u10.data[anc_ati][anc_cti][0], 2) +
                 pow(cap_anc_v10.data[anc_ati][anc_cti][0], 2));
 
@@ -359,15 +359,6 @@ int main(int argc, char* argv[]) {
                     anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
                     1, CAPGMF::RETRIEVE_SPEED_SALINITY,
                     &final_spd, &final_dir, &final_sss, &final_obj);
-
-                // SPD only
-//                 float anc_spd_std_prior = 100;
-//                 cap_gmf.Retrieve(
-//                     &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
-//                     anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
-//                     anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
-//                     1, CAPGMF::RETRIEVE_SPEED_ONLY,
-//                     &final_spd, &final_dir, &final_sss, &final_obj);
 
                 tb_sss[l2bidx] = final_sss;
                 tb_spd[l2bidx] = final_spd;
@@ -604,7 +595,7 @@ int main(int argc, char* argv[]) {
     H5LTmake_dataset(file_id, "anc_swh", 2, dims, H5T_NATIVE_FLOAT, &anc_swh[0]);
     H5LTset_attribute_string(
         file_id, "anc_swh", "long_name",
-        "NOAA WaveWatch III Significant wave height");
+        "NOAA WaveWatch III significant wave height");
     H5LTset_attribute_string(file_id, "anc_swh", "units", "Meters");
     H5LTset_attribute_float(file_id, "anc_swh", "_FillValue", &_fill_value, 1);
     H5LTset_attribute_float(file_id, "anc_swh", "valid_max", &valid_max, 1);
