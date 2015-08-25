@@ -151,6 +151,16 @@ int main(int argc, char* argv[]){
     float sum_dtb[2] = {0, 0};
     unsigned int counts[2] = {0, 0};
 
+    float sum_dtb_fore_asc[2] = {0, 0};
+    unsigned int counts_fore_asc[2] = {0, 0};
+    float sum_dtb_fore_dec[2] = {0, 0};
+    unsigned int counts_fore_dec[2] = {0, 0};
+
+    float sum_dtb_aft_asc[2] = {0, 0};
+    unsigned int counts_aft_asc[2] = {0, 0};
+    float sum_dtb_aft_dec[2] = {0, 0};
+    unsigned int counts_aft_dec[2] = {0, 0};
+
     // Iterate over ascending / decending portions of orbit
     for(int ipart = 0; ipart < 2; ++ipart){
         hid_t id = H5Fopen(l1b_tbfiles[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -282,6 +292,28 @@ int main(int argc, char* argv[]){
                     // Accumulate delta tb
                     sum_dtb[ipol] += this_delta;
                     counts[ipol] += 1;
+
+                    int is_fore = (antazi[fp_idx] < 90 || antazi[fp_idx] > 270) ? 1 : 0;
+                    int is_asc = (ipart == 0) ? 1 : 0;
+
+                    // Accumulate into fore/aft x asc/dec seperatly also
+                    if(is_asc) {
+                        if(is_fore) {
+                            sum_dtb_fore_asc[ipol] += this_delta;
+                            counts_fore_asc[ipol] += 1;
+                        } else {
+                            sum_dtb_aft_asc[ipol] += this_delta;
+                            counts_aft_asc[ipol] += 1;
+                        }
+                    } else {
+                        if(is_fore) {
+                            sum_dtb_fore_dec[ipol] += this_delta;
+                            counts_fore_dec[ipol] += 1;
+                        } else {
+                            sum_dtb_aft_dec[ipol] += this_delta;
+                            counts_aft_dec[ipol] += 1;
+                        }
+                    }
                 }
             }
         }
@@ -293,9 +325,18 @@ int main(int argc, char* argv[]){
 
     FILE* ofp = fopen(out_file, "w");
     fprintf(
-        ofp, "%d, %d, %f, %d, %f\n", revno, 
+        ofp, "%d, %d, %f, %d, %f, %d, %f, %d, %f, %d, %f, %d, %f, %d, %f, %d, %f, %d, %f, %d, %f\n",
+        revno,
         counts[0], sum_dtb[0]/(float)counts[0],
-        counts[1], sum_dtb[1]/(float)counts[1]);
+        counts[1], sum_dtb[1]/(float)counts[1],
+        counts_fore_asc[0], sum_dtb_fore_asc[0]/(float)counts_fore_asc[0],
+        counts_fore_asc[1], sum_dtb_fore_asc[1]/(float)counts_fore_asc[1],
+        counts_aft_asc[0], sum_dtb_aft_asc[0]/(float)counts_aft_asc[0],
+        counts_aft_asc[1], sum_dtb_aft_asc[1]/(float)counts_aft_asc[1],
+        counts_fore_dec[0], sum_dtb_fore_dec[0]/(float)counts_fore_dec[0],
+        counts_fore_dec[1], sum_dtb_fore_dec[1]/(float)counts_fore_dec[1],
+        counts_aft_dec[0], sum_dtb_aft_dec[0]/(float)counts_aft_dec[0],
+        counts_aft_dec[1], sum_dtb_aft_dec[1]/(float)counts_aft_dec[1]);
     fclose(ofp);
     return(0);
 }
