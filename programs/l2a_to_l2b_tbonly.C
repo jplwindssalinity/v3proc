@@ -83,11 +83,32 @@ int main(int argc, char* argv[]) {
     const char* command = no_path(argv[0]);
     char* config_file = argv[1];
 
-    float dtbv = 0;
-    float dtbh = 0;
+    float dtbv_fore_asc = 0;
+    float dtbh_fore_asc = 0;
+    float dtbv_aft_asc = 0;
+    float dtbh_aft_asc = 0;
+    float dtbv_fore_dec = 0;
+    float dtbh_fore_dec = 0;
+    float dtbv_aft_dec = 0;
+    float dtbh_aft_dec = 0;
     if(argc == 4) {
-        dtbv = atof(argv[2]);
-        dtbh = atof(argv[3]);
+        dtbv_fore_asc = atof(argv[2]);
+        dtbh_fore_asc = atof(argv[3]);
+        dtbv_aft_asc = atof(argv[2]);
+        dtbh_aft_asc = atof(argv[3]);
+        dtbv_fore_dec = atof(argv[2]);
+        dtbh_fore_dec = atof(argv[3]);
+        dtbv_aft_dec = atof(argv[2]);
+        dtbh_aft_dec = atof(argv[3]);
+    } else if(argc == 10) {
+        dtbv_fore_asc = atof(argv[2]);
+        dtbh_fore_asc = atof(argv[3]);
+        dtbv_aft_asc = atof(argv[4]);
+        dtbh_aft_asc = atof(argv[5]);
+        dtbv_fore_dec = atof(argv[6]);
+        dtbh_fore_dec = atof(argv[7]);
+        dtbv_aft_dec = atof(argv[8]);
+        dtbh_aft_dec = atof(argv[9]);
     }
 
     ConfigList config_list;
@@ -162,12 +183,18 @@ int main(int argc, char* argv[]) {
     std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
     std::vector<float> anc_sss(l2b_size), anc_sst(l2b_size), anc_swh(l2b_size);
     std::vector<float> tb_sss(l2b_size), tb_spd(l2b_size);
-    std::vector<float> tb_sss_v(l2b_size);
+    std::vector<float> tb_sss_v(l2b_size), tb_spdonly(l2b_size), tb_spdonly_ancsss(l2b_size);
     std::vector<uint16> tb_flg(l2b_size);
 
     for(int ati=0; ati<nati; ++ati) {
         if(ati%50 == 0)
             fprintf(stdout, "%d of %d\n", ati, nati);
+
+        // Set the bias adjustments per ascending / decending portion of orbit.
+        float dtbh_fore = (ati < nati/2) ? dtbh_fore_asc : dtbh_fore_dec;
+        float dtbv_fore = (ati < nati/2) ? dtbv_fore_asc : dtbv_fore_dec;
+        float dtbh_aft = (ati < nati/2) ? dtbh_aft_asc : dtbh_aft_dec;
+        float dtbv_aft = (ati < nati/2) ? dtbv_aft_asc : dtbv_aft_dec;
 
         for(int cti=0; cti<ncti; ++cti) {
 
@@ -205,6 +232,8 @@ int main(int argc, char* argv[]) {
             n_v_aft[l2bidx] = 0;
             tb_flg[l2bidx] = 65535;
             tb_sss_v[l2bidx] = FILL_VALUE;
+            tb_spdonly[l2bidx] = FILL_VALUE;
+            tb_spdonly_ancsss[l2bidx] = FILL_VALUE;
 
             // Check for valid measList at this WVC
             if(!l2a_tb_swath[cti][ati])
@@ -305,7 +334,7 @@ int main(int argc, char* argv[]) {
                 n_v_fore[l2bidx] = cnts[0][0];
 
                 Meas* this_meas = new Meas();
-                this_meas->value = tb_v_fore[l2bidx] - dtbv;
+                this_meas->value = tb_v_fore[l2bidx] - dtbv_fore;
                 this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_fore[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[l2bidx]);
@@ -320,7 +349,7 @@ int main(int argc, char* argv[]) {
                 n_v_aft[l2bidx] = cnts[1][0];
 
                 Meas* this_meas = new Meas();
-                this_meas->value = tb_v_aft[l2bidx] - dtbv;
+                this_meas->value = tb_v_aft[l2bidx] - dtbv_aft;
                 this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_aft[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[l2bidx]);
@@ -335,7 +364,7 @@ int main(int argc, char* argv[]) {
                 n_h_fore[l2bidx] = cnts[1][0];
 
                 Meas* this_meas = new Meas();
-                this_meas->value = tb_h_fore[l2bidx] - dtbh;
+                this_meas->value = tb_h_fore[l2bidx] - dtbh_fore;
                 this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_fore[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[l2bidx]);
@@ -350,7 +379,7 @@ int main(int argc, char* argv[]) {
                 n_h_aft[l2bidx] = cnts[1][1];
 
                 Meas* this_meas = new Meas();
-                this_meas->value = tb_h_aft[l2bidx] - dtbh;
+                this_meas->value = tb_h_aft[l2bidx] - dtbh_aft;
                 this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_aft[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[l2bidx]);
@@ -389,6 +418,33 @@ int main(int argc, char* argv[]) {
                 tb_sss[l2bidx] = final_sss;
                 tb_spd[l2bidx] = final_spd;
 
+                anc_spd_std_prior = 100;
+                cap_gmf.Retrieve(
+                    &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
+                    tb_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
+                    anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
+                    1, CAPGMF::RETRIEVE_SPEED_ONLY,
+                    &final_spd, &final_dir, &final_sss, &final_obj);
+
+                tb_spdonly[l2bidx] = final_spd;
+
+                anc_spd_std_prior = 100;
+                cap_gmf.Retrieve(
+                    &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
+                    anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
+                    anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
+                    1, CAPGMF::RETRIEVE_SPEED_ONLY,
+                    &final_spd, &final_dir, &final_sss, &final_obj);
+
+                tb_spdonly_ancsss[l2bidx] = final_spd;
+
+                // Quality flagging
+                tb_flg[l2bidx] = 0;
+
+                // Check for all four looks
+                if(tb_ml_avg.NodeCount() != 4)
+                    tb_flg[l2bidx] |= L2B_TB_FLAG_FOUR_LOOKS;
+
                 // Discard H-pol observations
                 for(Meas* meas = tb_ml_avg.GetHead(); meas; ) {
                     if(meas->measType == Meas::L_BAND_TBH_MEAS_TYPE) {
@@ -402,6 +458,7 @@ int main(int argc, char* argv[]) {
 
                 // SSS only with only V-pol
                 if(tb_ml_avg.NodeCount() > 0) {
+                    anc_spd_std_prior = 100;
                     cap_gmf.Retrieve(
                         &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
                         anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
@@ -411,13 +468,6 @@ int main(int argc, char* argv[]) {
 
                     tb_sss_v[l2bidx] = final_sss;
                 }
-
-                // Quality flagging
-                tb_flg[l2bidx] = 0;
-
-                // Check for all four looks
-                if(tb_ml_avg.NodeCount() != 4)
-                    tb_flg[l2bidx] |= L2B_TB_FLAG_FOUR_LOOKS;
 
                 // Check if any TBs tossed from this cell due to land
                 if(any_land)
@@ -463,8 +513,23 @@ int main(int argc, char* argv[]) {
         file_id, "/", "L1B_TB_LORES_DEC_FILE",
         config_list.Get("L1B_TB_LORES_DEC_FILE"));
 
-    H5LTset_attribute_float(file_id, "/", "Delta TBH", &dtbh, 1);
-    H5LTset_attribute_float(file_id, "/", "Delta TBV", &dtbv, 1);
+    H5LTset_attribute_float(
+        file_id, "/", "Delta TBH Fore Ascending", &dtbh_fore_asc, 1);
+    H5LTset_attribute_float(
+        file_id, "/", "Delta TBH Aft Ascending", &dtbh_aft_asc, 1);
+    H5LTset_attribute_float(
+        file_id, "/", "Delta TBV Fore Ascending", &dtbv_fore_asc, 1);
+    H5LTset_attribute_float(
+        file_id, "/", "Delta TBV Aft Ascending", &dtbv_aft_asc, 1);
+
+    H5LTset_attribute_float(
+        file_id, "/", "Delta TBH Fore Decending", &dtbh_fore_dec, 1);
+    H5LTset_attribute_float(
+        file_id, "/", "Delta TBH Aft Decending", &dtbh_aft_dec, 1);
+    H5LTset_attribute_float(
+        file_id, "/", "Delta TBV Fore Decending", &dtbv_fore_dec, 1);
+    H5LTset_attribute_float(
+        file_id, "/", "Delta TBV Aft Decending", &dtbv_aft_dec, 1);
 
     H5LTset_attribute_string(
         file_id, "/", "QS_ICEMAP_FILE", config_list.Get("QS_ICEMAP_FILE"));
@@ -767,6 +832,7 @@ int main(int argc, char* argv[]) {
         file_id, "tb_flg", "_FillValue", &_ushort_fill_value, 1);
 
     H5LTmake_dataset(file_id, "tb_sss_v", 2, dims, H5T_NATIVE_FLOAT, &tb_sss_v[0]);
+    H5LTmake_dataset(file_id, "tb_spdonly", 2, dims, H5T_NATIVE_FLOAT, &tb_spdonly[0]);
 
     H5Fclose(file_id);
     return(0);
