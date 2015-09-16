@@ -170,6 +170,7 @@ public:
     MLP            spdnet2_mlp; // second stage wind speed network
     MLP            rainflag_mlp; // last stage in rain flagging network
     float          rain_impact_thresh_for_flagging;
+    float          rain_speed_corr_thresh_for_flagging;
     float          rain_impact_thresh_for_correction;
     int                   ann_train_ati;
     float                   ann_train_diroff;
