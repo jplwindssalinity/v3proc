@@ -2439,8 +2439,9 @@ L2AToL2B::RainCorrectSpeed(L2B* l2b){
             wvc->speedBias = speedBias;
 
             if(rain_speed_corr_thresh_for_flagging > 0) {
-                if(fabs(wvc->speedBias) > rain_speed_corr_thresh_for_flagging) {
-                    wvc->rainFlagBits = RAIN_FLAG_RAIN; 
+                if(wvc->rainImpact > rain_impact_thresh_for_flagging &&
+                   fabs(wvc->speedBias) > rain_speed_corr_thresh_for_flagging) {
+                    wvc->rainFlagBits = RAIN_FLAG_RAIN;
                 } else {
                     wvc->rainFlagBits = 0;
                 }
