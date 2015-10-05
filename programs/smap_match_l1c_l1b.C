@@ -61,6 +61,9 @@ int main(int argc, char* argv[]){
     std::vector<float> match_hh(l1b_size);
     std::vector<float> match_vv(l1b_size);
     std::vector<float> match_xpol(l1b_size);
+    std::vector<float> match_hh_rms(l1b_size);
+    std::vector<float> match_vv_rms(l1b_size);
+    std::vector<float> match_xpol_rms(l1b_size);
 
     hid_t l1c_id = H5Fopen(l1cfile, H5F_ACC_RDONLY, H5P_DEFAULT);
     if(H5LTget_dataset_info(l1c_id, "/Sigma0_Data/cell_sigma0_hh_fore",
@@ -139,6 +142,10 @@ int main(int argc, char* argv[]){
         match_vv[l1b_idx] = -9999;
         match_xpol[l1b_idx] = -9999;
 
+        match_hh_rms[l1b_idx] = -9999;
+        match_vv_rms[l1b_idx] = -9999;
+        match_xpol_rms[l1b_idx] = -9999;
+
         // Check for fill value
         if(l1b_lat[l1b_idx] < -90)
             continue;
@@ -152,6 +159,9 @@ int main(int argc, char* argv[]){
         float sum_l1c_hh = 0;
         float sum_l1c_vv = 0;
         float sum_l1c_xpol = 0;
+        float sum_l1c_hh2 = 0;
+        float sum_l1c_vv2 = 0;
+        float sum_l1c_xpol2 = 0;
 
         int is_fore = (this_antazi < 90 || this_antazi > 270) ? 1 : 0;
 
@@ -178,10 +188,16 @@ int main(int argc, char* argv[]){
                     sum_l1c_hh += l1c_hh_fore[l1c_idx];
                     sum_l1c_vv += l1c_vv_fore[l1c_idx];
                     sum_l1c_xpol += l1c_xpol_fore[l1c_idx];
+                    sum_l1c_hh2 += pow(l1c_hh_fore[l1c_idx], 2);
+                    sum_l1c_vv2 += pow(l1c_vv_fore[l1c_idx], 2);
+                    sum_l1c_xpol2 += pow(l1c_xpol_fore[l1c_idx], 2);
                 } else {
                     sum_l1c_hh += l1c_hh_aft[l1c_idx];
                     sum_l1c_vv += l1c_vv_aft[l1c_idx];
                     sum_l1c_xpol += l1c_xpol_aft[l1c_idx];
+                    sum_l1c_hh2 += pow(l1c_hh_aft[l1c_idx], 2);
+                    sum_l1c_vv2 += pow(l1c_vv_aft[l1c_idx], 2);
+                    sum_l1c_xpol2 += pow(l1c_xpol_aft[l1c_idx], 2);
                 }
             }
         }
@@ -190,6 +206,9 @@ int main(int argc, char* argv[]){
             match_hh[l1b_idx] = sum_l1c_hh/float(cnts);
             match_vv[l1b_idx] = sum_l1c_vv/float(cnts);
             match_xpol[l1b_idx] = sum_l1c_xpol/float(cnts);
+            match_hh_rms[l1b_idx] = sqrt(sum_l1c_hh2/float(cnts));
+            match_vv_rms[l1b_idx] = sqrt(sum_l1c_vv2/float(cnts));
+            match_xpol_rms[l1b_idx] = sqrt(sum_l1c_xpol2/float(cnts));
         }
     }
 
@@ -199,6 +218,9 @@ int main(int argc, char* argv[]){
     fwrite(&match_hh[0], sizeof(float), l1b_size, ofp);
     fwrite(&match_vv[0], sizeof(float), l1b_size, ofp);
     fwrite(&match_xpol[0], sizeof(float), l1b_size, ofp);
+    fwrite(&match_hh_rms[0], sizeof(float), l1b_size, ofp);
+    fwrite(&match_vv_rms[0], sizeof(float), l1b_size, ofp);
+    fwrite(&match_xpol_rms[0], sizeof(float), l1b_size, ofp);
     fclose(ofp);
 
     return(0);
