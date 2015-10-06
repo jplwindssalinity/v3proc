@@ -833,7 +833,7 @@ int main(int argc, char* argv[]) {
 
     H5LTmake_dataset(file_id, "tb_sss_v", 2, dims, H5T_NATIVE_FLOAT, &tb_sss_v[0]);
     H5LTmake_dataset(file_id, "tb_spdonly", 2, dims, H5T_NATIVE_FLOAT, &tb_spdonly[0]);
-
+    H5LTmake_dataset(file_id, "tb_spdonly_ancsss", 2, dims, H5T_NATIVE_FLOAT, &tb_spdonly_ancsss[0]);
     H5Fclose(file_id);
     return(0);
 }
