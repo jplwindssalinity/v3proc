@@ -322,8 +322,8 @@ int main(int argc, char* argv[]){
         // Read in the L1B data depending on do_footprint flag
         // polarization order to match Meas::MeasTypeE (VV, HH, VH, HV)
         if(do_footprint) {
-            read_SDS_h5(id, "/Sigma0_Data/center_lat", &lat[0]);
-            read_SDS_h5(id, "/Sigma0_Data/center_lon", &lon[0]);
+            read_SDS_h5(id, "/Sigma0_Data/center_lat_h", &lat[0]);
+            read_SDS_h5(id, "/Sigma0_Data/center_lon_h", &lon[0]);
             read_SDS_h5(id, "/Sigma0_Data/earth_boresight_incidence", &inc[0]);
 
             read_SDS_h5(id, "/Sigma0_Data/kp_vv", &kp[0][0]);
