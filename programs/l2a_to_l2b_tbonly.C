@@ -328,13 +328,13 @@ int main(int argc, char* argv[]) {
 
             MeasList tb_ml_avg;
             if(cnts[0][0]) {
-                tb_v_fore[l2bidx] = sum_tb[0][0]/(float)cnts[0][0];
+                tb_v_fore[l2bidx] = sum_tb[0][0]/(float)cnts[0][0] - dtbv_fore;
                 nedt_v_fore[l2bidx] = sqrt(
                     sum_A[0][0]/pow((float)cnts[0][0], 2));
                 n_v_fore[l2bidx] = cnts[0][0];
 
                 Meas* this_meas = new Meas();
-                this_meas->value = tb_v_fore[l2bidx] - dtbv_fore;
+                this_meas->value = tb_v_fore[l2bidx];
                 this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_fore[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[l2bidx]);
@@ -343,13 +343,13 @@ int main(int argc, char* argv[]) {
             }
 
             if(cnts[1][0]) {
-                tb_v_aft[l2bidx] = sum_tb[1][0]/(float)cnts[1][0];
+                tb_v_aft[l2bidx] = sum_tb[1][0]/(float)cnts[1][0] - dtbv_aft;
                 nedt_v_aft[l2bidx] = sqrt(
                     sum_A[1][0]/pow((float)cnts[1][0], 2));
                 n_v_aft[l2bidx] = cnts[1][0];
 
                 Meas* this_meas = new Meas();
-                this_meas->value = tb_v_aft[l2bidx] - dtbv_aft;
+                this_meas->value = tb_v_aft[l2bidx];
                 this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_aft[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[l2bidx]);
@@ -358,13 +358,13 @@ int main(int argc, char* argv[]) {
             }
 
             if(cnts[0][1]) {
-                tb_h_fore[l2bidx] = sum_tb[0][1]/(float)cnts[0][1];
+                tb_h_fore[l2bidx] = sum_tb[0][1]/(float)cnts[0][1] - dtbh_fore;
                 nedt_h_fore[l2bidx] = sqrt(
                     sum_A[0][1]/pow((float)cnts[0][1], 2));
                 n_h_fore[l2bidx] = cnts[1][0];
 
                 Meas* this_meas = new Meas();
-                this_meas->value = tb_h_fore[l2bidx] - dtbh_fore;
+                this_meas->value = tb_h_fore[l2bidx];
                 this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_fore[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[l2bidx]);
@@ -373,13 +373,13 @@ int main(int argc, char* argv[]) {
             }
 
             if(cnts[1][1]) {
-                tb_h_aft[l2bidx] = sum_tb[1][1]/(float)cnts[1][1];
+                tb_h_aft[l2bidx] = sum_tb[1][1]/(float)cnts[1][1] - dtbh_aft;
                 nedt_h_aft[l2bidx] = sqrt(
                     sum_A[1][1]/pow((float)cnts[1][1], 2));
                 n_h_aft[l2bidx] = cnts[1][1];
 
                 Meas* this_meas = new Meas();
-                this_meas->value = tb_h_aft[l2bidx] - dtbh_aft;
+                this_meas->value = tb_h_aft[l2bidx];
                 this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_aft[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[l2bidx]);
@@ -495,6 +495,8 @@ int main(int argc, char* argv[]) {
         l2b_tb_file, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
     H5LTset_attribute_string(file_id, "/", "REVNO", config_list.Get("REVNO"));
+    H5LTset_attribute_int(file_id, "/", "Number of Cross Track Bins", &ncti, 1);
+    H5LTset_attribute_int(file_id, "/", "Number of Along Track Bins", &nati, 1);
 
     H5LTset_attribute_string(
         file_id, "/", "REV_START_TIME", config_list.Get("REV_START_TIME"));
