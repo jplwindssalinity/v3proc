@@ -179,7 +179,8 @@ bin_PROGRAMS = \
     programs/l2a_fix_SMAP_composites              \
     programs/l1b_smap_tb_to_exptb                 \
     programs/smap_match_l1c_l1b                   \
-    programs/l2a_to_l2b_tbonly
+    programs/l2a_to_l2b_tbonly                    \
+    programs/l2a_to_l2b_cap_tbonly
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files
@@ -601,7 +602,9 @@ libSim_a_SOURCES =                   \
     objs/CAPWindSwath.C              \
     objs/CAPWindSwath.h              \
     objs/CoastDistance.C             \
-    objs/CoastDistance.h
+    objs/CoastDistance.h             \
+    objs/L2BTBOnly.C                 \
+    objs/L2BTBOnly.h
 
 ########################################################################
 #ParameterList.o
