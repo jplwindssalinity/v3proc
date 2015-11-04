@@ -100,11 +100,13 @@ int main(int argc, char* argv[]){
     std::vector<float> match_vv_fore(l1c_size);
     std::vector<float> match_hv_fore(l1c_size);
     std::vector<float> match_fore_scan(l1c_size);
+    std::vector<float> match_fore_antazi(l1c_size);
 
     std::vector<float> match_hh_aft(l1c_size);
     std::vector<float> match_vv_aft(l1c_size);
     std::vector<float> match_hv_aft(l1c_size);
     std::vector<float> match_aft_scan(l1c_size);
+    std::vector<float> match_aft_antazi(l1c_size);
 
     std::vector<int> l1b_useable(l1b_size);
     for(int l1b_idx = 0; l1b_idx < l1b_size; ++l1b_idx) {
@@ -126,11 +128,13 @@ int main(int argc, char* argv[]){
         match_vv_fore[l1c_idx] = -9999;
         match_hv_fore[l1c_idx] = -9999;
         match_fore_scan[l1c_idx] = -9999;
+        match_fore_antazi[l1c_idx] = -9999;
 
         match_hh_aft[l1c_idx] = -9999;
         match_vv_aft[l1c_idx] = -9999;
         match_hv_aft[l1c_idx] = -9999;
         match_aft_scan[l1c_idx] = -9999;
+        match_aft_antazi[l1c_idx] = -9999;
 
 //         if(cti == 0 && ati % 50 == 0) printf("ati: %d\n", ati);
 //         if(ati > 3000) break;
@@ -177,6 +181,7 @@ int main(int argc, char* argv[]){
                 match_vv_fore[l1c_idx] = l1b_vv[l1b_idx];
                 match_hv_fore[l1c_idx] = l1b_hv[l1b_idx];
                 match_fore_scan[l1c_idx] = (float)iscan;
+                match_fore_antazi[l1c_idx] = l1b_antazi[l1b_idx];
 
             } else if(is_fore == 0 && this_delta2 < nearest_delta2_aft) {
                 nearest_delta2_aft = this_delta2;
@@ -184,6 +189,7 @@ int main(int argc, char* argv[]){
                 match_vv_aft[l1c_idx] = l1b_vv[l1b_idx];
                 match_hv_aft[l1c_idx] = l1b_hv[l1b_idx];
                 match_aft_scan[l1c_idx] = (float)iscan;
+                match_aft_antazi[l1c_idx] = l1b_antazi[l1b_idx];
             }
         }
 
@@ -196,10 +202,12 @@ int main(int argc, char* argv[]){
     fwrite(&match_vv_fore[0], sizeof(float), l1c_size, ofp);
     fwrite(&match_hv_fore[0], sizeof(float), l1c_size, ofp);
     fwrite(&match_fore_scan[0], sizeof(float), l1c_size, ofp);
+    fwrite(&match_fore_antazi[0], sizeof(float), l1c_size, ofp);
     fwrite(&match_hh_aft[0], sizeof(float), l1c_size, ofp);
     fwrite(&match_vv_aft[0], sizeof(float), l1c_size, ofp);
     fwrite(&match_hv_aft[0], sizeof(float), l1c_size, ofp);
     fwrite(&match_aft_scan[0], sizeof(float), l1c_size, ofp);
+    fwrite(&match_aft_antazi[0], sizeof(float), l1c_size, ofp);
     fclose(ofp);
 
     return(0);
