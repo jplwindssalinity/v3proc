@@ -133,6 +133,28 @@ int main(int argc, char* argv[]) {
                 continue;
 
             MeasList* s0_ml = &(l2a_s0_swath[cti][ati]->measList);
+
+            int any_ice = 0;
+            int any_land = 0;
+
+            // Check for land / ice flagged sigma0s
+            Meas* meas = s0_ml->GetHead();
+            while(meas) {
+                if(meas->landFlag) {
+                    if(meas->landFlag == 1 || meas->landFlag == 3)
+                        any_land = 1;
+
+                    if(meas->landFlag == 2 || meas->landFlag == 3)
+                        any_ice = 1;
+
+                    meas = s0_ml->RemoveCurrent();
+                    delete meas;
+                    meas = s0_ml->GetCurrent();
+                } else {
+                    meas = s0_ml->GetNext();
+                }
+            }
+
             MeasList tb_ml;
 
             // Build up tb_ml from L2B_TB_FILE
@@ -180,8 +202,17 @@ int main(int argc, char* argv[]) {
                 tb_ml.Append(this_meas);
             }
 
+            if(tb_ml.NodeCount() == 0 || s0_ml->NodeCount() == 0)
+                continue;
+
             CAPWVC* wvc = new CAPWVC();
             WindVectorPlus* nudgeWV = new WindVectorPlus();
+
+            if(any_land)
+                wvc->s0_flag |= L2B_QUAL_FLAG_LAND;
+
+            if(any_ice)
+                wvc->s0_flag |= L2B_QUAL_FLAG_ICE;
 
             // set nudge from L2B tbonly file
             nudgeWV->spd = l2b_tbonly.anc_spd[l2bidx];
