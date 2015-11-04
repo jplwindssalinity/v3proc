@@ -208,7 +208,10 @@ int main(int argc, char* argv[]){
 
 
                     // check flags
-                    if(0x1 & tb_flag[ipol][fp_idx])
+//                     if(0x1 & tb_flag[ipol][fp_idx])
+//                         continue;
+
+                    if(lat[fp_idx] < -90)
                         continue;
 
                     double tmp_lon = dtr*lon[fp_idx];
@@ -276,10 +279,10 @@ int main(int argc, char* argv[]){
                     float dtb_dsss = (tb_flat_plus-tb_flat_minus)/(2.0*dsss);
 
                     fprintf(
-                        ofp, "%5.5d, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %f, %5.2f, %d, %d, %d, %d\n",
+                        ofp, "%5.5d, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %f, %5.2f, %d, %d, %d, %d, %d\n",
                         revno, lon[fp_idx], lat[fp_idx], antazi[fp_idx],
                         tb[ipol][fp_idx], model_tb, dtb_dsss, sss,
-                        iframe, ifootprint, ipol, ipart);
+                        iframe, ifootprint, ipol, ipart, tb_flag[ipol][fp_idx]);
 
                 }
             }
