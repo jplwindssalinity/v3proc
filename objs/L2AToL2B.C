@@ -31,7 +31,7 @@ L2AToL2B::L2AToL2B()
     hurricaneRadius(0), useSigma0Weights(0), sigma0WeightCorrLength(25.0), 
     arrayNudgeFlag(0), arrayNudgeSpd(NULL),arrayNudgeDir(NULL),
     use_MLP_mapping(false), MLP_input_map_s0(NULL), MLP_input_map_vars0(NULL),
-    do_coastal_processing(0)
+    do_coastal_processing(0), rain_speed_corr_thresh_for_flagging(-9999)
 {
     return;
 }
@@ -2437,6 +2437,15 @@ L2AToL2B::RainCorrectSpeed(L2B* l2b){
     	    }     
             /* Only set the speed bias in the WVC if rain correction is applied */
             wvc->speedBias = speedBias;
+
+            if(rain_speed_corr_thresh_for_flagging > 0) {
+                if(wvc->rainImpact > rain_impact_thresh_for_flagging &&
+                   fabs(wvc->speedBias) > rain_speed_corr_thresh_for_flagging) {
+                    wvc->rainFlagBits = RAIN_FLAG_RAIN;
+                } else {
+                    wvc->rainFlagBits = 0;
+                }
+            }
 
 	    break;
 	  default:
