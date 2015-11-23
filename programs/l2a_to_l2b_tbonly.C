@@ -812,7 +812,7 @@ int main(int argc, char* argv[]) {
     uint16 flag_bits;
     flag_bits = L2B_TB_FLAG_USEABLE;
     H5LTset_attribute_ushort(
-        file_id, "tb_flg", "L2B_TB_FLAG_USEABLE", &flag_bits, 1);
+        file_id, "tb_flg", "L2B_TB_FLAG_USABLE", &flag_bits, 1);
 
     flag_bits = L2B_TB_FLAG_FOUR_LOOKS;
     H5LTset_attribute_ushort(
