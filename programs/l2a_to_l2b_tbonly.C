@@ -185,10 +185,32 @@ int main(int argc, char* argv[]) {
     std::vector<float> tb_sss(l2b_size), tb_spd(l2b_size);
     std::vector<float> tb_sss_v(l2b_size), tb_spdonly(l2b_size), tb_spdonly_ancsss(l2b_size);
     std::vector<uint16> tb_flg(l2b_size);
+    std::vector<float> row_time(nati);
+
+    char code_b_t_day_start[CODE_B_TIME_LENGTH] = "1970-001T00:00:00.000";
+    strncpy(code_b_t_day_start, config_list.Get("REV_START_TIME"), 8);
+
+    ETime etime_start, etime_stop, etime_day_start;
+
+    etime_day_start.FromCodeB(code_b_t_day_start);
+    etime_start.FromCodeB(config_list.Get("REV_START_TIME"));
+    etime_stop.FromCodeB(config_list.Get("REV_STOP_TIME"));
+
+    // Extract year and day-of-year for attributes
+    int start_year = atoi(strtok(&code_b_t_day_start[0], "-"));
+    int start_doy = atoi(strtok(NULL, "T"));
+
+    double t_start = etime_start.GetTime();
+    double t_stop = etime_stop.GetTime();
+    double t_day_start = etime_day_start.GetTime();
 
     for(int ati=0; ati<nati; ++ati) {
+
+        row_time[ati] = 
+            t_start + (t_stop-t_start)*(double)ati/(double)nati - t_day_start;
+
         if(ati%50 == 0)
-            fprintf(stdout, "%d of %d\n", ati, nati);
+            fprintf(stdout, "%d of %d; %f\n", ati, nati, row_time[ati]);
 
         // Set the bias adjustments per ascending / decending portion of orbit.
         float dtbh_fore = (ati < nati/2) ? dtbh_fore_asc : dtbh_fore_dec;
@@ -495,6 +517,9 @@ int main(int argc, char* argv[]) {
         l2b_tb_file, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
     H5LTset_attribute_string(file_id, "/", "REVNO", config_list.Get("REVNO"));
+    H5LTset_attribute_int(file_id, "/", "REV_START_YEAR", &start_year, 1);
+    H5LTset_attribute_int(file_id, "/", "REV_START_DAY_OF_YEAR", &start_doy, 1);
+    H5LTset_attribute_int(file_id, "/", "Number of Cross Track Bins", &ncti, 1);
     H5LTset_attribute_int(file_id, "/", "Number of Cross Track Bins", &ncti, 1);
     H5LTset_attribute_int(file_id, "/", "Number of Along Track Bins", &nati, 1);
 
@@ -567,12 +592,15 @@ int main(int argc, char* argv[]) {
         file_id, "/", "ALONGTRACK_RESOLUTION",
         config_list.Get("ALONGTRACK_RESOLUTION"));
 
+
     float _fill_value = FILL_VALUE;
     uint16 _ushort_fill_value = 65535;
 
     float valid_max, valid_min;
 
     hsize_t dims[2] = {ncti, nati};
+
+    hsize_t ati_dim = nati;
 
     valid_max = 90; valid_min = -90;
     H5LTmake_dataset(file_id, "lat", 2, dims, H5T_NATIVE_FLOAT, &lat[0]);
@@ -805,6 +833,16 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "tb_sss", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "tb_sss", "valid_min", &valid_min, 1);
 
+    valid_max = 86400; valid_min = 0;
+    H5LTmake_dataset(
+        file_id, "row_time", 1, &ati_dim, H5T_NATIVE_FLOAT, &row_time[0]);
+    H5LTset_attribute_string(
+        file_id, "row_time", "long_name",
+        "Approximate observation time for each row");
+    H5LTset_attribute_string(file_id, "row_time", "units", "UTC seconds of day");
+    H5LTset_attribute_float(file_id, "row_time", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "row_time", "valid_min", &valid_min, 1);
+
     H5LTmake_dataset(file_id, "tb_flg", 2, dims, H5T_NATIVE_USHORT, &tb_flg[0]);
     H5LTset_attribute_string(
         file_id, "tb_flg", "long_name", "Quality flag");
@@ -836,6 +874,7 @@ int main(int argc, char* argv[]) {
     H5LTmake_dataset(file_id, "tb_sss_v", 2, dims, H5T_NATIVE_FLOAT, &tb_sss_v[0]);
     H5LTmake_dataset(file_id, "tb_spdonly", 2, dims, H5T_NATIVE_FLOAT, &tb_spdonly[0]);
     H5LTmake_dataset(file_id, "tb_spdonly_ancsss", 2, dims, H5T_NATIVE_FLOAT, &tb_spdonly_ancsss[0]);
+
     H5Fclose(file_id);
     return(0);
 }
