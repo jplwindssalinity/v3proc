@@ -68,11 +68,11 @@ template class List<AngleInterval>;
 template class std::list<string>;
 template class std::map<string,string,Options::ltstr>;
 
-#define L2B_TB_FLAG_USEABLE 0x1
-#define L2B_TB_FLAG_FOUR_LOOKS 0x2
-#define L2B_TB_FLAG_SST_TOO_COLD 0x40
-#define L2B_TB_FLAG_LAND 0x80
-#define L2B_TB_FLAG_ICE 0x100
+#define QUAL_FLAG_USEABLE 0x1
+#define QUAL_FLAG_FOUR_LOOKS 0x2
+#define QUAL_FLAG_SST_TOO_COLD 0x40
+#define QUAL_FLAG_LAND 0x80
+#define QUAL_FLAG_ICE 0x100
 
 //--------------//
 // MAIN PROGRAM //
@@ -182,9 +182,9 @@ int main(int argc, char* argv[]) {
     std::vector<float> azi_fore(l2b_size), azi_aft(l2b_size);
     std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
     std::vector<float> anc_sss(l2b_size), anc_sst(l2b_size), anc_swh(l2b_size);
-    std::vector<float> tb_sss(l2b_size), tb_spd(l2b_size);
-    std::vector<float> tb_sss_v(l2b_size), tb_spdonly(l2b_size), tb_spdonly_ancsss(l2b_size);
-    std::vector<uint16> tb_flg(l2b_size);
+    std::vector<float> smap_sss(l2b_size), smap_spd(l2b_size);
+    std::vector<float> smap_sss_v(l2b_size), smap_spdonly(l2b_size), smap_high_spd(l2b_size);
+    std::vector<uint16> quality_flag(l2b_size);
     std::vector<float> row_time(nati);
 
     char code_b_t_day_start[CODE_B_TIME_LENGTH] = "1970-001T00:00:00.000";
@@ -246,16 +246,16 @@ int main(int argc, char* argv[]) {
             anc_sss[l2bidx] = FILL_VALUE;
             anc_sst[l2bidx] = FILL_VALUE;
             anc_swh[l2bidx] = FILL_VALUE;
-            tb_sss[l2bidx] = FILL_VALUE;
-            tb_spd[l2bidx] = FILL_VALUE;
+            smap_sss[l2bidx] = FILL_VALUE;
+            smap_spd[l2bidx] = FILL_VALUE;
             n_h_fore[l2bidx] = 0;
             n_h_aft[l2bidx] = 0;
             n_v_fore[l2bidx] = 0;
             n_v_aft[l2bidx] = 0;
-            tb_flg[l2bidx] = 65535;
-            tb_sss_v[l2bidx] = FILL_VALUE;
-            tb_spdonly[l2bidx] = FILL_VALUE;
-            tb_spdonly_ancsss[l2bidx] = FILL_VALUE;
+            quality_flag[l2bidx] = 65535;
+            smap_sss_v[l2bidx] = FILL_VALUE;
+            smap_spdonly[l2bidx] = FILL_VALUE;
+            smap_high_spd[l2bidx] = FILL_VALUE;
 
             // Check for valid measList at this WVC
             if(!l2a_tb_swath[cti][ati])
@@ -437,18 +437,18 @@ int main(int argc, char* argv[]) {
                     1, CAPGMF::RETRIEVE_SPEED_SALINITY,
                     &final_spd, &final_dir, &final_sss, &final_obj);
 
-                tb_sss[l2bidx] = final_sss;
-                tb_spd[l2bidx] = final_spd;
+                smap_sss[l2bidx] = final_sss;
+                smap_spd[l2bidx] = final_spd;
 
                 anc_spd_std_prior = 100;
                 cap_gmf.Retrieve(
                     &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
-                    tb_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
+                    smap_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
                     anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
                     1, CAPGMF::RETRIEVE_SPEED_ONLY,
                     &final_spd, &final_dir, &final_sss, &final_obj);
 
-                tb_spdonly[l2bidx] = final_spd;
+                smap_spdonly[l2bidx] = final_spd;
 
                 anc_spd_std_prior = 100;
                 cap_gmf.Retrieve(
@@ -458,14 +458,14 @@ int main(int argc, char* argv[]) {
                     1, CAPGMF::RETRIEVE_SPEED_ONLY,
                     &final_spd, &final_dir, &final_sss, &final_obj);
 
-                tb_spdonly_ancsss[l2bidx] = final_spd;
+                smap_high_spd[l2bidx] = final_spd;
 
                 // Quality flagging
-                tb_flg[l2bidx] = 0;
+                quality_flag[l2bidx] = 0;
 
                 // Check for all four looks
                 if(tb_ml_avg.NodeCount() != 4)
-                    tb_flg[l2bidx] |= L2B_TB_FLAG_FOUR_LOOKS;
+                    quality_flag[l2bidx] |= QUAL_FLAG_FOUR_LOOKS;
 
                 // Discard H-pol observations
                 for(Meas* meas = tb_ml_avg.GetHead(); meas; ) {
@@ -488,25 +488,25 @@ int main(int argc, char* argv[]) {
                         1, CAPGMF::RETRIEVE_SALINITY_ONLY,
                         &final_spd, &final_dir, &final_sss, &final_obj);
 
-                    tb_sss_v[l2bidx] = final_sss;
+                    smap_sss_v[l2bidx] = final_sss;
                 }
 
                 // Check if any TBs tossed from this cell due to land
                 if(any_land)
-                    tb_flg[l2bidx] |= L2B_TB_FLAG_LAND;
+                    quality_flag[l2bidx] |= QUAL_FLAG_LAND;
 
                 // Check if any TBs tossed from this cell due to ice
                 if(any_ice)
-                    tb_flg[l2bidx] |= L2B_TB_FLAG_ICE;
+                    quality_flag[l2bidx] |= QUAL_FLAG_ICE;
 
                 // Check for low SST (poor salinity sensitivity at low SST)
                 if(anc_sst[l2bidx] < 278.16)
-                    tb_flg[l2bidx] |= L2B_TB_FLAG_SST_TOO_COLD;
+                    quality_flag[l2bidx] |= QUAL_FLAG_SST_TOO_COLD;
 
                 // Overall data quality mask
-                uint16 QUAL_MASK = L2B_TB_FLAG_FOUR_LOOKS;
-                if(tb_flg[l2bidx] & QUAL_MASK)
-                    tb_flg[l2bidx] |= L2B_TB_FLAG_USEABLE;
+                uint16 QUAL_MASK = QUAL_FLAG_FOUR_LOOKS;
+                if(quality_flag[l2bidx] & QUAL_MASK)
+                    quality_flag[l2bidx] |= QUAL_FLAG_USEABLE;
 
             }
         }
@@ -816,22 +816,36 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "anc_swh", "valid_min", &valid_min, 1);
 
     valid_max = 50; valid_min = 0;
-    H5LTmake_dataset(file_id, "tb_spd", 2, dims, H5T_NATIVE_FLOAT, &tb_spd[0]);
+    H5LTmake_dataset(file_id, "smap_spd", 2, dims, H5T_NATIVE_FLOAT, &smap_spd[0]);
     H5LTset_attribute_string(
-        file_id, "tb_spd", "long_name", "SMAP TB Wind Speed");
-    H5LTset_attribute_string(file_id, "tb_spd", "units", "Meters/second");
-    H5LTset_attribute_float(file_id, "tb_spd", "_FillValue", &_fill_value, 1);
-    H5LTset_attribute_float(file_id, "tb_spd", "valid_max", &valid_max, 1);
-    H5LTset_attribute_float(file_id, "tb_spd", "valid_min", &valid_min, 1);
+        file_id, "smap_spd", "long_name", "SMAP TB Wind Speed");
+    H5LTset_attribute_string(file_id, "smap_spd", "units", "Meters/second");
+    H5LTset_attribute_float(file_id, "smap_spd", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "smap_spd", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "smap_spd", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "smap_high_spd", 2, dims, H5T_NATIVE_FLOAT, &smap_high_spd[0]);
+    H5LTset_attribute_string(
+        file_id, "smap_high_spd", "long_name",
+        "SMAP TB Wind Speed using ancillary SSS");
+    H5LTset_attribute_string(
+        file_id, "smap_high_spd", "units", "Meters/second");
+    H5LTset_attribute_float(
+        file_id, "smap_high_spd", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_high_spd", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_high_spd", "valid_min", &valid_min, 1);
 
     valid_max = 40; valid_min = 0;
-    H5LTmake_dataset(file_id, "tb_sss", 2, dims, H5T_NATIVE_FLOAT, &tb_sss[0]);
+    H5LTmake_dataset(file_id, "smap_sss", 2, dims, H5T_NATIVE_FLOAT, &smap_sss[0]);
     H5LTset_attribute_string(
-        file_id, "tb_sss", "long_name", "SMAP TB Salinity");
-    H5LTset_attribute_string(file_id, "tb_sss", "units", "PSU");
-    H5LTset_attribute_float(file_id, "tb_sss", "_FillValue", &_fill_value, 1);
-    H5LTset_attribute_float(file_id, "tb_sss", "valid_max", &valid_max, 1);
-    H5LTset_attribute_float(file_id, "tb_sss", "valid_min", &valid_min, 1);
+        file_id, "smap_sss", "long_name", "SMAP TB Salinity");
+    H5LTset_attribute_string(file_id, "smap_sss", "units", "PSU");
+    H5LTset_attribute_float(file_id, "smap_sss", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "smap_sss", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "smap_sss", "valid_min", &valid_min, 1);
 
     valid_max = 86400; valid_min = 0;
     H5LTmake_dataset(
@@ -843,37 +857,37 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "row_time", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "row_time", "valid_min", &valid_min, 1);
 
-    H5LTmake_dataset(file_id, "tb_flg", 2, dims, H5T_NATIVE_USHORT, &tb_flg[0]);
+    H5LTmake_dataset(
+        file_id, "quality_flag", 2, dims, H5T_NATIVE_USHORT, &quality_flag[0]);
     H5LTset_attribute_string(
-        file_id, "tb_flg", "long_name", "Quality flag");
+        file_id, "quality_flag", "long_name", "Quality flag");
 
     uint16 flag_bits;
-    flag_bits = L2B_TB_FLAG_USEABLE;
+    flag_bits = QUAL_FLAG_USEABLE;
     H5LTset_attribute_ushort(
-        file_id, "tb_flg", "L2B_TB_FLAG_USABLE", &flag_bits, 1);
+        file_id, "quality_flag", "QUAL_FLAG_USABLE", &flag_bits, 1);
 
-    flag_bits = L2B_TB_FLAG_FOUR_LOOKS;
+    flag_bits = QUAL_FLAG_FOUR_LOOKS;
     H5LTset_attribute_ushort(
-        file_id, "tb_flg", "L2B_TB_FLAG_FOUR_LOOKS", &flag_bits, 1);
+        file_id, "quality_flag", "QUAL_FLAG_FOUR_LOOKS", &flag_bits, 1);
 
-    flag_bits = L2B_TB_FLAG_LAND;
+    flag_bits = QUAL_FLAG_LAND;
     H5LTset_attribute_ushort(
-        file_id, "tb_flg", "L2B_TB_FLAG_LAND", &flag_bits, 1);
+        file_id, "quality_flag", "QUAL_FLAG_LAND", &flag_bits, 1);
 
-    flag_bits = L2B_TB_FLAG_ICE;
+    flag_bits = QUAL_FLAG_ICE;
     H5LTset_attribute_ushort(
-        file_id, "tb_flg", "L2B_TB_FLAG_ICE", &flag_bits, 1);
+        file_id, "quality_flag", "QUAL_FLAG_ICE", &flag_bits, 1);
 
-    flag_bits = L2B_TB_FLAG_SST_TOO_COLD;
+    flag_bits = QUAL_FLAG_SST_TOO_COLD;
     H5LTset_attribute_ushort(
-        file_id, "tb_flg", "L2B_TB_FLAG_SST_TOO_COLD", &flag_bits, 1);
+        file_id, "quality_flag", "QUAL_FLAG_SST_TOO_COLD", &flag_bits, 1);
 
     H5LTset_attribute_ushort(
-        file_id, "tb_flg", "_FillValue", &_ushort_fill_value, 1);
+        file_id, "quality_flag", "_FillValue", &_ushort_fill_value, 1);
 
-    H5LTmake_dataset(file_id, "tb_sss_v", 2, dims, H5T_NATIVE_FLOAT, &tb_sss_v[0]);
-    H5LTmake_dataset(file_id, "tb_spdonly", 2, dims, H5T_NATIVE_FLOAT, &tb_spdonly[0]);
-    H5LTmake_dataset(file_id, "tb_spdonly_ancsss", 2, dims, H5T_NATIVE_FLOAT, &tb_spdonly_ancsss[0]);
+//     H5LTmake_dataset(file_id, "smap_sss_v", 2, dims, H5T_NATIVE_FLOAT, &smap_sss_v[0]);
+//     H5LTmake_dataset(file_id, "smap_spdonly", 2, dims, H5T_NATIVE_FLOAT, &smap_spdonly[0]);
 
     H5Fclose(file_id);
     return(0);
