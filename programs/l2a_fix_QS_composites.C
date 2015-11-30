@@ -199,11 +199,6 @@ main(
     fprintf(stderr,"%s: Error reading from config file!\n",command);
     exit(1);
   }
-
-  if( !do_composite ) {
-    fprintf(stderr,"%s: This program only for use with composited L2A files!\n",command);
-    exit(1);
-  }
   
   l2a.OpenForReading( l2a_file );
   l2a.OpenForWriting( l2a_flagged_file );
