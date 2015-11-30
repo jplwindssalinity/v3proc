@@ -10,6 +10,7 @@
 #define QS_ICEMAP_FILE_KEYWORD  "QS_ICEMAP_FILE"
 #define REV_START_TIME_KEYWORD "REV_START_TIME"
 #define REV_STOP_TIME_KEYWORD "REV_STOP_TIME"
+#define COASTAL_DISTANCE_FILE_KEYWORD "COASTAL_DISTANCE_FILE"
 
 //----------//
 // INCLUDES //
@@ -33,6 +34,7 @@
 #include "SeaPac.h"
 #include "AttenMap.h"
 #include "OS2XFix.h"
+#include "CoastDistance.h"
 /* hdf5 include */
 #include "hdf5.h"
 #include "hdf5_hl.h"
@@ -133,6 +135,9 @@ int main(int argc, char* argv[]){
     QSIceMap qs_icemap;
     char* qsicemap_file  = config_list.Get(QS_ICEMAP_FILE_KEYWORD);
     qs_icemap.Read(qsicemap_file);
+
+    CoastDistance coast_dist;
+    coast_dist.Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
 
     char* ephem_file = config_list.Get(EPHEMERIS_FILE_KEYWORD);
     Ephemeris ephem(ephem_file, 10000);
@@ -310,10 +315,13 @@ int main(int argc, char* argv[]){
                         new_meas->eastAzimuth-=two_pi;
 
                     // WAG based on radiometer 3dB fp of 39x47 km
-                    new_meas->azimuth_width = 39;
-                    new_meas->range_width = 47;
+                    new_meas->azimuth_width = 40;
+                    new_meas->range_width = 40;
 
-                    if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0))
+                    double distance;
+                    coast_dist.Get(tmp_lon, tmp_lat, &distance);
+
+                    if(distance < 45)
                         new_meas->landFlag += 1; // bit 0 for land
 
                     if( qs_icemap.IsIce(tmp_lon, tmp_lat, 0) )
