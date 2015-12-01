@@ -818,7 +818,7 @@ int main(int argc, char* argv[]) {
     valid_max = 50; valid_min = 0;
     H5LTmake_dataset(file_id, "smap_spd", 2, dims, H5T_NATIVE_FLOAT, &smap_spd[0]);
     H5LTset_attribute_string(
-        file_id, "smap_spd", "long_name", "SMAP TB Wind Speed");
+        file_id, "smap_spd", "long_name", "SMAP wind speed");
     H5LTset_attribute_string(file_id, "smap_spd", "units", "Meters/second");
     H5LTset_attribute_float(file_id, "smap_spd", "_FillValue", &_fill_value, 1);
     H5LTset_attribute_float(file_id, "smap_spd", "valid_max", &valid_max, 1);
@@ -828,7 +828,7 @@ int main(int argc, char* argv[]) {
         file_id, "smap_high_spd", 2, dims, H5T_NATIVE_FLOAT, &smap_high_spd[0]);
     H5LTset_attribute_string(
         file_id, "smap_high_spd", "long_name",
-        "SMAP TB Wind Speed using ancillary SSS");
+        "SMAP wind speed using ancillary SSS");
     H5LTset_attribute_string(
         file_id, "smap_high_spd", "units", "Meters/second");
     H5LTset_attribute_float(
@@ -841,7 +841,7 @@ int main(int argc, char* argv[]) {
     valid_max = 40; valid_min = 0;
     H5LTmake_dataset(file_id, "smap_sss", 2, dims, H5T_NATIVE_FLOAT, &smap_sss[0]);
     H5LTset_attribute_string(
-        file_id, "smap_sss", "long_name", "SMAP TB Salinity");
+        file_id, "smap_sss", "long_name", "SMAP sea surface salinity");
     H5LTset_attribute_string(file_id, "smap_sss", "units", "PSU");
     H5LTset_attribute_float(file_id, "smap_sss", "_FillValue", &_fill_value, 1);
     H5LTset_attribute_float(file_id, "smap_sss", "valid_max", &valid_max, 1);
