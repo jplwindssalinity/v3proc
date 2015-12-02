@@ -32,13 +32,13 @@ public:
     std::vector<float> nedt_h_fore;
     std::vector<float> nedt_v_aft;
     std::vector<float> nedt_v_fore;
-    std::vector<unsigned short> tb_flg;
+    std::vector<unsigned short> quality_flag;
     std::vector<float> tb_h_aft;
     std::vector<float> tb_h_fore;
     std::vector<float> tb_v_aft;
     std::vector<float> tb_v_fore;
-    std::vector<float> tb_spd;
-    std::vector<float> tb_sss;
+    std::vector<float> smap_spd;
+    std::vector<float> smap_sss;
 
 protected:
     int _Allocate();

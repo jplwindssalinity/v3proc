@@ -222,9 +222,9 @@ int main(int argc, char* argv[]) {
 
             float active_weight = 1;
             float passive_weight = 1;
-            float init_spd = l2b_tbonly.tb_spd[l2bidx];
+            float init_spd = l2b_tbonly.smap_spd[l2bidx];
             float init_dir = nudgeWV->dir;
-            float init_sss = l2b_tbonly.tb_sss[l2bidx];
+            float init_sss = l2b_tbonly.smap_sss[l2bidx];
             float this_anc_spd = nudgeWV->spd;
             float this_anc_dir = nudgeWV->dir;
             float this_anc_sst = l2b_tbonly.anc_sst[l2bidx];

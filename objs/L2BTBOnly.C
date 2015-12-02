@@ -32,13 +32,13 @@ L2BTBOnly::L2BTBOnly(const char* filename) : nati(0), ncti(0) {
     H5LTread_dataset_float(id, "/nedt_h_fore", &nedt_h_fore[0]);
     H5LTread_dataset_float(id, "/nedt_v_aft", &nedt_v_aft[0]);
     H5LTread_dataset_float(id, "/nedt_v_fore", &nedt_v_fore[0]);
-    H5LTread_dataset(id, "/tb_flg", H5T_NATIVE_USHORT, &tb_flg[0]);
+    H5LTread_dataset(id, "/quality_flag", H5T_NATIVE_USHORT, &quality_flag[0]);
     H5LTread_dataset_float(id, "/tb_h_aft", &tb_h_aft[0]);
     H5LTread_dataset_float(id, "/tb_h_fore", &tb_h_fore[0]);
     H5LTread_dataset_float(id, "/tb_v_aft", &tb_v_aft[0]);
     H5LTread_dataset_float(id, "/tb_v_fore", &tb_v_fore[0]);
-    H5LTread_dataset_float(id, "/tb_spd", &tb_spd[0]);
-    H5LTread_dataset_float(id, "/tb_sss", &tb_sss[0]);
+    H5LTread_dataset_float(id, "/smap_spd", &smap_spd[0]);
+    H5LTread_dataset_float(id, "/smap_sss", &smap_sss[0]);
 
     H5Fclose(id);
     return;
@@ -74,13 +74,13 @@ int L2BTBOnly::_Allocate() {
     nedt_h_fore.resize(l2b_size);
     nedt_v_aft.resize(l2b_size);
     nedt_v_fore.resize(l2b_size);
-    tb_flg.resize(l2b_size);
+    quality_flag.resize(l2b_size);
     tb_h_aft.resize(l2b_size);
     tb_h_fore.resize(l2b_size);
     tb_v_aft.resize(l2b_size);
     tb_v_fore.resize(l2b_size);
-    tb_spd.resize(l2b_size);
-    tb_sss.resize(l2b_size);
+    smap_spd.resize(l2b_size);
+    smap_sss.resize(l2b_size);
 
     return(1);
 }
