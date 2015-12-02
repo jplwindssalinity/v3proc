@@ -476,8 +476,8 @@ int main(int argc, char* argv[]){
                             new_meas->eastAzimuth-=two_pi;
 
                         // WAG based on radiometer 3dB fp of 39x47 km
-                        new_meas->azimuth_width = 28;
-                        new_meas->range_width = 34;
+                        new_meas->azimuth_width = 30;
+                        new_meas->range_width = 30;
 
                         if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0))
                             new_meas->landFlag += 1; // bit 0 for land
@@ -569,7 +569,7 @@ int main(int argc, char* argv[]){
                                 new_meas->eastAzimuth-=two_pi;
 
                             // WAG based on radiometer 3dB fp of 39x47 km
-                            new_meas->azimuth_width = 28;
+                            new_meas->azimuth_width = 30;
                             new_meas->range_width = 6;
 
                             if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0))
