@@ -70,6 +70,7 @@ template class std::map<string,string,Options::ltstr>;
 
 #define QUAL_FLAG_USEABLE 0x1
 #define QUAL_FLAG_FOUR_LOOKS 0x2
+#define QUAL_FLAG_POINTING 0x4
 #define QUAL_FLAG_SST_TOO_COLD 0x40
 #define QUAL_FLAG_LAND 0x80
 #define QUAL_FLAG_ICE 0x100
@@ -209,7 +210,7 @@ int main(int argc, char* argv[]) {
         row_time[ati] = 
             t_start + (t_stop-t_start)*(double)ati/(double)nati - t_day_start;
 
-        if(ati%50 == 0)
+        if(ati%100 == 0)
             fprintf(stdout, "%d of %d; %f\n", ati, nati, row_time[ati]);
 
         // Set the bias adjustments per ascending / decending portion of orbit.
@@ -503,8 +504,15 @@ int main(int argc, char* argv[]) {
                 if(anc_sst[l2bidx] < 278.16)
                     quality_flag[l2bidx] |= QUAL_FLAG_SST_TOO_COLD;
 
+                if(fabs(inc_fore[l2bidx]-40) > 0.2 || 
+                   fabs(inc_aft[l2bidx]-40) > 0.2)
+                   quality_flag[l2bidx] |= QUAL_FLAG_POINTING;
+
                 // Overall data quality mask
-                uint16 QUAL_MASK = QUAL_FLAG_FOUR_LOOKS;
+                uint16 QUAL_MASK = (
+                    QUAL_FLAG_FOUR_LOOKS | QUAL_FLAG_LAND | QUAL_FLAG_ICE |
+                    QUAL_FLAG_POINTING);
+
                 if(quality_flag[l2bidx] & QUAL_MASK)
                     quality_flag[l2bidx] |= QUAL_FLAG_USEABLE;
 
@@ -870,6 +878,10 @@ int main(int argc, char* argv[]) {
     flag_bits = QUAL_FLAG_FOUR_LOOKS;
     H5LTset_attribute_ushort(
         file_id, "quality_flag", "QUAL_FLAG_FOUR_LOOKS", &flag_bits, 1);
+
+    flag_bits = QUAL_FLAG_POINTING;
+    H5LTset_attribute_ushort(
+        file_id, "quality_flag", "QUAL_FLAG_POINTING", &flag_bits, 1);
 
     flag_bits = QUAL_FLAG_LAND;
     H5LTset_attribute_ushort(
