@@ -898,9 +898,6 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_ushort(
         file_id, "quality_flag", "_FillValue", &_ushort_fill_value, 1);
 
-//     H5LTmake_dataset(file_id, "smap_sss_v", 2, dims, H5T_NATIVE_FLOAT, &smap_sss_v[0]);
-//     H5LTmake_dataset(file_id, "smap_spdonly", 2, dims, H5T_NATIVE_FLOAT, &smap_spdonly[0]);
-
     H5Fclose(file_id);
     return(0);
 }
