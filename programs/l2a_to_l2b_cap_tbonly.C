@@ -66,6 +66,9 @@ int main(int argc, char* argv[]) {
 
     const char* command = no_path(argv[0]);
     char* config_file = argv[1];
+    char* l2b_file_s3 = NULL;
+    if(argc == 3)
+        l2b_file_s3 = argv[2];
 
     ConfigList config_list;
     if(!config_list.Read(config_file)) {
@@ -82,6 +85,7 @@ int main(int argc, char* argv[]) {
         is_25km = 1;
 
     char* l2a_s0_file = config_list.Get(L2A_FILE_KEYWORD);
+    char* l2b_s0_file = config_list.Get(L2B_FILE_KEYWORD);
     char* l2b_tb_file = config_list.Get(L2B_TB_FILE_KEYWORD);
     char* l2b_cap_file = config_list.Get(L2B_CAP_FILE_KEYWORD);
     char* tb_flat_file = config_list.Get(TB_FLAT_MODEL_FILE_KEYWORD);
@@ -99,8 +103,35 @@ int main(int argc, char* argv[]) {
     l2a_s0.OpenForReading();
     l2a_s0.ReadHeader();
 
-    int ncti = l2a_s0.header.crossTrackBins;
-    int nati = l2a_s0.header.alongTrackBins;
+    // Read in L2B radar-only file
+    L2B l2b_s0;
+    l2b_s0.SetInputFilename(l2b_s0_file);
+    l2b_s0.OpenForReading();
+    l2b_s0.ReadHeader();
+    l2b_s0.ReadDataRec();
+    l2b_s0.Close();
+
+    L2B l2b_s3_s0;
+    if(l2b_file_s3) {
+        l2b_s3_s0.SetInputFilename(l2b_file_s3);
+        l2b_s3_s0.OpenForReading();
+        l2b_s3_s0.ReadHeader();
+        l2b_s3_s0.ReadDataRec();
+        l2b_s3_s0.Close();
+    }
+
+    L2BTBOnly l2b_tbonly(l2b_tb_file);
+
+    int ncti = l2b_s0.frame.swath.GetCrossTrackBins();
+    int nati = l2b_s0.frame.swath.GetAlongTrackBins();
+
+    if(l2a_s0.header.alongTrackBins != nati || l2b_tbonly.nati != nati ||
+       l2a_s0.header.crossTrackBins != ncti || l2b_tbonly.ncti != ncti ||
+       (l2b_file_s3 && l2b_s3_s0.frame.swath.GetAlongTrackBins() != nati) ||
+       (l2b_file_s3 && l2b_s3_s0.frame.swath.GetCrossTrackBins() != ncti) ) {
+        fprintf(stderr, "Size mismatch!\n");
+        exit(1);
+    }
 
     // Read in L2A S0 file
     L2AFrame*** l2a_s0_swath;
@@ -115,13 +146,11 @@ int main(int argc, char* argv[]) {
     CAPWindSwath cap_wind_swath;
     cap_wind_swath.Allocate(ncti, nati);
 
-    L2BTBOnly l2b_tbonly(l2b_tb_file);
-
     // Output arrays
     int l2b_size = ncti * nati;
 
     for(int ati=0; ati<nati; ++ati) {
-        if(ati%50 == 0)
+        if(ati%100 == 0)
             fprintf(stdout, "%d of %d\n", ati, nati);
 
         for(int cti=0; cti<ncti; ++cti) {
@@ -202,35 +231,43 @@ int main(int argc, char* argv[]) {
                 tb_ml.Append(this_meas);
             }
 
-            if(tb_ml.NodeCount() == 0 || s0_ml->NodeCount() == 0)
+            WVC* s0_wvc = l2b_s0.frame.swath.GetWVC(cti, ati);
+            WVC* s3_wvc = NULL;
+            if(l2b_file_s3)
+                s3_wvc = l2b_s3_s0.frame.swath.GetWVC(cti, ati);
+
+            if(!s0_wvc || tb_ml.NodeCount() == 0 || s0_ml->NodeCount() == 0)
                 continue;
 
             CAPWVC* wvc = new CAPWVC();
             WindVectorPlus* nudgeWV = new WindVectorPlus();
-
-            if(any_land)
-                wvc->s0_flag |= L2B_QUAL_FLAG_LAND;
-
-            if(any_ice)
-                wvc->s0_flag |= L2B_QUAL_FLAG_ICE;
-
-            // set nudge from L2B tbonly file
-            nudgeWV->spd = l2b_tbonly.anc_spd[l2bidx];
-            nudgeWV->dir = gs_deg_to_pe_rad(l2b_tbonly.anc_dir[l2bidx]);
+            nudgeWV->spd = s0_wvc->nudgeWV->spd;
+            nudgeWV->dir = s0_wvc->nudgeWV->dir;
 
             wvc->nudgeWV = nudgeWV;
+            wvc->s0_flag = s0_wvc->qualFlag;
 
-            float active_weight = 1;
-            float passive_weight = 1;
-            float init_spd = l2b_tbonly.smap_spd[l2bidx];
+            float init_spd = nudgeWV->spd;
             float init_dir = nudgeWV->dir;
             float init_sss = l2b_tbonly.smap_sss[l2bidx];
             float this_anc_spd = nudgeWV->spd;
             float this_anc_dir = nudgeWV->dir;
             float this_anc_sst = l2b_tbonly.anc_sst[l2bidx];
             float this_anc_swh = l2b_tbonly.anc_swh[l2bidx];
-            float this_anc_rr = 0;
-            float anc_spd_std_prior = 100;
+            float this_anc_rr = -9999;
+            float anc_spd_std_prior = 1000;
+
+            // If radar-only file specified use that for nudging
+            if(l2b_file_s3 && s3_wvc) {
+                init_spd = s3_wvc->selected->spd;
+                init_dir = s3_wvc->selected->dir;
+            }
+
+            float active_weight = 1;
+            float passive_weight = 1;
+
+            if(this_anc_swh<0 || this_anc_swh > 20)
+                this_anc_swh = -9999;
 
             cap_gmf.CAPGMF::BuildSolutionCurvesTwoStep(
                 &tb_ml, s0_ml, init_spd, init_sss, this_anc_spd, this_anc_dir,
@@ -248,8 +285,14 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    cap_wind_swath.ThreshNudge(0.05);
-    cap_wind_swath.MedianFilter(3, 200);
+    // Do ambig removal only if radar-only l2b file not specified
+    if(!l2b_file_s3) {
+        cap_wind_swath.ThreshNudge(0.05);
+        cap_wind_swath.MedianFilter(3, 200, 0);
+
+    } else {
+        cap_wind_swath.MedianFilter(3, 200, 2);
+    }
 
     // Write outputs
     float** lat = (float**)make_array(sizeof(float), 2, ncti, nati);
@@ -282,18 +325,26 @@ int main(int argc, char* argv[]) {
             cap_sss[cti][ati] = FILL_VALUE;
             cap_flg[cti][ati] = 255;
 
+            WVC* s0_wvc = l2b_s0.frame.swath.GetWVC(cti, ati);
             CAPWVC* wvc = cap_wind_swath.swath[cti][ati];
 
-            if(!wvc)
+            if(!wvc || !s0_wvc)
                 continue;
 
             // switch back to clockwise from noth convention, to degrees, and wrap
+            float radar_only_dir = 450.0 - rtd * s0_wvc->selected->dir;
+            while(radar_only_dir>=180) radar_only_dir-=360;
+            while(radar_only_dir<-180) radar_only_dir+=360;
+
             float this_cap_dir = 450 - rtd * wvc->selected->dir;
             while(this_cap_dir>=180) this_cap_dir-=360;
             while(this_cap_dir<-180) this_cap_dir+=360;
 
             lat[cti][ati] = l2b_tbonly.lat[l2bidx];
             lon[cti][ati] = l2b_tbonly.lon[l2bidx];
+            s0_spd[cti][ati] = s0_wvc->selected->spd;
+            s0_dir[cti][ati] = radar_only_dir;
+            s0_flg[cti][ati] = s0_wvc->qualFlag;
 
             // insert some QA here to set cap_flag???
             cap_spd[cti][ati] = wvc->selected->spd;

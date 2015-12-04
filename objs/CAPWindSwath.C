@@ -69,7 +69,7 @@ int CAPWindSwath::ThreshNudge(float thres) {
     return(1);
 }
 
-int CAPWindSwath::MedianFilter(int half_window, int max_passes) {
+int CAPWindSwath::MedianFilter(int half_window, int max_passes, int start_pass){
 
     CAPWindVectorPlus*** new_selected = (CAPWindVectorPlus***)make_array(
         sizeof(CAPWindVectorPlus*), 2, _crossTrackBins, _alongTrackBins);
@@ -88,7 +88,7 @@ int CAPWindSwath::MedianFilter(int half_window, int max_passes) {
     // Pass 1: Only filter non-land/ice, ignore land/ice WVCs
     // Pass 2: Fix non-land/ice selections, filter land/ice WVCs
     // Pass 3: DIR processing
-    for(int ipass = 2; ipass < 3; ++ipass) {
+    for(int ipass = start_pass; ipass < 3; ++ipass) {
 
         // Do DIR on last pass
         int special = (ipass == 2) ? 1 : 0;
@@ -281,13 +281,8 @@ int CAPWindSwath::MedianFilterPass(
 
                 } else {
 
-                    float delta_left = left_dir - median_dir;
-                    while(delta_left>pi) delta_left -= two_pi;
-                    while(delta_left<pi) delta_left += two_pi;
-
-                    float delta_right = right_dir - median_dir;
-                    while(delta_right>pi) delta_right -= two_pi;
-                    while(delta_right<pi) delta_right += two_pi;
+                    float delta_left = ANGDIF(left_dir, median_dir);
+                    float delta_right = ANGDIF(right_dir, median_dir);
 
                     if(fabs(delta_left) < fabs(delta_right)) {
                         wvp->dir = wvc->selected->directionRange.left;

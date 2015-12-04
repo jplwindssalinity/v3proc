@@ -12,7 +12,7 @@ public:
     int Allocate(int cross_track_bins, int along_track_bins);
     int Add(int cti, int ati, CAPWVC* wvc);
     int ThreshNudge(float thres);
-    int MedianFilter(int half_window_size, int max_passes);
+    int MedianFilter(int half_window_size, int max_passes, int start_pass = 0);
     int MedianFilterPass(
         int half_window_size, CAPWindVectorPlus*** new_selected, char** change,
         char** filter, char** influence, int special);
