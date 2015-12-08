@@ -257,22 +257,43 @@ int main(int argc, char* argv[]) {
             float this_anc_rr = -9999;
             float anc_spd_std_prior = 1000;
 
-            // If radar-only file specified use that for nudging
-            if(l2b_file_s3 && s3_wvc) {
-                init_spd = s3_wvc->selected->spd;
-                init_dir = s3_wvc->selected->dir;
-            }
-
             float active_weight = 1;
             float passive_weight = 1;
 
             if(this_anc_swh<0 || this_anc_swh > 20)
                 this_anc_swh = -9999;
 
+            // If radar-only file specified use that for nudging
+            if(l2b_file_s3 && s3_wvc) {
+                init_spd = s3_wvc->selected->spd;
+                init_dir = s3_wvc->selected->dir;
+
+                if(init_spd>20) {
+                    float new_spd, new_dir, new_sss, new_obj;
+                    cap_gmf.Retrieve(
+                        &tb_ml, NULL, init_spd, init_dir,
+                        init_sss, init_spd, init_dir,
+                        this_anc_sst, this_anc_swh, 0, 1.5, 0,
+                        1, CAPGMF::RETRIEVE_SPEED_SALINITY,
+                        &new_spd, &new_dir, &new_sss, &new_obj);
+
+                    if(init_spd < 30) {
+                        init_sss += (new_sss-init_sss) * (init_spd-20) / 10;
+                    } else {
+                        init_sss = new_sss;
+                    }
+                }
+            }
+
             cap_gmf.CAPGMF::BuildSolutionCurvesTwoStep(
                 &tb_ml, s0_ml, init_spd, init_sss, this_anc_spd, this_anc_dir,
                 this_anc_sst, this_anc_swh, this_anc_rr, anc_spd_std_prior,
                 active_weight, passive_weight, wvc);
+
+//             cap_gmf.CAPGMF::BuildSolutionCurves(
+//                 &tb_ml, s0_ml, init_spd, init_sss, this_anc_spd, this_anc_dir,
+//                 this_anc_sst, this_anc_swh, this_anc_rr, anc_spd_std_prior,
+//                 active_weight, passive_weight, wvc);
 
             wvc->BuildSolutions();
 
