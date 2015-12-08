@@ -155,7 +155,7 @@ int CAPGMF::BuildSolutionCurves(
         Retrieve(
             tb_ml, s0_ml, start_speed, this_angle, init_sss, anc_spd, anc_dir,
             anc_sst, anc_swh, anc_rr, anc_spd_std_prior, active_weight,
-            passive_weight, RETRIEVE_SPEED_ONLY, &spd, &dir, &sss, &obj);
+            passive_weight, RETRIEVE_SPEED_SALINITY, &spd, &dir, &sss, &obj);
 
         cap_wvc->best_spd[iazi] = spd;
         cap_wvc->best_sss[iazi] = sss;
