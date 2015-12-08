@@ -324,7 +324,7 @@ int main(int argc, char* argv[]){
         if(do_footprint) {
             read_SDS_h5(id, "/Sigma0_Data/center_lat_h", &lat[0]);
             read_SDS_h5(id, "/Sigma0_Data/center_lon_h", &lon[0]);
-            read_SDS_h5(id, "/Sigma0_Data/earth_boresight_incidence", &inc[0]);
+            read_SDS_h5(id, "/Sigma0_Data/earth_boresight_incidence_h", &inc[0]);
 
             read_SDS_h5(id, "/Sigma0_Data/kp_vv", &kp[0][0]);
             read_SDS_h5(id, "/Sigma0_Data/kp_hh", &kp[1][0]);
