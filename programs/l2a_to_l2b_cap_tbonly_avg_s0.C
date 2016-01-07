@@ -222,25 +222,6 @@ int main(int argc, char* argv[]) {
                 sum_sin_azi[idx_look] += sin(meas->eastAzimuth);
             }
 
-
-            // Check for land / ice flagged sigma0s
-            Meas* meas = s0_ml->GetHead();
-            while(meas) {
-                if(meas->landFlag) {
-                    if(meas->landFlag == 1 || meas->landFlag == 3)
-                        any_land = 1;
-
-                    if(meas->landFlag == 2 || meas->landFlag == 3)
-                        any_ice = 1;
-
-                    meas = s0_ml->RemoveCurrent();
-                    delete meas;
-                    meas = s0_ml->GetCurrent();
-                } else {
-                    meas = s0_ml->GetNext();
-                }
-            }
-
             // Compute averaged s0 observations from four looks
             // Angles computed in degrees and clockwise from north
             int cnts_fore = cnts[0][0] + cnts[0][1];
