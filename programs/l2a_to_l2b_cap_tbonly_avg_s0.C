@@ -251,8 +251,8 @@ int main(int argc, char* argv[]) {
                 Meas* this_meas = new Meas();
                 this_meas->value = sum_s0[1][0]/(float)cnts[1][0];
                 this_meas->measType = Meas::VV_MEAS_TYPE;
-                this_meas->incidenceAngle = dtr * inc_fore;
-                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore);
+                this_meas->incidenceAngle = dtr * inc_aft;
+                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft);
                 this_meas->A = sum_A[1][0]/pow((float)cnts[1][0], 2);
                 s0_ml_avg.Append(this_meas);
             }
@@ -271,8 +271,8 @@ int main(int argc, char* argv[]) {
                 Meas* this_meas = new Meas();
                 this_meas->value = sum_s0[1][1]/(float)cnts[1][1];
                 this_meas->measType = Meas::HH_MEAS_TYPE;
-                this_meas->incidenceAngle = dtr * inc_fore;
-                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore);
+                this_meas->incidenceAngle = dtr * inc_aft;
+                this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft);
                 this_meas->A = sum_A[1][1]/pow((float)cnts[1][1], 2);
                 s0_ml_avg.Append(this_meas);
             }
