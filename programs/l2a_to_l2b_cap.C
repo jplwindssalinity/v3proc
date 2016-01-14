@@ -174,11 +174,11 @@ int main(int argc, char* argv[]) {
 
             float init_spd = s0_wvc->selected->spd;
             float init_dir = s0_wvc->selected->dir;
-            float init_sss = anc_sss.data[ati][cti][0];
+            float init_sss = anc_sss.data[0][ati][cti];
             float this_anc_spd = s0_wvc->nudgeWV->spd;
             float this_anc_dir = s0_wvc->nudgeWV->dir;
-            float this_anc_sst = anc_sst.data[ati][cti][0];
-            float this_anc_swh = anc_swh.data[ati][cti][0];
+            float this_anc_sst = anc_sst.data[0][ati][cti];
+            float this_anc_swh = anc_swh.data[0][ati][cti];
             float this_anc_rr = -9999;
 
 //             if(init_sss<0 || this_anc_sst<-10)

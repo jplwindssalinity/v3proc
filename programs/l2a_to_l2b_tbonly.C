@@ -263,7 +263,7 @@ int main(int argc, char* argv[]) {
                 continue;
 
             // Check for useable ancillary data
-            if(cap_anc_sst.data[anc_ati][anc_cti][0] < 0)
+            if(cap_anc_sst.data[0][anc_ati][anc_cti] < 0)
                 continue;
 
             MeasList* tb_ml = &(l2a_tb_swath[cti][ati]->measList);
@@ -411,16 +411,16 @@ int main(int argc, char* argv[]) {
             }
 
             anc_spd[l2bidx] = 1.03 * sqrt(
-                pow(cap_anc_u10.data[anc_ati][anc_cti][0], 2) +
-                pow(cap_anc_v10.data[anc_ati][anc_cti][0], 2));
+                pow(cap_anc_u10.data[0][anc_ati][anc_cti], 2) +
+                pow(cap_anc_v10.data[0][anc_ati][anc_cti], 2));
 
             anc_dir[l2bidx] = rtd * atan2(
-                cap_anc_u10.data[anc_ati][anc_cti][0],
-                cap_anc_v10.data[anc_ati][anc_cti][0]);
+                cap_anc_u10.data[0][anc_ati][anc_cti],
+                cap_anc_v10.data[0][anc_ati][anc_cti]);
 
-            anc_sst[l2bidx] = cap_anc_sst.data[anc_ati][anc_cti][0] + 273.16;
-            anc_sss[l2bidx] = cap_anc_sss.data[anc_ati][anc_cti][0];
-            anc_swh[l2bidx] = cap_anc_swh.data[anc_ati][anc_cti][0];
+            anc_sst[l2bidx] = cap_anc_sst.data[0][anc_ati][anc_cti] + 273.16;
+            anc_sss[l2bidx] = cap_anc_sss.data[0][anc_ati][anc_cti];
+            anc_swh[l2bidx] = cap_anc_swh.data[0][anc_ati][anc_cti];
 
             // Check validity of ancillary data
             if(anc_swh[l2bidx]>10)

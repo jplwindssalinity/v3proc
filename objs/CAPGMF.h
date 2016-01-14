@@ -22,6 +22,7 @@ public:
 
 class CAP_ANC_L2B {
 public:
+    CAP_ANC_L2B();
     CAP_ANC_L2B(const char* filename);
     ~CAP_ANC_L2B();
 

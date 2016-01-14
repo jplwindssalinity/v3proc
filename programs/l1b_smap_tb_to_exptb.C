@@ -229,8 +229,8 @@ int main(int argc, char* argv[]){
                     else
                         met = Meas::L_BAND_TBH_MEAS_TYPE;
 
-                    float u10 = anc_u10.data[iframe][ifootprint][0];
-                    float v10 = anc_v10.data[iframe][ifootprint][0];
+                    float u10 = anc_u10.data[0][iframe][ifootprint];
+                    float v10 = anc_v10.data[0][iframe][ifootprint];
 
                     // increase NCEP by 3%
                     float spd = 1.03 * sqrt(u10*u10 + v10*v10);
@@ -238,10 +238,10 @@ int main(int argc, char* argv[]){
                     // Met convention
                     float dir = atan2(-u10, -v10);
 
-                    float sss = anc_sss.data[iframe][ifootprint][0];
-                    float sst = anc_sst.data[iframe][ifootprint][0];
+                    float sss = anc_sss.data[0][iframe][ifootprint];
+                    float sst = anc_sst.data[0][iframe][ifootprint];
                     sst += 273.16;
-//                     float swh = anc_swh.data[iframe][ifootprint][0];
+//                     float swh = anc_swh.data[0][iframe][ifootprint];
                     float swh = -99999;
                     float this_inc = dtr*inc[fp_idx];
 

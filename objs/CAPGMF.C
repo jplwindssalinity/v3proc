@@ -13,7 +13,7 @@ CAP_ANC_L1B::CAP_ANC_L1B(const char* filename) : data(NULL) {
 
 CAP_ANC_L1B::~CAP_ANC_L1B() {
     if(data)
-        free_array((void*)data, 3, nframes, nfootprints, narrays);
+        free_array((void*)data, 3, narrays, nframes, nfootprints);
 
     return;
 }
@@ -36,16 +36,20 @@ int CAP_ANC_L1B::Read(const char* filename) {
     }
 
     data = (float***)make_array(
-        sizeof(float), 3, nframes, nfootprints, narrays);
+        sizeof(float), 3, narrays, nframes, nfootprints);
     if(!data) {
         fclose(ifp);
         return(0);
     }
 
     read_array(
-        ifp, &data[0], sizeof(float), 3, nframes, nfootprints, narrays);
+        ifp, &data[0], sizeof(float), 3, narrays, nframes, nfootprints);
     fclose(ifp);
     return(1);
+}
+
+CAP_ANC_L2B::CAP_ANC_L2B() : data(NULL) {
+    return;
 }
 
 CAP_ANC_L2B::CAP_ANC_L2B(const char* filename) : data(NULL) {
@@ -55,7 +59,7 @@ CAP_ANC_L2B::CAP_ANC_L2B(const char* filename) : data(NULL) {
 
 CAP_ANC_L2B::~CAP_ANC_L2B() {
     if(data)
-        free_array((void*)data, 3, nati, ncti, narrays);
+        free_array((void*)data, 3, narrays, nati, ncti);
 
     return;
 }
@@ -76,13 +80,13 @@ int CAP_ANC_L2B::Read(const char* filename) {
         return(0);
     }
 
-    data = (float***)make_array(sizeof(float), 3, nati, ncti, narrays);
+    data = (float***)make_array(sizeof(float), 3, narrays, nati, ncti);
     if(!data) {
         fclose(ifp);
         return(0);
     }
 
-    read_array(ifp, &data[0], sizeof(float), 3, nati, ncti, narrays);
+    read_array(ifp, &data[0], sizeof(float), 3, narrays, nati, ncti);
     fclose(ifp);
     return(1);
 }
