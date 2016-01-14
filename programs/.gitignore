@@ -3,6 +3,7 @@ smap_match_l1b_l1c
 l2a_to_l2b_cap_tbonly_avg_s0
 l2a_to_l2b_cap_tbonly
 l2a_to_l2b_tbonly
+l2a_to_l2b_tbonly_wsat
 smap_match_l1c_l1b
 l1b_smap_tb_to_exptb
 l2a_fix_SMAP_composites

@@ -180,6 +180,7 @@ bin_PROGRAMS = \
     programs/l1b_smap_tb_to_exptb                 \
     programs/smap_match_l1c_l1b                   \
     programs/l2a_to_l2b_tbonly                    \
+    programs/l2a_to_l2b_tbonly_wsat               \
     programs/l2a_to_l2b_cap_tbonly                \
     programs/l2a_to_l2b_cap_tbonly_avg_s0         \
     programs/smap_match_l1b_l1c
