@@ -279,7 +279,7 @@ int main(int argc, char* argv[]){
                        qs_icemap.IsIce(tmp_lon, tmp_lat, 0) ||
                        distance < 500 ||
                        spd < 0 || spd > 15 ||
-                       sst < 273.16 || sst > 373 ||
+                       sst < 278.16 || sst > 373 ||
                        fabs(inc[fp_idx]-40) > 0.5 ||
                        fabs(ta[ipol][fp_idx]-ta_f[ipol][fp_idx]) > 1 ||
                        fabs(lat[fp_idx]) > 50 ||
