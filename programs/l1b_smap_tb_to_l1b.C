@@ -202,6 +202,7 @@ int main(int argc, char* argv[]){
         std::vector< std::vector<float> > tb(2);
         std::vector< std::vector<float> > nedt(2);
         std::vector< std::vector<uint16> > tb_flag(2);
+        std::vector< std::vector<float> > tb_gal_corr(2);
 
         int data_size = nframes[ipart]*nfootprints[ipart];
         azi.resize(data_size);
@@ -215,6 +216,7 @@ int main(int argc, char* argv[]){
             tb[ipol].resize(data_size);
             nedt[ipol].resize(data_size);
             tb_flag[ipol].resize(data_size);
+            tb_gal_corr[ipol].resize(data_size);
         }
 
         // These data only have footprint versions
@@ -232,6 +234,13 @@ int main(int argc, char* argv[]){
 
         read_SDS_h5(id, "/Brightness_Temperature/tb_qual_flag_v", &tb_flag[0][0]);
         read_SDS_h5(id, "/Brightness_Temperature/tb_qual_flag_h", &tb_flag[1][0]);
+
+        read_SDS_h5(
+            id, "/Brightness_Temperature/galactic_reflected_correction_v",
+            &tb_gal_corr[0][0]);
+        read_SDS_h5(
+            id, "/Brightness_Temperature/galactic_reflected_correction_h",
+            &tb_gal_corr[1][0]);
 
         // Iterate over scans
         for(int iframe = 0; iframe < nframes[ipart]; ++iframe) {
@@ -263,7 +272,14 @@ int main(int argc, char* argv[]){
                 // Index into footprint-sized arrays
                 int fp_idx = iframe * nfootprints[ipart] + ifootprint;
 
+                if(tb_gal_corr[1][fp_idx] > 3.5)
+                    continue;
+
                 for(int ipol=0; ipol<2; ++ipol){
+
+                    // check flags
+                    if(0x1 & tb_flag[ipol][fp_idx])
+                        continue;
 
                    MeasSpot* new_meas_spot = new MeasSpot();
 
@@ -278,10 +294,6 @@ int main(int argc, char* argv[]){
 
                    new_meas_spot->scAttitude.SetRPY(
                        dtr*roll[iframe], dtr*pitch[iframe], dtr*yaw[iframe]);
-
-                    // check flags
-                    if(0x1 & tb_flag[ipol][fp_idx])
-                        continue;
 
                     Meas* new_meas = new Meas();
 
