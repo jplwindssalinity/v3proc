@@ -91,6 +91,53 @@ int CAP_ANC_L2B::Read(const char* filename) {
     return(1);
 }
 
+NCEP_ADJ::NCEP_ADJ() : table(NULL) {
+    return;
+}
+
+NCEP_ADJ::NCEP_ADJ(const char* filename) : table(NULL) {
+    Read(filename);
+    return;
+}
+
+int NCEP_ADJ::Read(const char* filename) {
+
+    FILE* ifp = fopen(filename, "r");
+    fread(&spdmin, sizeof(float), 1, ifp);
+    fread(&dspd, sizeof(float), 1, ifp);
+    fread(&nspd, sizeof(int), 1, ifp);
+    fread(&dtmin, sizeof(float), 1, ifp);
+    fread(&ddt, sizeof(float), 1, ifp);
+    fread(&ndt, sizeof(int), 1, ifp);
+
+    table = (float**)make_array(sizeof(float), 2, ndt, nspd);
+    read_array(ifp, &table[0], sizeof(float), 2, ndt, nspd);
+
+    fclose(ifp);
+    return(1);
+}
+
+float NCEP_ADJ::Get(float ncep_speed, float dt) {
+
+    int ispd = floor(0.5+(ncep_speed - spdmin)/dspd);
+    int idt = floor(0.5+(dt - dtmin)/ddt);
+    float out_speed;
+
+    if(ispd >= 0 && ispd < nspd && idt >= 0 & idt < ndt) {
+        out_speed = ncep_speed + table[idt][ispd];
+    } else {
+        out_speed = ncep_speed;
+    }
+    return(out_speed);
+}
+
+NCEP_ADJ::~NCEP_ADJ() {
+    if(table)
+        free_array((void*)table, 2, ndt, nspd);
+
+    return;
+}
+
 CAPGMF::CAPGMF() :_tbflat(NULL), _erough(NULL), _model_s0(NULL) {
     return;
 }

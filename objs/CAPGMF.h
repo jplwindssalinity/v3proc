@@ -35,6 +35,22 @@ public:
     float*** data;
 };
 
+class NCEP_ADJ {
+public:
+    NCEP_ADJ();
+    NCEP_ADJ(const char* filename);
+    ~NCEP_ADJ();
+
+    int Read(const char* filename);
+    float Get(float ncep_spd, float dt);
+    float spdmin, dspd;
+    float dtmin, ddt;
+    int nspd, ndt;
+
+    float** table;
+
+};
+
 class CAPGMF {
 public:
     CAPGMF();
