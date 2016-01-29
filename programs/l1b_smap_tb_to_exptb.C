@@ -83,7 +83,7 @@ int main(int argc, char* argv[]){
     //-----------//
     const char* command = no_path(argv[0]);
     char* config_file = argv[1];
-    char* out_file = argv[2];
+    char* out_file_base = argv[2];
 
     ConfigList config_list;
     if(!config_list.Read(config_file)) {
@@ -145,7 +145,6 @@ int main(int argc, char* argv[]){
 
     int revno;
     config_list.GetInt("REVNO", &revno);
-    FILE* ofp = fopen(out_file, "w");
 
     // Iterate over ascending / decending portions of orbit
     for(int ipart = 0; ipart < 2; ++ipart){
@@ -158,6 +157,7 @@ int main(int argc, char* argv[]){
         std::vector<float> inc;
 
         std::vector< std::vector<float> > tb(2);
+        std::vector< std::vector<float> > exp_tb(2);
         std::vector< std::vector<float> > nedt(2);
         std::vector< std::vector<uint16> > tb_flag(2);
 
@@ -171,6 +171,7 @@ int main(int argc, char* argv[]){
         // resize arrays for data dimensions
         for(int ipol = 0; ipol < 2; ++ipol) {
             tb[ipol].resize(data_size);
+            exp_tb[ipol].resize(data_size);
             nedt[ipol].resize(data_size);
             tb_flag[ipol].resize(data_size);
         }
@@ -195,7 +196,7 @@ int main(int argc, char* argv[]){
         CAP_ANC_L1B anc_v10(anc_v10_files[ipart]);
         CAP_ANC_L1B anc_sss(anc_sss_files[ipart]);
         CAP_ANC_L1B anc_sst(anc_sst_files[ipart]);
-//         CAP_ANC_L1B anc_swh(anc_swh_files[ipart]);
+        CAP_ANC_L1B anc_swh(anc_swh_files[ipart]);
 
         // Iterate over scans
         for(int iframe = 0; iframe < nframes[ipart]; ++iframe) {
@@ -205,11 +206,7 @@ int main(int argc, char* argv[]){
                 // Index into footprint-sized arrays
                 int fp_idx = iframe * nfootprints[ipart] + ifootprint;
                 for(int ipol=0; ipol<2; ++ipol){
-
-
-                    // check flags
-//                     if(0x1 & tb_flag[ipol][fp_idx])
-//                         continue;
+                    exp_tb[ipol][fp_idx] = -9999;
 
                     if(lat[fp_idx] < -90)
                         continue;
@@ -241,8 +238,7 @@ int main(int argc, char* argv[]){
                     float sss = anc_sss.data[0][iframe][ifootprint];
                     float sst = anc_sst.data[0][iframe][ifootprint];
                     sst += 273.16;
-//                     float swh = anc_swh.data[0][iframe][ifootprint];
-                    float swh = -99999;
+                    float swh = anc_swh.data[0][iframe][ifootprint];
                     float this_inc = dtr*inc[fp_idx];
 
                     // Compute relative azimuth angle
@@ -251,8 +247,6 @@ int main(int argc, char* argv[]){
                     relazi -= pi;
                     while(relazi<0) relazi += two_pi;
                     while(relazi>=two_pi) relazi -= two_pi;
-
-                    swh = -9999;
 
                     float model_tb, tb_flat, dtb;
                     float tb_flat_plus, dtb_plus;
@@ -266,30 +260,28 @@ int main(int argc, char* argv[]){
                         met, this_inc, sst, sss, spd, relazi, swh, &tb_flat,
                         &dtb);
 
-                    cap_gmf.GetTB(
-                        met, this_inc, sst, sss_plus, spd, relazi, swh,
-                        &tb_flat_plus, &dtb_plus);
-
-                    cap_gmf.GetTB(
-                        met, this_inc, sst, sss_minus, spd, relazi, swh,
-                        &tb_flat_minus, &dtb_minus);
-
                     model_tb = tb_flat + dtb;
 
-                    float dtb_dsss = (tb_flat_plus-tb_flat_minus)/(2.0*dsss);
-
-                    fprintf(
-                        ofp, "%5.5d, %6.2f, %6.2f, %6.2f, %6.2f, %6.2f, %f, %5.2f, %d, %d, %d, %d, %d\n",
-                        revno, lon[fp_idx], lat[fp_idx], antazi[fp_idx],
-                        tb[ipol][fp_idx], model_tb, dtb_dsss, sss,
-                        iframe, ifootprint, ipol, ipart, tb_flag[ipol][fp_idx]);
+                    exp_tb[ipol][fp_idx] = model_tb;
 
                 }
             }
         }
         H5Fclose(id);
-    }
 
-    fclose(ofp);
+        char outfile[1024];
+        if(ipart == 0) {
+            sprintf(outfile, "%s-asc.dat", out_file_base);
+        } else {
+            sprintf(outfile, "%s-dec.dat", out_file_base);
+        }
+
+        FILE* ofp = fopen(outfile, "w");
+        fwrite(&nframes[ipart], sizeof(int), 1, ofp);
+        fwrite(&nfootprints[ipart], sizeof(int), 1, ofp);
+        fwrite(&exp_tb[0][0], sizeof(float), data_size, ofp);
+        fwrite(&exp_tb[1][0], sizeof(float), data_size, ofp);
+        fclose(ofp);
+    }
     return(0);
 }
