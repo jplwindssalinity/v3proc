@@ -198,6 +198,7 @@ int main(int argc, char* argv[]){
         std::vector<float> azi;
         std::vector<float> antazi;
         std::vector<float> inc;
+        std::vector<float> solar_spec_theta;
 
         std::vector< std::vector<float> > tb(2);
         std::vector< std::vector<float> > nedt(2);
@@ -210,6 +211,7 @@ int main(int argc, char* argv[]){
         lat.resize(data_size);
         lon.resize(data_size);
         inc.resize(data_size);
+        solar_spec_theta.resize(data_size);
 
         // resize arrays for data dimensions
         for(int ipol = 0; ipol < 2; ++ipol) {
@@ -225,6 +227,9 @@ int main(int argc, char* argv[]){
         read_SDS_h5(id, "/Brightness_Temperature/earth_boresight_azimuth", &azi[0]);
         read_SDS_h5(id, "/Brightness_Temperature/antenna_scan_angle", &antazi[0]);
         read_SDS_h5(id, "/Brightness_Temperature/earth_boresight_incidence", &inc[0]);
+        read_SDS_h5(
+            id, "/Brightness_Temperature/solar_specular_theta",
+            &solar_spec_theta[0]);
 
         read_SDS_h5(id, "/Brightness_Temperature/tb_v", &tb[0][0]);
         read_SDS_h5(id, "/Brightness_Temperature/tb_h", &tb[1][0]);
@@ -273,6 +278,9 @@ int main(int argc, char* argv[]){
                 int fp_idx = iframe * nfootprints[ipart] + ifootprint;
 
                 if(tb_gal_corr[1][fp_idx] > 3.5)
+                    continue;
+
+                if(solar_spec_theta[fp_idx] < 25)
                     continue;
 
                 for(int ipol=0; ipol<2; ++ipol){

@@ -170,6 +170,7 @@ int main(int argc, char* argv[]){
         std::vector<float> azi;
         std::vector<float> antazi;
         std::vector<float> inc;
+        std::vector<float> solar_spec_theta;
 
         std::vector< std::vector<float> > tb(2);
         std::vector< std::vector<float> > ta(2);
@@ -182,6 +183,7 @@ int main(int argc, char* argv[]){
         lat.resize(data_size);
         lon.resize(data_size);
         inc.resize(data_size);
+        solar_spec_theta.resize(data_size);
 
         // resize arrays for data dimensions
         for(int ipol = 0; ipol < 2; ++ipol) {
@@ -197,6 +199,9 @@ int main(int argc, char* argv[]){
         read_SDS_h5(id, "/Brightness_Temperature/earth_boresight_azimuth", &azi[0]);
         read_SDS_h5(id, "/Brightness_Temperature/antenna_scan_angle", &antazi[0]);
         read_SDS_h5(id, "/Brightness_Temperature/earth_boresight_incidence", &inc[0]);
+        read_SDS_h5(
+            id, "/Brightness_Temperature/solar_specular_theta",
+            &solar_spec_theta[0]);
 
         read_SDS_h5(id, "/Brightness_Temperature/tb_v", &tb[0][0]);
         read_SDS_h5(id, "/Brightness_Temperature/tb_h", &tb[1][0]);
@@ -284,7 +289,8 @@ int main(int argc, char* argv[]){
                        fabs(ta[ipol][fp_idx]-ta_f[ipol][fp_idx]) > 1 ||
                        fabs(lat[fp_idx]) > 50 ||
                        model_tb < 65 || model_tb > 125 ||
-                       tb[ipol][fp_idx] > thresh_tb)
+                       tb[ipol][fp_idx] > thresh_tb ||
+                       solar_spec_theta[fp_idx] < 25)
                         continue;
 
                     float this_delta = tb[ipol][fp_idx] - model_tb;
