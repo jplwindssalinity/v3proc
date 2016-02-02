@@ -18,6 +18,8 @@
 #define L1B_TB_DEC_ANC_SSS_FILE_KEYWORD "L1B_TB_DEC_ANC_SSS_FILE"
 #define L1B_TB_DEC_ANC_SST_FILE_KEYWORD "L1B_TB_DEC_ANC_SST_FILE"
 #define L1B_TB_DEC_ANC_SWH_FILE_KEYWORD "L1B_TB_DEC_ANC_SWH_FILE"
+#define L1B_TB_ASC_ANC_WSAT_FILE_KEYWORD "L1B_TB_ASC_ANC_WSAT_FILE"
+#define L1B_TB_DEC_ANC_WSAT_FILE_KEYWORD "L1B_TB_DEC_ANC_WSAT_FILE"
 
 //----------//
 // INCLUDES //
@@ -127,6 +129,10 @@ int main(int argc, char* argv[]){
     anc_swh_files[0] = config_list.Get(L1B_TB_ASC_ANC_SWH_FILE_KEYWORD);
     anc_swh_files[1] = config_list.Get(L1B_TB_DEC_ANC_SWH_FILE_KEYWORD);
 
+    char* anc_wsat_files[2] = {NULL, NULL};
+    anc_wsat_files[0] = config_list.Get(L1B_TB_ASC_ANC_WSAT_FILE_KEYWORD);
+    anc_wsat_files[1] = config_list.Get(L1B_TB_DEC_ANC_WSAT_FILE_KEYWORD);
+
     char* tb_flat_file = config_list.Get(TB_FLAT_MODEL_FILE_KEYWORD);
     char* tb_rough_file = config_list.Get(TB_ROUGH_MODEL_FILE_KEYWORD);
 
@@ -197,6 +203,7 @@ int main(int argc, char* argv[]){
         CAP_ANC_L1B anc_sss(anc_sss_files[ipart]);
         CAP_ANC_L1B anc_sst(anc_sst_files[ipart]);
         CAP_ANC_L1B anc_swh(anc_swh_files[ipart]);
+        CAP_ANC_L1B anc_wsat(anc_wsat_files[ipart]);
 
         // Iterate over scans
         for(int iframe = 0; iframe < nframes[ipart]; ++iframe) {
@@ -231,6 +238,13 @@ int main(int argc, char* argv[]){
 
                     // increase NCEP by 3%
                     float spd = 1.03 * sqrt(u10*u10 + v10*v10);
+                    spd = anc_wsat.data[0][iframe][ifootprint];
+
+                    float rain = anc_wsat.data[2][iframe][ifootprint];
+                    float dt = anc_wsat.data[3][iframe][ifootprint];
+
+                    if(spd < 0 || rain > 0 || dt > 45)
+                        continue;
 
                     // Met convention
                     float dir = atan2(-u10, -v10);
