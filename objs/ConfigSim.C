@@ -1370,9 +1370,11 @@ ConfigL2AToL2B(
       return 0;
     }
  
-    // configure flag threshold
+    // configure flag thresholds
     config_list->GetFloat(RAIN_IMPACT_FLAG_THRESHOLD_KEYWORD,
 			  &(l2a_to_l2b->rain_impact_thresh_for_flagging));
+    config_list->GetFloat(RAIN_SPEED_CORR_FLAG_THRESHOLD_KEYWORD,
+			  &(l2a_to_l2b->rain_speed_corr_thresh_for_flagging));
     config_list->DoNothingForMissingKeywords(); // go back to ignore nonexistent keywords
   } 
   
