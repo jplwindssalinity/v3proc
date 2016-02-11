@@ -8,6 +8,7 @@
 
 class CAP_ANC_L1B {
 public:
+    CAP_ANC_L1B();
     CAP_ANC_L1B(const char* filename);
     ~CAP_ANC_L1B();
 

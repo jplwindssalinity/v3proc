@@ -6,6 +6,10 @@
 #include "Array.h"
 #include "Constants.h"
 
+CAP_ANC_L1B::CAP_ANC_L1B() : data(NULL) {
+    return;
+}
+
 CAP_ANC_L1B::CAP_ANC_L1B(const char* filename) : data(NULL) {
     Read(filename);
     return;
