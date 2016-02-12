@@ -189,7 +189,8 @@ int main(int argc, char* argv[]) {
             // Build up tb_ml from L2B_TB_FILE
             if(l2b_tbonly.n_v_fore[l2bidx] > 0) {
                 Meas* this_meas = new Meas();
-                this_meas->value = l2b_tbonly.tb_v_fore[l2bidx];
+                this_meas->value =
+                    l2b_tbonly.tb_v_fore[l2bidx] + l2b_tbonly.tb_v_bias_adj[l2bidx];
                 this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * l2b_tbonly.inc_fore[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(
@@ -200,7 +201,8 @@ int main(int argc, char* argv[]) {
 
             if(l2b_tbonly.n_h_fore[l2bidx] > 0) {
                 Meas* this_meas = new Meas();
-                this_meas->value = l2b_tbonly.tb_h_fore[l2bidx];
+                this_meas->value = 
+                    l2b_tbonly.tb_h_fore[l2bidx] + l2b_tbonly.tb_h_bias_adj[l2bidx];
                 this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * l2b_tbonly.inc_fore[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(
@@ -211,7 +213,8 @@ int main(int argc, char* argv[]) {
 
             if(l2b_tbonly.n_v_aft[l2bidx] > 0) {
                 Meas* this_meas = new Meas();
-                this_meas->value = l2b_tbonly.tb_v_aft[l2bidx];
+                this_meas->value =
+                    l2b_tbonly.tb_v_aft[l2bidx] + l2b_tbonly.tb_v_bias_adj[l2bidx];
                 this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * l2b_tbonly.inc_aft[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(
@@ -222,7 +225,8 @@ int main(int argc, char* argv[]) {
 
             if(l2b_tbonly.n_h_aft[l2bidx] > 0) {
                 Meas* this_meas = new Meas();
-                this_meas->value = l2b_tbonly.tb_h_aft[l2bidx];
+                this_meas->value =
+                    l2b_tbonly.tb_h_aft[l2bidx] + l2b_tbonly.tb_h_bias_adj[l2bidx];
                 this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * l2b_tbonly.inc_aft[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(
@@ -249,7 +253,7 @@ int main(int argc, char* argv[]) {
 
             float init_spd = nudgeWV->spd;
             float init_dir = nudgeWV->dir;
-            float init_sss = l2b_tbonly.smap_sss[l2bidx];
+            float init_sss = l2b_tbonly.smap_sss_bias_adj[l2bidx];
             float this_anc_spd = nudgeWV->spd;
             float this_anc_dir = nudgeWV->dir;
             float this_anc_sst = l2b_tbonly.anc_sst[l2bidx];
