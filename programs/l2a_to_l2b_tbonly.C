@@ -13,6 +13,7 @@
 #define ANC_SWH_FILE_KEYWORD "ANC_SWH_FILE"
 #define ANC_U10_FILE_KEYWORD "ANC_U10_FILE"
 #define ANC_V10_FILE_KEYWORD "ANC_V10_FILE"
+#define L2B_TB_BIAS_ADJ_FILE_KEYWORD "L2B_TB_BIAS_ADJ_FILE"
 #define FILL_VALUE -9999
 
 //----------//
@@ -139,6 +140,10 @@ int main(int argc, char* argv[]) {
     char* anc_u10_file = config_list.Get(ANC_U10_FILE_KEYWORD);
     char* anc_v10_file = config_list.Get(ANC_V10_FILE_KEYWORD);
 
+    config_list.DoNothingForMissingKeywords();
+    char* l2b_tb_bias_adj_file = config_list.Get(L2B_TB_BIAS_ADJ_FILE_KEYWORD);
+    config_list.ExitForMissingKeywords();
+
     // Configure the model functions
     CAPGMF cap_gmf;
     cap_gmf.ReadFlat(tb_flat_file);
@@ -170,11 +175,16 @@ int main(int argc, char* argv[]) {
     CAP_ANC_L2B cap_anc_u10(anc_u10_file);
     CAP_ANC_L2B cap_anc_v10(anc_v10_file);
 
+    CAP_ANC_L2B cap_anc_tb_bias(l2b_tb_bias_adj_file);
+    if(l2b_tb_bias_adj_file)
+        cap_anc_tb_bias.Read(l2b_tb_bias_adj_file);
+
     // Output arrays
     int l2b_size = ncti * nati;
     std::vector<float> lat(l2b_size), lon(l2b_size);
     std::vector<float> tb_h_fore(l2b_size), tb_h_aft(l2b_size);
     std::vector<float> tb_v_fore(l2b_size), tb_v_aft(l2b_size);
+    std::vector<float> tb_v_bias_adj(l2b_size), tb_h_bias_adj(l2b_size);
     std::vector<float> nedt_h_fore(l2b_size), nedt_h_aft(l2b_size);
     std::vector<float> nedt_v_fore(l2b_size), nedt_v_aft(l2b_size);
     std::vector<uint8> n_h_fore(l2b_size), n_h_aft(l2b_size);
@@ -184,7 +194,8 @@ int main(int argc, char* argv[]) {
     std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
     std::vector<float> anc_sss(l2b_size), anc_sst(l2b_size), anc_swh(l2b_size);
     std::vector<float> smap_sss(l2b_size), smap_spd(l2b_size);
-    std::vector<float> smap_sss_v(l2b_size), smap_spdonly(l2b_size), smap_high_spd(l2b_size);
+    std::vector<float> smap_spdonly(l2b_size), smap_high_spd(l2b_size);
+    std::vector<float> smap_sss_bias_adj(l2b_size), smap_spd_bias_adj(l2b_size);
     std::vector<uint16> quality_flag(l2b_size);
     std::vector<float> row_time(nati);
 
@@ -234,6 +245,8 @@ int main(int argc, char* argv[]) {
             tb_h_aft[l2bidx] = FILL_VALUE;
             tb_v_fore[l2bidx] = FILL_VALUE;
             tb_v_aft[l2bidx] = FILL_VALUE;
+            tb_v_bias_adj[l2bidx] = FILL_VALUE;
+            tb_h_bias_adj[l2bidx] = FILL_VALUE;
             nedt_h_fore[l2bidx] = FILL_VALUE;
             nedt_h_aft[l2bidx] = FILL_VALUE;
             nedt_v_fore[l2bidx] = FILL_VALUE;
@@ -249,12 +262,13 @@ int main(int argc, char* argv[]) {
             anc_swh[l2bidx] = FILL_VALUE;
             smap_sss[l2bidx] = FILL_VALUE;
             smap_spd[l2bidx] = FILL_VALUE;
+            smap_sss_bias_adj[l2bidx] = FILL_VALUE;
+            smap_spd_bias_adj[l2bidx] = FILL_VALUE;
             n_h_fore[l2bidx] = 0;
             n_h_aft[l2bidx] = 0;
             n_v_fore[l2bidx] = 0;
             n_v_aft[l2bidx] = 0;
             quality_flag[l2bidx] = 65535;
-            smap_sss_v[l2bidx] = FILL_VALUE;
             smap_spdonly[l2bidx] = FILL_VALUE;
             smap_high_spd[l2bidx] = FILL_VALUE;
 
@@ -461,36 +475,51 @@ int main(int argc, char* argv[]) {
 
                 smap_high_spd[l2bidx] = final_spd;
 
+                // Retreive salinity and speed again using bias adjusted TB
+                if(l2b_tb_bias_adj_file) {
+                    float this_tb_v_bias_adj = 
+                        -cap_anc_tb_bias.data[0][anc_ati][anc_cti];
+
+                    float this_tb_h_bias_adj = 
+                        -cap_anc_tb_bias.data[1][anc_ati][anc_cti];
+
+                    if(fabs(this_tb_v_bias_adj) < 3 && 
+                       fabs(this_tb_h_bias_adj) < 3) {
+
+                        tb_v_bias_adj[l2bidx] = this_tb_v_bias_adj;
+                        tb_h_bias_adj[l2bidx] = this_tb_h_bias_adj;
+
+                        // iterate over tb_ml_avg, adjust tbs
+                        for(Meas* meas = tb_ml_avg.GetHead(); meas; ) {
+                            if(meas->measType == Meas::L_BAND_TBH_MEAS_TYPE) {
+                                meas->value += tb_h_bias_adj[l2bidx];
+                            } else {
+                                meas->value += tb_v_bias_adj[l2bidx];
+                            }
+                            meas = tb_ml_avg.GetNext();
+                        }
+
+                        // Combined SSS and SPD
+                        float anc_spd_std_prior = 1.5;
+                        cap_gmf.Retrieve(
+                            &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
+                            anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
+                            anc_sst[l2bidx], anc_swh[l2bidx], 0, 
+                            anc_spd_std_prior, 0, 1, 
+                            CAPGMF::RETRIEVE_SPEED_SALINITY, &final_spd,
+                            &final_dir, &final_sss, &final_obj);
+
+                        smap_sss_bias_adj[l2bidx] = final_sss;
+                        smap_spd_bias_adj[l2bidx] = final_spd;
+                    }
+                }
+
                 // Quality flagging
                 quality_flag[l2bidx] = 0;
 
                 // Check for all four looks
                 if(tb_ml_avg.NodeCount() != 4)
                     quality_flag[l2bidx] |= QUAL_FLAG_FOUR_LOOKS;
-
-                // Discard H-pol observations
-                for(Meas* meas = tb_ml_avg.GetHead(); meas; ) {
-                    if(meas->measType == Meas::L_BAND_TBH_MEAS_TYPE) {
-                        meas = tb_ml_avg.RemoveCurrent();
-                        delete meas;
-                        meas = tb_ml_avg.GetCurrent();
-                    } else {
-                        meas = tb_ml_avg.GetNext();
-                    }
-                }
-
-                // SSS only with only V-pol
-                if(tb_ml_avg.NodeCount() > 0) {
-                    anc_spd_std_prior = 100;
-                    cap_gmf.Retrieve(
-                        &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
-                        anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
-                        anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
-                        1, CAPGMF::RETRIEVE_SALINITY_ONLY,
-                        &final_spd, &final_dir, &final_sss, &final_obj);
-
-                    smap_sss_v[l2bidx] = final_sss;
-                }
 
                 // Check if any TBs tossed from this cell due to land
                 if(any_land)
@@ -666,6 +695,28 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "tb_v_aft", "_FillValue", &_fill_value, 1);
     H5LTset_attribute_float(file_id, "tb_v_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "tb_v_aft", "valid_min", &valid_min, 1);
+
+    valid_max = 3; valid_min = -3;
+    H5LTmake_dataset(
+        file_id, "tb_v_bias_adj", 2, dims, H5T_NATIVE_FLOAT, &tb_v_bias_adj[0]);
+    H5LTset_attribute_string(
+        file_id, "tb_v_bias_adj", "long_name",
+        "Brightness temperature bias adjustment for all V-pol looks");
+    H5LTset_attribute_string(file_id, "tb_v_bias_adj", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "tb_v_bias_adj", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "tb_v_bias_adj", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "tb_v_bias_adj", "valid_min", &valid_min, 1);
+
+    valid_max = 3; valid_min = -3;
+    H5LTmake_dataset(
+        file_id, "tb_h_bias_adj", 2, dims, H5T_NATIVE_FLOAT, &tb_h_bias_adj[0]);
+    H5LTset_attribute_string(
+        file_id, "tb_h_bias_adj", "long_name",
+        "Brightness temperature bias adjustment for all H-pol looks");
+    H5LTset_attribute_string(file_id, "tb_h_bias_adj", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "tb_h_bias_adj", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "tb_h_bias_adj", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "tb_h_bias_adj", "valid_min", &valid_min, 1);
 
     valid_max = 3; valid_min = 0;
     H5LTmake_dataset(
@@ -846,6 +897,21 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(
         file_id, "smap_high_spd", "valid_min", &valid_min, 1);
 
+    H5LTmake_dataset(
+        file_id, "smap_spd_bias_adj", 2, dims, H5T_NATIVE_FLOAT,
+        &smap_spd_bias_adj[0]);
+    H5LTset_attribute_string(
+        file_id, "smap_spd_bias_adj", "long_name",
+        "SMAP wind speed using bias adjusted brightness temperatures");
+    H5LTset_attribute_string(
+        file_id, "smap_spd_bias_adj", "units", "Meters/second");
+    H5LTset_attribute_float(
+        file_id, "smap_spd_bias_adj", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_spd_bias_adj", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_spd_bias_adj", "valid_min", &valid_min, 1);
+
     valid_max = 40; valid_min = 0;
     H5LTmake_dataset(file_id, "smap_sss", 2, dims, H5T_NATIVE_FLOAT, &smap_sss[0]);
     H5LTset_attribute_string(
@@ -854,6 +920,21 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "smap_sss", "_FillValue", &_fill_value, 1);
     H5LTset_attribute_float(file_id, "smap_sss", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "smap_sss", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "smap_sss_bias_adj", 2, dims, H5T_NATIVE_FLOAT,
+        &smap_sss_bias_adj[0]);
+    H5LTset_attribute_string(
+        file_id, "smap_sss_bias_adj", "long_name",
+        "SMAP sea surface salinity using bias adjusted brightness temperatures");
+    H5LTset_attribute_string(
+        file_id, "smap_sss_bias_adj", "units", "PSU");
+    H5LTset_attribute_float(
+        file_id, "smap_sss_bias_adj", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_sss_bias_adj", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_sss_bias_adj", "valid_min", &valid_min, 1);
 
     valid_max = 86400; valid_min = 0;
     H5LTmake_dataset(

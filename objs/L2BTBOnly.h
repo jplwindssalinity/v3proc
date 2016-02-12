@@ -37,8 +37,12 @@ public:
     std::vector<float> tb_h_fore;
     std::vector<float> tb_v_aft;
     std::vector<float> tb_v_fore;
+    std::vector<float> tb_v_bias_adj;
+    std::vector<float> tb_h_bias_adj;
     std::vector<float> smap_spd;
     std::vector<float> smap_sss;
+    std::vector<float> smap_spd_bias_adj;
+    std::vector<float> smap_sss_bias_adj;
 
 protected:
     int _Allocate();
