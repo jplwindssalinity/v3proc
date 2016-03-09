@@ -489,6 +489,7 @@ main(
     char*        qsicemap_file   = NULL;
     
     int          compute_land_frac = 0;
+    float        sigma0_adjust = 0;
     
     ConfigList   config_list;
     AttenMap     attenmap;
@@ -510,6 +511,9 @@ main(
       if( sw == "-c" ) {
         ++optind;
         config_file = argv[optind];
+      } else if( sw == "--sigma0-adjust" ) {
+        ++optind;
+        sigma0_adjust = atof(argv[optind]);
       } else {
         fprintf(stderr,"%s: Unknow option\n", command);
         exit(1);
@@ -919,7 +923,7 @@ main(
             }
 
             new_meas->value = pow(
-              10.0,(atten_dB+0.01*double(cell_sigma0[pulse_ind]))/10.0);
+              10.0, (sigma0_adjust + atten_dB + 0.01*double(cell_sigma0[pulse_ind]))/10.0);
 
             // Check for negative sigma-0
             if(sigma0_qual_flag[pulse_ind] & 0x4)
@@ -1074,9 +1078,11 @@ main(
              }
              // Set sigma0 + correct for attenuation if !do_composote
              if( do_composite )
-               new_meas->value   = pow(10.0,0.01*double(slice_sigma0[slice_ind])/10.0);
+               new_meas->value   = pow(
+                 10.0, sigma0_adjust+0.01*double(slice_sigma0[slice_ind])/10.0);
              else
-               new_meas->value   = pow(10.0,(atten_dB+0.01*double(slice_sigma0[slice_ind]))/10.0);
+               new_meas->value   = pow(
+                 10.0,(sigma0_adjust+atten_dB+0.01*double(slice_sigma0[slice_ind]))/10.0);
 
              // Check for negative sigma-0
              if ( slice_qual_flag[pulse_ind] & neg_sig0_flag )  
