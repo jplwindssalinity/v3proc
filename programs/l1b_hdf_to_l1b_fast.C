@@ -1111,9 +1111,11 @@ main(
               if(this_meas->measType == Meas::VV_MEAS_TYPE) ipol = 0;
               if(this_meas->measType == Meas::HH_MEAS_TYPE) ipol = 1;
 
+              int is_asc = (new_meas_spot->scOrbitState.vsat.GetZ() < 0) ? 0 : 1;
+
               float land_expected_value;
               lcres_map->Get(
-                &this_meas->centroid, this_meas->eastAzimuth, ipol,
+                &this_meas->centroid, this_meas->eastAzimuth, ipol, is_asc,
                 &land_expected_value);
 
               // land fraction * expected sigma0 == expected contribution to

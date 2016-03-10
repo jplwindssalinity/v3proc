@@ -6,10 +6,10 @@
 #include "EarthPosition.h"
 
 LCRESMap::LCRESMap() {
-    _sum_dX.resize(2*_nazi);
-    _sum_dX_value.resize(2*_nazi);
+    _sum_dX.resize(4*_nazi);
+    _sum_dX_value.resize(4*_nazi);
 
-    for(int iarray = 0; iarray < 2*_nazi; ++iarray) {
+    for(int iarray = 0; iarray < 4*_nazi; ++iarray) {
         _sum_dX[iarray].resize(_nlon, _nlat);
         _sum_dX_value[iarray].resize(_nlon, _nlat);
     }
@@ -27,7 +27,7 @@ int LCRESMap::Read(const char* filename) {
     if(!ifp)
         return(0);
 
-    for(int iarray = 0; iarray < 2*_nazi; ++iarray) {
+    for(int iarray = 0; iarray < 4*_nazi; ++iarray) {
         int num_entries;
         fread(&num_entries, sizeof(int), 1, ifp);
 
@@ -71,7 +71,7 @@ int LCRESMap::Write(const char* filename) {
     if(!ofp)
         return(0);
 
-    for(int iarray = 0; iarray < 2*_nazi; ++iarray) {
+    for(int iarray = 0; iarray < 4*_nazi; ++iarray) {
 
         std::vector<int> ilon, ilat;
         std::vector<float> sum_dX, sum_dX_value;
@@ -101,7 +101,7 @@ int LCRESMap::Write(const char* filename) {
 }
 
 int LCRESMap::Add(EarthPosition* pos, float east_azi, float dX,
-                  int ipol, float value) {
+                  int ipol, int is_asc, float value) {
 
     // pos is EarthPosition of point with contributions dX to X int.
     // east_azi is east azimuth angle of this obs.
@@ -112,7 +112,8 @@ int LCRESMap::Add(EarthPosition* pos, float east_azi, float dX,
     if(!_GetIdx(pos, east_azi, &iazi, &ilon, &ilat) || ipol<0 || ipol>1) {
         return(0);
     } else {
-        int array_idx = iazi*2 + ipol;
+        int ipart = (is_asc) ? 0 : 1;
+        int array_idx = iazi*4 + ipol*2 + ipart;
 
         _sum_dX[array_idx].coeffRef(ilon, ilat) += dX;
         _sum_dX_value[array_idx].coeffRef(ilon, ilat) += dX * value;
@@ -120,12 +121,14 @@ int LCRESMap::Add(EarthPosition* pos, float east_azi, float dX,
     }
 }
 
-int LCRESMap::Get(EarthPosition* pos, float east_azi, int ipol, float* value) {
+int LCRESMap::Get(
+    EarthPosition* pos, float east_azi, int ipol, int is_asc, float* value) {
 
     int ilon, ilat, iazi;
     _GetIdx(pos, east_azi, &iazi, &ilon, &ilat);
 
-    int array_idx = iazi*2 + ipol;
+    int ipart = (is_asc) ? 0 : 1;
+    int array_idx = iazi*4 + ipol*2 + ipart;
 
     *value = 
         _sum_dX_value[array_idx].coeff(ilon, ilat) /

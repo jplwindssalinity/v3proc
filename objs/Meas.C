@@ -1597,7 +1597,9 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
             int ipol = -1;
             if(meas->measType == Meas::VV_MEAS_TYPE) ipol = 0;
             if(meas->measType == Meas::HH_MEAS_TYPE) ipol = 1;
-            lcres_map->Add(&p, meas->eastAzimuth, dW, ipol, meas->value);
+
+            int is_asc = (scOrbitState.vsat.GetZ() < 0) ? 0 : 1;
+            lcres_map->Add(&p, meas->eastAzimuth, dW, ipol, is_asc, meas->value);
          }
       } // iy loop
     }   // ix loop
