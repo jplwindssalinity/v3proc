@@ -283,16 +283,16 @@ int main(int argc, char* argv[]){
         H5LTread_dataset_float(id, "/Spacecraft_Data/pitch", &pitch[0]);
         H5LTread_dataset_float(id, "/Spacecraft_Data/roll", &roll[0]);
 
-        std::vector<float> lat;
-        std::vector<float> lon;
         std::vector<float> azi;
         std::vector<float> antazi;
-        std::vector<float> inc;
 
         std::vector< std::vector<float> > kp(4);
         std::vector< std::vector<float> > snr(4);
         std::vector< std::vector<float> > xf(4);
         std::vector< std::vector<float> > s0(4);
+        std::vector< std::vector<float> > lat(4);
+        std::vector< std::vector<float> > lon(4);
+        std::vector< std::vector<float> > inc(4);
         std::vector< std::vector<uint16> > s0_flag(4);
 
         int data_size = nframes[ipart]*nfootprints[ipart];
@@ -302,10 +302,6 @@ int main(int argc, char* argv[]){
         if(!do_footprint)
             data_size *= nslices[ipart];
 
-        lat.resize(data_size);
-        lon.resize(data_size);
-        inc.resize(data_size);
-
         // resize arrays for data dimensions
         for(int ipol = 0; ipol < 4; ++ipol) {
             kp[ipol].resize(data_size);
@@ -313,6 +309,9 @@ int main(int argc, char* argv[]){
             xf[ipol].resize(data_size);
             s0[ipol].resize(data_size);
             s0_flag[ipol].resize(data_size);
+            lat[ipol].resize(data_size);
+            lon[ipol].resize(data_size);
+            inc[ipol].resize(data_size);
         }
 
         // These data only have footprint versions
@@ -322,9 +321,20 @@ int main(int argc, char* argv[]){
         // Read in the L1B data depending on do_footprint flag
         // polarization order to match Meas::MeasTypeE (VV, HH, VH, HV)
         if(do_footprint) {
-            read_SDS_h5(id, "/Sigma0_Data/center_lat_h", &lat[0]);
-            read_SDS_h5(id, "/Sigma0_Data/center_lon_h", &lon[0]);
-            read_SDS_h5(id, "/Sigma0_Data/earth_boresight_incidence_h", &inc[0]);
+            read_SDS_h5(id, "/Sigma0_Data/center_lat_v", &lat[0][0]);
+            read_SDS_h5(id, "/Sigma0_Data/center_lat_h", &lat[1][0]);
+            read_SDS_h5(id, "/Sigma0_Data/center_lat_h", &lat[2][0]);
+            read_SDS_h5(id, "/Sigma0_Data/center_lat_v", &lat[3][0]);
+
+            read_SDS_h5(id, "/Sigma0_Data/center_lon_v", &lon[0][0]);
+            read_SDS_h5(id, "/Sigma0_Data/center_lon_h", &lon[1][0]);
+            read_SDS_h5(id, "/Sigma0_Data/center_lon_h", &lon[2][0]);
+            read_SDS_h5(id, "/Sigma0_Data/center_lon_v", &lon[3][0]);
+
+            read_SDS_h5(id, "/Sigma0_Data/earth_boresight_incidence_v", &inc[0][0]);
+            read_SDS_h5(id, "/Sigma0_Data/earth_boresight_incidence_h", &inc[1][0]);
+            read_SDS_h5(id, "/Sigma0_Data/earth_boresight_incidence_h", &inc[2][0]);
+            read_SDS_h5(id, "/Sigma0_Data/earth_boresight_incidence_v", &inc[3][0]);
 
             read_SDS_h5(id, "/Sigma0_Data/kp_vv", &kp[0][0]);
             read_SDS_h5(id, "/Sigma0_Data/kp_hh", &kp[1][0]);
@@ -352,9 +362,20 @@ int main(int argc, char* argv[]){
             read_SDS_h5(id, "/Sigma0_Data/sigma0_qual_flag_hv", &s0_flag[3][0]);
 
         } else {
-            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lat", &lat[0]);
-            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lon", &lon[0]);
-            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_earth_incidence", &inc[0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lat_v", &lat[0][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lat_h", &lat[1][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lat_h", &lat[2][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lat_v", &lat[3][0]);
+
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lon_v", &lon[0][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lon_h", &lon[1][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lon_h", &lon[2][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_lon_v", &lon[3][0]);
+
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_earth_incidence_v", &inc[0][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_earth_incidence_h", &inc[1][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_earth_incidence_h", &inc[2][0]);
+            read_SDS_h5(id, "/Sigma0_Slice_Data/slice_earth_incidence_v", &inc[3][0]);
 
             read_SDS_h5(id, "/Sigma0_Slice_Data/slice_kp_vv", &kp[0][0]);
             read_SDS_h5(id, "/Sigma0_Slice_Data/slice_kp_hh", &kp[1][0]);
@@ -458,13 +479,13 @@ int main(int argc, char* argv[]){
                         new_meas->EnSlice = (
                             new_meas->value*new_meas->XK) /snr[ipol][fp_idx];
 
-                        double tmp_lon = dtr*lon[fp_idx];
-                        double tmp_lat = dtr*lat[fp_idx];
+                        double tmp_lon = dtr*lon[ipol][fp_idx];
+                        double tmp_lat = dtr*lat[ipol][fp_idx];
                         if(tmp_lon<0) tmp_lon += two_pi;
 
                         new_meas->centroid.SetAltLonGDLat(0.0, tmp_lon, tmp_lat);
 
-                        new_meas->incidenceAngle = dtr*inc[fp_idx];
+                        new_meas->incidenceAngle = dtr*inc[ipol][fp_idx];
                         new_meas->eastAzimuth = (450.0*dtr - dtr*azi[fp_idx]);
                         new_meas->scanAngle = dtr * (360-antazi[fp_idx]);
                         new_meas->beamIdx = 0;
@@ -540,14 +561,14 @@ int main(int argc, char* argv[]){
                                 new_meas->value*new_meas->XK) /
                                 snr[ipol][slice_idx];
 
-                            double tmp_lon = dtr*lon[slice_idx];
-                            double tmp_lat = dtr*lat[slice_idx];
+                            double tmp_lon = dtr*lon[ipol][slice_idx];
+                            double tmp_lat = dtr*lat[ipol][slice_idx];
                             if(tmp_lon<0) tmp_lon += two_pi;
 
                             new_meas->centroid.SetAltLonGDLat(
                                 0.0, tmp_lon, tmp_lat);
 
-                            new_meas->incidenceAngle = dtr*inc[slice_idx];
+                            new_meas->incidenceAngle = dtr*inc[ipol][slice_idx];
                             new_meas->eastAzimuth = (450.0*dtr - dtr*azi[fp_idx]);
                             new_meas->scanAngle = dtr * (360-antazi[fp_idx]);
                             new_meas->beamIdx = 0;
@@ -569,7 +590,7 @@ int main(int argc, char* argv[]){
                                 new_meas->eastAzimuth-=two_pi;
 
                             // WAG based on radiometer 3dB fp of 39x47 km
-                            new_meas->azimuth_width = 30;
+                            new_meas->azimuth_width = 25;
                             new_meas->range_width = 6;
 
                             if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0))
