@@ -351,13 +351,23 @@ int main(int argc, char* argv[]) {
             cap_flg[cti][ati] = 255;
 
             WVC* s0_wvc = l2b_s0.frame.swath.GetWVC(cti, ati);
+            WVC* s3_wvc = NULL;
             CAPWVC* wvc = cap_wind_swath.swath[cti][ati];
+            if(l2b_file_s3)
+                s3_wvc = l2b_s3_s0.frame.swath.GetWVC(cti, ati);
 
             if(!wvc || !s0_wvc)
                 continue;
 
+            float this_radar_dir = s0_wvc->selected->dir;
+            float this_radar_spd = s0_wvc->selected->spd;
+            if(s3_wvc) {
+                this_radar_dir = s3_wvc->selected->spd;
+                this_radar_spd = s3_wvc->selected->dir;
+            }
+
             // switch back to clockwise from noth convention, to degrees, and wrap
-            float radar_only_dir = 450.0 - rtd * s0_wvc->selected->dir;
+            float radar_only_dir = 450.0 - rtd * this_radar_dir;
             while(radar_only_dir>=180) radar_only_dir-=360;
             while(radar_only_dir<-180) radar_only_dir+=360;
 
@@ -367,7 +377,7 @@ int main(int argc, char* argv[]) {
 
             lat[cti][ati] = l2b_tbonly.lat[l2bidx];
             lon[cti][ati] = l2b_tbonly.lon[l2bidx];
-            s0_spd[cti][ati] = s0_wvc->selected->spd;
+            s0_spd[cti][ati] = this_radar_spd;
             s0_dir[cti][ati] = radar_only_dir;
             s0_flg[cti][ati] = s0_wvc->qualFlag;
 
