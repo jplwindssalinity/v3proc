@@ -359,11 +359,12 @@ int main(int argc, char* argv[]) {
             if(!wvc || !s0_wvc)
                 continue;
 
-            float this_radar_dir = s0_wvc->selected->dir;
             float this_radar_spd = s0_wvc->selected->spd;
+            float this_radar_dir = s0_wvc->selected->dir;
+
             if(s3_wvc) {
-                this_radar_dir = s3_wvc->selected->spd;
-                this_radar_spd = s3_wvc->selected->dir;
+                this_radar_spd = s3_wvc->selected->spd;
+                this_radar_dir = s3_wvc->selected->dir;
             }
 
             // switch back to clockwise from noth convention, to degrees, and wrap
