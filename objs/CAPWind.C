@@ -51,7 +51,10 @@ int CAPWVC::GetBestSolution(
     float dazi = (fazi - floor(fazi))/azi_spacing;
 
     int iazi0 = (int)floor(fazi);
+    if(iazi0 == n_azi) iazi0 = 0;
+
     int iazi1 = iazi0 + 1;
+    if(iazi1 == n_azi) iazi1 = 0;
 
     *spd = best_spd[iazi0]*(1-dazi) + dazi*best_spd[iazi1];
     *sss = best_sss[iazi0]*(1-dazi) + dazi*best_sss[iazi1];
