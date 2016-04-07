@@ -69,7 +69,8 @@ int CAPWindSwath::ThreshNudge(float thres) {
     return(1);
 }
 
-int CAPWindSwath::MedianFilter(int half_window, int max_passes, int start_pass){
+int CAPWindSwath::MedianFilter(
+    int half_window, int max_passes, int start_pass, int skip_dirth_pass){
 
     CAPWindVectorPlus*** new_selected = (CAPWindVectorPlus***)make_array(
         sizeof(CAPWindVectorPlus*), 2, _crossTrackBins, _alongTrackBins);
@@ -92,6 +93,9 @@ int CAPWindSwath::MedianFilter(int half_window, int max_passes, int start_pass){
 
         // Do DIR on last pass
         int special = (ipass == 2) ? 1 : 0;
+
+        if(special && skip_dirth_pass)
+            continue;
 
         for(int cti = 0; cti < _crossTrackBins; cti++) {
             for (int ati = 0; ati < _alongTrackBins; ati++) {
