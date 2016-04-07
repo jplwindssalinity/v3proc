@@ -195,7 +195,7 @@ int main(int argc, char* argv[]) {
     std::vector<float> anc_sss(l2b_size), anc_sst(l2b_size), anc_swh(l2b_size);
     std::vector<float> smap_sss(l2b_size), smap_spd(l2b_size);
     std::vector<float> smap_spdonly(l2b_size), smap_high_spd(l2b_size);
-    std::vector<float> smap_high_dir(l2b_size);
+    std::vector<float> smap_high_dir(l2b_size), smap_high_dir_smooth(l2b_size);
     std::vector<float> smap_sss_bias_adj(l2b_size), smap_spd_bias_adj(l2b_size);
     std::vector<uint16> quality_flag(l2b_size);
     std::vector<float> row_time(nati);
@@ -476,7 +476,7 @@ int main(int argc, char* argv[]) {
                 // Do vector wind processing
                 CAPWVC* wvc = new CAPWVC();
 
-                cap_gmf.CAPGMF::BuildSolutionCurvesTwoStep(
+                cap_gmf.CAPGMF::BuildSolutionCurvesSpdOnly(
                     &tb_ml_avg, NULL, anc_spd[l2bidx], anc_sss[l2bidx],
                     anc_spd[l2bidx], this_anc_dir, anc_sst[l2bidx],
                     anc_swh[l2bidx], 0, 100, 0, 1, wvc);
@@ -566,8 +566,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    cap_wind_swath.MedianFilter(3, 200, 0, 0);
-
+    cap_wind_swath.MedianFilter(3, 200, 0, 1);
     for(int ati=0; ati<nati; ++ati) {
         for(int cti=0; cti<ncti; ++cti) {
 
@@ -581,6 +580,22 @@ int main(int argc, char* argv[]) {
             smap_high_dir[l2bidx] = 450.0 - rtd * wvc->selected->dir;
             while(smap_high_dir[l2bidx]>=180) smap_high_dir[l2bidx]-=360;
             while(smap_high_dir[l2bidx]<-180) smap_high_dir[l2bidx]+=360;
+        }
+    }
+
+    cap_wind_swath.MedianFilter(3, 200, 2, 0);
+    for(int ati=0; ati<nati; ++ati) {
+        for(int cti=0; cti<ncti; ++cti) {
+
+            int l2bidx = ati + nati*cti;
+            CAPWVC* wvc = cap_wind_swath.swath[cti][ati];
+
+            if(!wvc)
+                continue;
+
+            smap_high_dir_smooth[l2bidx] = 450.0 - rtd * wvc->selected->dir;
+            while(smap_high_dir_smooth[l2bidx]>=180) smap_high_dir_smooth[l2bidx]-=360;
+            while(smap_high_dir_smooth[l2bidx]<-180) smap_high_dir_smooth[l2bidx]+=360;
         }
     }
 
@@ -902,6 +917,21 @@ int main(int argc, char* argv[]) {
         file_id, "smap_high_dir", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "smap_high_dir", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "smap_high_dir_smooth", 2, dims, H5T_NATIVE_FLOAT,
+        &smap_high_dir_smooth[0]);
+    H5LTset_attribute_string(
+        file_id, "smap_high_dir_smooth", "long_name",
+        "SMAP wind direction using ancillary SSS and DIRTH smoothing");
+    H5LTset_attribute_string(
+        file_id, "smap_high_dir_smooth", "units", "Degrees");
+    H5LTset_attribute_float(
+        file_id, "smap_high_dir_smooth", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_high_dir_smooth", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_high_dir_smooth", "valid_min", &valid_min, 1);
 
     valid_max = 40; valid_min = 0;
     H5LTmake_dataset(file_id, "anc_sss", 2, dims, H5T_NATIVE_FLOAT, &anc_sss[0]);
