@@ -107,6 +107,12 @@ public:
         float anc_rr, float anc_spd_std_prior, float active_weight,
         float passive_weight, CAPWVC* cap_wvc);
 
+    int BuildSolutionCurvesSpdOnly(
+        MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_sss,
+        float anc_spd, float anc_dir, float anc_sst, float anc_swh,
+        float anc_rr, float anc_spd_std_prior, float active_weight,
+        float passive_weight, CAPWVC* cap_wvc);
+
     int BuildSolutionCurvesTwoStep(
         MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_sss,
         float anc_spd, float anc_dir, float anc_sst, float anc_swh,

@@ -151,6 +151,37 @@ CAPGMF::~CAPGMF() {
     return;
 }
 
+int CAPGMF::BuildSolutionCurvesSpdOnly(
+    MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_sss,
+    float anc_spd, float anc_dir, float anc_sst, float anc_swh, float anc_rr,
+    float anc_spd_std_prior, float active_weight, float passive_weight,
+    CAPWVC* cap_wvc) {
+
+    float start_speed = init_spd;
+    float start_sss = init_sss;
+
+    // best_spd, best_sss, best_obj are pointers to float[360] arrays.
+    for(int iazi = 0; iazi < cap_wvc->n_azi; ++iazi) {
+        float azi_spacing = 360 / (float)cap_wvc->n_azi;
+        float this_angle = azi_spacing * (float)iazi * dtr;
+        float spd, dir, sss, obj;
+
+        Retrieve(
+            tb_ml, s0_ml, start_speed, this_angle, init_sss, anc_spd, anc_dir,
+            anc_sst, anc_swh, anc_rr, anc_spd_std_prior, active_weight,
+            passive_weight, RETRIEVE_SPEED_ONLY, &spd, &dir, &sss, &obj);
+
+        cap_wvc->best_spd[iazi] = spd;
+        cap_wvc->best_sss[iazi] = init_sss;
+
+        // Swap sign on objective function value
+        cap_wvc->best_obj[iazi] = -obj;
+
+    }
+    return(1);
+}
+
+
 int CAPGMF::BuildSolutionCurvesTwoStep(
     MeasList* tb_ml, MeasList* s0_ml, float init_spd, float init_sss,
     float anc_spd, float anc_dir, float anc_sst, float anc_swh, float anc_rr,
