@@ -195,9 +195,11 @@ int main(int argc, char* argv[]) {
     std::vector<float> anc_sss(l2b_size), anc_sst(l2b_size), anc_swh(l2b_size);
     std::vector<float> smap_sss(l2b_size), smap_spd(l2b_size);
     std::vector<float> smap_spdonly(l2b_size), smap_high_spd(l2b_size);
+    std::vector<float> smap_high_dir(l2b_size);
     std::vector<float> smap_sss_bias_adj(l2b_size), smap_spd_bias_adj(l2b_size);
     std::vector<uint16> quality_flag(l2b_size);
     std::vector<float> row_time(nati);
+    std::vector<uint8> num_ambiguities(l2b_size);
 
     char code_b_t_day_start[CODE_B_TIME_LENGTH] = "1970-001T00:00:00.000";
     strncpy(code_b_t_day_start, config_list.Get("REV_START_TIME"), 8);
@@ -215,6 +217,9 @@ int main(int argc, char* argv[]) {
     double t_start = etime_start.GetTime();
     double t_stop = etime_stop.GetTime();
     double t_day_start = etime_day_start.GetTime();
+
+    CAPWindSwath cap_wind_swath;
+    cap_wind_swath.Allocate(ncti, nati);
 
     for(int ati=0; ati<nati; ++ati) {
 
@@ -271,6 +276,7 @@ int main(int argc, char* argv[]) {
             quality_flag[l2bidx] = 65535;
             smap_spdonly[l2bidx] = FILL_VALUE;
             smap_high_spd[l2bidx] = FILL_VALUE;
+            smap_high_dir[l2bidx] = FILL_VALUE;
 
             // Check for valid measList at this WVC
             if(!l2a_tb_swath[cti][ati])
@@ -436,6 +442,8 @@ int main(int argc, char* argv[]) {
             anc_sss[l2bidx] = cap_anc_sss.data[0][anc_ati][anc_cti];
             anc_swh[l2bidx] = cap_anc_swh.data[0][anc_ati][anc_cti];
 
+            float this_anc_dir = gs_deg_to_pe_rad(anc_dir[l2bidx]);
+
             // Check validity of ancillary data
             if(anc_swh[l2bidx]>10)
                 anc_swh[l2bidx] = FILL_VALUE;
@@ -446,8 +454,8 @@ int main(int argc, char* argv[]) {
                 // Combined SSS and SPD
                 float anc_spd_std_prior = 1.5;
                 cap_gmf.Retrieve(
-                    &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
-                    anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
+                    &tb_ml_avg, NULL, anc_spd[l2bidx], this_anc_dir,
+                    anc_sss[l2bidx], anc_spd[l2bidx], this_anc_dir,
                     anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
                     1, CAPGMF::RETRIEVE_SPEED_SALINITY,
                     &final_spd, &final_dir, &final_sss, &final_obj);
@@ -457,23 +465,32 @@ int main(int argc, char* argv[]) {
 
                 anc_spd_std_prior = 100;
                 cap_gmf.Retrieve(
-                    &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
-                    smap_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
+                    &tb_ml_avg, NULL, anc_spd[l2bidx], this_anc_dir,
+                    smap_sss[l2bidx], anc_spd[l2bidx], this_anc_dir,
                     anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
                     1, CAPGMF::RETRIEVE_SPEED_ONLY,
                     &final_spd, &final_dir, &final_sss, &final_obj);
 
                 smap_spdonly[l2bidx] = final_spd;
 
-                anc_spd_std_prior = 100;
-                cap_gmf.Retrieve(
-                    &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
-                    anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
-                    anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
-                    1, CAPGMF::RETRIEVE_SPEED_ONLY,
-                    &final_spd, &final_dir, &final_sss, &final_obj);
+                // Do vector wind processing
+                CAPWVC* wvc = new CAPWVC();
 
-                smap_high_spd[l2bidx] = final_spd;
+                cap_gmf.CAPGMF::BuildSolutionCurvesTwoStep(
+                    &tb_ml_avg, NULL, anc_spd[l2bidx], anc_sss[l2bidx],
+                    anc_spd[l2bidx], this_anc_dir, anc_sst[l2bidx],
+                    anc_swh[l2bidx], 0, 100, 0, 1, wvc);
+
+                wvc->BuildSolutions();
+
+                num_ambiguities[l2bidx] = wvc->ambiguities.NodeCount();
+
+                if(wvc->ambiguities.NodeCount() > 0) {
+                    cap_wind_swath.Add(cti, ati, wvc);
+                    wvc->selected = wvc->GetNearestAmbig(this_anc_dir);
+                } else {
+                    delete wvc;
+                }
 
                 // Retreive salinity and speed again using bias adjusted TB
                 if(l2b_tb_bias_adj_file) {
@@ -502,8 +519,8 @@ int main(int argc, char* argv[]) {
                         // Combined SSS and SPD
                         float anc_spd_std_prior = 1.5;
                         cap_gmf.Retrieve(
-                            &tb_ml_avg, NULL, anc_spd[l2bidx], anc_dir[l2bidx],
-                            anc_sss[l2bidx], anc_spd[l2bidx], anc_dir[l2bidx],
+                            &tb_ml_avg, NULL, anc_spd[l2bidx], this_anc_dir,
+                            anc_sss[l2bidx], anc_spd[l2bidx], this_anc_dir,
                             anc_sst[l2bidx], anc_swh[l2bidx], 0, 
                             anc_spd_std_prior, 0, 1, 
                             CAPGMF::RETRIEVE_SPEED_SALINITY, &final_spd,
@@ -546,6 +563,24 @@ int main(int argc, char* argv[]) {
                     quality_flag[l2bidx] |= QUAL_FLAG_USEABLE;
 
             }
+        }
+    }
+
+    cap_wind_swath.MedianFilter(3, 200, 0, 0);
+
+    for(int ati=0; ati<nati; ++ati) {
+        for(int cti=0; cti<ncti; ++cti) {
+
+            int l2bidx = ati + nati*cti;
+            CAPWVC* wvc = cap_wind_swath.swath[cti][ati];
+
+            if(!wvc)
+                continue;
+
+            smap_high_spd[l2bidx] = wvc->selected->spd;
+            smap_high_dir[l2bidx] = 450.0 - rtd * wvc->selected->dir;
+            while(smap_high_dir[l2bidx]>=180) smap_high_dir[l2bidx]-=360;
+            while(smap_high_dir[l2bidx]<-180) smap_high_dir[l2bidx]+=360;
         }
     }
 
@@ -788,6 +823,15 @@ int main(int argc, char* argv[]) {
         "Number of L1B TBs aggregated into V-pol aft look");
     H5LTset_attribute_uchar(file_id, "n_v_aft", "_FillValue", &uchar_fill_value, 1);
 
+    H5LTmake_dataset(
+        file_id, "num_ambiguities", 2, dims, H5T_NATIVE_UCHAR,
+        &num_ambiguities[0]);
+    H5LTset_attribute_string(
+        file_id, "num_ambiguities", "long_name",
+        "Number of wind vector ambiguties");
+    H5LTset_attribute_uchar(
+        file_id, "num_ambiguities", "_FillValue", &uchar_fill_value, 1);
+
     valid_max = 90; valid_min = 0;
     H5LTmake_dataset(
         file_id, "inc_fore", 2, dims, H5T_NATIVE_FLOAT, &inc_fore[0]);
@@ -844,6 +888,20 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "anc_dir", "_FillValue", &_fill_value, 1);
     H5LTset_attribute_float(file_id, "anc_dir", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "anc_dir", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "smap_high_dir", 2, dims, H5T_NATIVE_FLOAT, &smap_high_dir[0]);
+    H5LTset_attribute_string(
+        file_id, "smap_high_dir", "long_name",
+        "SMAP wind direction using ancillary SSS");
+    H5LTset_attribute_string(
+        file_id, "smap_high_dir", "units", "Degrees");
+    H5LTset_attribute_float(
+        file_id, "smap_high_dir", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_high_dir", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_high_dir", "valid_min", &valid_min, 1);
 
     valid_max = 40; valid_min = 0;
     H5LTmake_dataset(file_id, "anc_sss", 2, dims, H5T_NATIVE_FLOAT, &anc_sss[0]);
