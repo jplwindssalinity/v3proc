@@ -884,7 +884,7 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "azi_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "azi_aft", "valid_min", &valid_min, 1);
 
-    valid_max = 50; valid_min = 0;
+    valid_max = 100; valid_min = 0;
     H5LTmake_dataset(file_id, "anc_spd", 2, dims, H5T_NATIVE_FLOAT, &anc_spd[0]);
     H5LTset_attribute_string(
         file_id, "anc_spd", "long_name",
@@ -962,7 +962,7 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "anc_swh", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "anc_swh", "valid_min", &valid_min, 1);
 
-    valid_max = 50; valid_min = 0;
+    valid_max = 100; valid_min = 0;
     H5LTmake_dataset(file_id, "smap_spd", 2, dims, H5T_NATIVE_FLOAT, &smap_spd[0]);
     H5LTset_attribute_string(
         file_id, "smap_spd", "long_name", "SMAP wind speed");
