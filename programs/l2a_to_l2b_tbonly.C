@@ -577,8 +577,8 @@ int main(int argc, char* argv[]) {
         }
     }
 
-//     cap_wind_swath.MedianFilter(3, 200, 0, 1);
-    cap_wind_swath.MedianFilterTBWinds(3, 200, 0, 1); 
+    cap_wind_swath.MedianFilter(3, 200, 0, 1);
+//     cap_wind_swath.MedianFilterTBWinds(3, 200, 0, 1); 
     for(int ati=0; ati<nati; ++ati) {
         for(int cti=0; cti<ncti; ++cti) {
 
@@ -595,8 +595,8 @@ int main(int argc, char* argv[]) {
         }
     }
 
-//     cap_wind_swath.MedianFilter(3, 200, 2, 0);
-    cap_wind_swath.MedianFilterTBWinds(3, 200, 4, 0);
+    cap_wind_swath.MedianFilter(3, 200, 2, 0);
+//     cap_wind_swath.MedianFilterTBWinds(3, 200, 4, 0);
     for(int ati=0; ati<nati; ++ati) {
         for(int cti=0; cti<ncti; ++cti) {
 
