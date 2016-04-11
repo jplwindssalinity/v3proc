@@ -483,11 +483,22 @@ int main(int argc, char* argv[]) {
 
                 wvc->BuildSolutions();
 
+                if(any_land)
+                    wvc->s0_flag |= L2B_QUAL_FLAG_LAND;
+
+                if(any_ice)
+                     wvc->s0_flag |= L2B_QUAL_FLAG_ICE;
+
                 num_ambiguities[l2bidx] = wvc->ambiguities.NodeCount();
 
                 if(wvc->ambiguities.NodeCount() > 0) {
                     cap_wind_swath.Add(cti, ati, wvc);
                     wvc->selected = wvc->GetNearestAmbig(this_anc_dir);
+
+                    WindVectorPlus* nudgeWV = new WindVectorPlus();
+                    nudgeWV->spd = anc_spd[l2bidx];
+                    nudgeWV->dir = this_anc_dir;
+                    wvc->nudgeWV = nudgeWV;
                 } else {
                     delete wvc;
                 }
@@ -566,7 +577,8 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    cap_wind_swath.MedianFilter(3, 200, 0, 1);
+//     cap_wind_swath.MedianFilter(3, 200, 0, 1);
+    cap_wind_swath.MedianFilterTBWinds(3, 200, 0, 1); 
     for(int ati=0; ati<nati; ++ati) {
         for(int cti=0; cti<ncti; ++cti) {
 
@@ -583,7 +595,8 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    cap_wind_swath.MedianFilter(3, 200, 2, 0);
+//     cap_wind_swath.MedianFilter(3, 200, 2, 0);
+    cap_wind_swath.MedianFilterTBWinds(3, 200, 4, 0);
     for(int ati=0; ati<nati; ++ati) {
         for(int cti=0; cti<ncti; ++cti) {
 

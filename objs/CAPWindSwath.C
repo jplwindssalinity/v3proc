@@ -69,6 +69,148 @@ int CAPWindSwath::ThreshNudge(float thres) {
     return(1);
 }
 
+int CAPWindSwath::MedianFilterTBWinds(
+    int half_window, int max_passes, int start_pass, int skip_dirth_pass){
+
+    CAPWindVectorPlus*** new_selected = (CAPWindVectorPlus***)make_array(
+        sizeof(CAPWindVectorPlus*), 2, _crossTrackBins, _alongTrackBins);
+
+    char** change = (char**)make_array(
+        sizeof(char), 2, _crossTrackBins, _alongTrackBins);
+
+    char** filter = (char**)make_array(
+        sizeof(char), 2, _crossTrackBins, _alongTrackBins);
+
+    char** influence = (char**)make_array(
+        sizeof(char), 2, _crossTrackBins, _alongTrackBins);
+
+    int total_passes = 0;
+
+    // Pass 0: Only filter high-winds, non-land/ice
+    // Pass 1: Fix high-winds, filter low-winds non-land/ice
+    // Pass 2: Filter low+high winds non-land/ice
+    // Pass 3: Fix all non-land/ice, filter land/ice
+    // Pass 4: DIR processing
+    for(int ipass = start_pass; ipass < 5; ++ipass) {
+
+        // Do DIR on last pass
+        int special = (ipass == 4) ? 1 : 0;
+
+        if(special && skip_dirth_pass)
+            continue;
+
+        for(int cti = 0; cti < _crossTrackBins; cti++) {
+            for (int ati = 0; ati < _alongTrackBins; ati++) {
+                CAPWVC* wvc = swath[cti][ati];
+
+                if(!wvc) {
+                    change[cti][ati] = 0;
+                    influence[cti][ati] = 0;
+                    continue;
+                }
+
+                int is_landice = 
+                    wvc->s0_flag & (L2B_QUAL_FLAG_LAND|L2B_QUAL_FLAG_ICE);
+
+                int is_low_winds = wvc->nudgeWV->spd < 12.5;
+
+                if(is_landice) {
+                    if(ipass < 3) {
+                        change[cti][ati] = 0;
+                        filter[cti][ati] = 0;
+                        influence[cti][ati] = 0;
+
+                    } else if(ipass == 3) {
+                        change[cti][ati] = 1;
+                        filter[cti][ati] = 1;
+                        influence[cti][ati] = 1;
+
+                    } else {
+                        change[cti][ati] = 1;
+                        filter[cti][ati] = 1;
+                        influence[cti][ati] = 0;
+                    }
+
+                } else {
+
+                    if(is_low_winds) {
+                        if(ipass == 0) {
+                            change[cti][ati] = 0;
+                            filter[cti][ati] = 0;
+                            influence[cti][ati] = 0;
+
+                        } else if(ipass == 1 || ipass == 2) {
+                            change[cti][ati] = 1;
+                            filter[cti][ati] = 1;
+                            influence[cti][ati] = 1;
+
+                        } else if(ipass == 3) {
+                            change[cti][ati] = 0;
+                            filter[cti][ati] = 0;
+                            influence[cti][ati] = 1;
+
+                        } else if(ipass == 4) {
+                            change[cti][ati] = 1;
+                            filter[cti][ati] = 1;
+                            influence[cti][ati] = 1;
+
+                        }
+
+                    } else {
+                        if(ipass == 0) {
+                            change[cti][ati] = 1;
+                            filter[cti][ati] = 1;
+                            influence[cti][ati] = 1;
+
+                        } else if(ipass == 1) {
+                            change[cti][ati] = 0;
+                            filter[cti][ati] = 0;
+                            influence[cti][ati] = 1;
+
+                        } else if(ipass == 2) {
+                            change[cti][ati] = 1;
+                            filter[cti][ati] = 1;
+                            influence[cti][ati] = 1;
+
+                        } else if(ipass == 3) {
+                            change[cti][ati] = 0;
+                            filter[cti][ati] = 0;
+                            influence[cti][ati] = 1;
+
+                        } else if(ipass == 4) {
+                            change[cti][ati] = 1;
+                            filter[cti][ati] = 1;
+                            influence[cti][ati] = 1;
+
+                        }
+                    }
+                }
+            }
+        }
+
+        // Apply the median filter until done
+        int pass = 0;
+        while (pass < max_passes) {
+            int flips = MedianFilterPass(
+                half_window, new_selected, change, filter, influence, special);
+
+            if (flips == 0)
+                break;
+
+            pass++;
+        }
+        printf("On medfilt pass: %d; passes: %d\n", ipass, pass);
+        total_passes += pass;
+    }
+
+    free_array(new_selected, 2, _crossTrackBins, _alongTrackBins);
+    free_array(change, 2, _crossTrackBins, _alongTrackBins);
+    free_array(filter, 2, _crossTrackBins, _alongTrackBins);
+    free_array(influence, 2, _crossTrackBins, _alongTrackBins);
+
+    return(total_passes);
+}
+
 int CAPWindSwath::MedianFilter(
     int half_window, int max_passes, int start_pass, int skip_dirth_pass){
 
