@@ -200,6 +200,8 @@ int main(int argc, char* argv[]) {
     std::vector<uint16> quality_flag(l2b_size);
     std::vector<float> row_time(nati);
     std::vector<uint8> num_ambiguities(l2b_size);
+    std::vector<float> smap_ambiguity_spd(l2b_size*4);
+    std::vector<float> smap_ambiguity_dir(l2b_size*4);
 
     char code_b_t_day_start[CODE_B_TIME_LENGTH] = "1970-001T00:00:00.000";
     strncpy(code_b_t_day_start, config_list.Get("REV_START_TIME"), 8);
@@ -277,6 +279,12 @@ int main(int argc, char* argv[]) {
             smap_spdonly[l2bidx] = FILL_VALUE;
             smap_high_spd[l2bidx] = FILL_VALUE;
             smap_high_dir[l2bidx] = FILL_VALUE;
+
+            for(int i_amb = 0; i_amb < 4; ++i_amb) {
+                int ambidx = i_amb + 4*l2bidx;
+                smap_ambiguity_spd[ambidx] = FILL_VALUE;
+                smap_ambiguity_dir[ambidx] = FILL_VALUE;
+            }
 
             // Check for valid measList at this WVC
             if(!l2a_tb_swath[cti][ati])
@@ -503,6 +511,22 @@ int main(int argc, char* argv[]) {
                     delete wvc;
                 }
 
+                // set ambiguity_spd, ambiguity_dir arrays
+                int j_amb = 0;
+                for(CAPWindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+                    wvp = wvc->ambiguities.GetNext()){
+
+                    int ambidx = j_amb + 4*l2bidx;
+                    smap_ambiguity_spd[ambidx] = wvp->spd;
+
+                    float amb_dir = 450.0 - rtd * wvp->dir;
+                    while(amb_dir>=180) amb_dir -= 360;
+                    while(amb_dir<-180) amb_dir += 360;
+
+                    smap_ambiguity_dir[ambidx] = amb_dir;
+                    ++j_amb;
+                }
+
                 // Retreive salinity and speed again using bias adjusted TB
                 if(l2b_tb_bias_adj_file) {
                     float this_tb_v_bias_adj = 
@@ -699,6 +723,7 @@ int main(int argc, char* argv[]) {
     float valid_max, valid_min;
 
     hsize_t dims[2] = {ncti, nati};
+    hsize_t dims_amb[3] = {ncti, nati, 4};
 
     hsize_t ati_dim = nati;
 
@@ -946,6 +971,21 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(
         file_id, "smap_high_dir_smooth", "valid_min", &valid_min, 1);
 
+    H5LTmake_dataset(
+        file_id, "smap_ambiguity_dir", 3, dims_amb, H5T_NATIVE_FLOAT,
+        &smap_ambiguity_dir[0]);
+    H5LTset_attribute_string(
+        file_id, "smap_ambiguity_dir", "long_name",
+        "SMAP ambiguity wind direction using ancillary SSS");
+    H5LTset_attribute_string(file_id, "smap_ambiguity_dir", "units", "Degrees");
+    H5LTset_attribute_float(
+        file_id, "smap_ambiguity_dir", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_ambiguity_dir", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_ambiguity_dir", "valid_min", &valid_min, 1);
+
+
     valid_max = 40; valid_min = 0;
     H5LTmake_dataset(file_id, "anc_sss", 2, dims, H5T_NATIVE_FLOAT, &anc_sss[0]);
     H5LTset_attribute_string(
@@ -1012,6 +1052,22 @@ int main(int argc, char* argv[]) {
         file_id, "smap_spd_bias_adj", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "smap_spd_bias_adj", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "smap_ambiguity_spd", 3, dims_amb, H5T_NATIVE_FLOAT,
+        &smap_ambiguity_spd[0]);
+    H5LTset_attribute_string(
+        file_id, "smap_ambiguity_spd", "long_name",
+        "SMAP ambiguity wind speed using ancillary SSS");
+    H5LTset_attribute_string(
+        file_id, "smap_ambiguity_spd", "units", "Meters/second");
+    H5LTset_attribute_float(
+        file_id, "smap_ambiguity_spd", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_ambiguity_spd", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_ambiguity_spd", "valid_min", &valid_min, 1);
+
 
     valid_max = 40; valid_min = 0;
     H5LTmake_dataset(file_id, "smap_sss", 2, dims, H5T_NATIVE_FLOAT, &smap_sss[0]);
