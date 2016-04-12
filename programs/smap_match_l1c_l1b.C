@@ -116,18 +116,21 @@ int main(int argc, char* argv[]){
 
     for(int l1c_idx = 0; l1c_idx < l1c_size; ++l1c_idx) {
 
+        uint16_t bit_mask_fore = 0x5024;
+        uint16_t bit_mask_aft = 0xa088;
+
         l1c_useable_fore[l1c_idx] = 1;
         l1c_useable_aft[l1c_idx] = 1;
 
         // Check L1C quality flag bits
-        if((l1c_hh_flg[l1c_idx] & 0x1) || 
-           (l1c_vv_flg[l1c_idx] & 0x1) ||
-           (l1c_xpol_flg[l1c_idx] & 0x1))
+        if((l1c_hh_flg[l1c_idx] & bit_mask_fore) || 
+           (l1c_vv_flg[l1c_idx] & bit_mask_fore) ||
+           (l1c_xpol_flg[l1c_idx] & bit_mask_fore))
             l1c_useable_fore[l1c_idx] = 0;
 
-        if((l1c_hh_flg[l1c_idx] & 0x2) || 
-           (l1c_vv_flg[l1c_idx] & 0x2) ||
-           (l1c_xpol_flg[l1c_idx] & 0x2))
+        if((l1c_hh_flg[l1c_idx] & bit_mask_aft) || 
+           (l1c_vv_flg[l1c_idx] & bit_mask_aft) ||
+           (l1c_xpol_flg[l1c_idx] & bit_mask_aft))
             l1c_useable_aft[l1c_idx] = 0;
     
     }
