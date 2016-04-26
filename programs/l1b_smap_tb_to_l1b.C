@@ -345,17 +345,18 @@ int main(int argc, char* argv[]){
                     new_meas->azimuth_width = 40;
                     new_meas->range_width = 40;
 
+                    // Set land fraction
+                    new_meas->bandwidth = this_land_frac;
+
                     double distance;
                     coast_dist.Get(tmp_lon, tmp_lat, &distance);
 
-                    if(distance < 45)
+                    if(distance < 45 || this_land_frac > 0.01)
                         new_meas->landFlag += 1; // bit 0 for land
 
                     if( qs_icemap.IsIce(tmp_lon, tmp_lat, 0) )
                         new_meas->landFlag += 2; // bit 1 for ice
 
-                    // Set land fraction
-                    new_meas->bandwidth = this_land_frac;
 
                     // Need to figure out the KP (a, b, c) terms.
                     new_meas->A = pow(nedt[ipol][fp_idx], 2);
