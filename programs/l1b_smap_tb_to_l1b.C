@@ -199,6 +199,7 @@ int main(int argc, char* argv[]){
         std::vector<float> antazi;
         std::vector<float> inc;
         std::vector<float> solar_spec_theta;
+        std::vector<float> surface_water_fraction_mb;
 
         std::vector< std::vector<float> > tb(2);
         std::vector< std::vector<float> > nedt(2);
@@ -212,6 +213,7 @@ int main(int argc, char* argv[]){
         lon.resize(data_size);
         inc.resize(data_size);
         solar_spec_theta.resize(data_size);
+        surface_water_fraction_mb.resize(data_size);
 
         // resize arrays for data dimensions
         for(int ipol = 0; ipol < 2; ++ipol) {
@@ -230,6 +232,9 @@ int main(int argc, char* argv[]){
         read_SDS_h5(
             id, "/Brightness_Temperature/solar_specular_theta",
             &solar_spec_theta[0]);
+        read_SDS_h5(
+            id, "/Brightness_Temperature/surface_water_fraction_mb",
+            &surface_water_fraction_mb[0]);
 
         read_SDS_h5(id, "/Brightness_Temperature/tb_v", &tb[0][0]);
         read_SDS_h5(id, "/Brightness_Temperature/tb_h", &tb[1][0]);
@@ -282,6 +287,8 @@ int main(int argc, char* argv[]){
 
                 if(solar_spec_theta[fp_idx] < 25)
                     continue;
+
+                float this_land_frac = 1 - surface_water_fraction_mb[fp_idx];
 
                 for(int ipol=0; ipol<2; ++ipol){
 
@@ -346,6 +353,9 @@ int main(int argc, char* argv[]){
 
                     if( qs_icemap.IsIce(tmp_lon, tmp_lat, 0) )
                         new_meas->landFlag += 2; // bit 1 for ice
+
+                    // Set land fraction
+                    new_meas->bandwidth = this_land_frac;
 
                     // Need to figure out the KP (a, b, c) terms.
                     new_meas->A = pow(nedt[ipol][fp_idx], 2);
