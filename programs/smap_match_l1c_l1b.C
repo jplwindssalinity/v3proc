@@ -82,14 +82,20 @@ int main(int argc, char* argv[]){
 
     std::vector<float> l1c_hh_fore(l1c_size);
     std::vector<float> l1c_hh_aft(l1c_size);
+    std::vector<float> cell_kp_hh_fore(l1c_size);
+    std::vector<float> cell_kp_hh_aft(l1c_size);
     std::vector<uint16_t> l1c_hh_flg(l1c_size);
     
     std::vector<float> l1c_vv_fore(l1c_size);
     std::vector<float> l1c_vv_aft(l1c_size);
+    std::vector<float> cell_kp_vv_fore(l1c_size);
+    std::vector<float> cell_kp_vv_aft(l1c_size);
     std::vector<uint16_t> l1c_vv_flg(l1c_size);
 
     std::vector<float> l1c_xpol_fore(l1c_size);
     std::vector<float> l1c_xpol_aft(l1c_size);
+    std::vector<float> cell_kp_xpol_fore(l1c_size);
+    std::vector<float> cell_kp_xpol_aft(l1c_size);
     std::vector<uint16_t> l1c_xpol_flg(l1c_size);
 
     read_SDS_h5(l1c_id, "/Sigma0_Data/cell_lat", &l1c_lat[0]);
@@ -97,14 +103,20 @@ int main(int argc, char* argv[]){
 
     read_SDS_h5(l1c_id, "/Sigma0_Data/cell_sigma0_hh_fore", &l1c_hh_fore[0]);
     read_SDS_h5(l1c_id, "/Sigma0_Data/cell_sigma0_hh_aft", &l1c_hh_aft[0]);
+    read_SDS_h5(l1c_id, "/Sigma0_Data/cell_kp_hh_fore", &cell_kp_hh_fore[0]);
+    read_SDS_h5(l1c_id, "/Sigma0_Data/cell_kp_hh_aft", &cell_kp_hh_aft[0]);
     read_SDS_h5(l1c_id, "/Sigma0_Data/cell_sigma0_qual_flag_hh", &l1c_hh_flg[0]);
 
     read_SDS_h5(l1c_id, "/Sigma0_Data/cell_sigma0_vv_fore", &l1c_vv_fore[0]);
     read_SDS_h5(l1c_id, "/Sigma0_Data/cell_sigma0_vv_aft", &l1c_vv_aft[0]);
+    read_SDS_h5(l1c_id, "/Sigma0_Data/cell_kp_vv_fore", &cell_kp_vv_fore[0]);
+    read_SDS_h5(l1c_id, "/Sigma0_Data/cell_kp_vv_aft", &cell_kp_vv_aft[0]);
     read_SDS_h5(l1c_id, "/Sigma0_Data/cell_sigma0_qual_flag_vv", &l1c_vv_flg[0]);
 
     read_SDS_h5(l1c_id, "/Sigma0_Data/cell_sigma0_xpol_fore", &l1c_xpol_fore[0]);
     read_SDS_h5(l1c_id, "/Sigma0_Data/cell_sigma0_xpol_aft", &l1c_xpol_aft[0]);
+    read_SDS_h5(l1c_id, "/Sigma0_Data/cell_kp_xpol_fore", &cell_kp_xpol_fore[0]);
+    read_SDS_h5(l1c_id, "/Sigma0_Data/cell_kp_xpol_aft", &cell_kp_xpol_aft[0]);
     read_SDS_h5(l1c_id, "/Sigma0_Data/cell_sigma0_qual_flag_xpol", &l1c_xpol_flg[0]);
 
     H5Fclose(l1c_id);
@@ -116,6 +128,8 @@ int main(int argc, char* argv[]){
 
     for(int l1c_idx = 0; l1c_idx < l1c_size; ++l1c_idx) {
 
+        float kp_threshold = 1.78;
+
         uint16_t bit_mask_fore = 0x5024;
         uint16_t bit_mask_aft = 0xa088;
 
@@ -125,14 +139,21 @@ int main(int argc, char* argv[]){
         // Check L1C quality flag bits
         if((l1c_hh_flg[l1c_idx] & bit_mask_fore) || 
            (l1c_vv_flg[l1c_idx] & bit_mask_fore) ||
-           (l1c_xpol_flg[l1c_idx] & bit_mask_fore))
+           (l1c_xpol_flg[l1c_idx] & bit_mask_fore) ||
+           (cell_kp_hh_fore[l1c_idx] > kp_threshold) ||
+           (cell_kp_vv_fore[l1c_idx] > kp_threshold) ||
+           (cell_kp_xpol_fore[l1c_idx] > kp_threshold))
             l1c_useable_fore[l1c_idx] = 0;
 
         if((l1c_hh_flg[l1c_idx] & bit_mask_aft) || 
            (l1c_vv_flg[l1c_idx] & bit_mask_aft) ||
-           (l1c_xpol_flg[l1c_idx] & bit_mask_aft))
+           (l1c_xpol_flg[l1c_idx] & bit_mask_aft) ||
+           (cell_kp_hh_aft[l1c_idx] > kp_threshold) ||
+           (cell_kp_vv_aft[l1c_idx] > kp_threshold) ||
+           (cell_kp_xpol_aft[l1c_idx] > kp_threshold))
+
             l1c_useable_aft[l1c_idx] = 0;
-    
+
     }
 
     for(int l1b_idx = 0; l1b_idx < l1b_size; ++l1b_idx) {
