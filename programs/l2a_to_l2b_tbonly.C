@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
     CAP_ANC_L2B cap_anc_u10(anc_u10_file);
     CAP_ANC_L2B cap_anc_v10(anc_v10_file);
 
-    CAP_ANC_L2B cap_anc_tb_bias(l2b_tb_bias_adj_file);
+    CAP_ANC_L2B cap_anc_tb_bias;
     if(l2b_tb_bias_adj_file)
         cap_anc_tb_bias.Read(l2b_tb_bias_adj_file);
 
