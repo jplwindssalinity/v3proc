@@ -28,7 +28,7 @@ class LCRESMap {
                     int* ilat);
 
         static const float _lat_min = -90.0;
-        static const int _nlat = 3200;
+        static const int _nlat = 3600;
         static const float _dlat = 0.05;
 
         static const float _lon_min = -180.0;
