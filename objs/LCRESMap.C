@@ -154,6 +154,9 @@ int LCRESMap::_GetIdx(
     int ilon_ = round((lon-_lon_min)/_dlon);
     int iazi_ = round(east_azi/_dazi);
 
+    if(iazi_ == _nazi)
+        iazi_ == 0;
+
     if(ilat_<0 || ilat_>=_nlat || ilon_<0 || ilon_>=_nlon || iazi_<0 ||
        iazi_>=_nazi) {
         return(0);
