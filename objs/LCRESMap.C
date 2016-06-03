@@ -5,6 +5,7 @@
 #include "LCRESMap.h"
 #include "Constants.h"
 #include "EarthPosition.h"
+#include "Misc.h"
 
 LCRESMap::LCRESMap() {
     _sum_dX.resize(4*_nazi);
@@ -293,7 +294,7 @@ int LCRESMapTile::_GetIdx(
     EarthPosition* pos, float east_azi, int* iazi, int* ilon, int* ilat){
 
     double lon, lat, alt;
-    pos->GetAltLonGDLat(&alt,&lon,&lat);
+    pos->GetAltLonGDLat(&alt, &lon, &lat);
 
     lon *= rtd;
     lat *= rtd;
@@ -302,9 +303,12 @@ int LCRESMapTile::_GetIdx(
     while(lon > 180) lon -= 360;
     while(lon <= -180) lon += 360;
 
-    int ilat_ = round((lat-_lat_min)/_dlat);
-    int ilon_ = round((lon-_lon_min)/_dlon);
-    int iazi_ = round(east_azi/_dazi);
+    int ilat_ = (int)round((lat-_lat_min)/_dlat);
+    int ilon_ = (int)round((lon-_lon_min)/_dlon);
+    int iazi_ = (int)round(east_azi/_dazi);
+
+    if(iazi_ == _nazi)
+        iazi_ = 0;
 
     if(ilat_<0 || ilat_>=_nlat || ilon_<0 || ilon_>=_nlon || iazi_<0 ||
        iazi_>=_nazi) {
@@ -388,9 +392,8 @@ int LCRESMapTileList::_FindAndLoadTile(EarthPosition* pos) {
     char filename[2048];
     sprintf(
         filename, "%s/lcres_%c%3.3d_%c%2.2d.dat", directory, lon_dir,
-        fabs(tile_ll_lon), lat_dir, fabs(tile_ll_lat));
+        (int)fabs(tile_ll_lon), lat_dir, (int)fabs(tile_ll_lat));
 
-    printf("%s\n", filename);
 
     // If tiles already at num_tiles flush last tile in list.
     if(tiles.size() == num_tiles) {
@@ -398,7 +401,7 @@ int LCRESMapTileList::_FindAndLoadTile(EarthPosition* pos) {
     }
 
     // Put this tile on top of the list of tiles.
-    tiles.push_back(LCRESMapTile(filename));
+    tiles.insert(tiles.begin(), LCRESMapTile(filename));
 
     return(1);
 }
