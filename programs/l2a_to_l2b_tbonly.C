@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
     char* s0_rough_file = config_list.Get(S0_ROUGH_MODEL_FILE_KEYWORD);
     char* anc_sss_file = config_list.Get(ANC_SSS_FILE_KEYWORD);
     char* anc_sst_file = config_list.Get(ANC_SST_FILE_KEYWORD);
-    char* anc_swh_file = config_list.Get(ANC_SWH_FILE_KEYWORD);
+//     char* anc_swh_file = config_list.Get(ANC_SWH_FILE_KEYWORD);
     char* anc_u10_file = config_list.Get(ANC_U10_FILE_KEYWORD);
     char* anc_v10_file = config_list.Get(ANC_V10_FILE_KEYWORD);
 
@@ -171,7 +171,7 @@ int main(int argc, char* argv[]) {
 
     CAP_ANC_L2B cap_anc_sss(anc_sss_file);
     CAP_ANC_L2B cap_anc_sst(anc_sst_file);
-    CAP_ANC_L2B cap_anc_swh(anc_swh_file);
+//     CAP_ANC_L2B cap_anc_swh(anc_swh_file);
     CAP_ANC_L2B cap_anc_u10(anc_u10_file);
     CAP_ANC_L2B cap_anc_v10(anc_v10_file);
 
@@ -448,7 +448,7 @@ int main(int argc, char* argv[]) {
 
             anc_sst[l2bidx] = cap_anc_sst.data[0][anc_ati][anc_cti] + 273.16;
             anc_sss[l2bidx] = cap_anc_sss.data[0][anc_ati][anc_cti];
-            anc_swh[l2bidx] = cap_anc_swh.data[0][anc_ati][anc_cti];
+//             anc_swh[l2bidx] = cap_anc_swh.data[0][anc_ati][anc_cti];
 
             float this_anc_dir = gs_deg_to_pe_rad(anc_dir[l2bidx]);
 
@@ -653,8 +653,8 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_string(
         file_id, "/", "REV_STOP_TIME", config_list.Get("REV_STOP_TIME"));
 
-    H5LTset_attribute_string(
-        file_id, "/", "TB_CRID", config_list.Get("TB_CRID"));
+//     H5LTset_attribute_string(
+//         file_id, "/", "TB_CRID", config_list.Get("TB_CRID"));
 
     H5LTset_attribute_string(
         file_id, "/", "L1B_TB_LORES_ASC_FILE",
