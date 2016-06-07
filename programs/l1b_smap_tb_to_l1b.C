@@ -70,6 +70,11 @@ const char* usage_array[] = {"config_file", NULL};
 int determine_l1b_sizes(char* l1b_tbfiles[], int nframes[], int nfootprints[]){
 
     for(int ipart=0; ipart<2; ++ipart) {
+        if(!l1b_tbfiles[ipart]) {
+            nframes[ipart] = 0;
+            nfootprints[ipart] = 0;
+            continue;
+        }
         hid_t id = H5Fopen(l1b_tbfiles[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
         if(id<0) return(0);
 
@@ -122,11 +127,13 @@ int main(int argc, char* argv[]){
 
     char* l1b_tbfiles[2] = {NULL, NULL};
 
-    // These ones are required
-    config_list.ExitForMissingKeywords();
+    config_list.DoNothingForMissingKeywords();
     l1b_tbfiles[0] = config_list.Get(L1B_TB_LORES_ASC_FILE_KEYWORD);
     l1b_tbfiles[1] = config_list.Get(L1B_TB_LORES_DEC_FILE_KEYWORD);
     printf("l1b_tbfiles: %s %s\n", l1b_tbfiles[0], l1b_tbfiles[1]);
+
+    // These ones are required
+    config_list.ExitForMissingKeywords();
 
     QSLandMap qs_landmap;
     char* qslandmap_file = config_list.Get(QS_LANDMAP_FILE_KEYWORD);
@@ -179,6 +186,14 @@ int main(int argc, char* argv[]){
 
     // Iterate over ascending / decending portions of orbit
     for(int ipart = 0; ipart < 2; ++ipart){
+
+        if(!l1b_tbfiles[ipart])
+            continue;
+
+        printf(
+            "%d %s %d %d\n", ipart, l1b_tbfiles[ipart], nframes[ipart],
+            nfootprints[ipart]);
+
         hid_t id = H5Fopen(l1b_tbfiles[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
 
         char antenna_scan_time_utc[nframes[ipart]][24];
@@ -207,6 +222,9 @@ int main(int argc, char* argv[]){
         std::vector< std::vector<float> > tb_gal_corr(2);
 
         int data_size = nframes[ipart]*nfootprints[ipart];
+
+        printf("data_size: %d\n", data_size);
+
         azi.resize(data_size);
         antazi.resize(data_size);
         lat.resize(data_size);
