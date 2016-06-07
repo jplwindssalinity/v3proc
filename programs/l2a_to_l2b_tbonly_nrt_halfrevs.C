@@ -162,6 +162,7 @@ int main(int argc, char* argv[]) {
 
     int ncti = l2a_tb.header.crossTrackBins;
     int nati = l2a_tb.header.alongTrackBins;
+    int nati_half = nati / 2;
 
     // Read in L2A TB file
     L2AFrame*** l2a_tb_swath;
@@ -184,7 +185,7 @@ int main(int argc, char* argv[]) {
         cap_anc_tb_bias.Read(l2b_tb_bias_adj_file);
 
     // Output arrays
-    int l2b_size = ncti * nati;
+    int l2b_size = ncti * nati_half;
     std::vector<float> lat(l2b_size), lon(l2b_size);
     std::vector<float> tb_h_fore(l2b_size), tb_h_aft(l2b_size);
     std::vector<float> tb_v_fore(l2b_size), tb_v_aft(l2b_size);
@@ -202,7 +203,7 @@ int main(int argc, char* argv[]) {
     std::vector<float> smap_high_dir(l2b_size), smap_high_dir_smooth(l2b_size);
     std::vector<float> smap_sss_bias_adj(l2b_size), smap_spd_bias_adj(l2b_size);
     std::vector<uint16> quality_flag(l2b_size);
-    std::vector<float> row_time(nati);
+    std::vector<float> row_time(nati/2);
     std::vector<uint8> num_ambiguities(l2b_size);
     std::vector<float> smap_ambiguity_spd(l2b_size*4);
     std::vector<float> smap_ambiguity_dir(l2b_size*4);
@@ -225,29 +226,31 @@ int main(int argc, char* argv[]) {
     double t_day_start = etime_day_start.GetTime();
 
     CAPWindSwath cap_wind_swath;
-    cap_wind_swath.Allocate(ncti, nati);
+    cap_wind_swath.Allocate(ncti, nati/2);
 
-    for(int ati=0; ati<nati; ++ati) {
+    for(int ati=0; ati<nati_half; ++ati) {
+
+        int ati_full = (is_asc) ? ati : ati + nati_half;
 
         row_time[ati] = 
-            t_start + (t_stop-t_start)*(double)ati/(double)nati - t_day_start;
+            t_start + (t_stop-t_start)*(double)ati_full/(double)nati - t_day_start;
 
-        if(ati%100 == 0)
-            fprintf(stdout, "%d of %d; %f\n", ati, nati, row_time[ati]);
+        if(ati%1 == 100)
+            fprintf(stdout, "%d %d of %d; %f\n", ati, ati_full, nati_half, row_time[ati]);
 
         // Set the bias adjustments per ascending / decending portion of orbit.
-        float dtbh_fore = (ati < nati/2) ? dtbh_fore_asc : dtbh_fore_dec;
-        float dtbv_fore = (ati < nati/2) ? dtbv_fore_asc : dtbv_fore_dec;
-        float dtbh_aft = (ati < nati/2) ? dtbh_aft_asc : dtbh_aft_dec;
-        float dtbv_aft = (ati < nati/2) ? dtbv_aft_asc : dtbv_aft_dec;
+        float dtbh_fore = (ati_full < nati_half) ? dtbh_fore_asc : dtbh_fore_dec;
+        float dtbv_fore = (ati_full < nati_half) ? dtbv_fore_asc : dtbv_fore_dec;
+        float dtbh_aft = (ati_full < nati_half) ? dtbh_aft_asc : dtbh_aft_dec;
+        float dtbv_aft = (ati_full < nati_half) ? dtbv_aft_asc : dtbv_aft_dec;
 
         for(int cti=0; cti<ncti; ++cti) {
 
-            int l2bidx = ati + nati*cti;
+            int l2bidx = ati + nati_half*cti;
 
             // Hack to index into (approx) correct location in ancillary files.
             int anc_cti = (is_25km) ? cti*2 : cti;
-            int anc_ati = (is_25km) ? ati*2 : ati;
+            int anc_ati = (is_25km) ? ati_full*2 : ati_full;
 
             // Initialize to fill values
             lon[l2bidx] = FILL_VALUE;
@@ -291,14 +294,14 @@ int main(int argc, char* argv[]) {
             }
 
             // Check for valid measList at this WVC
-            if(!l2a_tb_swath[cti][ati])
+            if(!l2a_tb_swath[cti][ati_full])
                 continue;
 
             // Check for useable ancillary data
             if(cap_anc_sst.data[0][anc_ati][anc_cti] < 0)
                 continue;
 
-            MeasList* tb_ml = &(l2a_tb_swath[cti][ati]->measList);
+            MeasList* tb_ml = &(l2a_tb_swath[cti][ati_full]->measList);
 
             LonLat lonlat = tb_ml->AverageLonLat();
 
@@ -607,10 +610,10 @@ int main(int argc, char* argv[]) {
 
     cap_wind_swath.MedianFilter(3, 200, 0, 1);
 //     cap_wind_swath.MedianFilterTBWinds(3, 200, 0, 1); 
-    for(int ati=0; ati<nati; ++ati) {
+    for(int ati=0; ati<nati_half; ++ati) {
         for(int cti=0; cti<ncti; ++cti) {
 
-            int l2bidx = ati + nati*cti;
+            int l2bidx = ati + nati_half*cti;
             CAPWVC* wvc = cap_wind_swath.swath[cti][ati];
 
             if(!wvc)
@@ -625,10 +628,10 @@ int main(int argc, char* argv[]) {
 
     cap_wind_swath.MedianFilter(3, 200, 2, 0);
 //     cap_wind_swath.MedianFilterTBWinds(3, 200, 4, 0);
-    for(int ati=0; ati<nati; ++ati) {
+    for(int ati=0; ati<nati_half; ++ati) {
         for(int cti=0; cti<ncti; ++cti) {
 
-            int l2bidx = ati + nati*cti;
+            int l2bidx = ati + nati_half*cti;
             CAPWVC* wvc = cap_wind_swath.swath[cti][ati];
 
             if(!wvc)
@@ -648,8 +651,7 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_int(file_id, "/", "REV_START_YEAR", &start_year, 1);
     H5LTset_attribute_int(file_id, "/", "REV_START_DAY_OF_YEAR", &start_doy, 1);
     H5LTset_attribute_int(file_id, "/", "Number of Cross Track Bins", &ncti, 1);
-    H5LTset_attribute_int(file_id, "/", "Number of Cross Track Bins", &ncti, 1);
-    H5LTset_attribute_int(file_id, "/", "Number of Along Track Bins", &nati, 1);
+    H5LTset_attribute_int(file_id, "/", "Number of Along Track Bins", &nati_half, 1);
 
     H5LTset_attribute_string(
         file_id, "/", "REV_START_TIME", config_list.Get("REV_START_TIME"));
@@ -728,10 +730,10 @@ int main(int argc, char* argv[]) {
 
     float valid_max, valid_min;
 
-    hsize_t dims[2] = {ncti, nati};
-    hsize_t dims_amb[3] = {ncti, nati, 4};
+    hsize_t dims[2] = {ncti, nati_half};
+    hsize_t dims_amb[3] = {ncti, nati_half, 4};
 
-    hsize_t ati_dim = nati;
+    hsize_t ati_dim = nati_half;
 
     valid_max = 90; valid_min = -90;
     H5LTmake_dataset(file_id, "lat", 2, dims, H5T_NATIVE_FLOAT, &lat[0]);
@@ -1143,6 +1145,9 @@ int main(int argc, char* argv[]) {
         file_id, "quality_flag", "_FillValue", &_ushort_fill_value, 1);
 
     H5Fclose(file_id);
+
+    free_array((void *)l2a_tb_swath, 2, ncti, nati);
+
     return(0);
 }
 
