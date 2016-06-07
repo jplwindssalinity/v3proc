@@ -182,6 +182,7 @@ bin_PROGRAMS = \
     programs/l2a_to_l2b_tbonly                    \
     programs/l2a_to_l2b_tbonly_wsat               \
     programs/l2a_to_l2b_tbonly_spdadj             \
+    programs/l2a_to_l2b_tbonly_nrt_halfrevs       \
     programs/l2a_to_l2b_cap_tbonly                \
     programs/l2a_to_l2b_cap_tbonly_avg_s0         \
     programs/smap_match_l1b_l1c
