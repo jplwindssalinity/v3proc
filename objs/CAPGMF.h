@@ -72,7 +72,8 @@ public:
         float passive_weight = 1);
 
     double ObjectiveFunctionActive(
-        MeasList* s0_ml, float trial_spd, float trial_dir, float anc_swh);
+        MeasList* s0_ml, float trial_spd, float trial_dir, float anc_swh,
+        float anc_spd);
 
     double ObjectiveFunctionPassive(
         MeasList* tb_ml, float trial_spd, float trial_dir, float trial_sss,

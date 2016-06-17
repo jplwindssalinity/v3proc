@@ -414,7 +414,7 @@ double CAPGMF::ObjectiveFunctionCAP(
 
     if(s0_ml) {
         active_obj = ObjectiveFunctionActive(
-            s0_ml, trial_spd, trial_dir, anc_swh);
+            s0_ml, trial_spd, trial_dir, anc_swh, anc_spd);
     }
 
     return(
@@ -450,7 +450,8 @@ double CAPGMF::ObjectiveFunctionPassive(
 }
 
 double CAPGMF::ObjectiveFunctionActive(
-    MeasList* s0_ml, float trial_spd, float trial_dir, float anc_swh) {
+    MeasList* s0_ml, float trial_spd, float trial_dir, float anc_swh,
+    float anc_spd) {
 
     double obj = 0;
     for(Meas* meas = s0_ml->GetHead(); meas; meas = s0_ml->GetNext()){
@@ -465,7 +466,22 @@ double CAPGMF::ObjectiveFunctionActive(
 
         double kp_tot = (1 + pow(kpm, 2)) * meas->A - 1;
         double var = kp_tot * model_s0 * model_s0;
-        obj += pow((double)(meas->value - model_s0), 2) / var;
+
+        double weight = 1;
+
+        if(meas->measType == Meas::VH_MEAS_TYPE ||
+           meas->measType == Meas::HV_MEAS_TYPE) {
+
+            if(anc_spd < 15) {
+                weight = 0;
+            } else if(anc_spd < 20) {
+                weight = 1-(20-anc_spd)/5;
+            } else {
+                weight = 1;
+            }
+        }
+
+        obj += weight * pow((double)(meas->value - model_s0), 2) / var;
     }
     return(obj);
 }
