@@ -57,7 +57,7 @@ static const char rcs_id[] =
 #define COASTAL_METHOD_KEYWORD          "COASTAL_PROCESSING_METHOD"
 #define COASTAL_DISTANCE_FILE_KEYWORD   "COASTAL_DISTANCE_FILE"
 #define LCRES_ACCUM_FILE_KEYWORD        "LCRES_ACCUM_FILE"
-#define LCRES_MAP_FILE_KEYWORD          "LCRES_MAP_FILE"
+#define LCRES_MAP_TILE_DIR_KEYWORD      "LCRES_MAP_TILE_DIR"
 #define LCR_THRESHOLD_FLAG_KEYWORD      "LCR_THRESHOLD_FLAG"
 #define LCRES_THRESHOLD_FLAG_KEYWORD    "LCRES_THRESHOLD_FLAG"
 #define LCRES_THRESHOLD_CORR_KEYWORD    "LCRES_THRESHOLD_CORR"
@@ -557,7 +557,7 @@ main(
     // file.  They consume large amounts of RAM
     CoastDistance* coast_dist = NULL;
     LCRESMap* lcres_accum = NULL;
-    LCRESMap* lcres_map = NULL;
+    LCRESMapTileList* lcres_map_tiles = NULL;
 
     config_list.DoNothingForMissingKeywords();
     config_list.GetInt(DO_COASTAL_PROCESSING_KEYWORD,&do_coastal_processing);
@@ -583,8 +583,13 @@ main(
         } else if (strcmp(method, "LCRES_FLAG") == 0) {
             coastal_method = LCRES_FLAG;
 
-            lcres_map = new LCRESMap();
-            lcres_map->Read(config_list.Get(LCRES_MAP_FILE_KEYWORD));
+            char* lcres_map_tile_dir = config_list.Get(
+                LCRES_MAP_TILE_DIR_KEYWORD);
+
+            lcres_map_tiles = new LCRESMapTileList(lcres_map_tile_dir);
+
+            coast_dist = new CoastDistance();
+            coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
 
             config_list.GetFloat(
                 LCRES_THRESHOLD_FLAG_KEYWORD, &lcres_thresh_flag);
@@ -593,8 +598,10 @@ main(
         } else if (strcmp(method, "LCRES_CORR") == 0) {
             coastal_method = LCRES_CORR;
 
-            lcres_map = new LCRESMap();
-            lcres_map->Read(config_list.Get(LCRES_MAP_FILE_KEYWORD));
+            char* lcres_map_tile_dir = config_list.Get(
+                LCRES_MAP_TILE_DIR_KEYWORD);
+
+            lcres_map_tiles = new LCRESMapTileList(lcres_map_tile_dir);
 
             coast_dist = new CoastDistance();
             coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
@@ -1114,7 +1121,7 @@ main(
               int is_asc = (new_meas_spot->scOrbitState.vsat.GetZ() < 0) ? 0 : 1;
 
               float land_expected_value;
-              lcres_map->Get(
+              lcres_map_tiles->Get(
                 &this_meas->centroid, this_meas->eastAzimuth, ipol, is_asc,
                 &land_expected_value);
 
@@ -1220,8 +1227,6 @@ main(
       fprintf(stderr,"ERROR closing hdf file %s.\n",l1b_hdf_file);
       exit(1);
     }
-
-    
     
     return 0;
     
