@@ -1121,10 +1121,9 @@ main(
               int is_asc = (new_meas_spot->scOrbitState.vsat.GetZ() < 0) ? 0 : 1;
 
               float lcres;
-              if(lcr == 0) {
-                lcres = 0;
-              } else if(lcr == 1) {
-                lcres = 1;
+              if(lcr == 0 || lcr == 1) {
+                lcres = lcr;
+
               } else {
                 float land_expected_value;
                 lcres_map_tiles->Get(
