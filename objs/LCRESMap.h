@@ -85,7 +85,7 @@ class LCRESMapTileList{
         const char* directory;
         int num_tiles;
 
-        LCRESMapTileList(const char* tile_directory, int max_tiles = 4);
+        LCRESMapTileList(const char* tile_directory, int max_tiles = 6);
         ~LCRESMapTileList();
 
         int Get(
