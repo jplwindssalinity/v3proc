@@ -1120,14 +1120,18 @@ main(
 
               int is_asc = (new_meas_spot->scOrbitState.vsat.GetZ() < 0) ? 0 : 1;
 
-              float land_expected_value;
-              lcres_map_tiles->Get(
-                &this_meas->centroid, this_meas->eastAzimuth, ipol, is_asc,
-                &land_expected_value);
-
-              // land fraction * expected sigma0 == expected contribution to
-              // observed sigma0.
-              float lcres = lcr * land_expected_value;
+              float lcres;
+              if(lcr == 0) {
+                lcres = 0;
+              } else if(lcr == 1) {
+                lcres = 1;
+              } else {
+                float land_expected_value;
+                lcres_map_tiles->Get(
+                    &this_meas->centroid, this_meas->eastAzimuth, ipol, is_asc,
+                    &land_expected_value);
+                lcres = lcr * land_expected_value;
+              }
 
               if(coastal_method == LCRES_FLAG) {
                 if(lcres > lcres_thresh_flag)
