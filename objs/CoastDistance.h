@@ -22,16 +22,14 @@ class CoastDistance {
         int Get(double lon, double lat, double* distance);
         int Get(EarthPosition* pos, double* distance);
 
+        float delta;
+        float lon0, lat0;
+        int nlon;
+        int nlat;
+
     protected:
 
         std::vector<std::vector<short> > _distance;
-
-        static const float _dlon = 0.01;
-        static const float _dlat = -0.01;
-        static const float _lon_0 = -179.995;
-        static const float _lat_0 = 89.995;
-        static const int _nlon = 36000;
-        static const int _nlat = 18000;
 };
 
 #endif

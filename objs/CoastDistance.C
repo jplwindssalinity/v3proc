@@ -14,12 +14,31 @@ CoastDistance::~CoastDistance() {
 }
 
 int CoastDistance::Read(const char* filename) {
-    // resize the array
-    _distance.resize(_nlat);
+
     FILE* ifp = fopen(filename, "r");
-    for(int ilat = 0; ilat<_nlat; ++ilat) {
-        _distance[ilat].resize(_nlon);
-        fread(&_distance[ilat][0], sizeof(short), _nlon, ifp);
+    fseek(ifp, 0, SEEK_END);
+    size_t file_size = ftell(ifp);
+    fseek(ifp, 0, SEEK_SET);
+
+    if(file_size == 1296000000) {
+        delta = 0.01;
+        nlat = 180*100;
+        nlon = 360*100;
+
+    } else if(file_size == 324000000) {
+        delta = 0.02;
+        nlat = 180*50;
+        nlon = 360*50;
+    }
+
+    lat0 = 90-delta/2;
+    lon0 = -180+delta/2;
+
+    // resize the array
+    _distance.resize(nlat);
+    for(int ilat = 0; ilat<nlat; ++ilat) {
+        _distance[ilat].resize(nlon);
+        fread(&_distance[ilat][0], sizeof(short), nlon, ifp);
     }
     fclose(ifp);
     return(1);
@@ -32,10 +51,13 @@ int CoastDistance::Get(double lon, double lat, double* distance) {
     while(lon>=180) lon -= 360;
     while(lon<-180) lon += 360;
 
-    int ilon = round((lon-_lon_0)/_dlon);
-    int ilat = round((lat-_lat_0)/_dlat);
+    int ilon = round((lon-lon0)/delta);
+    int ilat = round((lat-lat0)/-delta);
 
-    if(ilat<0 || ilat>=_nlat || ilon<0 || ilon>=_nlon) {
+    if(ilon == -1) ilon = nlon-1;
+    if(ilon == nlon) ilon = 0;
+
+    if(ilat<0 || ilat>=nlat || ilon<0 || ilon>=nlon) {
         return(0);
     } else {
         *distance = (double)_distance[ilat][ilon];
