@@ -1137,10 +1137,10 @@ main(
                   remove_it = 1;
 
               } else {
-                if(lcres > lcres_thresh_corr)
+                if(lcres > lcres_thresh_corr) {
                   remove_it = 1;
 
-                else {
+                } else {
                   this_meas->value -= lcres;
                   this_meas->value /= (1-lcr);
                 }
