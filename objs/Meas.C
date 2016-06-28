@@ -1588,7 +1588,7 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
         
         lon = atan2( p.GetY(), p.GetX() );
         lat = atan( tan( asin( p.GetZ() / p.Magnitude() ) ) / (1-e2) );
-        
+
         if( lon < 0 ) lon += two_pi;
 
         Vector3 antenna_look = gc_to_antenna.Forward(p - scOrbitState.rsat);
@@ -1600,15 +1600,16 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
         if( !ant->beam[meas->beamIdx].GetPowerGainProduct(
             theta, phi, rtt, ant->spinRate, &g2)) g2=0.0;
 
-         float dW = g2*dx*dy / (range*range*range*range);
-         sum     += dW;
-         landsum += lmap->IsLand(lon,lat) ? dW : 0;
-
          int ipol = -1;
          if(meas->measType == Meas::VV_MEAS_TYPE) ipol = 0;
          if(meas->measType == Meas::HH_MEAS_TYPE) ipol = 1;
 
          int is_asc = (scOrbitState.vsat.GetZ() < 0) ? 0 : 1;
+         int is_land = lmap->IsLand(lon, lat);
+
+         float dW = g2*dx*dy / (range*range*range*range);
+         sum     += dW;
+         landsum += is_land ? dW : 0;
 
          // Accumulate into the LCRES map if one is specified
          if(lcres_map) {
@@ -1619,11 +1620,11 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
         if(lcres_map_tiles) {
             float land_expected_value;
             lcres_map_tiles->Get(
-                &meas->centroid, meas->eastAzimuth, ipol, is_asc,
+                lon, lat, meas->eastAzimuth, ipol, is_asc,
                 &land_expected_value);
 
           sum_es += dW * land_expected_value;
-          landsum_es += lmap->IsLand(lon,lat) ? dW * land_expected_value : 0;
+          landsum_es += is_land ? (dW * land_expected_value) : 0;
         }
 
       } // iy loop

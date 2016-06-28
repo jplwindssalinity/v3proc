@@ -279,8 +279,17 @@ int LCRESMapTile::Write(const char* filename) {
 int LCRESMapTile::Get(
     EarthPosition* pos, float east_azi, int ipol, int is_asc, float* value) {
 
+    double lon, lat, alt;
+    pos->GetAltLonGDLat(&alt, &lon, &lat);
+
+    return Get(lon, lat, east_azi, ipol, is_asc, value);
+}
+
+int LCRESMapTile::Get(
+    double lon, double lat, float east_azi, int ipol, int is_asc, float* value) {
+
     int ilon, ilat, iazi;
-    if(!_GetIdx(pos, east_azi, &iazi, &ilon, &ilat))
+    if(!_GetIdx(lon, lat, east_azi, &iazi, &ilon, &ilat))
         return(0);
 
     int ipart = (is_asc) ? 0 : 1;
@@ -294,10 +303,7 @@ int LCRESMapTile::Get(
 }
 
 int LCRESMapTile::_GetIdx(
-    EarthPosition* pos, float east_azi, int* iazi, int* ilon, int* ilat){
-
-    double lon, lat, alt;
-    pos->GetAltLonGDLat(&alt, &lon, &lat);
+    double lon, double lat, float east_azi, int* iazi, int* ilon, int* ilat){
 
     lon *= rtd;
     lat *= rtd;
@@ -338,21 +344,32 @@ LCRESMapTileList::~LCRESMapTileList() {
 int LCRESMapTileList::Get(
     EarthPosition* pos, float east_azi, int ipol, int is_asc, float* value) {
 
-    if(!_GetIfLoaded(pos, east_azi, ipol, is_asc, value)) {
-        _FindAndLoadTile(pos);
-        if(!_GetIfLoaded(pos, east_azi, ipol, is_asc, value))
+    double lon, lat, alt;
+    pos->GetAltLonGDLat(&alt, &lon, &lat);
+
+    return Get(lon, lat, east_azi, ipol, is_asc, value);
+}
+
+int LCRESMapTileList::Get(
+    double lon, double lat, float east_azi, int ipol, int is_asc,
+    float* value) {
+
+    if(!_GetIfLoaded(lon, lat, east_azi, ipol, is_asc, value)) {
+        _FindAndLoadTile(lon, lat);
+        if(!_GetIfLoaded(lon, lat, east_azi, ipol, is_asc, value))
             return(0);
     }
     return(1);
 }
 
 int LCRESMapTileList::_GetIfLoaded(
-    EarthPosition* pos, float east_azi, int ipol, int is_asc, float* value) {
+    double lon, double lat, float east_azi, int ipol, int is_asc,
+    float* value) {
 
     // Returns the value if tile is loaded into tiles
     int which_tile = -1;
     for(int i_tile = 0; i_tile < tiles.size(); ++i_tile) {
-        if(tiles[i_tile].Get(pos, east_azi, ipol, is_asc, value)) {
+        if(tiles[i_tile].Get(lon, lat, east_azi, ipol, is_asc, value)) {
             which_tile = i_tile;
             break;
         }
@@ -369,15 +386,12 @@ int LCRESMapTileList::_GetIfLoaded(
         return(1);
 }
 
-int LCRESMapTileList::_FindAndLoadTile(EarthPosition* pos) {
-
-    // Construct filename for the tile containing EarthPosition "pos".
-    double lon, lat, alt;
-    pos->GetAltLonGDLat(&alt,&lon,&lat);
+int LCRESMapTileList::_FindAndLoadTile(double lon, double lat) {
 
     lon *= rtd;
     lat *= rtd;
 
+    // Construct filename for the tile containing EarthPosition "pos".
     while(lon > 180) lon -= 360;
     while(lon <= -180) lon += 360;
 

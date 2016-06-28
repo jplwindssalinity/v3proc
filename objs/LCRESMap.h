@@ -57,8 +57,12 @@ class LCRESMapTile {
             EarthPosition* pos, float east_azi, int ipol, int is_asc,
             float* value);
 
+        int Get(
+            double lon, double lat, float east_azi, int ipol, int is_asc,
+            float* value);
+
     protected:
-        int _GetIdx(EarthPosition* pos, float east_azi, int* iazi, int* ilon,
+        int _GetIdx(double lon, double lat, float east_azi, int* iazi, int* ilon,
                     int* ilat);
 
         float _lat_min;
@@ -92,15 +96,19 @@ class LCRESMapTileList{
             EarthPosition* pos, float east_azi, int ipol, int is_asc,
             float* value);
 
+        int Get(
+            double lon, double lat, float east_azi, int ipol, int is_asc,
+            float* value);
+
     protected:
 
         std::vector<LCRESMapTile> tiles;
 
         int _GetIfLoaded(
-            EarthPosition* pos, float east_azi, int ipol, int is_asc,
+            double lon, double lat, float east_azi, int ipol, int is_asc,
             float* value);
 
-        int _FindAndLoadTile(EarthPosition* pos);
+        int _FindAndLoadTile(double lon, double lat);
 
 };
 
