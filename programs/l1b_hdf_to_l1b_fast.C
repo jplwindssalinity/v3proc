@@ -1123,7 +1123,8 @@ main(
               if(lcres > lcres_thresh_corr || lcres >= this_meas->value)
                 remove_it = 1;
               else
-                this_meas->value = (this_meas->value - lcres) / lcr;
+                this_meas->value = (this_meas->value - lcres) / (1-lcr);
+
             }
 
             if(remove_it) {
