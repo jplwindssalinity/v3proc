@@ -1100,7 +1100,8 @@ main(
 
           new_meas_spot->ComputeLandFraction( &lmap, coast_dist,
                                               &antenna, this_frequency_shift,
-                                              spot_lon, spot_lat, lcres_accum);
+                                              spot_lon, spot_lat, lcres_accum,
+                                              lcres_map_tiles);
 
           // Loop through Meas in this MeasSpot, decide to discard or not.
           Meas* this_meas = new_meas_spot->GetHead();
@@ -1109,42 +1110,20 @@ main(
 
             // Land contamination ratio
             float lcr = this_meas->bandwidth;
+            float es = this_meas->txPulseWidth;
+            float lcres = this_meas->EnSlice;
 
             if(coastal_method == LCR && lcr > land_frac_threshold)
               remove_it = 1;
 
-            if(coastal_method == LCRES_FLAG || coastal_method == LCRES_CORR) {
-              int ipol = -1;
-              if(this_meas->measType == Meas::VV_MEAS_TYPE) ipol = 0;
-              if(this_meas->measType == Meas::HH_MEAS_TYPE) ipol = 1;
+            else if(coastal_method == LCRES_FLAG && lcres > lcres_thresh_flag)
+              remove_it = 1;
 
-              int is_asc = (new_meas_spot->scOrbitState.vsat.GetZ() < 0) ? 0 : 1;
-
-              float lcres;
-              if(lcr == 0 || lcr == 1) {
-                lcres = lcr;
-
-              } else {
-                float land_expected_value;
-                lcres_map_tiles->Get(
-                    &this_meas->centroid, this_meas->eastAzimuth, ipol, is_asc,
-                    &land_expected_value);
-                lcres = lcr * land_expected_value;
-              }
-
-              if(coastal_method == LCRES_FLAG) {
-                if(lcres > lcres_thresh_flag)
-                  remove_it = 1;
-
-              } else {
-                if(lcres > lcres_thresh_corr) {
-                  remove_it = 1;
-
-                } else {
-                  this_meas->value -= lcres;
-                  this_meas->value /= (1-lcr);
-                }
-              }
+            else if(coastal_method == LCRES_CORR) {
+              if(lcres > lcres_thresh_corr || lcres >= this_meas->value)
+                remove_it = 1;
+              else
+                this_meas->value = (this_meas->value - lcres) / lcr;
             }
 
             if(remove_it) {

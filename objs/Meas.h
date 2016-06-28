@@ -302,7 +302,8 @@ public:
                              float    freq_shift,
                              double   spot_lon,
                              double   spot_lat,
-                             LCRESMap*  lcres_map = NULL);
+                             LCRESMap*  lcres_map = NULL,
+                             LCRESMapTileList* lcres_map_tiles = NULL);
     
 	//-----------//
 	// variables //
