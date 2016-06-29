@@ -288,6 +288,11 @@ int LCRESMapTile::Get(
 int LCRESMapTile::Get(
     double lon, double lat, float east_azi, int ipol, int is_asc, float* value) {
 
+    // fudge factor since I made LCRES map tiles offset by half a pixel from
+    // where I wanted them to be.
+    lon += 0.025;
+    lat += 0.025;
+
     int ilon, ilat, iazi;
     if(!_GetIdx(lon, lat, east_azi, &iazi, &ilon, &ilat))
         return(0);
@@ -312,8 +317,8 @@ int LCRESMapTile::_GetIdx(
     while(lon > 180) lon -= 360;
     while(lon <= -180) lon += 360;
 
-    int ilat_ = (int)round((lat-_lat_min)/_dlat);
-    int ilon_ = (int)round((lon-_lon_min)/_dlon);
+    int ilat_ = (int)floor((lat-_lat_min)/_dlat);
+    int ilon_ = (int)floor((lon-_lon_min)/_dlon);
     int iazi_ = (int)round(east_azi/_dazi);
 
     if(iazi_ == _nazi)
