@@ -1113,17 +1113,27 @@ main(
             float es = this_meas->txPulseWidth;
             float lcres = this_meas->EnSlice;
 
-            if(coastal_method == LCR && lcr > land_frac_threshold)
-              remove_it = 1;
+            if(lcr > 0.0001 && lcr < 0.1) {
+                volatile int do_stuff = lcr * 10;
+                volatile int breakpint = 123;
+            }
 
-            else if(coastal_method == LCRES_FLAG && lcres > lcres_thresh_flag)
-              remove_it = 1;
+            switch (coastal_method) {
+                case LCR:
+                    if(lcr > land_frac_threshold) remove_it = 1;
+                    break;
 
-            else if(coastal_method == LCRES_CORR) {
-              if(lcres > lcres_thresh_corr || lcres >= this_meas->value)
-                remove_it = 1;
-              else
-                this_meas->value = (this_meas->value - lcres) / (1-lcr);
+                case LCRES_FLAG:
+                    if(lcres > lcres_thresh_flag) remove_it = 1;
+                    break;
+
+                case LCRES_CORR:
+                    if(lcres > lcres_thresh_corr || lcres >= this_meas->value) {
+                        remove_it = 1;
+                    } else {
+                        this_meas->value = (this_meas->value - lcres) / (1-lcr);
+                    }
+                    break;
 
             }
 

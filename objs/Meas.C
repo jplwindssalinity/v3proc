@@ -1544,8 +1544,8 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
       if( meas->landFlag==1 || meas->landFlag==3 ) {
         meas->bandwidth = 1;
         if(lcres_map_tiles) {
-          meas->txPulseWidth = 999;
-          meas->EnSlice = 999;
+          meas->txPulseWidth = 1;
+          meas->EnSlice = 1;
         }
       } else {
         meas->bandwidth = 0;
@@ -1600,21 +1600,21 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
         if( !ant->beam[meas->beamIdx].GetPowerGainProduct(
             theta, phi, rtt, ant->spinRate, &g2)) g2=0.0;
 
-         int ipol = -1;
-         if(meas->measType == Meas::VV_MEAS_TYPE) ipol = 0;
-         if(meas->measType == Meas::HH_MEAS_TYPE) ipol = 1;
+        int ipol = -1;
+        if(meas->measType == Meas::VV_MEAS_TYPE) ipol = 0;
+        if(meas->measType == Meas::HH_MEAS_TYPE) ipol = 1;
 
-         int is_asc = (scOrbitState.vsat.GetZ() < 0) ? 0 : 1;
-         int is_land = lmap->IsLand(lon, lat);
+        int is_asc = (scOrbitState.vsat.GetZ() < 0) ? 0 : 1;
+        int is_land = lmap->IsLand(lon, lat);
 
-         float dW = g2*dx*dy / (range*range*range*range);
-         sum     += dW;
-         landsum += is_land ? dW : 0;
+        float dW = g2*dx*dy / (range*range*range*range);
+        sum     += dW;
+        landsum += (is_land == 1) ? dW : 0;
 
-         // Accumulate into the LCRES map if one is specified
-         if(lcres_map) {
+        // Accumulate into the LCRES map if one is specified
+        if(lcres_map) {
             lcres_map->Add(&p, meas->eastAzimuth, dW, ipol, is_asc, meas->value);
-         }
+        }
 
         // Compute integrated ES value
         if(lcres_map_tiles) {
@@ -1623,10 +1623,9 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
                 lon, lat, meas->eastAzimuth, ipol, is_asc,
                 &land_expected_value);
 
-          sum_es += dW * land_expected_value;
-          landsum_es += is_land ? (dW * land_expected_value) : 0;
+            sum_es += dW * land_expected_value;
+            landsum_es += (is_land == 1) ? (dW * land_expected_value) : 0;
         }
-
       } // iy loop
     }   // ix loop
 
