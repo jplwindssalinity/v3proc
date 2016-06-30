@@ -1132,6 +1132,8 @@ main(
                         remove_it = 1;
                     } else {
                         this_meas->value = (this_meas->value - lcres) / (1-lcr);
+                        if(fabs(this_meas->value) > 1.0e5)
+                            remove_it = 1;
                     }
                     break;
 
