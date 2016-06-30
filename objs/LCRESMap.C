@@ -288,11 +288,6 @@ int LCRESMapTile::Get(
 int LCRESMapTile::Get(
     double lon, double lat, float east_azi, int ipol, int is_asc, float* value) {
 
-    // fudge factor since I made LCRES map tiles offset by half a pixel from
-    // where I wanted them to be.
-    lon += 0.025;
-    lat += 0.025;
-
     int ilon, ilat, iazi;
     if(!_GetIdx(lon, lat, east_azi, &iazi, &ilon, &ilat))
         return(0);
@@ -358,6 +353,11 @@ int LCRESMapTileList::Get(
 int LCRESMapTileList::Get(
     double lon, double lat, float east_azi, int ipol, int is_asc,
     float* value) {
+
+    // fudge factor since I made LCRES map tiles offset by half a pixel from
+    // where I wanted them to be.
+    lon += 0.025 * dtr;
+    lat += 0.025 * dtr;
 
     if(!_GetIfLoaded(lon, lat, east_azi, ipol, is_asc, value)) {
         _FindAndLoadTile(lon, lat);
