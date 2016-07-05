@@ -1110,13 +1110,7 @@ main(
 
             // Land contamination ratio
             float lcr = this_meas->bandwidth;
-            float es = this_meas->txPulseWidth;
-            float lcres = this_meas->EnSlice;
-
-            if(lcr > 0.0001 && lcr < 0.1) {
-                volatile int do_stuff = lcr * 10;
-                volatile int breakpint = 123;
-            }
+            float lcres = this_meas->txPulseWidth;
 
             switch (coastal_method) {
                 case LCR:

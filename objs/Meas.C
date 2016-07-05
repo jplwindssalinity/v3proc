@@ -1545,13 +1545,11 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
         meas->bandwidth = 1;
         if(lcres_map_tiles) {
           meas->txPulseWidth = 1;
-          meas->EnSlice = 1;
         }
       } else {
         meas->bandwidth = 0;
         if(lcres_map_tiles) {
           meas->txPulseWidth = 0;
-          meas->EnSlice = 0;
         }
       }
       continue;
@@ -1634,8 +1632,7 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
 
     // Use EnSlice, txPulseWidth to hold land expected sigma0 values
     if(lcres_map_tiles) {
-      meas->EnSlice = landsum_es / sum;
-      meas->txPulseWidth = sum_es / sum;
+      meas->txPulseWidth = landsum_es / sum;
     }
   } // loop over Meas in MeasSpot
   return(1);
