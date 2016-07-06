@@ -1122,7 +1122,7 @@ main(
                     break;
 
                 case LCRES_CORR:
-                    if(lcres > lcres_thresh_corr || lcres >= this_meas->value) {
+                    if(lcres > lcres_thresh_corr) {
                         remove_it = 1;
                     } else {
                         this_meas->value = (this_meas->value - lcres) / (1-lcr);
