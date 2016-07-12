@@ -7,6 +7,7 @@
 #define SMAP_ANTENNA_PATTERN_FILE_KEYWORD "SMAP_ANTENNA_PATTERN_FILE"
 #define REV_START_TIME_KEYWORD "REV_START_TIME"
 #define REV_STOP_TIME_KEYWORD "REV_STOP_TIME"
+#define COASTAL_DISTANCE_FILE_KEYWORD "COASTAL_DISTANCE_FILE"
 
 //----------//
 // INCLUDES //
@@ -21,10 +22,9 @@
 #include "ConfigSim.h"
 #include "Misc.h"
 #include "Constants.h"
-#include "Array.h"
 #include "Meas.h"
-#include "CAPGMF.h"
 #include "SMAPBeam.h"
+#include "CoastDistance.h"
 #include "hdf5.h"
 #include "hdf5_hl.h"
 
@@ -104,6 +104,9 @@ int main(int argc, char* argv[]){
     l1b_tbfiles[0] = config_list.Get(L1B_TB_LORES_ASC_FILE_KEYWORD);
     l1b_tbfiles[1] = config_list.Get(L1B_TB_LORES_DEC_FILE_KEYWORD);
 
+    CoastDistance coast_dist;
+    coast_dist.Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
+
     char* smap_ant_patt_file = config_list.Get(SMAP_ANTENNA_PATTERN_FILE_KEYWORD);
     SMAPBeam smap_beam(smap_ant_patt_file);
 
@@ -129,15 +132,17 @@ int main(int argc, char* argv[]){
     int revno;
     config_list.GetInt("REVNO", &revno);
 
-    double delta_grid = 0.25 * dtr;
+    double delta_grid = 0.1 * dtr;
     int nlon = 360*dtr/delta_grid;
     int nlat = 180*dtr/delta_grid;
 
     std::vector<EarthPosition> ep_grid;
     std::vector<Vector3> ep_grid_normal;
+    std::vector<char> is_land;
 
     ep_grid.resize(nlon * nlat);
     ep_grid_normal.resize(nlon * nlat);
+    is_land.resize(nlon * nlat);
 
     for(int ilat = 0; ilat < nlat; ++ilat) {
         for(int ilon = 0; ilon < nlon; ++ilon) {
@@ -148,6 +153,8 @@ int main(int argc, char* argv[]){
 
             ep_grid[idx].SetAltLonGDLat(0, this_lon, this_lat);
             ep_grid_normal[idx] = ep_grid[idx].Normal();
+
+            is_land[idx] = land_map.IsLand(this_lon, this_lat);
         }
     }
 
@@ -209,6 +216,9 @@ int main(int argc, char* argv[]){
                 // Index into footprint-sized arrays
                 int fp_idx = iframe * nfootprints[ipart] + ifootprint;
 
+                land_frac[0][fp_idx] = -9999;
+                land_frac[1][fp_idx] = -9999;
+
                 if(lat[fp_idx] < -90)
                     continue;
 
@@ -256,10 +266,21 @@ int main(int argc, char* argv[]){
                 double sum_dX_v = 0;
                 double land_sum_dX_v = 0;
 
-                for(int ilat = 0; ilat < nlat; ++ilat) {
-                    float this_lat = -pi_over_two + ((float)ilat+0.5) * delta_grid;
+                float max_dlat = 0;
+                float max_dlon = 0;
 
-                    if(fabs(this_lat-tmp_lat)>0.5)
+                double distance;
+                coast_dist.Get(tmp_lon, tmp_lat, &distance);
+
+                // Only compute land fraction near coast and not over land.
+                if(distance > 500 || distance < -100)
+                    continue;
+
+                for(int ilat = 0; ilat < nlat; ++ilat) {
+                    float this_lat = 
+                        -pi_over_two + ((float)ilat+0.5) * delta_grid;
+
+                    if(fabs(this_lat-tmp_lat)>0.6)
                         continue;
 
                     float slat = sin(this_lat);
@@ -272,7 +293,13 @@ int main(int argc, char* argv[]){
 
                         float this_lon = -pi + ((float)ilon+0.5) * delta_grid;
 
-                        // do stuff
+                        float this_dlon = this_lon-tmp_lon;
+                        if(this_dlon > pi) this_dlon -= two_pi;
+                        if(this_dlon < -pi) this_dlon += two_pi;
+
+                        if(clat*fabs(this_dlon)>2)
+                            continue;
+
                         int idx = ilon + ilat * nlon;
                         EarthPosition* this_ep = &ep_grid[idx];
                         Vector3* this_normal = &ep_grid_normal[idx];
@@ -281,9 +308,21 @@ int main(int argc, char* argv[]){
                         Vector3 x_sc_minus_x_e = orbit_state.rsat - *this_ep;
                         Vector3 x_e_minus_x_sc = *this_ep - orbit_state.rsat;
 
+                        double range = x_e_minus_x_sc.Magnitude();
+                        Vector3 this_look = x_e_minus_x_sc;
+                        this_look /= range;
+
+                        double this_cos_inc = -(*this_normal % this_look);
+
                         // if not in visible disk of Earth skip
-                        if(*this_normal % x_sc_minus_x_e <= 0)
+                        if(this_cos_inc <= 0)
                             continue;
+
+                        if(fabs(this_lat-tmp_lat) > max_dlat)
+                            max_dlat = fabs(this_lat-tmp_lat);
+
+                        if(clat*fabs(this_dlon) > max_dlon)
+                            max_dlon = clat*fabs(this_dlon);
 
                         double this_theta = Vector3::AngleBetween(
                             &beam_zhat, &x_e_minus_x_sc);
@@ -292,18 +331,12 @@ int main(int argc, char* argv[]){
                             beam_yhat % x_e_minus_x_sc,
                             beam_xhat % x_e_minus_x_sc);
 
-                        double this_inc = Vector3::AngleBetween(
-                            &x_sc_minus_x_e, this_normal);
-
-                        // do more stuff
-                        double range_sq = pow(x_sc_minus_x_e.Magnitude(), 2);
-
+                        // Compute area on earth
                         double pixel_area = 
                             pow(delta_grid*r_local_earth, 2) * clat;
 
-                        double d_omega = pixel_area / range_sq * cos(this_inc);
-
-                        int is_land = land_map.IsLand(this_lon, this_lat);
+                        // Compute unit of solid angle
+                        double d_omega = pixel_area/pow(range, 2)*this_cos_inc;
 
                         // Compute gain
                         double gain_h, gain_v;
@@ -312,20 +345,20 @@ int main(int argc, char* argv[]){
                         // Accumulate
                         sum_dX_h += gain_h * d_omega;
                         sum_dX_v += gain_v * d_omega;
-                        land_sum_dX_h += (is_land) ? gain_h * d_omega : 0;
-                        land_sum_dX_v += (is_land) ? gain_v * d_omega : 0;
+                        land_sum_dX_h += (is_land[idx]) ? gain_h * d_omega : 0;
+                        land_sum_dX_v += (is_land[idx]) ? gain_v * d_omega : 0;
                     }
                 }
-
-                float this_land_frac = 1 - surface_water_fraction_mb[fp_idx];
 
                 land_frac[0][fp_idx] = land_sum_dX_v / sum_dX_v;
                 land_frac[1][fp_idx] = land_sum_dX_h / sum_dX_h;
 
+                float this_land_frac = 1 - surface_water_fraction_mb[fp_idx];
                 printf(
-                    "%s %4.2f, %4.2f %f %f %f %f %f\n", time_str, lat[fp_idx], lon[fp_idx], 
-                    land_frac[0][fp_idx], land_frac[1][fp_idx], this_land_frac,
-                    sum_dX_h, sum_dX_v);
+                    "%s %4.2f, %4.2f %f %f %f %4.2f %4.2f %4.3f %4.3f %4.0f\n",
+                    time_str, lat[fp_idx], lon[fp_idx], land_frac[0][fp_idx],
+                    land_frac[1][fp_idx], this_land_frac, sum_dX_h, sum_dX_v,
+                    max_dlat, max_dlon, distance);
 
             }
         }
