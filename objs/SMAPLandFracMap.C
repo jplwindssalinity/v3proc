@@ -30,7 +30,7 @@ int SMAPLandFracMap::Read(const char* filename) {
     fread(&_dazi, sizeof(float), 1, ifp);
 
     _nlon = (int)round(360/_delta);
-    _nlat = (int)round(90/_delta);
+    _nlat = 1 + (int)round(90/_delta);
     _nazi = (int)round(360/_dazi);
     _lfmap.resize(_nlon*_nlat*_nazi);
 
@@ -92,13 +92,13 @@ int SMAPLandFracMap::Get(float lon, float lat, float azi, float* land_frac) {
 
     *land_frac = 
         (1-flon)*(1-flat)*(1-fazi)*_lfmap[idx000] + 
-        (1-flon)*(1-flat)*fazi*_lfmap[idx000] + 
-        (1-flon)*flat*(1-fazi)*_lfmap[idx000] + 
-        (1-flon)*flat*fazi*_lfmap[idx000] + 
-        flon*(1-flat)*(1-fazi)*_lfmap[idx000] + 
-        flon*(1-flat)*fazi*_lfmap[idx000] + 
-        flon*flat*(1-fazi)*_lfmap[idx000] + 
-        flon*flat*fazi*_lfmap[idx000];
+        (1-flon)*(1-flat)*   fazi *_lfmap[idx000] + 
+        (1-flon)*   flat *(1-fazi)*_lfmap[idx000] + 
+        (1-flon)*   flat *   fazi *_lfmap[idx000] + 
+           flon *(1-flat)*(1-fazi)*_lfmap[idx000] + 
+           flon *(1-flat)*   fazi *_lfmap[idx000] + 
+           flon *   flat *(1-fazi)*_lfmap[idx000] + 
+           flon *   flat *   fazi *_lfmap[idx000];
 
     return(1);
 }
