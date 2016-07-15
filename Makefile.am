@@ -611,7 +611,9 @@ libSim_a_SOURCES =                   \
     objs/L2BTBOnly.C                 \
     objs/L2BTBOnly.h                 \
     objs/SMAPBeam.C                  \
-    objs/SMAPBeam.h
+    objs/SMAPBeam.h                  \
+    objs/SMAPLandFracMap.C           \
+    objs/SMAPLandFracMap.h
 
 ########################################################################
 #ParameterList.o
