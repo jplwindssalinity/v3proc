@@ -47,7 +47,8 @@ int SMAPLandFracMap::Get(Meas* meas, float* land_frac) {
     if(azi < 0) azi += two_pi;
 
     double alt, lon, lat;
-    meas->centroid.GetAltLonGDLat(&alt, &lon, &lat);
+    if(!meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
+        return 0;
 
     return Get(lon, lat, azi, land_frac);
 }
