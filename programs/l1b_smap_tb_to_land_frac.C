@@ -207,7 +207,6 @@ int main(int argc, char* argv[]){
             id, "/Brightness_Temperature/surface_water_fraction_mb",
             &surface_water_fraction_mb[0]);
 
-
         // Iterate over scans
         for(int iframe = 0; iframe < nframes[ipart]; ++iframe) {
             // Iterate over low-res footprints
@@ -304,8 +303,7 @@ int main(int argc, char* argv[]){
                         EarthPosition* this_ep = &ep_grid[idx];
                         Vector3* this_normal = &ep_grid_normal[idx];
 
-                        // x_sc_minus_x_e points to s/c from this_ep
-                        Vector3 x_sc_minus_x_e = orbit_state.rsat - *this_ep;
+                        // x_e_minus_x_sc points to earth from s/c
                         Vector3 x_e_minus_x_sc = *this_ep - orbit_state.rsat;
 
                         double range = x_e_minus_x_sc.Magnitude();
@@ -353,12 +351,12 @@ int main(int argc, char* argv[]){
                 land_frac[0][fp_idx] = land_sum_dX_v / sum_dX_v;
                 land_frac[1][fp_idx] = land_sum_dX_h / sum_dX_h;
 
-                float this_land_frac = 1 - surface_water_fraction_mb[fp_idx];
-                printf(
-                    "%s %4.2f, %4.2f %f %f %f %4.2f %4.2f %4.3f %4.3f %4.0f\n",
-                    time_str, lat[fp_idx], lon[fp_idx], land_frac[0][fp_idx],
-                    land_frac[1][fp_idx], this_land_frac, sum_dX_h, sum_dX_v,
-                    max_dlat, max_dlon, distance);
+//                 float this_land_frac = 1 - surface_water_fraction_mb[fp_idx];
+//                 printf(
+//                     "%s %4.2f, %4.2f %f %f %f %4.2f %4.2f %4.3f %4.3f %4.0f\n",
+//                     time_str, lat[fp_idx], lon[fp_idx], land_frac[0][fp_idx],
+//                     land_frac[1][fp_idx], this_land_frac, sum_dX_h, sum_dX_v,
+//                     max_dlat, max_dlon, distance);
 
             }
         }
