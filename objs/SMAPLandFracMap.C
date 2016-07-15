@@ -7,6 +7,76 @@
 #include "SMAPLandFracMap.h"
 #include "EarthPosition.h"
 
+SMAPLandTBNearMap::SMAPLandTBNearMap() {
+    return;
+}
+
+SMAPLandTBNearMap::SMAPLandTBNearMap(const char* filename) {
+    Read(filename);
+    return;
+}
+
+SMAPLandTBNearMap::~SMAPLandTBNearMap() {
+    return;
+}
+
+int SMAPLandTBNearMap::Read(const char* filename) {
+
+    FILE* ifp = fopen(filename, "r");
+    if(!ifp)
+        return 0;
+
+    _tb_near[0].resize(_nlon*_nlat*_nmonths);
+    _tb_near[1].resize(_nlon*_nlat*_nmonths);
+    fread(&_tb_near[0], sizeof(float), _nlon*_nlat*_nmonths, ifp);
+    fread(&_tb_near[1], sizeof(float), _nlon*_nlat*_nmonths, ifp);
+    fclose(ifp);
+    return 1;
+}
+
+int SMAPLandTBNearMap::Get(Meas* meas, int imonth, float* value) {
+
+    double alt, lon, lat;
+    if(!meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
+        return 0;
+
+    return Get(lon, lat, imonth, meas->measType, value);
+}
+
+int SMAPLandTBNearMap::Get(
+    float lon, float lat, int imonth, Meas::MeasTypeE meas_type, float* value) {
+
+    int ipol;
+    if(meas_type == Meas::L_BAND_TBV_MEAS_TYPE)
+        ipol = 0;
+    else if(meas_type == Meas::L_BAND_TBH_MEAS_TYPE)
+        ipol = 1;
+    else {
+        *value = 0;
+        return 0;
+    }
+
+    lon *= dtr;
+    lat *= dtr;
+
+    if(lon < -180) lon += 360;
+    if(lon >= 180) lon -= 360;
+
+    int ilon = round((lon-_lon_0)/_delta);
+    int ilat = round((lat-_lat_0)/_delta);
+
+    if(ilon == _nlon) ilon = 0;
+
+    if(ilon < 0 || ilon >= _nlon || ilat < 0 || ilat >= _nlat ||
+       imonth < 0 || imonth >= 12) {
+       *value = 0;
+       return 0;
+    }
+
+    *value = _tb_near[ipol][ilon+(ilat+imonth*_nlat)*_nlon];
+    return 1;
+}
+
 SMAPLandFracMap::SMAPLandFracMap() {
     return;
 }
