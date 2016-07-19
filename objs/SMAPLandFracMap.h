@@ -22,11 +22,11 @@ public:
 
 protected:
 
-    std::vector<float> _tb_near[2];
+    std::vector<std::vector<float> > _tb_near;
 
     static const float _delta = 0.25;
-    static const float _lon_0 = -180 + 0.25/2;
-    static const float _lat_0 = -90 + 0.25/2;
+    static const float _lon_0 = -180 + 0.125;
+    static const float _lat_0 = -90 + 0.125;
     static const int _nlon = 1440;
     static const int _nlat = 720;
     static const int _nmonths = 12;

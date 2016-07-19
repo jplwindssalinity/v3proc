@@ -26,10 +26,14 @@ int SMAPLandTBNearMap::Read(const char* filename) {
     if(!ifp)
         return 0;
 
+    printf("SMAPLandTBNearMap::Read:\n");
+
+    _tb_near.resize(2);
     _tb_near[0].resize(_nlon*_nlat*_nmonths);
     _tb_near[1].resize(_nlon*_nlat*_nmonths);
-    fread(&_tb_near[0], sizeof(float), _nlon*_nlat*_nmonths, ifp);
-    fread(&_tb_near[1], sizeof(float), _nlon*_nlat*_nmonths, ifp);
+
+    fread(&_tb_near[0][0], sizeof(float), _nlon*_nlat*_nmonths, ifp);
+    fread(&_tb_near[1][0], sizeof(float), _nlon*_nlat*_nmonths, ifp);
     fclose(ifp);
     return 1;
 }
@@ -56,8 +60,8 @@ int SMAPLandTBNearMap::Get(
         return 0;
     }
 
-    lon *= dtr;
-    lat *= dtr;
+    lon *= rtd;
+    lat *= rtd;
 
     if(lon < -180) lon += 360;
     if(lon >= 180) lon -= 360;
@@ -100,7 +104,7 @@ int SMAPLandFracMap::Read(const char* filename) {
     fread(&_dazi, sizeof(float), 1, ifp);
 
     _nlon = (int)round(360/_delta);
-    _nlat = 1 + (int)round(90/_delta);
+    _nlat = 1 + (int)round(180/_delta);
     _nazi = (int)round(360/_dazi);
     _lfmap.resize(_nlon*_nlat*_nazi);
 

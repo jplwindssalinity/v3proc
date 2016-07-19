@@ -11,6 +11,9 @@
 #define REV_START_TIME_KEYWORD "REV_START_TIME"
 #define REV_STOP_TIME_KEYWORD "REV_STOP_TIME"
 #define COASTAL_DISTANCE_FILE_KEYWORD "COASTAL_DISTANCE_FILE"
+#define DO_LAND_CORRECTION_KEYWORD "DO_LAND_CORRECTION"
+#define SMAP_LAND_FRAC_MAP_FILE_KEYWORD "SMAP_LAND_FRAC_MAP_FILE"
+#define SMAP_LAND_NEAR_MAP_FILE_KEYWORD "SMAP_LAND_NEAR_MAP_FILE"
 
 //----------//
 // INCLUDES //
@@ -34,6 +37,7 @@
 #include "SeaPac.h"
 #include "AttenMap.h"
 #include "OS2XFix.h"
+#include "SMAPLandFracMap.h"
 #include "CoastDistance.h"
 /* hdf5 include */
 #include "hdf5.h"
@@ -141,6 +145,19 @@ int main(int argc, char* argv[]){
 
     char* ephem_file = config_list.Get(EPHEMERIS_FILE_KEYWORD);
     Ephemeris ephem(ephem_file, 10000);
+
+    int do_land_correction = 0;
+    config_list.DoNothingForMissingKeywords();
+    config_list.GetInt(DO_LAND_CORRECTION_KEYWORD, &do_land_correction);
+    config_list.ExitForMissingKeywords();
+
+    SMAPLandTBNearMap smap_tb_near_map;
+    SMAPLandFracMap smap_land_frac_map;
+
+    if(do_land_correction) {
+        smap_land_frac_map.Read(config_list.Get(SMAP_LAND_FRAC_MAP_FILE_KEYWORD));
+        smap_tb_near_map.Read(config_list.Get(SMAP_LAND_NEAR_MAP_FILE_KEYWORD));
+    }
 
     L1B l1b;
     char* output_file = config_list.Get(L1B_TB_FILE_KEYWORD);
@@ -264,6 +281,11 @@ int main(int argc, char* argv[]){
             strncpy(time_str, antenna_scan_time_utc[iframe], 23);
 
             etime.FromCodeA(time_str);
+
+            char* str_month = strtok(time_str, "-");
+            str_month = strtok(NULL, "-");
+            int this_month = atoi(str_month);
+
             // Result
             double time = (
                 (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
@@ -363,6 +385,40 @@ int main(int argc, char* argv[]){
                     new_meas->B = 0.0;
                     new_meas->C = 0.0;
 
+                    if(do_land_correction && distance < 500 & distance > 0) {
+
+                        float land_frac, land_near_value;
+                        if(!smap_tb_near_map.Get(new_meas, this_month, &land_near_value)||
+                           !smap_land_frac_map.Get(new_meas, &land_frac)) {
+                            land_frac = 0;
+                            land_near_value = 0;
+                        }
+
+                        float Tc = 
+                            (new_meas->value - land_frac*land_near_value) /
+                            (1-land_frac);
+
+                        float dTc_dF = 
+                            (new_meas->value - land_near_value) / 
+                            pow(1-land_frac, 2);
+
+                        float dTc_dT = 1/(1-land_frac);
+                        float dTc_dTland = land_frac/(1-land_frac);
+
+                        float var_T = new_meas->A;
+                        float var_Tland = pow(10, 2);
+                        float var_F = pow(land_frac/4, 2);
+
+                        float var_Tc = 
+                            pow(dTc_dF, 2) * var_F + pow(dTc_dT, 2) * var_T + 
+                            pow(dTc_dTland, 2) * var_Tland;
+
+                        // Set corrected values for TB and variance of TB
+                        new_meas->value = Tc;
+                        new_meas->A = var_Tc;
+                        new_meas->bandwidth = land_frac;
+                    }
+
                     new_meas_spot->Append(new_meas);
 
                     if(new_meas_spot->NodeCount() > 0)
@@ -390,7 +446,7 @@ int main(int argc, char* argv[]){
                 exit(1);
             }
 
-            if(this_frame % 100 == 0){
+            if(this_frame % 1 == 0){
                 printf("Wrote %d of %d frames\n", this_frame,
                     nframes[0] + nframes[1]);
             }
