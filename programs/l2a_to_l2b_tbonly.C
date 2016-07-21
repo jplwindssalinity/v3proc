@@ -14,6 +14,7 @@
 #define ANC_U10_FILE_KEYWORD "ANC_U10_FILE"
 #define ANC_V10_FILE_KEYWORD "ANC_V10_FILE"
 #define L2B_TB_BIAS_ADJ_FILE_KEYWORD "L2B_TB_BIAS_ADJ_FILE"
+#define USE_MEASUREMENT_VARIANCE_KEYWORD "USE_MEASUREMENT_VARIANCE"
 #define FILL_VALUE -9999
 
 //----------//
@@ -142,7 +143,11 @@ int main(int argc, char* argv[]) {
 
     config_list.DoNothingForMissingKeywords();
     char* l2b_tb_bias_adj_file = config_list.Get(L2B_TB_BIAS_ADJ_FILE_KEYWORD);
+
+    int use_meas_var = 0;
+    config_list.GetInt(USE_MEASUREMENT_VARIANCE_KEYWORD, &use_meas_var);
     config_list.ExitForMissingKeywords();
+
 
     // Configure the model functions
     CAPGMF cap_gmf;
@@ -307,6 +312,7 @@ int main(int argc, char* argv[]) {
 
             // Average the tbs and inc/azimuth angle over the fore/aft looks.
             float sum_tb[2][2]; // [fore-0, aft-1][v-0, h-1]
+            float sum_tb2[2][2]; // [fore-0, aft-1][v-0, h-1]
             float sum_A[2][2];
             int cnts[2][2];
 
@@ -320,6 +326,7 @@ int main(int argc, char* argv[]) {
                 sum_cos_azi[ilook] = 0;
                 for(int ipol = 0; ipol < 2; ++ipol) {
                     sum_tb[ilook][ipol] = 0;
+                    sum_tb2[ilook][ipol] = 0;
                     sum_A[ilook][ipol] = 0;
                     cnts[ilook][ipol] = 0;
                 }
@@ -357,6 +364,7 @@ int main(int argc, char* argv[]) {
 
                 cnts[idx_look][idx_pol]++;
                 sum_tb[idx_look][idx_pol] += meas->value;
+                sum_tb2[idx_look][idx_pol] += pow(meas->value, 2);
                 sum_A[idx_look][idx_pol] += meas->A;
                 sum_inc[idx_look] += meas->incidenceAngle;
                 sum_cos_azi[idx_look] += cos(meas->eastAzimuth);
@@ -390,6 +398,11 @@ int main(int argc, char* argv[]) {
                 this_meas->incidenceAngle = dtr * inc_fore[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[l2bidx]);
                 this_meas->A = sum_A[0][0]/pow((float)cnts[0][0], 2);
+                if(use_meas_var) {
+                    this_meas->A =
+                        (sum_tb2[0][0]-pow(sum_tb[0][0], 2)/(float)cnts[0][0]) /
+                        (float)(cnts[0][0]-1);
+                }
                 tb_ml_avg.Append(this_meas);
             }
 
@@ -405,6 +418,11 @@ int main(int argc, char* argv[]) {
                 this_meas->incidenceAngle = dtr * inc_aft[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[l2bidx]);
                 this_meas->A = sum_A[1][0]/pow((float)cnts[1][0], 2);
+                if(use_meas_var) {
+                    this_meas->A =
+                        (sum_tb2[1][0]-pow(sum_tb[1][0], 2)/(float)cnts[1][0]) /
+                        (float)(cnts[1][0]-1);
+                }
                 tb_ml_avg.Append(this_meas);
             }
 
@@ -420,6 +438,11 @@ int main(int argc, char* argv[]) {
                 this_meas->incidenceAngle = dtr * inc_fore[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[l2bidx]);
                 this_meas->A = sum_A[0][1]/pow((float)cnts[0][1], 2);
+                if(use_meas_var) {
+                    this_meas->A =
+                        (sum_tb2[0][1]-pow(sum_tb[0][1], 2)/(float)cnts[0][1]) /
+                        (float)(cnts[0][1]-1);
+                }
                 tb_ml_avg.Append(this_meas);
             }
 
@@ -435,6 +458,11 @@ int main(int argc, char* argv[]) {
                 this_meas->incidenceAngle = dtr * inc_aft[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[l2bidx]);
                 this_meas->A = sum_A[1][1]/pow((float)cnts[1][1], 2);
+                if(use_meas_var) {
+                    this_meas->A =
+                        (sum_tb2[1][1]-pow(sum_tb[1][1], 2)/(float)cnts[1][1]) /
+                        (float)(cnts[1][1]-1);
+                }
                 tb_ml_avg.Append(this_meas);
             }
 
