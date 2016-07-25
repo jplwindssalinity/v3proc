@@ -376,7 +376,7 @@ int main(int argc, char* argv[]){
                     if(distance < 45 || this_land_frac > 0.01)
                         new_meas->landFlag += 1; // bit 0 for land
 
-                    if( qs_icemap.IsIce(tmp_lon, tmp_lat, 0) )
+                    if(qs_icemap.IsIce(tmp_lon, tmp_lat, 0))
                         new_meas->landFlag += 2; // bit 1 for ice
 
 
@@ -414,9 +414,15 @@ int main(int argc, char* argv[]){
                             pow(dTc_dTland, 2) * var_Tland;
 
                         // Set corrected values for TB and variance of TB
-                        new_meas->value = Tc;
-                        new_meas->A = var_Tc;
                         new_meas->bandwidth = land_frac;
+
+                        // only apply correction if non-empty land near value,
+                        // otherwise will increase TB not decrease it.
+                        if(land_near_value > 0) {
+                            new_meas->EnSlice = new_meas->value - Tc;
+                            new_meas->value = Tc;
+                            new_meas->A = var_Tc;
+                        }
                     }
 
                     new_meas_spot->Append(new_meas);
