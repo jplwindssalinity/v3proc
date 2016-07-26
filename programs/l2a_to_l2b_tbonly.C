@@ -613,8 +613,8 @@ int main(int argc, char* argv[]) {
                 if(anc_sst[l2bidx] < 278.16)
                     quality_flag[l2bidx] |= QUAL_FLAG_SST_TOO_COLD;
 
-                if(fabs(inc_fore[l2bidx]-40) > 0.2 || 
-                   fabs(inc_aft[l2bidx]-40) > 0.2)
+                if((inc_fore[l2bidx] > 0 && fabs(inc_fore[l2bidx]-40) > 0.2) ||
+                   (inc_aft[l2bidx] > 0 && fabs(inc_aft[l2bidx]-40) > 0.2))
                    quality_flag[l2bidx] |= QUAL_FLAG_POINTING;
 
                 // Overall data quality mask
