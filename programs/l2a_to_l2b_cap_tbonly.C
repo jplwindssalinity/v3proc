@@ -265,6 +265,9 @@ int main(int argc, char* argv[]) {
             float init_spd = nudgeWV->spd;
             float init_dir = nudgeWV->dir;
             float init_sss = l2b_tbonly.smap_sss[l2bidx];
+            if(l2b_tbonly.smap_sss_bias_adj[l2bidx] >= 0)
+                init_sss = l2b_tbonly.smap_sss_bias_adj[l2bidx];
+
             float this_anc_spd = nudgeWV->spd;
             float this_anc_dir = nudgeWV->dir;
             float this_anc_sst = l2b_tbonly.anc_sst[l2bidx];
