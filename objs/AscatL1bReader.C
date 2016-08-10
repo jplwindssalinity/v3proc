@@ -35,12 +35,14 @@ using namespace std;
 #define SZO_SIZE   4018
 #define SZR_SIZE   7818
 #define SZF_SIZE  41624
+#define SZF_SIZE_NEW  3684
 
 // number of nodes
 
 #define NODES_SZO   21
 #define NODES_SZR   41
 #define NODES_SZF  256
+#define NODES_SZF_NEW  192
 
 #define DINSTR_ID  13
 #define DFMT_ID     1
@@ -230,6 +232,27 @@ int msec;
  second = second - hour * 3600 - minute * 60;
 }
 
+static void get_time_new( unsigned char *x, double *t, 
+                      int &year, int &month, int &day, int &hour, int &minute, int &second)
+{
+int julian_start;
+int julian_day;
+int msec;
+  
+ get_ushort(x,22,&julian_day);
+ get_uint(x,24,&msec);
+ second = msec/1000;
+ *t = julian_day + second/86400.0;
+ 
+ ymd2julian(2000,1,1,julian_start);
+ julian2ymd(julian_start+julian_day,year,month,day);
+ 
+ 
+ 
+ hour   = second / 3600;
+ minute = second / 60 - hour * 60;
+ second = second - hour * 3600 - minute * 60;
+}
 static void get_ushort( unsigned char *x, int pos, double sf, double *ans )
 {
  int a;
@@ -426,6 +449,8 @@ int AscatFile::open( const char* fname, int *nr0, int *nn0 )
  if( get_num(x,960,&proc_maj_version) ) return 1;
  if( get_num(x,998,&proc_min_version) ) return 1;
  if( get_num(x,1408,&orbitnr) ) return 1;
+ if( get_num(x,1036, &fmt_maj) ) return 1;
+ if( get_num(x,1074, &fmt_min) ) return 1;
  
  
  if( get_str(x,1529,4,&dumstr) ) return 1;
@@ -533,9 +558,15 @@ int AscatFile::open( const char* fname, int *nr0, int *nn0 )
   }
  else if( prod == "SZF" )
   {
-   nn = NODES_SZF;
-   size = SZF_SIZE;
-   id = SZF_ID;
+   if(fmt_maj>=12) {
+        nn = NODES_SZF_NEW;
+        size = SZF_SIZE_NEW;
+        id = SZF_ID;
+    } else {
+        nn = NODES_SZF;
+        size = SZF_SIZE;
+        id = SZF_ID;
+    }
   }
  else
   return 1;
@@ -1236,16 +1267,18 @@ void AscatFile::get_node_new(int inode, AscatSZFNodeNew *ascat_szf_node) {
     int ant;
     int pos;
 
-    if(nn != NODES_SZF || inode < 0 || inode >= NODES_SZF) FAIL;
+    if(nn != NODES_SZF_NEW || inode < 0 || inode >= NODES_SZF_NEW) FAIL;
 
     // index offset for arrays (mulitply by 4 for byte offset of 4 bytes types)
     pos = inode;
 
     double tm;
-    get_time(
+    get_time_new(
         mdr, &tm, ascat_szf_node->year, ascat_szf_node->month,
         ascat_szf_node->day, ascat_szf_node->hour, ascat_szf_node->minute,
         ascat_szf_node->second);
+
+    ascat_szf_node->tm = tm;
 
     get_ushort(mdr, 28, 1.0e-2, &ascat_szf_node->track);
     get_byte(mdr, 30, &ascat_szf_node->is_asc);
@@ -1261,6 +1294,8 @@ void AscatFile::get_node_new(int inode, AscatSZFNodeNew *ascat_szf_node) {
     get_byte(mdr, 3491, &ascat_szf_node->fgen1);
     get_byte(mdr, 3492+pos, &ascat_szf_node->fgen2);
 
+    ascat_szf_node->beam = (int)mdr[31];
+
     // transform lon and azimuth angles
     if(ascat_szf_node->lon > 180) ascat_szf_node->lon -= 360;
  
@@ -1270,5 +1305,39 @@ void AscatFile::get_node_new(int inode, AscatSZFNodeNew *ascat_szf_node) {
     ascat_szf_node->a0 += 180;
     if(ascat_szf_node->a0 > 360)
         ascat_szf_node->a0 -= 360;
+
+    // Check quality flags, set usability
+    unsigned char FLAGFIELD_RF1_RED_MASK = 0x14;
+    unsigned char FLAGFIELD_RF1_AMBER_MASK = 0x0B;
+    unsigned char FLAGFIELD_RF2_RED_MASK = 0x03;
+    unsigned char FLAGFIELD_RF2_AMBER_MASK = 0x04;
+    unsigned char FLAGFIELD_PL_RED_MASK = 0x0F;
+    unsigned char FLAGFIELD_GEN1_RED_MASK = 0x02;
+    unsigned char FLAGFIELD_GEN1_AMBER_MASK = 0x01;
+    unsigned char FLAGFIELD_GEN2_RED_MASK = 0x02;
+    unsigned char FLAGFIELD_GEN2_AMBER_MASK = 0x01;
+
+    int is_red = 0;
+    if( ascat_szf_node->fref1 & FLAGFIELD_RF1_RED_MASK ||
+        ascat_szf_node->fref2 & FLAGFIELD_RF2_RED_MASK ||
+        ascat_szf_node->fpl & FLAGFIELD_PL_RED_MASK ||
+        ascat_szf_node->fgen1 & FLAGFIELD_GEN1_RED_MASK ||
+        ascat_szf_node->fgen2 & FLAGFIELD_GEN2_RED_MASK) is_red = 1;
+
+    int is_amber = 0;
+    if( ascat_szf_node->fref1 & FLAGFIELD_RF1_AMBER_MASK ||
+        ascat_szf_node->fref2 & FLAGFIELD_RF2_AMBER_MASK ||
+        ascat_szf_node->fgen1 & FLAGFIELD_GEN1_AMBER_MASK ||
+        ascat_szf_node->fgen2 & FLAGFIELD_GEN2_AMBER_MASK) is_amber = 1;
+
+    ascat_szf_node->is_good = (is_red == 0 && is_amber == 0) ? 1 : 0;
+    ascat_szf_node->is_marginal = (is_red == 0 && is_amber == 1) ? 1 : 0;
+    ascat_szf_node->is_bad = (is_red > 0) ?  1 : 0;
+    ascat_szf_node->is_land = (ascat_szf_node->fgen2 & 0x02) ? 1 : 0;
+
+    ascat_szf_node->s0 = pow(10.0, 0.1*ascat_szf_node->s0);
+    if(ascat_szf_node->fgen2 & 0x08)
+        ascat_szf_node->s0 *= -1;
+
 }
 

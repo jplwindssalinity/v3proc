@@ -83,14 +83,15 @@ AscatSZFNode;
 typedef struct {
     int year, month, day, hour, minute, second;
     double track;
-    int is_asc;
     int beam;
+    double tm;
     double s0;
     double t0; // inc
     double a0; // cell azimuth
     double lon, lat;
     double land_frac;
     int fref1, fref2, fpl, fgen1, fgen2;
+    int is_good, is_marginal, is_bad, is_asc, is_land;
 } AscatSZFNodeNew;
 
 // class to read ascat level 1b
@@ -117,6 +118,7 @@ class AscatFile
 
 
  public:
+ int fmt_maj, fmt_min;
  
  double semi_major_axis;
  double eccentricity;
