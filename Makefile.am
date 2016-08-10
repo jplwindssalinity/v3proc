@@ -173,7 +173,9 @@ bin_PROGRAMS = \
     programs/generate_rgc_from_ephem_quat_files   \
     programs/RS_GSE_to_ephem_quat                 \
     programs/l2a_geom_noise                       \
-    programs/quick_winds
+    programs/quick_winds                          \
+    programs/ascat_szf_to_l1b                     \
+    programs/ascat_szf_to_l1b_new
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files

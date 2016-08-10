@@ -74,12 +74,24 @@ typedef struct
  int year,month,day,hour,minute,second;
  double lon,lat;
  double tm,track,atht,atls;
- double s0,t0,a0;
+ double s0,t0,a0; //sigma0, inc angle, azimuth angle
  int fsyn,fref,forb;
  int fgen1,fgen2;
 }
 AscatSZFNode;
 
+typedef struct {
+    int year, month, day, hour, minute, second;
+    double track;
+    int is_asc;
+    int beam;
+    double s0;
+    double t0; // inc
+    double a0; // cell azimuth
+    double lon, lat;
+    double land_frac;
+    int fref1, fref2, fpl, fgen1, fgen2;
+} AscatSZFNodeNew;
 
 // class to read ascat level 1b
 // files and return node data
@@ -134,6 +146,7 @@ class AscatFile
  // return szo & szr node data
 
  void get_node( int i, int beam, AscatSZFNode *b );
+ void get_node_new( int i, AscatSZFNodeNew *b );
  // return szf node data
 
  void close( );

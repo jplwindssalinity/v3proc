@@ -1230,5 +1230,45 @@ void AscatFile::get_node( int i, int beam, AscatSZFNode *b )
 }
 
 
+void AscatFile::get_node_new(int inode, AscatSZFNodeNew *ascat_szf_node) {
+// for format 12 and up
+    int julian1, julian2, time_diff;
+    int ant;
+    int pos;
 
+    if(nn != NODES_SZF || inode < 0 || inode >= NODES_SZF) FAIL;
+
+    // index offset for arrays (mulitply by 4 for byte offset of 4 bytes types)
+    pos = inode;
+
+    double tm;
+    get_time(
+        mdr, &tm, ascat_szf_node->year, ascat_szf_node->month,
+        ascat_szf_node->day, ascat_szf_node->hour, ascat_szf_node->minute,
+        ascat_szf_node->second);
+
+    get_ushort(mdr, 28, 1.0e-2, &ascat_szf_node->track);
+    get_byte(mdr, 30, &ascat_szf_node->is_asc);
+    get_byte(mdr, 31, &ascat_szf_node->beam);
+    get_int(mdr, 32+pos*4, 1.0e-6, &ascat_szf_node->s0);
+    get_ushort(mdr, 800+pos*2, 1.0e-2, &ascat_szf_node->t0);
+    get_ushort(mdr, 1184+pos*2, 1.0e-2, &ascat_szf_node->a0);
+    get_int(mdr, 1568+pos*4, 1.0e-6, &ascat_szf_node->lat);
+    get_int(mdr, 2336+pos*4, 1.0e-6, &ascat_szf_node->lon);
+    get_byte(mdr, 3488, &ascat_szf_node->fref1);
+    get_byte(mdr, 3489, &ascat_szf_node->fref2);
+    get_byte(mdr, 3490, &ascat_szf_node->fpl);
+    get_byte(mdr, 3491, &ascat_szf_node->fgen1);
+    get_byte(mdr, 3492+pos, &ascat_szf_node->fgen2);
+
+    // transform lon and azimuth angles
+    if(ascat_szf_node->lon > 180) ascat_szf_node->lon -= 360;
+ 
+    // Transform azimuth angle to angle between north and projection
+    // of pointing vector on ground, measured clockwise. 
+    // (p. 132 of ascat L1 product generation function spec document).
+    ascat_szf_node->a0 += 180;
+    if(ascat_szf_node->a0 > 360)
+        ascat_szf_node->a0 -= 360;
+}
 
