@@ -361,6 +361,8 @@ libSim_a_SOURCES =                   \
     objs/CheckFrame.h                \
     objs/CoastalMaps.C               \
     objs/CoastalMaps.h               \
+    objs/CoastDistance.C             \
+    objs/CoastDistance.h             \
     objs/ColorMap.C                  \
     objs/ColorMap.h                  \
     objs/ConfigList.C                \
@@ -429,6 +431,8 @@ libSim_a_SOURCES =                   \
     objs/Kpr.h                       \
     objs/KpStatistics.C              \
     objs/KpStatistics.h              \
+    objs/LCRESMap.C                  \
+    objs/LCRESMap.h                  \
     objs/L00.C                       \
     objs/L00Frame.C                  \
     objs/L00Frame.h                  \

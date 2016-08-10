@@ -56,6 +56,13 @@ static const char rcs_id[] =
 #define DO_COASTAL_PROCESSING_KEYWORD   "DO_COASTAL_PROCESSING"
 #define USE_COMPOSITING_KEYWORD         "USE_COMPOSITING"
 #define USE_FOOTPRINTS_KEYWORD          "USE_FOOTPRINTS"
+#define COASTAL_METHOD_KEYWORD          "COASTAL_PROCESSING_METHOD"
+#define COASTAL_DISTANCE_FILE_KEYWORD   "COASTAL_DISTANCE_FILE"
+#define LCRES_ACCUM_FILE_KEYWORD        "LCRES_ACCUM_FILE"
+#define LCRES_MAP_TILE_DIR_KEYWORD      "LCRES_MAP_TILE_DIR"
+#define LCR_THRESHOLD_FLAG_KEYWORD      "LCR_THRESHOLD_FLAG"
+#define LCRES_THRESHOLD_FLAG_KEYWORD    "LCRES_THRESHOLD_FLAG"
+#define LCRES_THRESHOLD_CORR_KEYWORD    "LCRES_THRESHOLD_CORR"
 
 //----------//
 // INCLUDES //
@@ -65,6 +72,7 @@ static const char rcs_id[] =
 #include <unistd.h>
 #include <stdlib.h>
 #include <string>
+#include <fstream>
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ConfigList.h"
@@ -77,6 +85,8 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "SeaPac.h"
 #include "AttenMap.h"
+#include "CoastDistance.h"
+#include "LCRESMap.h"
 
 using std::list;
 using std::map;
@@ -487,10 +497,8 @@ main(
     char*        attenmap_file   = NULL;
     char*        qslandmap_file  = NULL;
     char*        qsicemap_file   = NULL;
-    
     int          compute_land_frac = 0;
     float        sigma0_adjust = 0;
-    
     ConfigList   config_list;
     AttenMap     attenmap;
     QSLandMap    qs_landmap;
@@ -498,6 +506,9 @@ main(
     Kp           kp;
     LandMap      lmap;
     Antenna      antenna;
+
+    enum CoastalProcMethod {NONE, LCR, LCRES_FLAG, LCRES_CORR, LCRES_ACCUM};
+
     //QSKpr        qs_kpr;
 
     //------------------------//
@@ -535,32 +546,91 @@ main(
     //----------------------------------//
     // check for config file parameters //
     //----------------------------------//
-    config_list.DoNothingForMissingKeywords();
-        
-    if (! ConfigKp(&kp, &config_list)) {
-      fprintf(stderr, "%s: error configuring Kp\n", command);
-      exit(1);
-    }
-    
+    config_list.ExitForMissingKeywords();
+    ConfigKp(&kp, &config_list);
+
     // Check for QS_LANDMAP and QS_ICEMAP keywords
     qslandmap_file = config_list.Get(QS_LANDMAP_FILE_KEYWORD);
     qsicemap_file  = config_list.Get(QS_ICEMAP_FILE_KEYWORD);
-    
-    if( qslandmap_file == NULL || qsicemap_file == NULL ) {
-      fprintf(stderr,"%s: Must specify QS_LANDMAP_FILE and QS_ICEMAP_FILE in config!\n",command);
-      exit(1);
+
+    int do_coastal_processing = 0;
+    CoastalProcMethod coastal_method = NONE;
+    float land_frac_threshold = 1;
+    float lcres_thresh_flag = 1;
+    float lcres_thresh_corr = 1;
+
+    // Declare these as null pointers and new them if commanded to in config
+    // file.  They consume large amounts of RAM
+    CoastDistance* coast_dist = NULL;
+    LCRESMap* lcres_accum = NULL;
+    LCRESMapTileList* lcres_map_tiles = NULL;
+
+    config_list.DoNothingForMissingKeywords();
+    config_list.GetInt(DO_COASTAL_PROCESSING_KEYWORD,&do_coastal_processing);
+
+    if(do_coastal_processing) {
+        config_list.ExitForMissingKeywords();
+
+        // Determine which method to use
+        const char* method = config_list.Get(COASTAL_METHOD_KEYWORD);
+        fprintf(stdout, "%s\n", method);
+
+        // Land Contamination Ratio method (simple land fraction threshold).
+        if (strcmp(method, "LCR") == 0){
+            coastal_method = LCR;
+
+            coast_dist = new CoastDistance();
+            coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
+
+            config_list.GetFloat(
+                LCR_THRESHOLD_FLAG_KEYWORD, &land_frac_threshold);
+
+        // Land Contamination Ratio Expected Sigma0 threshold
+        } else if (strcmp(method, "LCRES_FLAG") == 0) {
+            coastal_method = LCRES_FLAG;
+
+            char* lcres_map_tile_dir = config_list.Get(
+                LCRES_MAP_TILE_DIR_KEYWORD);
+
+            lcres_map_tiles = new LCRESMapTileList(lcres_map_tile_dir);
+
+            coast_dist = new CoastDistance();
+            coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
+
+            config_list.GetFloat(
+                LCRES_THRESHOLD_FLAG_KEYWORD, &lcres_thresh_flag);
+
+        // Land Contamination Ratio Expected Sigma0 correction
+        } else if (strcmp(method, "LCRES_CORR") == 0) {
+            coastal_method = LCRES_CORR;
+
+            char* lcres_map_tile_dir = config_list.Get(
+                LCRES_MAP_TILE_DIR_KEYWORD);
+
+            lcres_map_tiles = new LCRESMapTileList(lcres_map_tile_dir);
+
+            coast_dist = new CoastDistance();
+            coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
+
+            config_list.GetFloat(
+                LCRES_THRESHOLD_CORR_KEYWORD, &lcres_thresh_corr);
+
+        // Mode to accumulate the LCRES maps
+        } else if (strcmp(method, "LCRES_ACCUM") == 0) {
+            coastal_method = LCRES_ACCUM;
+
+            lcres_accum = new LCRESMap();
+            if(!lcres_accum->Read(config_list.Get(LCRES_ACCUM_FILE_KEYWORD))) {
+                fprintf(stderr, "Error reading lcres accum file\n");
+            }
+
+            coast_dist = new CoastDistance();
+            coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
+        }
+
+        config_list.DoNothingForMissingKeywords();
     }
-    
-    float land_frac_threshold;
-    config_list.GetInt(DO_COASTAL_PROCESSING_KEYWORD,&compute_land_frac);
-    
-    if( compute_land_frac && 
-        !config_list.GetFloat("COASTAL_LAND_FRAC_THRESH",&land_frac_threshold) ) {
-      fprintf(stderr,"%s: Must specify COASTAL_LAND_FRAC_THRESH if DO_COASTAL_PROCESSING = 1\n",
-              command );
-      exit(1);
-    }
-    
+
     fprintf(stdout,"%s: Using QS LANDMAP %s\n",command,qslandmap_file);
     fprintf(stdout,"%s: Using QS ICEMAP %s\n",command,qsicemap_file);
     qs_landmap.Read( qslandmap_file );
@@ -623,7 +693,7 @@ main(
     }
 
     // Check for Coastal maps & configure landmap if commanded
-    if( compute_land_frac ) {
+    if(coastal_method != NONE) {
       if(!ConfigLandMap(&lmap,&config_list)) {
         fprintf(stderr,"%s: Error configuring LandMap\n",command);
         exit(1);
@@ -633,12 +703,12 @@ main(
         exit(1);
       }
     }
-    
+
     //
     //------Done reading from config file.-------------------------------------
     //
 
-    L1B l1b;    
+    L1B l1b;
     // Prepare to write
     if (l1b.OpenForWriting(output_file) == 0) {
         fprintf(stderr, "%s: cannot open l1b file %s for output\n", command, output_file);
@@ -1160,7 +1230,7 @@ main(
                delete new_meas;
                continue;
              }
-           
+
              // Stick this meas in the measSpot
              new_meas_spot->Append(new_meas);
           }
@@ -1186,9 +1256,65 @@ main(
                 this_meas->landFlag &= ~(1<<0);
                 this_meas = new_meas_spot->GetNext();
               }
+=======
+           // Stick this meas in the measSpot
+           new_meas_spot->Append(new_meas);
+        }
+
+        // Compute land fractions for various coastal_methos
+        if(coastal_method != NONE) {
+
+          float this_frequency_shift = (float)frequency_shift[pulse_ind];
+          double spot_lon = double(cell_lon[pulse_ind])*dtr;
+          double spot_lat = double(cell_lat[pulse_ind])*dtr;
+
+          new_meas_spot->ComputeLandFraction( &lmap, coast_dist,
+                                              &antenna, this_frequency_shift,
+                                              spot_lon, spot_lat, lcres_accum,
+                                              lcres_map_tiles);
+
+          // Loop through Meas in this MeasSpot, decide to discard or not.
+          Meas* this_meas = new_meas_spot->GetHead();
+          while(this_meas) {
+            int remove_it = 0;
+
+            // Land contamination ratio
+            float lcr = this_meas->bandwidth;
+            float lcres = this_meas->txPulseWidth;
+
+            switch (coastal_method) {
+                case LCR:
+                    if(lcr > land_frac_threshold) remove_it = 1;
+                    break;
+
+                case LCRES_FLAG:
+                    if(lcres > lcres_thresh_flag) remove_it = 1;
+                    break;
+
+                case LCRES_CORR:
+                    if(lcres > lcres_thresh_corr) {
+                        remove_it = 1;
+                    } else {
+                        this_meas->value = (this_meas->value - lcres) / (1-lcr);
+                        if(fabs(this_meas->value) > 1.0e5)
+                            remove_it = 1;
+                    }
+                    break;
+
+            }
+
+            if(remove_it) {
+              this_meas = new_meas_spot->RemoveCurrent();
+              delete this_meas;
+              this_meas = new_meas_spot->GetCurrent();
+            } else {
+              // unset land flag
+              this_meas->landFlag &= ~(1<<0);
+              this_meas = new_meas_spot->GetNext();
             }
           }
         }
+
         // Stick this measSpot in the spotList.
         l1b.frame.spotList.Append(new_meas_spot);
       }
@@ -1216,7 +1342,10 @@ main(
         printf("Wrote %d frames of %d\n", i_frame, num_l1b_frames);
         //if( i_frame == 1000 ) exit(1);
     }
-    
+
+    if(coastal_method == LCRES_ACCUM)
+        lcres_accum->Write(config_list.Get(LCRES_ACCUM_FILE_KEYWORD));
+
     fclose(eph_fp);
     
     //Free the calloc-ed arrays.
@@ -1262,8 +1391,6 @@ main(
       fprintf(stderr,"ERROR closing hdf file %s.\n",l1b_hdf_file);
       exit(1);
     }
-
-    
     
     return 0;
     
