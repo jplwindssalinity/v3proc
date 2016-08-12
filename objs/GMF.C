@@ -2137,6 +2137,10 @@ GMF::_ObjectiveFunction(
 	    fv = _ObjectiveFunctionDirPrior(meas_list,spd,phi,kp,phi_prior);
 	    break;
 
+        case 5:
+        fv = _ObjectiveFunctionVarSpecified(meas_list,spd,phi,kp);
+        break;
+
         default:
             fv = _ObjectiveFunctionOld(meas_list, spd, phi, kp);
             break;       
@@ -2391,6 +2395,66 @@ GMF::_ObjectiveFunctionMeasVar(
             fv += wt*s*s / var;
         }
 	//printf("fv %g wt %g s %g var %g A %g B %g\n",fv,wt,s,var,meas->EnSlice,meas->bandwidth);
+    }
+    return(-fv);
+}
+
+float GMF::_ObjectiveFunctionVarSpecified(
+    MeasList*  meas_list,
+    float      spd,
+    float      phi,
+    Kp*        kp)
+{
+    //-----------------------------------------//
+    // initialize the objective function value //
+    //-----------------------------------------//
+
+    float fv = 0.0;
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+        //---------------------------------------//
+        // get sigma-0 for the trial wind vector //
+        //---------------------------------------//
+
+        float chi = phi - meas->eastAzimuth + pi;
+        float trial_value;
+        GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
+            &trial_value);
+
+        //------------------------------------------------------------//
+        // find the difference between the trial and measured sigma-0 //
+        //------------------------------------------------------------//
+
+        // Sanity check on measurement
+        double tmp=meas->value;
+        if (! finite(tmp))
+            continue;
+
+        float s = trial_value - meas->value;
+        float wt=kuBandWeight;
+        if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE || 
+           meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
+           wt=cBandWeight;
+        }
+
+        //-------------------------------------------------------//
+        // Get variance from meas->A                             //
+        //-------------------------------------------------------//
+
+        float var = meas->A;
+        if (var == 0.0)
+        {
+            // variances all turned off, so use uniform weighting.
+            fv += wt*s*s;
+        }
+        else if (retrieveUsingLogVar)
+        {
+            fv += wt*s*s / var + wt*log(var);
+        }
+        else
+        {
+            fv += wt*s*s / var;
+        }
     }
     return(-fv);
 }
