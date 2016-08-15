@@ -261,6 +261,14 @@ static void get_ushort( unsigned char *x, int pos, double sf, double *ans )
  *ans = a*sf;
 }
 
+static void get_short( unsigned char *x, int pos, double sf, double *ans )
+{
+ int a;
+
+ get_short(x,pos,&a);
+ *ans = a*sf;
+}
+
 static void get_uint( unsigned char *x, int pos, double sf, double *ans )
 {
  int a;
@@ -1285,7 +1293,7 @@ void AscatFile::get_node_new(int inode, AscatSZFNodeNew *ascat_szf_node) {
     get_byte(mdr, 31, &ascat_szf_node->beam);
     get_int(mdr, 32+pos*4, 1.0e-6, &ascat_szf_node->s0);
     get_ushort(mdr, 800+pos*2, 1.0e-2, &ascat_szf_node->t0);
-    get_ushort(mdr, 1184+pos*2, 1.0e-2, &ascat_szf_node->a0);
+    get_short(mdr, 1184+pos*2, 1.0e-2, &ascat_szf_node->a0);
     get_int(mdr, 1568+pos*4, 1.0e-6, &ascat_szf_node->lat);
     get_int(mdr, 2336+pos*4, 1.0e-6, &ascat_szf_node->lon);
     get_byte(mdr, 3488, &ascat_szf_node->fref1);

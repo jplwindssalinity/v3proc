@@ -161,7 +161,8 @@ int main(int argc, char* argv[]) {
 
             new_meas->centroid.SetAltLonGDLat(0.0, tmp_lon, tmp_lat);
             new_meas->incidenceAngle = dtr*ascat_szf_node.t0;
-            new_meas->eastAzimuth = (450.0*dtr - dtr*ascat_szf_node.a0);
+//             new_meas->eastAzimuth = (450.0*dtr - dtr*ascat_szf_node.a0);
+            new_meas->eastAzimuth = gs_deg_to_pe_rad(ascat_szf_node.a0);
             new_meas->numSlices = 1;
             new_meas->startSliceIdx = inode;
             new_meas->beamIdx = ascat_szf_node.beam - 1;

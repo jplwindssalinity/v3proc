@@ -137,6 +137,7 @@ int main(int argc, char* argv[]) {
     std::vector<float> lat(l2b_size), lon(l2b_size);
     std::vector<float> ascat_spd_dirth(l2b_size), ascat_dir_dirth(l2b_size);
     std::vector<float> ascat_spd_sel(l2b_size), ascat_dir_sel(l2b_size);
+    std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
     std::vector<float> ascat_ambiguity_spd(l2b_size*4);
     std::vector<float> ascat_ambiguity_dir(l2b_size*4);
     std::vector<float> sigma0_fore(l2b_size);
@@ -166,6 +167,8 @@ int main(int argc, char* argv[]) {
             lon[l2bidx] = FILL_VALUE;
             ascat_spd_dirth[l2bidx] = FILL_VALUE;
             ascat_dir_dirth[l2bidx] = FILL_VALUE;
+            anc_spd[l2bidx] = FILL_VALUE;
+            anc_dir[l2bidx] = FILL_VALUE;
             num_ambiguities[l2bidx] = 0;
             ascat_spd_sel[l2bidx] = FILL_VALUE;
             ascat_dir_sel[l2bidx] = FILL_VALUE;
@@ -253,7 +256,7 @@ int main(int argc, char* argv[]) {
                 if(cnts[ibeam]>0) {
                     Meas* this_meas = new Meas();
                     this_meas->value = sum_s0[ibeam]/(float)cnts[ibeam];
-                    this_meas->measType = Meas::VV_MEAS_TYPE;
+                    this_meas->measType = Meas::C_BAND_VV_MEAS_TYPE;
                     this_meas->incidenceAngle =
                         sum_inc[ibeam]/(float)cnts[ibeam];
 
@@ -289,6 +292,7 @@ int main(int argc, char* argv[]) {
 
             WVC* wvc = new WVC();
             gmf.RetrieveWinds_S3(&ml_avg, &kp, wvc);
+            wvc->lonLat = ml->AverageLonLat();
             if(wvc->ambiguities.NodeCount() > 0)
                 wind_swath.Add(cti, ati, wvc);
             else
@@ -330,6 +334,8 @@ int main(int argc, char* argv[]) {
             ascat_spd_sel[l2bidx] = wvc->selected->spd;
             ascat_dir_sel[l2bidx] = pe_rad_to_gs_deg(wvc->selected->dir);
             num_ambiguities[l2bidx] = wvc->ambiguities.NodeCount();
+            anc_spd[l2bidx] = wvc->nudgeWV->spd;
+            anc_dir[l2bidx] = pe_rad_to_gs_deg(wvc->nudgeWV->dir);
 
             int j_amb = 0;
             for(WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
@@ -357,7 +363,7 @@ int main(int argc, char* argv[]) {
                 continue;
 
             ascat_spd_dirth[l2bidx] = wvc->selected->spd;
-            ascat_dir_dirth[l2bidx] = pe_rad_to_gs_deg(wvc->selected->spd);
+            ascat_dir_dirth[l2bidx] = pe_rad_to_gs_deg(wvc->selected->dir);
         }
     }
     
@@ -447,6 +453,20 @@ int main(int argc, char* argv[]) {
         file_id, "ascat_spd_sel", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
+        file_id, "anc_spd", 2, dims, H5T_NATIVE_FLOAT,
+        &anc_spd[0]);
+    H5LTset_attribute_string(
+        file_id, "anc_spd", "long_name", "Ancillary wind speed");
+    H5LTset_attribute_string(
+        file_id, "anc_spd", "units", "m/s");
+    H5LTset_attribute_float(
+        file_id, "anc_spd", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(
+        file_id, "anc_spd", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "anc_spd", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
         file_id, "ascat_ambiguity_spd", 3, dims_amb, H5T_NATIVE_FLOAT,
         &ascat_ambiguity_spd[0]);
     H5LTset_attribute_string(
@@ -491,6 +511,20 @@ int main(int argc, char* argv[]) {
         file_id, "ascat_dir_sel", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "ascat_dir_sel", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "anc_dir", 2, dims, H5T_NATIVE_FLOAT,
+        &anc_dir[0]);
+    H5LTset_attribute_string(
+        file_id, "anc_dir", "long_name", "Ancillary wind direction");
+    H5LTset_attribute_string(
+        file_id, "anc_dir", "units", "degrees");
+    H5LTset_attribute_float(
+        file_id, "anc_dir", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(
+        file_id, "anc_dir", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "anc_dir", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
         file_id, "ascat_ambiguity_dir", 3, dims_amb, H5T_NATIVE_FLOAT,
