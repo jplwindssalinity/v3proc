@@ -876,6 +876,69 @@ int CAPGMF::_Deallocate() {
     return(1);
 }
 
+TBGalCorr::TBGalCorr() {
+    return;
+}
+
+TBGalCorr::TBGalCorr(const char* filename) {
+    Read(filename);
+    return;
+}
+
+TBGalCorr::~TBGalCorr() {
+    return;
+}
+
+
+int TBGalCorr::Read(const char* filename) {
+
+    _dtb_gal.resize(2);
+    _dtb_gal[0].resize(_nspd*_nra*_ndec);
+    _dtb_gal[1].resize(_nspd*_nra*_ndec);
+
+    FILE* ifp = fopen(filename, "r");
+    fread(&_dtb_gal[0][0], _nspd*_nra*_ndec, sizeof(float), ifp);
+    fread(&_dtb_gal[1][0], _nspd*_nra*_ndec, sizeof(float), ifp);
+    fclose(ifp);
+    return(1);
+}
+
+int TBGalCorr::Get(
+    float ra, float dec, float spd, Meas::MeasTypeE met, float* dtg) {
+
+    int ipol;
+    if(met == Meas::L_BAND_TBV_MEAS_TYPE)
+        ipol = 0;
+    else if(met == Meas::L_BAND_TBH_MEAS_TYPE)
+        ipol = 1;
+    else {
+        fprintf(stderr, "TBGalCorr::Get: Invalid measType\n");
+        return(0);
+    }
+
+    float spdmin = _dspd/2;
+    float ramin = _delta/2;
+    float decmin = -90 + _delta/2;
+
+    int ispd = round((spd-spdmin)/_dspd);
+    int ira = round((ra-ramin)/_delta);
+    int idec = round((dec-decmin)/_delta);
+
+    if(ira == -1) ira = _nra - 1;
+    if(ira == _nra) ira = 0;
+
+    if(ispd >= _nspd) ispd = _nspd - 1;
+    if(ispd < 0) ispd = 0;
+
+    if(ira < 0 || ira >= _nra || idec < 0 || idec >= _ndec)
+        return(0);
+    else {
+        int idx = ira + _nra * (idec + _ndec * ispd);
+        *dtg = _dtb_gal[ipol][idx];
+        return(1);
+    }
+}
+
 double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
     // Need this call structure for NLopt library call
 
