@@ -26,8 +26,6 @@ int SMAPLandTBNearMap::Read(const char* filename) {
     if(!ifp)
         return 0;
 
-    printf("SMAPLandTBNearMap::Read:\n");
-
     _tb_near.resize(2);
     _tb_near[0].resize(_nlon*_nlat*_nmonths);
     _tb_near[1].resize(_nlon*_nlat*_nmonths);
@@ -49,6 +47,8 @@ int SMAPLandTBNearMap::Get(Meas* meas, int imonth, float* value) {
 
 int SMAPLandTBNearMap::Get(
     float lon, float lat, int imonth, Meas::MeasTypeE meas_type, float* value) {
+
+    int c_month = imonth - 1;
 
     int ipol;
     if(meas_type == Meas::L_BAND_TBV_MEAS_TYPE)
@@ -72,12 +72,12 @@ int SMAPLandTBNearMap::Get(
     if(ilon == _nlon) ilon = 0;
 
     if(ilon < 0 || ilon >= _nlon || ilat < 0 || ilat >= _nlat ||
-       imonth < 0 || imonth >= 12) {
+       c_month < 0 || c_month >= 12) {
        *value = 0;
        return 0;
     }
 
-    *value = _tb_near[ipol][ilon+(ilat+imonth*_nlat)*_nlon];
+    *value = _tb_near[ipol][ilon+(ilat+c_month*_nlat)*_nlon];
     return 1;
 }
 
