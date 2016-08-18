@@ -70,12 +70,15 @@ template class List<AngleInterval>;
 template class std::list<string>;
 template class std::map<string,string,Options::ltstr>;
 
-#define QUAL_FLAG_USEABLE 0x1
+#define QUAL_FLAG_SSS_USEABLE 0x1
 #define QUAL_FLAG_FOUR_LOOKS 0x2
 #define QUAL_FLAG_POINTING 0x4
+#define QUAL_FLAG_LARGE_GALAXY_CORRECTION 0x10
+#define QUAL_FLAG_ROUGHNESS_CORRECTION 0x20
 #define QUAL_FLAG_SST_TOO_COLD 0x40
 #define QUAL_FLAG_LAND 0x80
 #define QUAL_FLAG_ICE 0x100
+#define QUAL_FLAG_HIGH_SPEED_USEABLE 0x200
 
 //--------------//
 // MAIN PROGRAM //
@@ -202,6 +205,9 @@ int main(int argc, char* argv[]) {
     std::vector<float> smap_spdonly(l2b_size), smap_high_spd(l2b_size);
     std::vector<float> smap_high_dir(l2b_size), smap_high_dir_smooth(l2b_size);
     std::vector<float> smap_sss_bias_adj(l2b_size), smap_spd_bias_adj(l2b_size);
+    std::vector<float> galaxy_corr_h_fore(l2b_size), galaxy_corr_h_aft(l2b_size);
+    std::vector<float> galaxy_corr_v_fore(l2b_size), galaxy_corr_v_aft(l2b_size);
+    std::vector<float> land_fraction_fore(l2b_size), land_fraction_aft(l2b_size);
     std::vector<uint16> quality_flag(l2b_size);
     std::vector<float> row_time(nati);
     std::vector<uint8> num_ambiguities(l2b_size);
@@ -284,6 +290,12 @@ int main(int argc, char* argv[]) {
             smap_spdonly[l2bidx] = FILL_VALUE;
             smap_high_spd[l2bidx] = FILL_VALUE;
             smap_high_dir[l2bidx] = FILL_VALUE;
+            galaxy_corr_h_fore[l2bidx] = FILL_VALUE;
+            galaxy_corr_h_aft[l2bidx] = FILL_VALUE;
+            galaxy_corr_v_fore[l2bidx] = FILL_VALUE;
+            galaxy_corr_v_aft[l2bidx] = FILL_VALUE;
+            land_fraction_fore[l2bidx] = FILL_VALUE;
+            land_fraction_aft[l2bidx] = FILL_VALUE;
 
             for(int i_amb = 0; i_amb < 4; ++i_amb) {
                 int ambidx = i_amb + 4*l2bidx;
@@ -314,6 +326,8 @@ int main(int argc, char* argv[]) {
             float sum_tb[2][2]; // [fore-0, aft-1][v-0, h-1]
             float sum_tb2[2][2]; // [fore-0, aft-1][v-0, h-1]
             float sum_A[2][2];
+            float sum_lf[2];
+            float sum_gal_corr[2][2];
             int cnts[2][2];
 
             float sum_cos_azi[2]; // fore - 0; aft 1
@@ -324,10 +338,12 @@ int main(int argc, char* argv[]) {
                 sum_inc[ilook] = 0;
                 sum_sin_azi[ilook] = 0;
                 sum_cos_azi[ilook] = 0;
+                sum_lf[ilook] = 0;
                 for(int ipol = 0; ipol < 2; ++ipol) {
                     sum_tb[ilook][ipol] = 0;
                     sum_tb2[ilook][ipol] = 0;
                     sum_A[ilook][ipol] = 0;
+                    sum_gal_corr[ilook][ipol] = 0;
                     cnts[ilook][ipol] = 0;
                 }
             }
@@ -369,6 +385,8 @@ int main(int argc, char* argv[]) {
                 sum_inc[idx_look] += meas->incidenceAngle;
                 sum_cos_azi[idx_look] += cos(meas->eastAzimuth);
                 sum_sin_azi[idx_look] += sin(meas->eastAzimuth);
+                sum_lf[idx_look] += meas->bandwidth;
+                sum_gal_corr[idx_look][idx_pol] += meas->B;
             }
 
             // Compute averaged TB observations from four looks
@@ -377,12 +395,14 @@ int main(int argc, char* argv[]) {
             if(cnts_fore>0) {
                 inc_fore[l2bidx] = rtd*sum_inc[0]/(float)cnts_fore;
                 azi_fore[l2bidx] = rtd*atan2(sum_cos_azi[0], sum_sin_azi[0]);
+                land_fraction_fore[l2bidx] = sum_lf[0]/(float)cnts_fore;
             }
 
             int cnts_aft = cnts[1][0] + cnts[1][1];
             if(cnts_aft>0) {
                 inc_aft[l2bidx] = rtd*sum_inc[1]/(float)cnts_aft;
                 azi_aft[l2bidx] = rtd*atan2(sum_cos_azi[1], sum_sin_azi[1]);
+                land_fraction_aft[l2bidx] = sum_lf[1]/(float)cnts_aft;
             }
 
             MeasList tb_ml_avg;
@@ -391,6 +411,7 @@ int main(int argc, char* argv[]) {
                 nedt_v_fore[l2bidx] = sqrt(
                     sum_A[0][0]/pow((float)cnts[0][0], 2));
                 n_v_fore[l2bidx] = cnts[0][0];
+                galaxy_corr_v_fore[l2bidx] = sum_gal_corr[0][0]/(float)n_v_fore[l2bidx];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_v_fore[l2bidx];
@@ -411,6 +432,7 @@ int main(int argc, char* argv[]) {
                 nedt_v_aft[l2bidx] = sqrt(
                     sum_A[1][0]/pow((float)cnts[1][0], 2));
                 n_v_aft[l2bidx] = cnts[1][0];
+                galaxy_corr_v_aft[l2bidx] = sum_gal_corr[1][0]/(float)n_v_aft[l2bidx];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_v_aft[l2bidx];
@@ -430,7 +452,8 @@ int main(int argc, char* argv[]) {
                 tb_h_fore[l2bidx] = sum_tb[0][1]/(float)cnts[0][1] - dtbh_fore;
                 nedt_h_fore[l2bidx] = sqrt(
                     sum_A[0][1]/pow((float)cnts[0][1], 2));
-                n_h_fore[l2bidx] = cnts[1][0];
+                n_h_fore[l2bidx] = cnts[0][1];
+                galaxy_corr_h_fore[l2bidx] = sum_gal_corr[0][1]/(float)n_h_fore[l2bidx];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_h_fore[l2bidx];
@@ -451,6 +474,7 @@ int main(int argc, char* argv[]) {
                 nedt_h_aft[l2bidx] = sqrt(
                     sum_A[1][1]/pow((float)cnts[1][1], 2));
                 n_h_aft[l2bidx] = cnts[1][1];
+                galaxy_corr_h_aft[l2bidx] = sum_gal_corr[1][1]/(float)n_h_aft[l2bidx];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_h_aft[l2bidx];
@@ -613,17 +637,38 @@ int main(int argc, char* argv[]) {
                 if(anc_sst[l2bidx] < 278.16)
                     quality_flag[l2bidx] |= QUAL_FLAG_SST_TOO_COLD;
 
+                // Check for pointing errors
                 if((inc_fore[l2bidx] > 0 && fabs(inc_fore[l2bidx]-40) > 0.2) ||
                    (inc_aft[l2bidx] > 0 && fabs(inc_aft[l2bidx]-40) > 0.2))
                    quality_flag[l2bidx] |= QUAL_FLAG_POINTING;
 
-                // Overall data quality mask
-                uint16 QUAL_MASK = (
-                    QUAL_FLAG_FOUR_LOOKS | QUAL_FLAG_LAND | QUAL_FLAG_ICE |
-                    QUAL_FLAG_POINTING);
+                // Check for large ancillary wind speed (poor SSS performace)
+                if(anc_spd[l2bidx] >= 20)
+                    quality_flag[l2bidx] |= QUAL_FLAG_ROUGHNESS_CORRECTION;
 
-                if(quality_flag[l2bidx] & QUAL_MASK)
-                    quality_flag[l2bidx] |= QUAL_FLAG_USEABLE;
+                // Check for large galaxy correction value
+                if(galaxy_corr_v_fore[l2bidx] > 5 ||
+                   galaxy_corr_v_aft[l2bidx] > 5 ||
+                   galaxy_corr_h_fore[l2bidx] > 5 ||
+                   galaxy_corr_h_aft[l2bidx] > 5)
+                   quality_flag[l2bidx] |= QUAL_FLAG_LARGE_GALAXY_CORRECTION;
+
+                // SSS overall data quality mask
+                uint16 SSS_QUAL_MASK = (
+                    QUAL_FLAG_LAND | QUAL_FLAG_ICE | QUAL_FLAG_POINTING |
+                    QUAL_FLAG_ROUGHNESS_CORRECTION |
+                    QUAL_FLAG_LARGE_GALAXY_CORRECTION);
+
+                if(quality_flag[l2bidx] & SSS_QUAL_MASK)
+                    quality_flag[l2bidx] |= QUAL_FLAG_SSS_USEABLE;
+
+                // High speed overall quality mask
+                uint16 HIGH_SPEED_QUAL_MASK = (
+                    QUAL_FLAG_LAND | QUAL_FLAG_ICE | QUAL_FLAG_POINTING |
+                    QUAL_FLAG_LARGE_GALAXY_CORRECTION);
+
+                if(quality_flag[l2bidx] & HIGH_SPEED_QUAL_MASK)
+                    quality_flag[l2bidx] |= QUAL_FLAG_HIGH_SPEED_USEABLE;
 
             }
         }
@@ -1137,9 +1182,9 @@ int main(int argc, char* argv[]) {
         file_id, "quality_flag", "long_name", "Quality flag");
 
     uint16 flag_bits;
-    flag_bits = QUAL_FLAG_USEABLE;
+    flag_bits = QUAL_FLAG_SSS_USEABLE;
     H5LTset_attribute_ushort(
-        file_id, "quality_flag", "QUAL_FLAG_USABLE", &flag_bits, 1);
+        file_id, "quality_flag", "QUAL_FLAG_SSS_USEABLE", &flag_bits, 1);
 
     flag_bits = QUAL_FLAG_FOUR_LOOKS;
     H5LTset_attribute_ushort(
@@ -1148,6 +1193,16 @@ int main(int argc, char* argv[]) {
     flag_bits = QUAL_FLAG_POINTING;
     H5LTset_attribute_ushort(
         file_id, "quality_flag", "QUAL_FLAG_POINTING", &flag_bits, 1);
+
+    flag_bits = QUAL_FLAG_LARGE_GALAXY_CORRECTION;
+    H5LTset_attribute_ushort(
+        file_id, "quality_flag", "QUAL_FLAG_LARGE_GALAXY_CORRECTION",
+        &flag_bits, 1);
+
+    flag_bits = QUAL_FLAG_ROUGHNESS_CORRECTION;
+    H5LTset_attribute_ushort(
+        file_id, "quality_flag", "QUAL_FLAG_ROUGHNESS_CORRECTION", &flag_bits,
+        1);
 
     flag_bits = QUAL_FLAG_LAND;
     H5LTset_attribute_ushort(
@@ -1161,8 +1216,40 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_ushort(
         file_id, "quality_flag", "QUAL_FLAG_SST_TOO_COLD", &flag_bits, 1);
 
+    flag_bits = QUAL_FLAG_HIGH_SPEED_USEABLE;
+    H5LTset_attribute_ushort(
+        file_id, "quality_flag", "QUAL_FLAG_HIGH_SPEED_USEABLE", &flag_bits,
+        1);
+
     H5LTset_attribute_ushort(
         file_id, "quality_flag", "_FillValue", &_ushort_fill_value, 1);
+
+    valid_min = 0; valid_max = 1;
+    H5LTmake_dataset(
+        file_id, "land_fraction_fore", 2, dims, H5T_NATIVE_FLOAT,
+        &land_fraction_fore[0]);
+    H5LTset_attribute_float(
+        file_id, "land_fraction_fore", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_string(
+        file_id, "land_fraction_fore", "long_name",
+        "Average land fraction for fore look");
+    H5LTset_attribute_float(
+        file_id, "land_fraction_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "land_fraction_fore", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "land_fraction_aft", 2, dims, H5T_NATIVE_FLOAT,
+        &land_fraction_aft[0]);
+    H5LTset_attribute_float(
+        file_id, "land_fraction_aft", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_string(
+        file_id, "land_fraction_aft", "long_name",
+        "Average land fraction for aft look");
+    H5LTset_attribute_float(
+        file_id, "land_fraction_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "land_fraction_aft", "valid_min", &valid_min, 1);
 
     H5Fclose(file_id);
     return(0);
