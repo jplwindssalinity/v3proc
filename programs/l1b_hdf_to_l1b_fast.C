@@ -145,12 +145,12 @@ int read_SDS( int32 sd_id, const char* sds_name, void* data_buffer )
     if( SDgetinfo( sds_id, sds_name1, &rank, &dimsizes[0], &data_type, &num_attrs ) )
       return(0);
     
-    //printf("in * sds_index, sds_id: %d %d\n",sds_index, sds_id);
-    //printf("in * sds_name: %s\n",sds_name1);
-    //printf("rank:     %d\n",rank);
-    //printf("dimsizes: %d %d %d\n",dimsizes[0],dimsizes[1],dimsizes[2]);
-    //printf("data_type: %d\n",data_type);
-    //printf("num_attrs: %d\n",num_attrs);
+//     printf("in * sds_index, sds_id: %d %d\n",sds_index, sds_id);
+//     printf("in * sds_name: %s\n",sds_name1);
+//     printf("rank:     %d\n",rank);
+//     printf("dimsizes: %d %d %d\n",dimsizes[0],dimsizes[1],dimsizes[2]);
+//     printf("data_type: %d\n",data_type);
+//     printf("num_attrs: %d\n",num_attrs);
         
     for( int ii = 0; ii < 32; ++ii )
     {
@@ -1125,7 +1125,10 @@ main(
                     if(lcres > lcres_thresh_corr) {
                         remove_it = 1;
                     } else {
-                        this_meas->value = (this_meas->value - lcres) / (1-lcr);
+                        double sos = this_meas->EnSlice / this_meas->XK;
+                        this_meas->value = (this_meas->value - 1.75 * lcres);
+                        this_meas->C += 0.5 * pow(10*lcres/sos, 2);
+
                         if(fabs(this_meas->value) > 1.0e5)
                             remove_it = 1;
                     }
