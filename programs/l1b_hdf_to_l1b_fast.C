@@ -702,7 +702,7 @@ main(
     config_list.ExitForMissingKeywords();
 
     // Check for Coastal maps & configure landmap if commanded
-    if( compute_land_frac ) {
+    if(coastal_method != NONE) {
       if(!ConfigLandMap(&lmap,&config_list)) {
         fprintf(stderr,"%s: Error configuring LandMap\n",command);
         exit(1);
