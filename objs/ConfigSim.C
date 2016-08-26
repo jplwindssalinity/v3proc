@@ -2030,6 +2030,10 @@ ConfigGMF(
     else
         gmf->objectiveFunctionMethod = 0;
 
+    if (! config_list->GetInt(DO_LOW_SPEED_RANDOM_DIRECTION_KEYWORD, &tmp_int))
+        return(0);
+    gmf->retrieveRandomDirectionForLowSpeeds = tmp_int;
+
     config_list->ExitForMissingKeywords();
 
     float tmp_float;

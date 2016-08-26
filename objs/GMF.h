@@ -186,6 +186,7 @@ public:
     int  retrieveOverCoast;
     int  smartNudgeFlag;
     int  retrieveUsingCriteriaFlag;
+    int  retrieveRandomDirectionForLowSpeeds;
 
     float minimumAzimuthDiversity;
 
