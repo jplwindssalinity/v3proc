@@ -32,6 +32,7 @@ static const char rcs_id_gmf_c[] =
 #include "List.h"
 #include "AngleInterval.h"
 #include "Array.h"
+#include "Distributions.h"
 
 //=====//
 // GMF //
@@ -46,7 +47,7 @@ GMF::GMF()
     _phiCount(0), _phiStepSize(0.0), _spdTol(DEFAULT_SPD_TOL), _sepAngle(DEFAULT_SEP_ANGLE),
     _smoothAngle(DEFAULT_SMOOTH_ANGLE), _maxSolutions(DEFAULT_MAX_SOLUTIONS),
     _bestSpd(NULL), _bestObj(NULL), _copyObj(NULL), _speed_buffer(NULL),
-    _objective_buffer(NULL), _dir_mle_maxima(NULL)
+    _objective_buffer(NULL), _dir_mle_maxima(NULL), retrieveRandomDirectionForLowSpeeds(0)
 {
     SetPhiCount(DEFAULT_PHI_COUNT);
 
@@ -3227,6 +3228,21 @@ GMF::Calculate_Init_Wind_Solutions(
     //for (int k = 2; k <= num_dir_samples - 1; k++) {
     //  fprintf(stdout,"angle, obj, avg_obj: %12.6f %12.6f %12.6f\n",dir_spacing*(k-2),_objective_buffer[k],obj_avg[k]);
     //}
+
+    if(retrieveRandomDirectionForLowSpeeds && num_mle_maxima == 0) {
+        float mean_speed = 0;
+        for(k = 2; k <= num_dir_samples - 1; k++)
+            mean_speed += _speed_buffer[k];
+
+        mean_speed /= (float)(num_dir_samples-2);
+
+        if(mean_speed < 1) {
+            num_mle_maxima = 1;
+            Uniform uniform_dist(0.5, 0.5);
+            float random = uniform_dist.GetNumber();
+            _dir_mle_maxima[1] = 2+(int)round(random*(num_dir_samples-3));
+        }
+    }
 
     if( num_mle_maxima == 0 )
       return(0);
