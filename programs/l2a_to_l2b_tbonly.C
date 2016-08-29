@@ -585,14 +585,14 @@ int main(int argc, char* argv[]) {
                 if(anc_sst[l2bidx] < 278.16)
                     quality_flag[l2bidx] |= QUAL_FLAG_SST_TOO_COLD;
 
-                if(fabs(inc_fore[l2bidx]-40) > 0.2 || 
-                   fabs(inc_aft[l2bidx]-40) > 0.2)
+                // Check for pointing errors
+                if((inc_fore[l2bidx] > 0 && fabs(inc_fore[l2bidx]-40) > 0.2) ||
+                   (inc_aft[l2bidx] > 0 && fabs(inc_aft[l2bidx]-40) > 0.2))
                    quality_flag[l2bidx] |= QUAL_FLAG_POINTING;
 
                 // Overall data quality mask
                 uint16 QUAL_MASK = (
-                    QUAL_FLAG_FOUR_LOOKS | QUAL_FLAG_LAND | QUAL_FLAG_ICE |
-                    QUAL_FLAG_POINTING);
+                    QUAL_FLAG_LAND | QUAL_FLAG_ICE | QUAL_FLAG_POINTING);
 
                 if(quality_flag[l2bidx] & QUAL_MASK)
                     quality_flag[l2bidx] |= QUAL_FLAG_USEABLE;
