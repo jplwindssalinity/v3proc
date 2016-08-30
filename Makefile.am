@@ -185,7 +185,8 @@ bin_PROGRAMS = \
     programs/l2a_to_l2b_tbonly_nrt_halfrevs       \
     programs/l2a_to_l2b_cap_tbonly                \
     programs/l2a_to_l2b_cap_tbonly_avg_s0         \
-    programs/smap_match_l1b_l1c
+    programs/smap_match_l1b_l1c                   \
+    programs/l1b_smap_tb_to_land_frac
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files
@@ -609,7 +610,11 @@ libSim_a_SOURCES =                   \
     objs/CoastDistance.C             \
     objs/CoastDistance.h             \
     objs/L2BTBOnly.C                 \
-    objs/L2BTBOnly.h
+    objs/L2BTBOnly.h                 \
+    objs/SMAPBeam.C                  \
+    objs/SMAPBeam.h                  \
+    objs/SMAPLandFracMap.C           \
+    objs/SMAPLandFracMap.h
 
 ########################################################################
 #ParameterList.o

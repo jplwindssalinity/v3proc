@@ -1,6 +1,7 @@
 #ifndef CAPGMF_H
 #define CAPGMF_H
 
+#include <vector>
 #include "Meas.h"
 #include "Wind.h"
 #include "Array.h"
@@ -72,7 +73,8 @@ public:
         float passive_weight = 1);
 
     double ObjectiveFunctionActive(
-        MeasList* s0_ml, float trial_spd, float trial_dir, float anc_swh);
+        MeasList* s0_ml, float trial_spd, float trial_dir, float anc_swh,
+        float anc_spd);
 
     double ObjectiveFunctionPassive(
         MeasList* tb_ml, float trial_spd, float trial_dir, float trial_sss,
@@ -168,6 +170,27 @@ protected:
     float**** _tbflat;
     float***** _erough;
     float***** _model_s0;
+};
+
+class TBGalCorr {
+
+public:
+    TBGalCorr();
+    TBGalCorr(const char* filename);
+    ~TBGalCorr();
+
+    int Read(const char* filename);
+    int Get(float ra, float dec, float spd, Meas::MeasTypeE met, float* dtg);
+
+protected:
+    std::vector<std::vector<float> > _dtb_gal;
+
+    static const float _dspd = 1;
+    static const float _delta = 1;
+    static const int _nspd = 15;
+    static const int _nra = 360;
+    static const int _ndec = 180;
+
 };
 
 // For use with NLopt

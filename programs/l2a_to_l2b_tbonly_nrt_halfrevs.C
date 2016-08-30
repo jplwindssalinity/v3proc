@@ -70,12 +70,15 @@ template class List<AngleInterval>;
 template class std::list<string>;
 template class std::map<string,string,Options::ltstr>;
 
-#define QUAL_FLAG_USEABLE 0x1
+#define QUAL_FLAG_SSS_USEABLE 0x1
 #define QUAL_FLAG_FOUR_LOOKS 0x2
 #define QUAL_FLAG_POINTING 0x4
+#define QUAL_FLAG_LARGE_GALAXY_CORRECTION 0x10
+#define QUAL_FLAG_ROUGHNESS_CORRECTION 0x20
 #define QUAL_FLAG_SST_TOO_COLD 0x40
 #define QUAL_FLAG_LAND 0x80
 #define QUAL_FLAG_ICE 0x100
+#define QUAL_FLAG_HIGH_SPEED_USEABLE 0x200
 
 //--------------//
 // MAIN PROGRAM //
@@ -592,17 +595,31 @@ int main(int argc, char* argv[]) {
                 if(anc_sst[l2bidx] < 278.16)
                     quality_flag[l2bidx] |= QUAL_FLAG_SST_TOO_COLD;
 
-                if(fabs(inc_fore[l2bidx]-40) > 0.2 || 
-                   fabs(inc_aft[l2bidx]-40) > 0.2)
+                // Check for pointing errors
+                if((inc_fore[l2bidx] > 0 && fabs(inc_fore[l2bidx]-40) > 0.2) ||
+                   (inc_aft[l2bidx] > 0 && fabs(inc_aft[l2bidx]-40) > 0.2))
                    quality_flag[l2bidx] |= QUAL_FLAG_POINTING;
 
-                // Overall data quality mask
-                uint16 QUAL_MASK = (
-                    QUAL_FLAG_FOUR_LOOKS | QUAL_FLAG_LAND | QUAL_FLAG_ICE |
-                    QUAL_FLAG_POINTING);
+                // Check for large ancillary wind speed (poor SSS performace)
+                if(anc_spd[l2bidx] >= 20)
+                    quality_flag[l2bidx] |= QUAL_FLAG_ROUGHNESS_CORRECTION;
 
-                if(quality_flag[l2bidx] & QUAL_MASK)
-                    quality_flag[l2bidx] |= QUAL_FLAG_USEABLE;
+                // SSS overall data quality mask
+                uint16 SSS_QUAL_MASK = (
+                    QUAL_FLAG_LAND | QUAL_FLAG_ICE | QUAL_FLAG_POINTING |
+                    QUAL_FLAG_ROUGHNESS_CORRECTION |
+                    QUAL_FLAG_LARGE_GALAXY_CORRECTION);
+
+                if(quality_flag[l2bidx] & SSS_QUAL_MASK)
+                    quality_flag[l2bidx] |= QUAL_FLAG_SSS_USEABLE;
+
+                // High speed overall quality mask
+                uint16 HIGH_SPEED_QUAL_MASK = (
+                    QUAL_FLAG_LAND | QUAL_FLAG_ICE | QUAL_FLAG_POINTING |
+                    QUAL_FLAG_LARGE_GALAXY_CORRECTION);
+
+                if(quality_flag[l2bidx] & HIGH_SPEED_QUAL_MASK)
+                    quality_flag[l2bidx] |= QUAL_FLAG_HIGH_SPEED_USEABLE;
 
             }
         }
@@ -1117,9 +1134,9 @@ int main(int argc, char* argv[]) {
         file_id, "quality_flag", "long_name", "Quality flag");
 
     uint16 flag_bits;
-    flag_bits = QUAL_FLAG_USEABLE;
+    flag_bits = QUAL_FLAG_SSS_USEABLE;
     H5LTset_attribute_ushort(
-        file_id, "quality_flag", "QUAL_FLAG_USABLE", &flag_bits, 1);
+        file_id, "quality_flag", "QUAL_FLAG_SSS_USEABLE", &flag_bits, 1);
 
     flag_bits = QUAL_FLAG_FOUR_LOOKS;
     H5LTset_attribute_ushort(
@@ -1128,6 +1145,16 @@ int main(int argc, char* argv[]) {
     flag_bits = QUAL_FLAG_POINTING;
     H5LTset_attribute_ushort(
         file_id, "quality_flag", "QUAL_FLAG_POINTING", &flag_bits, 1);
+
+    flag_bits = QUAL_FLAG_LARGE_GALAXY_CORRECTION;
+    H5LTset_attribute_ushort(
+        file_id, "quality_flag", "QUAL_FLAG_LARGE_GALAXY_CORRECTION",
+        &flag_bits, 1);
+
+    flag_bits = QUAL_FLAG_ROUGHNESS_CORRECTION;
+    H5LTset_attribute_ushort(
+        file_id, "quality_flag", "QUAL_FLAG_ROUGHNESS_CORRECTION", &flag_bits,
+        1);
 
     flag_bits = QUAL_FLAG_LAND;
     H5LTset_attribute_ushort(
@@ -1141,8 +1168,14 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_ushort(
         file_id, "quality_flag", "QUAL_FLAG_SST_TOO_COLD", &flag_bits, 1);
 
+    flag_bits = QUAL_FLAG_HIGH_SPEED_USEABLE;
+    H5LTset_attribute_ushort(
+        file_id, "quality_flag", "QUAL_FLAG_HIGH_SPEED_USEABLE", &flag_bits,
+        1);
+
     H5LTset_attribute_ushort(
         file_id, "quality_flag", "_FillValue", &_ushort_fill_value, 1);
+
 
     H5Fclose(file_id);
 

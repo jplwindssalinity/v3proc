@@ -2239,7 +2239,12 @@ GMF::_ObjectiveFunctionOld(
             meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
         	wt=cBandWeight;
         }
-        
+
+        if(meas->measType==Meas::VH_MEAS_TYPE||
+           meas->measType==Meas::HV_MEAS_TYPE) {
+            wt=0;
+        }
+
         //printf("%6d %15.9f %12.6f %12.6f\n",
         //      ii,meas->value,meas->incidenceAngle*rtd,
         //      pe_rad_to_gs_deg(meas->eastAzimuth));        

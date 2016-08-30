@@ -11,6 +11,16 @@
 #define REV_START_TIME_KEYWORD "REV_START_TIME"
 #define REV_STOP_TIME_KEYWORD "REV_STOP_TIME"
 #define COASTAL_DISTANCE_FILE_KEYWORD "COASTAL_DISTANCE_FILE"
+#define DO_LAND_CORRECTION_KEYWORD "DO_LAND_CORRECTION"
+#define SMAP_LAND_FRAC_MAP_FILE_KEYWORD "SMAP_LAND_FRAC_MAP_FILE"
+#define SMAP_LAND_NEAR_MAP_FILE_KEYWORD "SMAP_LAND_NEAR_MAP_FILE"
+#define DO_GAL_CORR_KEYWORD "DO_SMAP_TB_GAL_CORR"
+#define L1B_TB_ASC_ANC_U10_FILE_KEYWORD "L1B_TB_ASC_ANC_U10_FILE"
+#define L1B_TB_DEC_ANC_U10_FILE_KEYWORD "L1B_TB_DEC_ANC_U10_FILE"
+#define L1B_TB_ASC_ANC_V10_FILE_KEYWORD "L1B_TB_ASC_ANC_V10_FILE"
+#define L1B_TB_DEC_ANC_V10_FILE_KEYWORD "L1B_TB_DEC_ANC_V10_FILE"
+#define GAL_CORR_FILE_KEYWORD "SMAP_TB_GAL_CORR_FILE"
+
 
 //----------//
 // INCLUDES //
@@ -21,6 +31,7 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include "CAPGMF.h"
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ConfigList.h"
@@ -34,6 +45,7 @@
 #include "SeaPac.h"
 #include "AttenMap.h"
 #include "OS2XFix.h"
+#include "SMAPLandFracMap.h"
 #include "CoastDistance.h"
 /* hdf5 include */
 #include "hdf5.h"
@@ -149,6 +161,32 @@ int main(int argc, char* argv[]){
     char* ephem_file = config_list.Get(EPHEMERIS_FILE_KEYWORD);
     Ephemeris ephem(ephem_file, 10000);
 
+    int do_land_correction = 0;
+    int do_smap_tb_gal_corr = 0;
+    config_list.DoNothingForMissingKeywords();
+    config_list.GetInt(DO_LAND_CORRECTION_KEYWORD, &do_land_correction);
+    config_list.GetInt(DO_GAL_CORR_KEYWORD, &do_smap_tb_gal_corr);
+    config_list.ExitForMissingKeywords();
+
+    SMAPLandTBNearMap smap_tb_near_map;
+    SMAPLandFracMap smap_land_frac_map;
+    if(do_land_correction) {
+        smap_land_frac_map.Read(config_list.Get(SMAP_LAND_FRAC_MAP_FILE_KEYWORD));
+        smap_tb_near_map.Read(config_list.Get(SMAP_LAND_NEAR_MAP_FILE_KEYWORD));
+    }
+
+    char* anc_u10_files[2] = {NULL, NULL};
+    char* anc_v10_files[2] = {NULL, NULL};
+    TBGalCorr tb_gal_corr_map;
+    if(do_smap_tb_gal_corr) {
+        char* gal_corr_filename = config_list.Get(GAL_CORR_FILE_KEYWORD);
+        tb_gal_corr_map.Read(gal_corr_filename);
+        anc_u10_files[0] = config_list.Get(L1B_TB_ASC_ANC_U10_FILE_KEYWORD);
+        anc_u10_files[1] = config_list.Get(L1B_TB_DEC_ANC_U10_FILE_KEYWORD);
+        anc_v10_files[0] = config_list.Get(L1B_TB_ASC_ANC_V10_FILE_KEYWORD);
+        anc_v10_files[1] = config_list.Get(L1B_TB_DEC_ANC_V10_FILE_KEYWORD);
+    }
+
     L1B l1b;
     char* output_file = config_list.Get(L1B_TB_FILE_KEYWORD);
     if (l1b.OpenForWriting(output_file) == 0) {
@@ -196,6 +234,14 @@ int main(int argc, char* argv[]){
 
         hid_t id = H5Fopen(l1b_tbfiles[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
 
+        CAP_ANC_L1B cap_anc_u10;
+        CAP_ANC_L1B cap_anc_v10;
+
+        if(do_smap_tb_gal_corr) {
+            cap_anc_u10.Read(anc_u10_files[ipart]);
+            cap_anc_v10.Read(anc_v10_files[ipart]);
+        }
+
         char antenna_scan_time_utc[nframes[ipart]][24];
 
         std::vector<float> yaw(nframes[ipart]);
@@ -215,6 +261,8 @@ int main(int argc, char* argv[]){
         std::vector<float> inc;
         std::vector<float> solar_spec_theta;
         std::vector<float> surface_water_fraction_mb;
+        std::vector<float> ra;
+        std::vector<float> dec;
 
         std::vector< std::vector<float> > tb(2);
         std::vector< std::vector<float> > nedt(2);
@@ -229,6 +277,8 @@ int main(int argc, char* argv[]){
         antazi.resize(data_size);
         lat.resize(data_size);
         lon.resize(data_size);
+        ra.resize(data_size);
+        dec.resize(data_size);
         inc.resize(data_size);
         solar_spec_theta.resize(data_size);
         surface_water_fraction_mb.resize(data_size);
@@ -244,6 +294,8 @@ int main(int argc, char* argv[]){
         // These data only have footprint versions
         read_SDS_h5(id, "/Brightness_Temperature/tb_lat", &lat[0]);
         read_SDS_h5(id, "/Brightness_Temperature/tb_lon", &lon[0]);
+        read_SDS_h5(id, "/Brightness_Temperature/specular_right_ascension", &ra[0]);
+        read_SDS_h5(id, "/Brightness_Temperature/specular_declination", &dec[0]);
         read_SDS_h5(id, "/Brightness_Temperature/earth_boresight_azimuth", &azi[0]);
         read_SDS_h5(id, "/Brightness_Temperature/antenna_scan_angle", &antazi[0]);
         read_SDS_h5(id, "/Brightness_Temperature/earth_boresight_incidence", &inc[0]);
@@ -282,6 +334,11 @@ int main(int argc, char* argv[]){
             strncpy(time_str, antenna_scan_time_utc[iframe], 23);
 
             etime.FromCodeA(time_str);
+
+            char* str_month = strtok(time_str, "-");
+            str_month = strtok(NULL, "-");
+            int this_month = atoi(str_month);
+
             // Result
             double time = (
                 (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
@@ -300,7 +357,7 @@ int main(int argc, char* argv[]){
                 // Index into footprint-sized arrays
                 int fp_idx = iframe * nfootprints[ipart] + ifootprint;
 
-                if(tb_gal_corr[1][fp_idx] > 3.5)
+                if(do_smap_tb_gal_corr == 0 && tb_gal_corr[1][fp_idx] > 3.5)
                     continue;
 
                 if(solar_spec_theta[fp_idx] < 25)
@@ -338,10 +395,6 @@ int main(int argc, char* argv[]){
                     new_meas->value = tb[ipol][fp_idx];
                     new_meas->XK = 1.0;
 
-                    // Placeholder for surface temperature
-                    double ts = 300.0;
-                    new_meas->EnSlice = ts;
-
                     double tmp_lon = dtr*lon[fp_idx];
                     double tmp_lat = dtr*lat[fp_idx];
                     if(tmp_lon<0) tmp_lon += two_pi;
@@ -372,14 +425,75 @@ int main(int argc, char* argv[]){
                     if(distance < 45 || this_land_frac > 0.01)
                         new_meas->landFlag += 1; // bit 0 for land
 
-                    if( qs_icemap.IsIce(tmp_lon, tmp_lat, 0) )
+                    if(qs_icemap.IsIce(tmp_lon, tmp_lat, 0))
                         new_meas->landFlag += 2; // bit 1 for ice
 
 
                     // Need to figure out the KP (a, b, c) terms.
                     new_meas->A = pow(nedt[ipol][fp_idx], 2);
-                    new_meas->B = 0.0;
-                    new_meas->C = 0.0;
+                    new_meas->B = 0;
+                    new_meas->C = 0;
+
+                    if(do_smap_tb_gal_corr) {
+
+                        float this_anc_spd = 1.03 * sqrt(
+                            pow(cap_anc_u10.data[0][iframe][ifootprint], 2) +
+                            pow(cap_anc_v10.data[0][iframe][ifootprint], 2));
+
+                        float this_dtg;
+                        tb_gal_corr_map.Get(
+                            ra[fp_idx], dec[fp_idx], this_anc_spd,
+                            new_meas->measType, &this_dtg);
+
+                        // corrected TB (add back in SDS correction, remove my
+                        // own estimate).
+                        new_meas->value =
+                            tb[ipol][fp_idx] + tb_gal_corr[ipol][fp_idx] -
+                            this_dtg;
+
+                        // Store galaxy correction value for flagging later
+                        new_meas->B = this_dtg;
+                    }
+
+                    if(do_land_correction && distance < 500 & distance > 0) {
+
+                        float land_frac, land_near_value;
+                        if(!smap_tb_near_map.Get(new_meas, this_month, &land_near_value)||
+                           !smap_land_frac_map.Get(new_meas, &land_frac)) {
+                            land_frac = 0;
+                            land_near_value = 0;
+                        }
+
+                        float Tc = 
+                            (new_meas->value - land_frac*land_near_value) /
+                            (1-land_frac);
+
+                        float dTc_dF = 
+                            (new_meas->value - land_near_value) / 
+                            pow(1-land_frac, 2);
+
+                        float dTc_dT = 1/(1-land_frac);
+                        float dTc_dTland = land_frac/(1-land_frac);
+
+                        float var_T = new_meas->A;
+                        float var_Tland = pow(10, 2);
+                        float var_F = pow(land_frac/4, 2);
+
+                        float var_Tc = 
+                            pow(dTc_dF, 2) * var_F + pow(dTc_dT, 2) * var_T + 
+                            pow(dTc_dTland, 2) * var_Tland;
+
+                        // Set corrected values for TB and variance of TB
+                        new_meas->bandwidth = land_frac;
+
+                        // only apply correction if non-empty land near value,
+                        // otherwise will increase TB not decrease it.
+                        if(land_near_value > 0) {
+                            new_meas->EnSlice = new_meas->value - Tc;
+                            new_meas->value = Tc;
+                            new_meas->A = var_Tc;
+                        }
+                    }
 
                     new_meas_spot->Append(new_meas);
 
@@ -408,7 +522,7 @@ int main(int argc, char* argv[]){
                 exit(1);
             }
 
-            if(this_frame % 100 == 0){
+            if(this_frame % 1 == 0){
                 printf("Wrote %d of %d frames\n", this_frame,
                     nframes[0] + nframes[1]);
             }
