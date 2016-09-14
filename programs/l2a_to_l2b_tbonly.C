@@ -15,6 +15,9 @@
 #define ANC_V10_FILE_KEYWORD "ANC_V10_FILE"
 #define L2B_TB_BIAS_ADJ_FILE_KEYWORD "L2B_TB_BIAS_ADJ_FILE"
 #define USE_MEASUREMENT_VARIANCE_KEYWORD "USE_MEASUREMENT_VARIANCE"
+#define DO_DTB_VS_LAT_DOY_CORRECTION_KEYWORD "DO_DTB_VS_LAT_DOY_CORRECTION"
+#define DTB_VS_LAT_DOY_CORRECTION_FILE_KEYWORD "DTB_VS_LAT_DOY_CORRECTION_FILE"
+
 #define FILL_VALUE -9999
 
 //----------//
@@ -145,12 +148,19 @@ int main(int argc, char* argv[]) {
     char* anc_v10_file = config_list.Get(ANC_V10_FILE_KEYWORD);
 
     config_list.DoNothingForMissingKeywords();
-    char* l2b_tb_bias_adj_file = config_list.Get(L2B_TB_BIAS_ADJ_FILE_KEYWORD);
-
+    int do_dtb_vs_lat_doy_corr = 0;
+    config_list.GetInt(
+        DO_DTB_VS_LAT_DOY_CORRECTION_KEYWORD, &do_dtb_vs_lat_doy_corr);
     int use_meas_var = 0;
     config_list.GetInt(USE_MEASUREMENT_VARIANCE_KEYWORD, &use_meas_var);
     config_list.ExitForMissingKeywords();
 
+    TBVsLatDOYCorr tb_vs_lat_doy_corr;
+    if(do_dtb_vs_lat_doy_corr) {
+        char* tb_vs_lat_doy_corr_file = config_list.Get(
+            DTB_VS_LAT_DOY_CORRECTION_FILE_KEYWORD);
+        tb_vs_lat_doy_corr.Read(tb_vs_lat_doy_corr_file);
+    }
 
     // Configure the model functions
     CAPGMF cap_gmf;
@@ -182,10 +192,6 @@ int main(int argc, char* argv[]) {
     CAP_ANC_L2B cap_anc_swh(anc_swh_file);
     CAP_ANC_L2B cap_anc_u10(anc_u10_file);
     CAP_ANC_L2B cap_anc_v10(anc_v10_file);
-
-    CAP_ANC_L2B cap_anc_tb_bias;
-    if(l2b_tb_bias_adj_file)
-        cap_anc_tb_bias.Read(l2b_tb_bias_adj_file);
 
     // Output arrays
     int l2b_size = ncti * nati;
@@ -580,18 +586,25 @@ int main(int argc, char* argv[]) {
                 }
 
                 // Retreive salinity and speed again using bias adjusted TB
-                if(l2b_tb_bias_adj_file) {
-                    float this_tb_v_bias_adj = 
-                        -cap_anc_tb_bias.data[0][anc_ati][anc_cti];
+                if(do_dtb_vs_lat_doy_corr) {
 
-                    float this_tb_h_bias_adj = 
-                        -cap_anc_tb_bias.data[1][anc_ati][anc_cti];
+                    int is_asc = (anc_ati < 1624) ? 1 : 0;
+                    float this_lat = lat[l2bidx];
+                    float this_tb_v_bias_adj, this_tb_h_bias_adj;
+
+                    tb_vs_lat_doy_corr.Get(
+                        this_lat, start_doy, is_asc, Meas::L_BAND_TBV_MEAS_TYPE,
+                        &this_tb_v_bias_adj);
+
+                    tb_vs_lat_doy_corr.Get(
+                        this_lat, start_doy, is_asc, Meas::L_BAND_TBH_MEAS_TYPE,
+                        &this_tb_h_bias_adj);
 
                     if(fabs(this_tb_v_bias_adj) < 3 && 
                        fabs(this_tb_h_bias_adj) < 3) {
 
-                        tb_v_bias_adj[l2bidx] = this_tb_v_bias_adj;
-                        tb_h_bias_adj[l2bidx] = this_tb_h_bias_adj;
+                        tb_v_bias_adj[l2bidx] = -this_tb_v_bias_adj;
+                        tb_h_bias_adj[l2bidx] = -this_tb_h_bias_adj;
 
                         // iterate over tb_ml_avg, adjust tbs
                         for(Meas* meas = tb_ml_avg.GetHead(); meas; ) {
