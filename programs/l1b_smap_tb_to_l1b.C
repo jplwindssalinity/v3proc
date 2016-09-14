@@ -181,10 +181,12 @@ int main(int argc, char* argv[]){
     if(do_smap_tb_gal_corr) {
         char* gal_corr_filename = config_list.Get(GAL_CORR_FILE_KEYWORD);
         tb_gal_corr_map.Read(gal_corr_filename);
+        config_list.DoNothingForMissingKeywords();
         anc_u10_files[0] = config_list.Get(L1B_TB_ASC_ANC_U10_FILE_KEYWORD);
         anc_u10_files[1] = config_list.Get(L1B_TB_DEC_ANC_U10_FILE_KEYWORD);
         anc_v10_files[0] = config_list.Get(L1B_TB_ASC_ANC_V10_FILE_KEYWORD);
         anc_v10_files[1] = config_list.Get(L1B_TB_DEC_ANC_V10_FILE_KEYWORD);
+        config_list.ExitForMissingKeywords();
     }
 
     L1B l1b;
