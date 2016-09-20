@@ -13,6 +13,7 @@
 #define ANC_SWH_FILE_KEYWORD "ANC_SWH_FILE"
 #define ANC_U10_FILE_KEYWORD "ANC_U10_FILE"
 #define ANC_V10_FILE_KEYWORD "ANC_V10_FILE"
+#define PRED_SWATH_FILE_KEYWORD "PRED_SWATH_FILE"
 #define L2B_TB_BIAS_ADJ_FILE_KEYWORD "L2B_TB_BIAS_ADJ_FILE"
 #define NRT_HALF_REV_IS_ASC_KEYWORD "IS_ASCENDING"
 #define FILL_VALUE -9999
@@ -143,6 +144,7 @@ int main(int argc, char* argv[]) {
 //     char* anc_swh_file = config_list.Get(ANC_SWH_FILE_KEYWORD);
     char* anc_u10_file = config_list.Get(ANC_U10_FILE_KEYWORD);
     char* anc_v10_file = config_list.Get(ANC_V10_FILE_KEYWORD);
+    char* pred_swath_file = config_list.Get(PRED_SWATH_FILE_KEYWORD);
 
     int is_asc;
     config_list.GetInt(NRT_HALF_REV_IS_ASC_KEYWORD, &is_asc);
@@ -182,6 +184,7 @@ int main(int argc, char* argv[]) {
 //     CAP_ANC_L2B cap_anc_swh(anc_swh_file);
     CAP_ANC_L2B cap_anc_u10(anc_u10_file);
     CAP_ANC_L2B cap_anc_v10(anc_v10_file);
+    CAP_ANC_L2B cap_anc_pred_swath(pred_swath_file);
 
     CAP_ANC_L2B cap_anc_tb_bias;
     if(l2b_tb_bias_adj_file)
@@ -256,8 +259,8 @@ int main(int argc, char* argv[]) {
             int anc_ati = (is_25km) ? ati_full*2 : ati_full;
 
             // Initialize to fill values
-            lon[l2bidx] = FILL_VALUE;
-            lat[l2bidx] = FILL_VALUE;
+            lon[l2bidx] = cap_anc_pred_swath.data[1][anc_ati][anc_cti];
+            lat[l2bidx] = cap_anc_pred_swath.data[0][anc_ati][anc_cti];
             tb_h_fore[l2bidx] = FILL_VALUE;
             tb_h_aft[l2bidx] = FILL_VALUE;
             tb_v_fore[l2bidx] = FILL_VALUE;
@@ -290,6 +293,10 @@ int main(int argc, char* argv[]) {
             smap_high_spd[l2bidx] = FILL_VALUE;
             smap_high_dir[l2bidx] = FILL_VALUE;
 
+            // wrap to [-180, 180) interval
+            while(lon[l2bidx]>=180) lon[l2bidx] -= 360;
+            while(lon[l2bidx]<-180) lon[l2bidx] += 360;
+
             for(int i_amb = 0; i_amb < 4; ++i_amb) {
                 int ambidx = i_amb + 4*l2bidx;
                 smap_ambiguity_spd[ambidx] = FILL_VALUE;
@@ -310,10 +317,9 @@ int main(int argc, char* argv[]) {
 
             lon[l2bidx] = rtd * lonlat.longitude;
             lat[l2bidx] = rtd * lonlat.latitude;
-
-            // wrap to [-180, 180) interval
             while(lon[l2bidx]>=180) lon[l2bidx] -= 360;
             while(lon[l2bidx]<-180) lon[l2bidx] += 360;
+
 
             // Average the tbs and inc/azimuth angle over the fore/aft looks.
             float sum_tb[2][2]; // [fore-0, aft-1][v-0, h-1]
