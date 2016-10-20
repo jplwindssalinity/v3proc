@@ -1102,7 +1102,8 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "anc_swh", "valid_min", &valid_min, 1);
 
     valid_max = 100; valid_min = 0;
-    H5LTmake_dataset(file_id, "smap_spd", 2, dims, H5T_NATIVE_FLOAT, &smap_spd[0]);
+    H5LTmake_dataset(
+        file_id, "smap_spd", 2, dims, H5T_NATIVE_FLOAT, &smap_spd_bias_adj[0]);
     H5LTset_attribute_string(
         file_id, "smap_spd", "long_name", "SMAP wind speed");
     H5LTset_attribute_string(file_id, "smap_spd", "units", "Meters/second");
@@ -1124,20 +1125,20 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(
         file_id, "smap_high_spd", "valid_min", &valid_min, 1);
 
-    H5LTmake_dataset(
-        file_id, "smap_spd_bias_adj", 2, dims, H5T_NATIVE_FLOAT,
-        &smap_spd_bias_adj[0]);
-    H5LTset_attribute_string(
-        file_id, "smap_spd_bias_adj", "long_name",
-        "SMAP wind speed using bias adjusted brightness temperatures");
-    H5LTset_attribute_string(
-        file_id, "smap_spd_bias_adj", "units", "Meters/second");
-    H5LTset_attribute_float(
-        file_id, "smap_spd_bias_adj", "_FillValue", &_fill_value, 1);
-    H5LTset_attribute_float(
-        file_id, "smap_spd_bias_adj", "valid_max", &valid_max, 1);
-    H5LTset_attribute_float(
-        file_id, "smap_spd_bias_adj", "valid_min", &valid_min, 1);
+//     H5LTmake_dataset(
+//         file_id, "smap_spd_bias_adj", 2, dims, H5T_NATIVE_FLOAT,
+//         &smap_spd_bias_adj[0]);
+//     H5LTset_attribute_string(
+//         file_id, "smap_spd_bias_adj", "long_name",
+//         "SMAP wind speed using bias adjusted brightness temperatures");
+//     H5LTset_attribute_string(
+//         file_id, "smap_spd_bias_adj", "units", "Meters/second");
+//     H5LTset_attribute_float(
+//         file_id, "smap_spd_bias_adj", "_FillValue", &_fill_value, 1);
+//     H5LTset_attribute_float(
+//         file_id, "smap_spd_bias_adj", "valid_max", &valid_max, 1);
+//     H5LTset_attribute_float(
+//         file_id, "smap_spd_bias_adj", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
         file_id, "smap_ambiguity_spd", 3, dims_amb, H5T_NATIVE_FLOAT,
@@ -1156,28 +1157,30 @@ int main(int argc, char* argv[]) {
 
 
     valid_max = 40; valid_min = 0;
-    H5LTmake_dataset(file_id, "smap_sss", 2, dims, H5T_NATIVE_FLOAT, &smap_sss[0]);
+    H5LTmake_dataset(
+        file_id, "smap_sss_noadj", 2, dims, H5T_NATIVE_FLOAT, &smap_sss[0]);
     H5LTset_attribute_string(
-        file_id, "smap_sss", "long_name", "SMAP sea surface salinity");
-    H5LTset_attribute_string(file_id, "smap_sss", "units", "PSU");
-    H5LTset_attribute_float(file_id, "smap_sss", "_FillValue", &_fill_value, 1);
-    H5LTset_attribute_float(file_id, "smap_sss", "valid_max", &valid_max, 1);
-    H5LTset_attribute_float(file_id, "smap_sss", "valid_min", &valid_min, 1);
+        file_id, "smap_sss_noadj", "long_name",
+        "SMAP sea surface salinity without bias adjusted brightness temperatures");
+    H5LTset_attribute_string(file_id, "smap_sss_noadj", "units", "PSU");
+    H5LTset_attribute_float(file_id, "smap_sss_noadj", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "smap_sss_noadj", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "smap_sss_noadj", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
-        file_id, "smap_sss_bias_adj", 2, dims, H5T_NATIVE_FLOAT,
+        file_id, "smap_sss", 2, dims, H5T_NATIVE_FLOAT,
         &smap_sss_bias_adj[0]);
     H5LTset_attribute_string(
-        file_id, "smap_sss_bias_adj", "long_name",
-        "SMAP sea surface salinity using bias adjusted brightness temperatures");
+        file_id, "smap_sss", "long_name",
+        "SMAP sea surface salinity");
     H5LTset_attribute_string(
-        file_id, "smap_sss_bias_adj", "units", "PSU");
+        file_id, "smap_sss", "units", "PSU");
     H5LTset_attribute_float(
-        file_id, "smap_sss_bias_adj", "_FillValue", &_fill_value, 1);
+        file_id, "smap_sss", "_FillValue", &_fill_value, 1);
     H5LTset_attribute_float(
-        file_id, "smap_sss_bias_adj", "valid_max", &valid_max, 1);
+        file_id, "smap_sss", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "smap_sss_bias_adj", "valid_min", &valid_min, 1);
+        file_id, "smap_sss", "valid_min", &valid_min, 1);
 
     valid_max = 86400; valid_min = 0;
     H5LTmake_dataset(
