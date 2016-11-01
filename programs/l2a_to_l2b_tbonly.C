@@ -7,6 +7,7 @@
 #define L2B_TB_FILE_KEYWORD "L2B_TB_FILE"
 #define TB_FLAT_MODEL_FILE_KEYWORD "TB_FLAT_MODEL_FILE"
 #define TB_ROUGH_MODEL_FILE_KEYWORD "TB_ROUGH_MODEL_FILE"
+#define TB_ROUGH_HIGH_SPEED_MODEL_FILE_KEYWORD "TB_ROUGH_HIGH_SPEED_MODEL_FILE"
 #define S0_ROUGH_MODEL_FILE_KEYWORD "S0_ROUGH_MODEL_FILE"
 #define ANC_SSS_FILE_KEYWORD "ANC_SSS_FILE"
 #define ANC_SST_FILE_KEYWORD "ANC_SST_FILE"
@@ -140,6 +141,8 @@ int main(int argc, char* argv[]) {
     char* l2b_tb_file = config_list.Get(L2B_TB_FILE_KEYWORD);
     char* tb_flat_file = config_list.Get(TB_FLAT_MODEL_FILE_KEYWORD);
     char* tb_rough_file = config_list.Get(TB_ROUGH_MODEL_FILE_KEYWORD);
+    char* tb_rough_high_speed_file = config_list.Get(
+        TB_ROUGH_HIGH_SPEED_MODEL_FILE_KEYWORD);
     char* s0_rough_file = config_list.Get(S0_ROUGH_MODEL_FILE_KEYWORD);
     char* anc_sss_file = config_list.Get(ANC_SSS_FILE_KEYWORD);
     char* anc_sst_file = config_list.Get(ANC_SST_FILE_KEYWORD);
@@ -167,6 +170,11 @@ int main(int argc, char* argv[]) {
     cap_gmf.ReadFlat(tb_flat_file);
     cap_gmf.ReadRough(tb_rough_file);
     cap_gmf.ReadModelS0(s0_rough_file);
+
+    CAPGMF cap_gmf_high_speed;
+    cap_gmf_high_speed.ReadFlat(tb_flat_file);
+    cap_gmf_high_speed.ReadRough(tb_rough_high_speed_file);
+    cap_gmf_high_speed.ReadModelS0(s0_rough_file);
 
     L2A l2a_tb;
     l2a_tb.SetInputFilename(l2a_tb_file);
@@ -208,7 +216,7 @@ int main(int argc, char* argv[]) {
     std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
     std::vector<float> anc_sss(l2b_size), anc_sst(l2b_size), anc_swh(l2b_size);
     std::vector<float> smap_sss(l2b_size), smap_spd(l2b_size);
-    std::vector<float> smap_spdonly(l2b_size), smap_high_spd(l2b_size);
+    std::vector<float> smap_high_spd(l2b_size);
     std::vector<float> smap_high_dir(l2b_size), smap_high_dir_smooth(l2b_size);
     std::vector<float> smap_sss_bias_adj(l2b_size), smap_spd_bias_adj(l2b_size);
     std::vector<float> galaxy_corr_h_fore(l2b_size), galaxy_corr_h_aft(l2b_size);
@@ -293,7 +301,6 @@ int main(int argc, char* argv[]) {
             n_v_fore[l2bidx] = 0;
             n_v_aft[l2bidx] = 0;
             quality_flag[l2bidx] = 65535;
-            smap_spdonly[l2bidx] = FILL_VALUE;
             smap_high_spd[l2bidx] = FILL_VALUE;
             smap_high_dir[l2bidx] = FILL_VALUE;
             galaxy_corr_h_fore[l2bidx] = FILL_VALUE;
@@ -529,20 +536,10 @@ int main(int argc, char* argv[]) {
                 smap_sss[l2bidx] = final_sss;
                 smap_spd[l2bidx] = final_spd;
 
-                anc_spd_std_prior = 100;
-                cap_gmf.Retrieve(
-                    &tb_ml_avg, NULL, anc_spd[l2bidx], this_anc_dir,
-                    smap_sss[l2bidx], anc_spd[l2bidx], this_anc_dir,
-                    anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
-                    1, CAPGMF::RETRIEVE_SPEED_ONLY,
-                    &final_spd, &final_dir, &final_sss, &final_obj);
-
-                smap_spdonly[l2bidx] = final_spd;
-
                 // Do vector wind processing
                 CAPWVC* wvc = new CAPWVC();
 
-                cap_gmf.CAPGMF::BuildSolutionCurvesSpdOnly(
+                cap_gmf_high_speed.CAPGMF::BuildSolutionCurvesSpdOnly(
                     &tb_ml_avg, NULL, anc_spd[l2bidx], anc_sss[l2bidx],
                     anc_spd[l2bidx], this_anc_dir, anc_sst[l2bidx],
                     anc_swh[l2bidx], 0, 100, 0, 1, wvc);
@@ -1156,17 +1153,18 @@ int main(int argc, char* argv[]) {
         file_id, "smap_ambiguity_spd", "valid_min", &valid_min, 1);
 
 
-    valid_max = 40; valid_min = 0;
-    H5LTmake_dataset(
-        file_id, "smap_sss_noadj", 2, dims, H5T_NATIVE_FLOAT, &smap_sss[0]);
-    H5LTset_attribute_string(
-        file_id, "smap_sss_noadj", "long_name",
-        "SMAP sea surface salinity without bias adjusted brightness temperatures");
-    H5LTset_attribute_string(file_id, "smap_sss_noadj", "units", "PSU");
-    H5LTset_attribute_float(file_id, "smap_sss_noadj", "_FillValue", &_fill_value, 1);
-    H5LTset_attribute_float(file_id, "smap_sss_noadj", "valid_max", &valid_max, 1);
-    H5LTset_attribute_float(file_id, "smap_sss_noadj", "valid_min", &valid_min, 1);
+//     valid_max = 40; valid_min = 0;
+//     H5LTmake_dataset(
+//         file_id, "smap_sss_noadj", 2, dims, H5T_NATIVE_FLOAT, &smap_sss[0]);
+//     H5LTset_attribute_string(
+//         file_id, "smap_sss_noadj", "long_name",
+//         "SMAP sea surface salinity without bias adjusted brightness temperatures");
+//     H5LTset_attribute_string(file_id, "smap_sss_noadj", "units", "PSU");
+//     H5LTset_attribute_float(file_id, "smap_sss_noadj", "_FillValue", &_fill_value, 1);
+//     H5LTset_attribute_float(file_id, "smap_sss_noadj", "valid_max", &valid_max, 1);
+//     H5LTset_attribute_float(file_id, "smap_sss_noadj", "valid_min", &valid_min, 1);
 
+    valid_max = 40; valid_min = 0;
     H5LTmake_dataset(
         file_id, "smap_sss", 2, dims, H5T_NATIVE_FLOAT,
         &smap_sss_bias_adj[0]);
