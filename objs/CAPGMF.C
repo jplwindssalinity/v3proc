@@ -1005,13 +1005,15 @@ int TBVsLatDOYCorr::Get(
     int idx0 = idoy + _ndays * (ilat0 + _nlat * iasc);
     int idx1 = idoy + _ndays * (ilat1 + _nlat * iasc);
 
-    *dtb = _dtb_table[ipol][idx0] + factor *
-        (_dtb_table[ipol][idx1]-_dtb_table[ipol][idx0]);
+    float dtb0 = _dtb_table[ipol][idx0];
+    float dtb1 = _dtb_table[ipol][idx1];
 
-    if(*dtb < -900) {
-        *dtb = 0;
-        return(0);
-    }
+    // Check for fill value
+    if (dtb0 < -900) dtb0 = 0;
+    if (dtb1 < -900) dtb1 = 0;
+
+    *dtb = dtb0 + factor * (dtb1-dtb0);
+
     return(1);
 }
 
