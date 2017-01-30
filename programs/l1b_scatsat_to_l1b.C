@@ -403,29 +403,40 @@ main(int argc, char* argv[]) {
                     uint16 FORE_MASK = uint16(0x4); // bit 2
                     uint16 MIXED_MASK = uint16(0x100); // bit 8
 
-                    if(do_footprint) {
+                    for(int islice = 0; islice < nslices[ipart]; ++islice) {
 
-                        int fp_idx = iframe * nfootprints[ipol] + ifootprint;
+                        // islice is a dummy index if do_footprint is true
+                        if(do_footprint && islice > 0)
+                            continue;
+
+                        int data_idx;
+                        if(do_footprint) {
+                            data_idx = iframe * nfootprints[ipol] + ifootprint;
+                        } else {
+                            data_idx =
+                                iframe * nfootprints[ipart] * nslices[ipart] +
+                                ifootprint * nslices[ipart] + islice;
+                        }
 
                         // check flags
-                        if(FLAG_MASK & s0_flg[ipol][fp_idx])
+                        if(FLAG_MASK & s0_flg[ipol][data_idx])
                             continue;
 
                         Meas* new_meas = new Meas();
 
-                        double this_xf = -120+0.000613*double(xf[ipol][fp_idx]);
-                        double this_s0 = -96+s0_scale*double(s0[ipol][fp_idx]);
-                        double this_snr = -65+0.001547*double(snr[ipol][fp_idx]);
+                        double this_xf = -120+0.000613*double(xf[ipol][data_idx]);
+                        double this_s0 = -96+s0_scale*double(s0[ipol][data_idx]);
+                        double this_snr = -65+0.001547*double(snr[ipol][data_idx]);
 
                         new_meas->XK = pow(10.0, 0.1*this_xf);
                         new_meas->EnSlice = pow(
                             10.0, 0.1*(this_s0+this_xf-this_snr));
 
                         double tmp_lon = dtr*(
-                            0.005515*double(lon[ipol][fp_idx]));
+                            0.005515*double(lon[ipol][data_idx]));
 
                         double tmp_lat = dtr*(
-                            -90+0.002757*double(lat[ipol][fp_idx]));
+                            -90+0.002757*double(lat[ipol][data_idx]));
 
                         // make longitude, latitude to be in range.
                         if(tmp_lon < 0) tmp_lon += two_pi;
@@ -435,7 +446,7 @@ main(int argc, char* argv[]) {
                         new_meas->centroid.SetAltLonGDLat(0.0, tmp_lon, tmp_lat);
 
                         new_meas->incidenceAngle = dtr*(
-                            46+0.0002451*double(inc[ipol][fp_idx]));
+                            46+0.0002451*double(inc[ipol][data_idx]));
 
                         float atten_dB = 0;
                         atten_dB = attenmap.GetNadirAtten(
@@ -444,39 +455,23 @@ main(int argc, char* argv[]) {
                         float atten_lin = pow(10.0,0.1*atten_dB);
 
                         float northAzimuth = dtr*0.005515*double(
-                            azi[ipol][fp_idx]);
+                            azi[ipol][data_idx]);
 
                         new_meas->eastAzimuth = (450.0*dtr - northAzimuth);
                         if(new_meas->eastAzimuth >= two_pi)
                             new_meas->eastAzimuth -= two_pi;
 
                         new_meas->value = pow(10.0, 0.1*this_s0);
-                        if(s0_flg[ipol][fp_idx] & NEG_S0_MASK)
+                        if(s0_flg[ipol][data_idx] & NEG_S0_MASK)
                             new_meas->value *= -1;
 
                         new_meas->scanAngle = dtr*0.005515*double(
-                            antazi[ipol][fp_idx]);
+                            antazi[ipol][data_idx]);
 
                         new_meas->measType = (ipol == 0) ?
                             Meas::HH_MEAS_TYPE : Meas::VV_MEAS_TYPE;
 
                         new_meas->beamIdx = ipol;
-                        new_meas->numSlices = -1;
-                        new_meas->startSliceIdx = -1;
-                        if(ipol == 0) {
-                          new_meas->azimuth_width = 27;
-                          new_meas->range_width   = 45;
-                        } else {
-                          new_meas->azimuth_width = 30;
-                          new_meas->range_width   = 68;
-                        }
-
-                        new_meas->landFlag = 0;
-//                         if(s0_flg[ipol][fp_idx] & LAND_MASK)
-//                             new_meas->landFlag += 1; // bit 0 for land
-// 
-//                         if(s0_flg[ipol][fp_idx] & (ICE_MASK+ICE_VALID))
-//                             new_meas->landFlag += 2; // bit 1 for ice
 
                         new_meas->landFlag = 0;
                         if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0))
@@ -485,131 +480,69 @@ main(int argc, char* argv[]) {
                         if(qs_icemap.IsIce(tmp_lon, tmp_lat, 0))
                             new_meas->landFlag += 2; // bit 1 for ice
 
+                        if(do_footprint) {
+                            // do footprint specific stuff
+                            new_meas->numSlices = -1;
+                            new_meas->startSliceIdx = -1;
+                            if(ipol == 0) {
+                                new_meas->azimuth_width = 27;
+                                new_meas->range_width   = 45;
+                            } else {
+                                new_meas->azimuth_width = 30;
+                                new_meas->range_width   = 68;
+                            }
 
-                        double sos = pow( 10.0, 0.1*(this_s0-this_snr) );
+                            double sos = pow( 10.0, 0.1*(this_s0-this_snr) );
 
-                        double kprs2 = 0.0;
-                        if(use_kprs && !kp.GetKprs2(new_meas, &kprs2)) {
-                            fprintf(stderr, "%s: Error computing Kprs2\n",
-                                command);
-                            exit(1);
-                        }
+                            double kprs2 = 0.0;
+                            if(use_kprs && !kp.GetKprs2(new_meas, &kprs2)) {
+                                fprintf(stderr, "%s: Error computing Kprs2\n",
+                                    command);
+                                exit(1);
+                            }
 
-                        double kpri2 = 0.0;
-                        if(use_kpri && !kp.GetKpri2(&kpri2) ) {
-                            fprintf(stderr,"%s: Error computing Kpri2\n",
-                                command);
-                            exit(1);
-                        }
+                            double kpri2 = 0.0;
+                            if(use_kpri && !kp.GetKpri2(&kpri2) ) {
+                                fprintf(stderr,"%s: Error computing Kpri2\n",
+                                    command);
+                                exit(1);
+                            }
 
-                        double kpr2 = 1 + kprs2 + kpri2;
+                            double kpr2 = 1 + kprs2 + kpri2;
 
-                        double kpA = 0.0000154*double(kpa[ipol][fp_idx]);
-                        double kpB = 0.0000154*double(kpb[ipol][fp_idx]);
-                        double kpC = 0.0000154*double(kpc[ipol][fp_idx]);
+                            double kpA = 0.0000154*double(kpa[ipol][data_idx]);
+                            double kpB = 0.0000154*double(kpb[ipol][data_idx]);
+                            double kpC = 0.0000154*double(kpc[ipol][data_idx]);
 
-                        double kp_alpha = (1+kpA) * kpr2;
-                        double kp_beta  = kpB * kpr2 * sos;
-                        double kp_gamma = kpC * kpr2 * sos * sos;
+                            double kp_alpha = (1+kpA) * kpr2;
+                            double kp_beta  = kpB * kpr2 * sos;
+                            double kp_gamma = kpC * kpr2 * sos * sos;
 
-                        // Set kp alpha, beta, gamma and correct for attenuation
-                        new_meas->A = 1 + (kp_alpha - 1)*atten_lin*atten_lin;
-                        new_meas->B = kp_beta*atten_lin*atten_lin;
-                        new_meas->C = kp_gamma*atten_lin*atten_lin;
-
-                        // Stick this meas in the measSpot
-                        new_meas_spot->Append(new_meas);
-
-                    } else {
-                        // do slice stuff
-                        for(int islice = 0; islice < nslices[ipart]; ++islice) {
-
-                            // Index into slice-sized arrays
-                            int slice_idx =
-                                iframe * nfootprints[ipart] * nslices[ipart] +
-                                ifootprint * nslices[ipart] + islice;
-
-                            if(FLAG_MASK & s0_flg[ipol][slice_idx])
-                                continue;
-
-                            Meas* new_meas = new Meas();
-
-                            double this_xf = -120+0.000613*double(
-                                xf[ipol][slice_idx]);
-                            double this_s0 = -96+s0_scale*double(
-                                s0[ipol][slice_idx]);
-                            double this_snr = -65+0.001547*double(
-                                snr[ipol][slice_idx]);
-
-                            new_meas->XK = pow(10.0, 0.1*this_xf);
-                            new_meas->EnSlice = pow(
-                                10.0, 0.1*(this_s0+this_xf-this_snr));
-
-                            double tmp_lon = dtr*(
-                                0.005515*double(lon[ipol][slice_idx]));
-
-                            double tmp_lat = dtr*(
-                                -90+0.002757*double(lat[ipol][slice_idx]));
-
-                            // make longitude, latitude to be in range.
-                            if(tmp_lon < 0) tmp_lon += two_pi;
-                            if(tmp_lon >= two_pi) tmp_lon -= two_pi;
-                            if(tmp_lat < -pi/2) tmp_lat = -pi/2;
-                            if(tmp_lat >  pi/2) tmp_lat = pi/2;
-                            new_meas->centroid.SetAltLonGDLat(
-                                0.0, tmp_lon, tmp_lat);
-
-                            new_meas->incidenceAngle = dtr*(
-                                46+0.0002451*double(inc[ipol][slice_idx]));
-
-                            float atten_dB = 0;
-                            atten_dB = attenmap.GetNadirAtten(
-                                tmp_lon, tmp_lat, sec_year)/
-                                cos(new_meas->incidenceAngle);
-                            float atten_lin = pow(10.0,0.1*atten_dB);
-
-                            float northAzimuth = dtr*0.005515*double(
-                                azi[ipol][slice_idx]);
-
-                            new_meas->eastAzimuth = (450.0*dtr - northAzimuth);
-                            if(new_meas->eastAzimuth >= two_pi)
-                                new_meas->eastAzimuth -= two_pi;
-
-                            new_meas->value = pow(10.0, 0.1*this_s0);
-                            if(s0_flg[ipol][slice_idx] & NEG_S0_MASK)
-                                new_meas->value *= -1;
-
-                            new_meas->scanAngle = dtr*0.005515*double(
-                                antazi[ipol][slice_idx]);
-
-                            new_meas->measType = (ipol == 0) ?
-                                Meas::HH_MEAS_TYPE : Meas::VV_MEAS_TYPE;
-
-                            new_meas->beamIdx = ipol;
+                            // Set kp alpha, beta, gamma and correct for attenuation
+                            new_meas->A = 1 + (kp_alpha - 1)*atten_lin*atten_lin;
+                            new_meas->B = kp_beta*atten_lin*atten_lin;
+                            new_meas->C = kp_gamma*atten_lin*atten_lin;
+                        
+                        } else {
+                            // do slice specific stuff
                             new_meas->numSlices = 1;
                             new_meas->startSliceIdx = islice;
 
                             if(ipol == 0) {
-                              new_meas->azimuth_width = 27;
-                              new_meas->range_width   = 45/9;
+                                new_meas->azimuth_width = 27;
+                                new_meas->range_width   = 45/9;
                             } else {
-                              new_meas->azimuth_width = 30;
-                              new_meas->range_width   = 68/15;
+                                new_meas->azimuth_width = 30;
+                                new_meas->range_width   = 68/15;
                             }
 
-                            new_meas->landFlag = 0;
-                            if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0))
-                                new_meas->landFlag += 1; // bit 0 for land
-
-                            if(qs_icemap.IsIce(tmp_lon, tmp_lat, 0))
-                                new_meas->landFlag += 2; // bit 1 for ice
-
-                            new_meas->A = 0.0000154*double(kpa[ipol][slice_idx]);
-                            new_meas->B = 0.0000154*double(kpb[ipol][slice_idx]);
-                            new_meas->C = 0.0000154*double(kpc[ipol][slice_idx]);
-
-                            new_meas_spot->Append(new_meas);
+                            new_meas->A = 0.0000154*double(kpa[ipol][data_idx]);
+                            new_meas->B = 0.0000154*double(kpb[ipol][data_idx]);
+                            new_meas->C = 0.0000154*double(kpc[ipol][data_idx]);
                         }
+ 
+                        // Stick this meas in the measSpot
+                        new_meas_spot->Append(new_meas);
                     }
                     l1b.frame.spotList.Append(new_meas_spot);
                 }  // ipol loop
