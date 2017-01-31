@@ -183,7 +183,6 @@ main(int argc, char* argv[]) {
     int nframes[2];
 
     for(int ipart=0; ipart<2; ++ipart) {
-
         hid_t h_id = H5Fopen(l1b_files[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
         hid_t g_id = H5Gopen(h_id, "science_data", H5P_DEFAULT);
 
@@ -193,7 +192,15 @@ main(int argc, char* argv[]) {
             exit(1);
         }
         nframes[ipart] = atoi(attr_text);
+        H5Gclose(g_id);
+        H5Fclose(h_id);
+    }
 
+    for(int ipart=0; ipart<2; ++ipart) {
+        hid_t h_id = H5Fopen(l1b_files[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
+        hid_t g_id = H5Gopen(h_id, "science_data", H5P_DEFAULT);
+
+        char attr_text[128];
         float s0_scale;
         read_attr_h5(g_id, "Sigma0 Scale", &attr_text);
         s0_scale = atof(attr_text);
@@ -214,7 +221,7 @@ main(int argc, char* argv[]) {
         std::vector< std::vector<uint16> > inc(2);
         std::vector< std::vector<uint16> > antazi(2);
 
-        if(!do_footprint) {
+        if(do_footprint) {
             int fp_size = nframes[ipart] * nfootprints[0];
             // resize and load in data for inner beam footprints
             s0[0].resize(fp_size);
@@ -376,13 +383,10 @@ main(int argc, char* argv[]) {
                 float(minute)+60.0*(float(hour)+24.0*float(doy-1)));
 
             l1b.frame.spotList.FreeContents();
-            for(int ifootprint=0; ifootprint < 282; ++ifootprint) {
+            for(int ipol = 0; ipol < 2; ++ipol) {
 
-                for(int ipol = 0; ipol < 2; ++ipol) {
-
-                    // HH only has 281 footprints
-                    if(ifootprint == nfootprints[ipol]-1)
-                        continue;
+                for(int ifootprint=0; ifootprint < nfootprints[ipol];
+                    ++ifootprint) {
 
                     MeasSpot* new_meas_spot = new MeasSpot();
                     new_meas_spot->time = frame_time;
@@ -403,7 +407,7 @@ main(int argc, char* argv[]) {
                     uint16 FORE_MASK = uint16(0x4); // bit 2
                     uint16 MIXED_MASK = uint16(0x100); // bit 8
 
-                    for(int islice = 0; islice < nslices[ipart]; ++islice) {
+                    for(int islice = 0; islice < nslices[ipol]; ++islice) {
 
                         // islice is a dummy index if do_footprint is true
                         if(do_footprint && islice > 0)
@@ -414,12 +418,12 @@ main(int argc, char* argv[]) {
                             data_idx = iframe * nfootprints[ipol] + ifootprint;
                         } else {
                             data_idx =
-                                iframe * nfootprints[ipart] * nslices[ipart] +
-                                ifootprint * nslices[ipart] + islice;
+                                iframe * nfootprints[ipol] * nslices[ipol] +
+                                ifootprint * nslices[ipol] + islice;
                         }
 
                         // check flags
-                        if(FLAG_MASK & s0_flg[ipol][data_idx])
+                        if(s0_flg[ipol][data_idx] & FLAG_MASK)
                             continue;
 
                         Meas* new_meas = new Meas();
@@ -545,8 +549,8 @@ main(int argc, char* argv[]) {
                         new_meas_spot->Append(new_meas);
                     }
                     l1b.frame.spotList.Append(new_meas_spot);
-                }  // ipol loop
-            }  // ifootprint loop
+                } // ifootprint loop
+            } // ipol loop
 
             if(l1b.frame.spotList.NodeCount() == 0)
                 continue;
@@ -559,6 +563,11 @@ main(int argc, char* argv[]) {
             l1b.frame.num_pulses_per_frame = 282 + 281;
             l1b.frame.num_slices_per_pulse = -1;
             l1b.WriteDataRec();
+
+            if(this_frame % 100 == 0)
+                printf("Wrote %d of %d frames\n", this_frame,
+                       nframes[0] + nframes[1]);
+
         }  // iframe loop
     } // ipart loop
 }
