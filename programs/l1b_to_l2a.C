@@ -412,7 +412,7 @@ main(
                 cerr << "      Lat = " << mlat << "  Long = " << mlon << endl;
 	      }
               else if (grid.Add(meas, spotTime, spot_counter, use_compositing) != 1) {
-                fprintf(stderr, "Error in Add of Grid!\n");
+//                 fprintf(stderr, "Error in Add of Grid!\n");
                 // BWS bug fix 7-30-2010
                 // Breaking out of the read meas loop 
                 // for an unaddable Measurement causes the next spot read to fail
@@ -421,9 +421,9 @@ main(
                 meas->centroid.GetAltLonGDLat(&malt,&mlon,&mlat);
                 mlon=mlon*rtd;
                 mlat=mlat*rtd;
-                cerr << "Warning Meas " << mm << " of Spot " << ss << " of frame " << counter-1 << " could not be added to Grid." << endl;
-                cerr << "      Value = " << meas->value << " azim width = " << meas->azimuth_width << "range width = " << meas->range_width << endl;
-                cerr << "      Lat = " << mlat << "  Long = " << mlon << endl;
+//                 cerr << "Warning Meas " << mm << " of Spot " << ss << " of frame " << counter-1 << " could not be added to Grid." << endl;
+//                 cerr << "      Value = " << meas->value << " azim width = " << meas->azimuth_width << "range width = " << meas->range_width << endl;
+//                 cerr << "      Lat = " << mlat << "  Long = " << mlon << endl;
 
               }
             } // meas loop

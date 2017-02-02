@@ -144,8 +144,8 @@ main(int argc, char* argv[]) {
     printf("l1b_files: %s %s\n", l1b_files[0], l1b_files[1]);
 
     float bias_adj[2];
-    config_list.GetFloat(VV_BIAS_ADJ_KEYWORD, &bias_adj[0]);
-    config_list.GetFloat(HH_BIAS_ADJ_KEYWORD, &bias_adj[1]);
+    config_list.GetFloat(HH_BIAS_ADJ_KEYWORD, &bias_adj[0]);
+    config_list.GetFloat(VV_BIAS_ADJ_KEYWORD, &bias_adj[1]);
 
     Kp kp;
     int use_kprs = 0;
@@ -431,6 +431,8 @@ main(int argc, char* argv[]) {
                         double this_xf = -120+0.000613*double(xf[ipol][data_idx]);
                         double this_s0 = -96+s0_scale*double(s0[ipol][data_idx]);
                         double this_snr = -65+0.001547*double(snr[ipol][data_idx]);
+
+                        this_s0 += bias_adj[ipol];
 
                         new_meas->XK = pow(10.0, 0.1*this_xf);
                         new_meas->EnSlice = pow(
