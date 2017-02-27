@@ -216,6 +216,19 @@ int main(int argc, char* argv[]){
         if(use_wsat_matchups)
             anc_wsat.Read(anc_wsat_files[ipart]);
 
+        // ensure use same array size
+        if(anc_u10.nframes != nframes[ipart] ||
+           anc_u10.nfootprints != nfootprints[ipart] ||
+           anc_v10.nframes != nframes[ipart] ||
+           anc_v10.nfootprints != nfootprints[ipart] ||
+           anc_sst.nframes != nframes[ipart] ||
+           anc_sst.nfootprints != nfootprints[ipart] ||
+           anc_sss.nframes != nframes[ipart] ||
+           anc_sss.nfootprints != nfootprints[ipart] ||
+           anc_swh.nframes != nframes[ipart] ||
+           anc_swh.nfootprints != nfootprints[ipart])
+            continue;
+
         // Iterate over scans
         for(int iframe = 0; iframe < nframes[ipart]; ++iframe) {
             // Iterate over low-res footprints
