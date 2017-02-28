@@ -159,6 +159,7 @@ template class TrackerBase<unsigned short>;
 typedef struct {
     const char *command;
     const char *l2b_file;
+    const char *l2b_nofilter_file;
     const char *nc_file;
     const char *l1bhdf_file_asc;
     const char *l1bhdf_file_dec;
@@ -208,13 +209,14 @@ int main(int argc, char **argv) {
 
     ConfigList config_list;
     l2b_to_netcdf_config run_config;
-    L2B l2b;
+    L2B l2b, l2b_ambig;
 
     config_list.Read(config_file);
 
     // set run_config from config file
     run_config.command = no_path(argv[0]);
     run_config.l2b_file = config_list.Get("L2B_FILE");
+    run_config.l2b_nofilter_file = config_list.Get("L2B_NO_MEDFILT_FILE");
     run_config.nc_file = config_list.Get("L2B_NETCDF_FILE");
     run_config.l1bhdf_file_asc = config_list.Get("S1L1B_ASC_FILE");
     run_config.l1bhdf_file_dec = config_list.Get("S1L1B_DEC_FILE");
@@ -227,13 +229,14 @@ int main(int argc, char **argv) {
     int ncid;
 
     /* Net CDF dimension information */
-    int cross_track_dim_id, along_track_dim_id;
+    int max_ambiguities;
+    int cross_track_dim_id, along_track_dim_id, ambiguities_dim_id;
     size_t cross_track_dim_sz, along_track_dim_sz;
-    int dimensions[2], dimensions_sz[2];
+    int dimensions[3], dimensions_sz[3];
 
     /* For populating Net CDF file */
-    size_t idx[2];
-    WVC *wvc;
+    size_t idx[3];
+    WVC *wvc, *wvc_ambig;
     int16 flags, eflags;
     float conversion;
 
@@ -251,11 +254,14 @@ int main(int argc, char **argv) {
 
     // open the input files
     ERR(l2b.OpenForReading(run_config.l2b_file) == 0);
-
     ERR(l2b.ReadHeader() == 0);
     ERR(l2b.ReadDataRec() == 0);
 
     l2b.header.version_id_major++;
+
+    ERR(l2b_ambig.OpenForReading(run_config.l2b_nofilter_file) == 0);
+    ERR(l2b_ambig.ReadHeader() == 0);
+    ERR(l2b_ambig.ReadDataRec() == 0);
 
     /********************************************
      * Build NetCDF DB                          *
@@ -267,6 +273,8 @@ int main(int argc, char **argv) {
      * point is a variable length array (ambiguities); each element
      * of the array is a (u,v) two-float compounddata type.
      */
+
+    max_ambiguities = 4;
 
     // Initialize the NetCDF DB
     NCERR(nc_create(run_config.nc_file, NC_WRITE, &ncid));
@@ -282,6 +290,8 @@ int main(int argc, char **argv) {
                 &along_track_dim_id));
     NCERR(nc_def_dim(ncid, "cross_track", cross_track_dim_sz,
                 &cross_track_dim_id));
+    NCERR(nc_def_dim(ncid, "ambiguities", (size_t)max_ambiguities,
+                &ambiguities_dim_id));
 
     /*************************************************************
      *
@@ -295,10 +305,14 @@ int main(int argc, char **argv) {
      */
     dimensions[0] = along_track_dim_id;
     dimensions[1] = cross_track_dim_id;
+    dimensions[2] = ambiguities_dim_id;
+
     dimensions_sz[0] = along_track_dim_sz;
     dimensions_sz[1] = cross_track_dim_sz;
+    dimensions_sz[2] = max_ambiguities;
 
     vector <NetCDF_Var_Base *> vars;
+    vector <NetCDF_Var_Base *> *extended_target;
 
     // Define variables
     NetCDF_Var<float> *lat_var = new NetCDF_Var<float>("lat", ncid, 2, dimensions, dimensions_sz);
@@ -424,6 +438,87 @@ int main(int argc, char **argv) {
         num_ambig_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
         num_ambig_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
 
+    // extended vars
+    NetCDF_Var<float> *sel_obj_var = new NetCDF_Var<float>("wind_obj", ncid, 2, dimensions, dimensions_sz);
+        float sel_obj_fill = -9999.0f;
+        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", sel_obj_fill));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", -199.0f));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 0.0f));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "retrieved wind objective function value"));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        sel_obj_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<unsigned char> *nambig_medfilt_var = new NetCDF_Var<unsigned char>("num_medfilt_ambiguities", ncid, 2, dimensions, dimensions_sz);
+        unsigned char nambig_medfilt_fill = 0;
+        nambig_medfilt_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", nambig_medfilt_fill));
+        nambig_medfilt_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
+        nambig_medfilt_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 4));
+        nambig_medfilt_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of ambiguities from wind retrieval after median filtering"));
+        nambig_medfilt_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        nambig_medfilt_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<float> *ambiguity_speed_var = new NetCDF_Var<float>("ambiguity_speed", ncid, 3, dimensions, dimensions_sz);
+        float ambiguity_speed_fill = -9999.0f, ambiguity_speed_min = 0.0f, ambiguity_speed_max = 100.0f;
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", ambiguity_speed_fill));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_min", ambiguity_speed_min));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<float>("valid_max", ambiguity_speed_max));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("long_name", "wind speed ambiguity"));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_speed"));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("units", "m s-1"));
+        ambiguity_speed_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat num_ambiguities"));
+    NetCDF_Var<float> *ambiguity_dir_var = new NetCDF_Var<float>("ambiguity_direction", ncid, 3, dimensions, dimensions_sz);
+        float ambiguity_dir_fill = -9999.0f;
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", ambiguity_dir_fill));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_min", 0.0f));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 360.0f));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("long_name", "wind direction ambiguity"));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("standard_name", "wind_to_direction"));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees"));
+        ambiguity_dir_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat num_ambiguities"));
+    NetCDF_Var<float> *ambig_obj_var = new NetCDF_Var<float>("ambiguity_obj", ncid, 3, dimensions, dimensions_sz);
+        float ambig_obj_fill = -9999.0f;
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", ambig_obj_fill));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_min", -199.0f));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("valid_max", 0.0f));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("long_name", "wind objective function values"));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
+        ambig_obj_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat num_ambiguities"));
+    NetCDF_Var<unsigned char> *num_in_fore_var = new NetCDF_Var<unsigned char>("number_in_fore", ncid, 2, dimensions, dimensions_sz);
+        unsigned char num_in_fore_fill = 0;
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_in_fore_fill));
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 127));
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of inner forward looks in wind vector cell"));
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        num_in_fore_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<unsigned char> *num_in_aft_var = new NetCDF_Var<unsigned char>("number_in_aft", ncid, 2, dimensions, dimensions_sz);
+        unsigned char num_in_aft_fill = 0;
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_in_aft_fill));
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 127));
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of inner aft looks in wind vector cell"));
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        num_in_aft_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<unsigned char> *num_out_fore_var = new NetCDF_Var<unsigned char>("number_out_fore", ncid, 2, dimensions, dimensions_sz);
+        unsigned char num_out_fore_fill = 0;
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_out_fore_fill));
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 127));
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of outer forward looks in wind vector cell"));
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        num_out_fore_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+    NetCDF_Var<unsigned char> *num_out_aft_var = new NetCDF_Var<unsigned char>("number_out_aft", ncid, 2, dimensions, dimensions_sz);
+        unsigned char num_out_aft_fill = 0;
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("_FillValue", num_out_aft_fill));
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_min", 1));
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<unsigned char>("valid_max", 127));
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<char>("long_name", "number of outer aft looks in wind vector cell"));
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<char>("units", "1"));
+        num_out_aft_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
+
+
 
     // Cross track wind speed bias
     // Atmospheric speed bias
@@ -442,6 +537,19 @@ int main(int argc, char **argv) {
     vars.push_back(cross_track_bias_var);
     vars.push_back(atm_spd_bias_var);
     vars.push_back(num_ambig_var);
+
+    extended_target = &vars;
+
+    extended_target->push_back(sel_obj_var);
+// Per email from bstiles on 4 Sept 2014, do not populate #ambiguities pre-median filtering
+//    extended_target->push_back(nambig_medfilt_var);
+    extended_target->push_back(ambiguity_speed_var);
+    extended_target->push_back(ambiguity_dir_var);
+    extended_target->push_back(ambig_obj_var);
+    extended_target->push_back(num_in_fore_var);
+    extended_target->push_back(num_in_aft_var);
+    extended_target->push_back(num_out_fore_var);
+    extended_target->push_back(num_out_aft_var);
 
     // Push definitions into NetCDF file
     for(vector <NetCDF_Var_Base *>::iterator it = vars.begin(); it < vars.end(); it++) {
@@ -474,6 +582,7 @@ int main(int argc, char **argv) {
         for (idx[1] = 0; idx[1] < cross_track_dim_sz; idx[1]++) {
 
             wvc = l2b.frame.swath.swath[idx[1]][idx[0]];
+            wvc_ambig = l2b_ambig.frame.swath.swath[idx[1]][idx[0]];
 
             flags  = flags_fill;
             eflags = eflags_fill;
@@ -568,6 +677,37 @@ int main(int argc, char **argv) {
 
                 num_ambig_var->SetData(idx, wvc->numAmbiguities);
 
+                sel_obj_var->SetData(idx, wvc->selected->obj);
+                num_in_fore_var->SetData(idx, wvc->numInFore);
+                num_in_aft_var->SetData(idx, wvc->numInAft);
+                num_out_fore_var->SetData(idx, wvc->numOutFore);
+                num_out_aft_var->SetData(idx, wvc->numOutAft);
+
+                WindVectorPlus *wv = wvc_ambig->ambiguities.GetHead();
+                unsigned char num_ambiguities = wvc_ambig->ambiguities.NodeCount();
+
+                nambig_medfilt_var->SetData(idx, num_ambiguities);
+
+                for (idx[2] = 0; (int)idx[2] < num_ambiguities && wv != NULL;
+                        idx[2]++, wv = wvc_ambig->ambiguities.GetNext()) {
+
+                    if (wv->spd <= ambiguity_speed_max) {
+                        ambiguity_speed_var->SetData(idx, wv->spd);
+                    } else {
+                        ambiguity_speed_var->SetData(idx, ambiguity_speed_max);
+                    }
+
+                    conversion = 450.0f - (wv->dir)*180.0f/(float)(M_PI);
+                    conversion = conversion - 360.0f*((int)(conversion/360.0f));
+                    ambiguity_dir_var->SetData(idx, conversion);
+                    ambig_obj_var->SetData(idx, wv->obj);
+                }
+                for ( ; (int)idx[2] < max_ambiguities; idx[2]++) {
+                    ambiguity_speed_var->SetData(idx, ambiguity_speed_fill);
+                    ambiguity_dir_var->SetData(idx, ambiguity_dir_fill);
+                    ambig_obj_var->SetData(idx, ambig_obj_fill);
+                }
+
             } else {
 
                 /* Assumes these flags are initially set... */
@@ -590,6 +730,20 @@ int main(int argc, char **argv) {
                 atm_spd_bias_var->SetData(idx, atm_spd_bias_fill);
 
                 num_ambig_var->SetData(idx, num_ambig_fill);
+
+                sel_obj_var->SetData(idx, sel_obj_fill);
+                num_in_fore_var->SetData(idx, num_in_fore_fill);
+                num_in_aft_var->SetData(idx, num_in_aft_fill);
+                num_out_fore_var->SetData(idx, num_out_fore_fill);
+                num_out_aft_var->SetData(idx, num_out_aft_fill);
+
+                nambig_medfilt_var->SetData(idx, nambig_medfilt_fill);
+
+                for (idx[2] = 0; (int)idx[2] < max_ambiguities; idx[2]++) {
+                    ambiguity_speed_var->SetData(idx, ambiguity_speed_fill);
+                    ambiguity_dir_var->SetData(idx, ambiguity_dir_fill);
+                    ambig_obj_var->SetData(idx, ambig_obj_fill);
+                }
 
             }
         }
