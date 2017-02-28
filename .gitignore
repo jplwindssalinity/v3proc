@@ -3,6 +3,7 @@
 *.ii
 *.i
 *~
+stamp-h1
 Makefile.in
 aclocal.m4
 autom4te.cache/
@@ -16,3 +17,15 @@ ltmain.sh
 m4/
 missing
 config.h.in
+Makefile
+config.h
+config.log
+config.status
+eadata/.deps/
+eadata/.dirstamp
+*.a
+libtool
+objs/.deps/
+objs/.dirstamp
+programs/.deps/
+programs/.dirstamp
