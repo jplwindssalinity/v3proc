@@ -236,9 +236,9 @@ Meas::Composite(
         // Ensure we do not composite over missing slices. // AGF 11/1/2010
         //-------------------------------------------------// Assumes slice-ordered L1B file....
         if( meas != meas_start && meas->startSliceIdx != prev_slice_idx + 1 ) {
-          fprintf(stderr,
-                  "Meas::Composite: Non-consecutive slices (start, prev, curr): %d %d %d\n",
-                  min_slice_idx, prev_slice_idx, meas->startSliceIdx );
+//           fprintf(stderr,
+//                   "Meas::Composite: Non-consecutive slices (start, prev, curr): %d %d %d\n",
+//                   min_slice_idx, prev_slice_idx, meas->startSliceIdx );
           return(0);
         }
         // Stupid HACK----------------------------------------------------------
