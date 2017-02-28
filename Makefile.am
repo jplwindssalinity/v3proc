@@ -175,7 +175,8 @@ bin_PROGRAMS = \
     programs/l2a_geom_noise                       \
     programs/quick_winds                          \
     programs/gen_os2_l1b_fp_ecmwf                 \
-    programs/l1b_scatsat_to_l1b
+    programs/l1b_scatsat_to_l1b                   \
+    programs/scatsat_l2b_to_netcdf
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files

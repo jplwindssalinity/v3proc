@@ -160,9 +160,8 @@ typedef struct {
     const char *command;
     const char *l2b_file;
     const char *nc_file;
-    const char *l1bhdf_file;
-    const char *times_file;
-    const char *xfact_table;
+    const char *l1bhdf_file_asc;
+    const char *l1bhdf_file_dec;
     char *revtag;
     float hpol_adj;
     float vpol_adj;
@@ -180,7 +179,8 @@ typedef struct {
 static int parse_commandline(int argc, char **argv,
         l2b_to_netcdf_config *config);
 static int set_global_attributes(int argc, char **argv,
-        const l2b_to_netcdf_config *config, const L2B *l2b, int ncid);
+        const l2b_to_netcdf_config *config, ConfigList* config_list,
+        const L2B *l2b, int ncid);
 static void read_attr_h5(hid_t obj_id, char *name, void *buffer);
 static void bin_to_latlon(int at_ind, int ct_ind,
         const latlon_config *config, float *lat, float *lon);
@@ -204,8 +204,24 @@ struct timeval rev_end_time, rev_start_time;
 
 int main(int argc, char **argv) {
 
+    char* config_file = argv[1];
+
+    ConfigList config_list;
     l2b_to_netcdf_config run_config;
     L2B l2b;
+
+    config_list.Read(config_file);
+
+    // set run_config from config file
+    run_config.command = no_path(argv[0]);
+    run_config.l2b_file = config_list.Get("L2B_FILE");
+    run_config.nc_file = config_list.Get("L2B_NETCDF_FILE");
+    run_config.l1bhdf_file_asc = config_list.Get("S1L1B_ASC_FILE");
+    run_config.l1bhdf_file_dec = config_list.Get("S1L1B_DEC_FILE");
+    run_config.revtag = config_list.Get("REVNO");
+
+    config_list.GetFloat("HH_BIAS_ADJ", &run_config.hpol_adj);
+    config_list.GetFloat("VV_BIAS_ADJ", &run_config.vpol_adj);
 
     /* File IDs */
     int ncid;
@@ -225,11 +241,6 @@ int main(int argc, char **argv) {
 
     // For generating time values
     double rev_length_time;
-
-    // parse the command line
-    if (parse_commandline(argc, argv, &run_config) != 0) {
-        return -1;
-    }
 
     // Define the local timezone to UTC so that mktime() doesn't try to
     // apply DST rules
@@ -260,7 +271,8 @@ int main(int argc, char **argv) {
     // Initialize the NetCDF DB
     NCERR(nc_create(run_config.nc_file, NC_WRITE, &ncid));
 
-    ERR(set_global_attributes(argc, argv, &run_config, &l2b, ncid) != 0);
+    ERR(set_global_attributes(
+        argc, argv, &run_config, &config_list, &l2b, ncid) != 0);
 
     // Create the data dimensions
     along_track_dim_sz = (size_t)l2b.frame.swath.GetAlongTrackBins();
@@ -605,80 +617,9 @@ int main(int argc, char **argv) {
     return(0);
 }
 
-static int parse_commandline(int argc, char **argv, l2b_to_netcdf_config *config) {
-
-    const char* usage_array = "--l2b=<l2b file> --nc=<nc file> --l1bhdf=<l1b hdf source file> --times=<times file> --xfact=<xfactor table> --hhbias=<hpol bias correction> --vvbias=<vpol bias correction>";
-    int opt;
-
-    /* Initialize configuration structure */
-    config->command = no_path(argv[0]);
-    config->l2b_file    = NULL;
-    config->nc_file     = NULL;
-    config->l1bhdf_file = NULL;
-    config->times_file  = NULL;
-    config->hpol_adj    = -NAN;
-    config->vpol_adj    = -NAN;
-    config->xfact_table = NULL;
-    config->revtag      = NULL;
-
-    struct option longopts[] =
-    {
-        { "l2b",      required_argument, NULL, 'i'},
-        { "nc",       required_argument, NULL, 'o'},
-        { "l1bhdf",   required_argument, NULL, 's'},
-        { "times",    required_argument, NULL, 't'},
-        { "hhbias",   required_argument, NULL, 'h'},
-        { "vvbias",   required_argument, NULL, 'v'},
-        { "xfact",    required_argument, NULL, 'x'},
-        { "revtag",   required_argument, NULL, 'r'},
-        {0, 0, 0, 0}
-    };
-
-    while ((opt = getopt_long(argc, argv, "i:o:s:t:", longopts, NULL)) != -1) {
-        switch (opt) {
-            case 'i':
-                config->l2b_file = optarg;
-                break;
-            case 'o':
-                config->nc_file = optarg;
-                break;
-            case 's':
-                config->l1bhdf_file = optarg;
-                break;
-            case 't':
-                config->times_file = optarg;
-                break;
-            case 'h':
-                config->hpol_adj = atof(optarg);
-                break;
-            case 'v':
-                config->vpol_adj = atof(optarg);
-                break;
-            case 'x':
-                config->xfact_table = optarg;
-                break;
-            case 'r':
-                free(config->revtag);
-                config->revtag = strdup(optarg);
-                break;
-        }
-
-    }
-
-    if (config->l2b_file == NULL || config->nc_file == NULL
-            || config->l1bhdf_file == NULL || config->times_file == NULL
-            || config->xfact_table == NULL || config->hpol_adj == -NAN
-            || config->vpol_adj == -NAN) {
-
-        fprintf(stderr, "%s: %s\n", config->command, usage_array);
-        return -1;
-    }
-
-    return 0;
-}
-
 static int set_global_attributes(int argc, char **argv,
-        const l2b_to_netcdf_config *cfg, const L2B *l2b, int ncid) {
+        const l2b_to_netcdf_config *cfg, ConfigList* config_list,
+        const L2B *l2b, int ncid) {
 
     vector <class NetCDF_Attr_Base *> global_attributes;
     const char *date_time_fmt = "%Y-%jT%H:%M:%S%z";
@@ -686,9 +627,6 @@ static int set_global_attributes(int argc, char **argv,
     int history_len = 23;   // Max length from date_time_fmt
     time_t now;
     char *history;
-
-    ifstream times(cfg->times_file);
-    times.exceptions(ifstream::eofbit);
 
     // Compute history attribute string length
     whoami = getenv("LOGNAME");
@@ -720,24 +658,26 @@ static int set_global_attributes(int argc, char **argv,
     history[strlen(history)] = '\n';
 
     // Open HDF file
-    hid_t l1bhdf_id, science_group;
+    hid_t l1bhdf_id_asc, science_group_asc;
+    hid_t l1bhdf_id_dec, science_group_dec;
     char attribute[256], rev_number[32];
 
-    HDFERR((l1bhdf_id = H5Fopen(cfg->l1bhdf_file, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0);
-    HDFERR((science_group = H5Gopen(l1bhdf_id, "science_data", H5P_DEFAULT)) < 0);
+    HDFERR((l1bhdf_id_asc = H5Fopen(cfg->l1bhdf_file_asc, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0);
+    HDFERR((science_group_asc = H5Gopen(l1bhdf_id_asc, "science_data", H5P_DEFAULT)) < 0);
+    HDFERR((l1bhdf_id_dec = H5Fopen(cfg->l1bhdf_file_asc, H5F_ACC_RDONLY, H5P_DEFAULT)) < 0);
+    HDFERR((science_group_dec = H5Gopen(l1bhdf_id_dec, "science_data", H5P_DEFAULT)) < 0);
 
     global_attributes.push_back(new NetCDF_Attr<char>("title", DATASET_TITLE));
     global_attributes.push_back(new NetCDF_Attr<char>("institution", "JPL"));
-    global_attributes.push_back(new NetCDF_Attr<char>("source", "Oceansat-II Scatterometer"));
-    global_attributes.push_back(new NetCDF_Attr<char>("comment", "Oceansat-II Level 1B Data Processed to Winds Using QuikSCAT v3 Algorithms"));
+    global_attributes.push_back(new NetCDF_Attr<char>("source", "SCATSAT-1 Scatterometer"));
+    global_attributes.push_back(new NetCDF_Attr<char>("comment", "SCATSAT-1 Level 1B Data Processed to Winds Using QuikSCAT v3 Algorithms"));
     global_attributes.push_back(new NetCDF_Attr<char>("history", history));
 
     // TODO
     global_attributes.push_back(new NetCDF_Attr<float>("hpol_adj", cfg->hpol_adj));
     global_attributes.push_back(new NetCDF_Attr<float>("vpol_adj", cfg->vpol_adj));
-    global_attributes.push_back(new NetCDF_Attr<char>("xfactor_adj_table", cfg->xfact_table));
 
-    global_attributes.push_back(new NetCDF_Attr<char>("Conventions", "CF-1.5"));
+    global_attributes.push_back(new NetCDF_Attr<char>("Conventions", "CF-1.6"));
     global_attributes.push_back(new NetCDF_Attr<char>("data_format_type", "NetCDF Classic"));
     global_attributes.push_back(new NetCDF_Attr<char>("producer_agency", "NASA"));
     global_attributes.push_back(new NetCDF_Attr<char>("build_id", BUILD_ID));
@@ -751,14 +691,18 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("creation_time", timestr));
 
     global_attributes.push_back(new NetCDF_Attr<char>("LongName", DATASET_TITLE));
-    global_attributes.push_back(new NetCDF_Attr<char>("ShortName", "OS2_OSCAT_LEVEL_2B_OWV_COMP_12_V2"));
+    global_attributes.push_back(new NetCDF_Attr<char>("ShortName", "SCATSAT_LEVEL_2B_OWV_COMP_12_V2"));
     strncpy(attribute, cfg->nc_file, ARRAY_LEN(attribute) - 1);
-    global_attributes.push_back(new NetCDF_Attr<char>("GranulePointer", basename(attribute)));
-    strncpy(attribute, cfg->l1bhdf_file, ARRAY_LEN(attribute) - 1);
+    
+    char l1bfiles[2048];
+    sprintf(l1bfiles, "%s; %s", cfg->l1bhdf_file_asc, cfg->l1bhdf_file_dec);
+    global_attributes.push_back(new NetCDF_Attr<char>("GranulePointerAsc", basename(attribute)));
+    strncpy(attribute, l1bfiles, ARRAY_LEN(attribute) - 1);
+
     global_attributes.push_back(new NetCDF_Attr<char>("InputPointer", basename(attribute)));
     global_attributes.push_back(new NetCDF_Attr<char>("l2b_algorithm_descriptor",
                 "Uses QSCAT2012 GMF from Jet Propulsion Laboratory constructed using\n"
-                "data from the QuikSCAT instrument repointed to OceanSAT-2 incidence\n"
+                "data from the QuikSCAT instrument repointed to ScatSat incidence\n"
                 "angles.  Applies median filter technique for ambiguity removal.\n"
                 "Ambiguity removal median filter is based on wind vectors over a 7 by 7\n"
                 "wind vector cell window.  Applies no median filter weights. Enhances\n"
@@ -770,80 +714,66 @@ static int set_global_attributes(int argc, char **argv,
     global_attributes.push_back(new NetCDF_Attr<char>("nudging_method", "NWP Weather Map probability threshold nudging"));
     global_attributes.push_back(new NetCDF_Attr<char>("median_filter_method", "Wind vector median"));
     global_attributes.push_back(new NetCDF_Attr<char>("sigma0_granularity", "slice composites"));
-    global_attributes.push_back(new NetCDF_Attr<char>("InstrumentShortName", "OSCAT"));
+    global_attributes.push_back(new NetCDF_Attr<char>("InstrumentShortName", "OSCAT2"));
     global_attributes.push_back(new NetCDF_Attr<char>("PlatformType", "spacecraft"));
-    global_attributes.push_back(new NetCDF_Attr<char>("PlatformLongName", "Oceansat-2"));
-    global_attributes.push_back(new NetCDF_Attr<char>("PlatformShortName", "OS2"));
+    global_attributes.push_back(new NetCDF_Attr<char>("PlatformLongName", "SCATSAT-1"));
+    global_attributes.push_back(new NetCDF_Attr<char>("PlatformShortName", "SCATSAT"));
 
-    // Spoof rev number if available
-    if (cfg->revtag == NULL) {
-        read_attr_h5(science_group, "Revolution Number", attribute);
-    } else {
-        strcpy(attribute, cfg->revtag);
-    }
-    strcpy(rev_number, attribute);
-    attribute[5] = '\0';   // Separate starting & stop orbit #s
-    global_attributes.push_back(new NetCDF_Attr<char>("rev_number", rtrim(attribute)));
-    global_attributes.push_back(new NetCDF_Attr<char>("StartOrbitNumber", rtrim(attribute)));
-    global_attributes.push_back(new NetCDF_Attr<char>("StopOrbitNumber", rtrim(attribute + 6)));
+//     strcpy(attribute, cfg->revtag);
+//     attribute[5] = '\0';   // Separate starting & stop orbit #s
+    global_attributes.push_back(new NetCDF_Attr<char>("rev_number", cfg->revtag));
 
     global_attributes.push_back(new NetCDF_Attr<float>("cross_track_resolution", &l2b->header.crossTrackResolution));
     global_attributes.push_back(new NetCDF_Attr<float>("along_track_resolution", &l2b->header.alongTrackResolution));
     global_attributes.push_back(new NetCDF_Attr<int>("zero_index", &l2b->header.zeroIndex));
     global_attributes.push_back(new NetCDF_Attr<char>("version_id", VERSION_ID));
-    // These are internal L2B version numbers---don't need to log these
-//    global_attributes.push_back(new NetCDF_Attr<int>("version_id_major", &l2b->header.version_id_major));
-//    global_attributes.push_back(new NetCDF_Attr<int>("version_id_minor", &l2b->header.version_id_minor));
 
-    read_attr_h5(science_group, "Processor Version", attribute);
+    read_attr_h5(science_group_asc, "Processor Version", attribute);
     global_attributes.push_back(new NetCDF_Attr<char>("L1B_Processor_Version", rtrim(attribute)));
-    read_attr_h5(science_group, "Ephemeris Type", attribute);
+    read_attr_h5(science_group_asc, "Ephemeris Type", attribute);
     global_attributes.push_back(new NetCDF_Attr<char>("Ephemeris_Type", rtrim(attribute)));
-    read_attr_h5(science_group, "L1B Actual Scans", attribute);
-    global_attributes.push_back(new NetCDF_Attr<short>("L1B_Actual_Scans", (short)atoi(attribute)));
-    read_attr_h5(science_group, "Production Date", attribute);  DT_SPLIT(attribute);
+    read_attr_h5(science_group_asc, "L1B Actual Scans", attribute);
+    global_attributes.push_back(new NetCDF_Attr<short>("L1B_Actual_Scans_Asc", (short)atoi(attribute)));
+    read_attr_h5(science_group_dec, "L1B Actual Scans", attribute);
+    global_attributes.push_back(new NetCDF_Attr<short>("L1B_Actual_Scans_Dec", (short)atoi(attribute)));
+    read_attr_h5(science_group_asc, "Production Date", attribute);  DT_SPLIT(attribute);
     global_attributes.push_back(new NetCDF_Attr<char>("L1BProductionDate", rtrim(DT_DATE(attribute))));
     global_attributes.push_back(new NetCDF_Attr<char>("L1BProductionTime", rtrim(DT_TIME(attribute))));
 
-    try {
-        char revno[32], orbit_start[32], orbit_stop[32], node_time[32], node_long[32], orb_per[32];
-
-        do {
-            times >> revno >> orbit_start >> orbit_stop >> node_time >> node_long >> orb_per;
-
-            if (strcmp(rev_number, revno) == 0) {
-                DT_SPLIT(orbit_start);
-                DT_SPLIT(orbit_stop);
-                DT_SPLIT(node_time);
-
-                rev_start_time = str_to_timeval(orbit_start);
-                rev_end_time   = str_to_timeval(orbit_stop);
-
-                global_attributes.push_back(new NetCDF_Attr<char>("EquatorCrossingDate", rtrim(DT_DATE(node_time))));
-                global_attributes.push_back(new NetCDF_Attr<char>("EquatorCrossingTime", rtrim(DT_TIME(node_time))));
-                global_attributes.push_back(new NetCDF_Attr<char>("RangeBeginningDate", rtrim(DT_DATE(orbit_start))));
-                global_attributes.push_back(new NetCDF_Attr<char>("RangeBeginningTime", rtrim(DT_TIME(orbit_start))));
-                global_attributes.push_back(new NetCDF_Attr<char>("RangeEndingDate", rtrim(DT_DATE(orbit_stop))));
-                global_attributes.push_back(new NetCDF_Attr<char>("RangeEndingTime", rtrim(DT_TIME(orbit_stop))));
-                global_attributes.push_back(new NetCDF_Attr<float>("Equator_Crossing_Longitude", atof(node_long)));
-                global_attributes.push_back(new NetCDF_Attr<float>("rev_orbit_period", atof(orb_per)));
-
-                break;
-            }
-        } while(true);
-    } catch (ifstream::failure e) {
-        cerr << "Reached end of file without finding " << rev_number << endl;
-        exit(-1);
-    }
-
-    read_attr_h5(science_group, "Orbit Inclination", attribute);
+    read_attr_h5(science_group_asc, "Orbit Inclination", attribute);
     global_attributes.push_back(new NetCDF_Attr<float>("orbit_inclination", atof(attribute)));
-    read_attr_h5(science_group, "Orbit Semi-major Axis", attribute);
+    read_attr_h5(science_group_asc, "Orbit Semi-major Axis", attribute);
     global_attributes.push_back(new NetCDF_Attr<float>("rev_orbit_semimajor_axis", atof(attribute)));
-    read_attr_h5(science_group, "Orbit Eccentricity", attribute);
+    read_attr_h5(science_group_asc, "Orbit Eccentricity", attribute);
     global_attributes.push_back(new NetCDF_Attr<float>("rev_orbit_eccentricity", atof(attribute)));
     global_attributes.push_back(new NetCDF_Attr<char>("NetCDF_version_id", nc_inq_libvers()));
     global_attributes.push_back(new NetCDF_Attr<char>("references", ""));
+
+    char orbit_start[32], orbit_stop[32], node_time[32];
+
+    strcpy(orbit_start, config_list->Get("REV_START_TIME"));
+    strcpy(orbit_stop, config_list->Get("REV_STOP_TIME"));
+    strcpy(node_time, config_list->Get("ASC_NODE_TIME"));
+
+    DT_SPLIT(orbit_start);
+    DT_SPLIT(orbit_stop);
+    DT_SPLIT(node_time);
+
+    rev_start_time = str_to_timeval(orbit_start);
+    rev_end_time   = str_to_timeval(orbit_stop);
+
+    float node_long, rev_period;
+    config_list->GetFloat("REV_PERIOD", &rev_period);
+    config_list->GetFloat("ASC_NODE_LONG", &node_long);
+
+    global_attributes.push_back(new NetCDF_Attr<char>("RangeBeginningDate", rtrim(DT_DATE(orbit_start))));
+    global_attributes.push_back(new NetCDF_Attr<char>("RangeBeginningTime", rtrim(DT_TIME(orbit_start))));
+    global_attributes.push_back(new NetCDF_Attr<char>("RangeEndingDate", rtrim(DT_DATE(orbit_stop))));
+    global_attributes.push_back(new NetCDF_Attr<char>("RangeEndingTime", rtrim(DT_TIME(orbit_stop))));
+    global_attributes.push_back(new NetCDF_Attr<char>("EquatorCrossingDate", rtrim(DT_DATE(node_time))));
+    global_attributes.push_back(new NetCDF_Attr<char>("EquatorCrossingTime", rtrim(DT_TIME(node_time))));
+    global_attributes.push_back(new NetCDF_Attr<float>("Equator_Crossing_Longitude", node_long));
+    global_attributes.push_back(new NetCDF_Attr<float>("rev_orbit_period", rev_period/60.0));
 
     for (unsigned int i = 0; i < global_attributes.size(); i++) {
         NCERR(global_attributes[i]->Write(ncid, NC_GLOBAL));
@@ -855,7 +785,8 @@ static int set_global_attributes(int argc, char **argv,
 
     FREE(history);
 
-    H5Fclose(l1bhdf_id);
+    H5Fclose(l1bhdf_id_asc);
+    H5Fclose(l1bhdf_id_dec);
 
     return 0;
 }
@@ -878,7 +809,6 @@ static void read_attr_h5(hid_t obj_id, char *name, void *buffer) {
     HDFERR((H5Aclose(attr_id)) < 0);
 }
 
-// Modified by A. Fore from QuikSCAT code to use OS-2 origins
 static void bin_to_latlon(int at_ind, int ct_ind,
         const latlon_config *config, float *lat, float *lon) {
 
@@ -891,12 +821,7 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     const double at_res = config->at_res;
     const double xt_res = config->xt_res;
 
-    // Modified for OS2 starting at north pole
-    //lambda_0 = DEG_TO_RAD(config->lambda_0);
-    double lambda_0 = config->lambda_0 + 180 + P2/(2*P1) * 360;
-    if( lambda_0 > 360 ) lambda_0 -= 360;
-    lambda_0 = DEG_TO_RAD(lambda_0);
-
+    const double lambda_0 = DEG_TO_RAD(config->lambda_0);
 
     const double r_n_at_bins = 1624.0 * 25.0 / at_res;
     const double atrack_bin_const = two_pi/r_n_at_bins;
@@ -912,9 +837,8 @@ static void bin_to_latlon(int at_ind, int ct_ind,
 
     sini = sinf(inc);
     cosi = cosf(inc);
-    // Modified for OS2 starting at north pole
-    //lambda_pp = (at_ind + 0.5)*atrack_bin_const - pi_over_two;
-    lambda_pp = (at_ind + 0.5)*atrack_bin_const - pi_over_two + pi;
+
+    lambda_pp = (at_ind + 0.5)*atrack_bin_const - pi_over_two;
     phi_pp = -(ct_ind - (r_n_xt_bins/2 - 0.5))*xtrack_bin_const;
 
     sin_phi_pp = sinf(phi_pp);
@@ -934,11 +858,12 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     lambda_t = atan2f(V, cosf(lambda_pp));
     lambda = lambda_t - (P2/P1)*lambda_pp + lambda_0;
 
-
-    lambda += (lambda < 0)       ?  two_pi :
-              (lambda >= two_pi) ? -two_pi :
-                                    0.0f;
-
+    while (lambda < 0) {
+        lambda += two_pi;
+    }
+    while (lambda >= two_pi) {
+        lambda -= two_pi;
+    }
 
     phi = atanf((tanf(lambda_pp)*cosf(lambda_t) -
                 cosf(inc)*sinf(lambda_t))/((1 - e2)*
@@ -947,6 +872,7 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     *lon = RAD_TO_DEG(lambda);
     *lat = RAD_TO_DEG(phi);
 }
+
 
 static struct timeval str_to_timeval(const char *end) {
 
