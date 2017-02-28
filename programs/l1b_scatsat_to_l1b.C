@@ -8,6 +8,7 @@
 #define S1L1B_DEC_FILE_KEYWORD "S1L1B_DEC_FILE"
 #define HH_BIAS_ADJ_KEYWORD "HH_BIAS_ADJ"
 #define VV_BIAS_ADJ_KEYWORD "VV_BIAS_ADJ"
+#define SCATSAT_SLICE_CORR_TABLE_KEYWORD "SCATSAT_SLICE_CORR_TABLE"
 
 //----------//
 // INCLUDES //
@@ -182,6 +183,34 @@ main(int argc, char* argv[]) {
     int nslices[2] = {9, 15};
     int nframes[2];
 
+    // read in slice balancing table if commanded in config file
+    config_list.DoNothingForMissingKeywords();
+    char* slice_corr_table_file = config_list.Get(
+        SCATSAT_SLICE_CORR_TABLE_KEYWORD);
+
+    std::vector<std::vector<std::vector<float> > > slice_corr(2);
+    std::vector<std::vector<float> > fp_corr(2);
+
+    if(slice_corr_table_file) {
+        FILE* ifp = fopen(slice_corr_table_file, "r");
+        for (int ipol = 0; ipol < 2; ++ipol) {
+
+            // read footprint correction factor
+            fp_corr[ipol].resize(360);
+            fread(&fp_corr[ipol][0], sizeof(float), 360, ifp);
+
+            slice_corr[ipol].resize(nslices[ipol]);
+            for(int islice = 0; islice < nslices[ipol]; ++islice) {
+                slice_corr[ipol][islice].resize(360);
+
+                // read slice correction factor
+                fread(&slice_corr[ipol][islice][0], sizeof(float), 360, ifp);
+            }
+        }
+        fclose(ifp);
+    }
+
+
     for(int ipart=0; ipart<2; ++ipart) {
         hid_t h_id = H5Fopen(l1b_files[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
         hid_t g_id = H5Gopen(h_id, "science_data", H5P_DEFAULT);
@@ -204,6 +233,7 @@ main(int argc, char* argv[]) {
         float s0_scale;
         read_attr_h5(g_id, "Sigma0 Scale", &attr_text);
         s0_scale = atof(attr_text);
+        printf("s0_scale: %f\n", s0_scale);
 
         char sst[nframes[ipart]][22];
         read_SDS_h5(g_id,"Scan_start_time", &sst[0]);
@@ -467,6 +497,22 @@ main(int argc, char* argv[]) {
                         if(new_meas->eastAzimuth >= two_pi)
                             new_meas->eastAzimuth -= two_pi;
 
+                        CoordinateSwitch ecef_to_enu = 
+                            new_meas->centroid.SurfaceCoordinateSystem();
+
+                        // Compute look vector (slice centroid - s/c position)
+                        Vector3 look_ecef = 
+                            new_meas->centroid - new_meas_spot->scOrbitState.rsat;
+
+                        // rotate look vector to surface coordinates in
+                        // East, North, Up (ENU) basis.
+                        Vector3 look_enu = ecef_to_enu.Forward(look_ecef);
+
+                        // Compute spherical coordinates of look vector in ENU basis
+                        double r, theta, phi;
+                        look_enu.SphericalGet(&r, &theta, &phi);
+                        new_meas->eastAzimuth = phi;
+
                         new_meas->value = pow(10.0, 0.1*this_s0);
                         if(s0_flg[ipol][data_idx] & NEG_S0_MASK)
                             new_meas->value *= -1;
@@ -498,7 +544,7 @@ main(int argc, char* argv[]) {
                                 new_meas->range_width   = 68;
                             }
 
-                            double sos = pow( 10.0, 0.1*(this_s0-this_snr) );
+                            double sos = pow(10.0, 0.1*(this_s0-this_snr));
 
                             double kprs2 = 0.0;
                             if(use_kprs && !kp.GetKprs2(new_meas, &kprs2)) {
@@ -528,7 +574,25 @@ main(int argc, char* argv[]) {
                             new_meas->A = 1 + (kp_alpha - 1)*atten_lin*atten_lin;
                             new_meas->B = kp_beta*atten_lin*atten_lin;
                             new_meas->C = kp_gamma*atten_lin*atten_lin;
-                        
+
+                            new_meas->value *= atten_lin;
+
+                            // get correction value from table
+                            if(slice_corr_table_file) {
+                                int iazi = (int)round(new_meas->scanAngle*rtd);
+
+                                if(iazi == 360) iazi = 0;
+                                if(iazi == -1) iazi = 359;
+
+                                float s0_corr = pow(
+                                    10, 0.1*fp_corr[ipol][iazi]);
+
+                                new_meas->value *= s0_corr;
+                                new_meas->A = 1+(new_meas->A-1)*s0_corr*s0_corr;
+                                new_meas->B *= s0_corr * s0_corr;
+                                new_meas->C *= s0_corr * s0_corr;
+                            }
+
                         } else {
                             // do slice specific stuff
                             new_meas->numSlices = 1;
@@ -540,6 +604,20 @@ main(int argc, char* argv[]) {
                             } else {
                                 new_meas->azimuth_width = 30;
                                 new_meas->range_width   = 68/15;
+                            }
+                            new_meas->range_width = 7.0;
+
+                            // get correction value from table
+                            if(slice_corr_table_file) {
+                                int iazi = (int)round(new_meas->scanAngle*rtd);
+
+                                if(iazi == 360) iazi = 0;
+                                if(iazi == -1) iazi = 359;
+
+                                float s0_corr = pow(
+                                    10, 0.1*slice_corr[ipol][islice][iazi]);
+
+                                new_meas->value *= s0_corr;
                             }
 
                             new_meas->A = 0.0000154*double(kpa[ipol][data_idx]);
