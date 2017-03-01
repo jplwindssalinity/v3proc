@@ -401,7 +401,7 @@ int main(int argc, char **argv) {
         nudge_dir_var->AddAttribute(new NetCDF_Attr<char>("units", "degrees"));
         nudge_dir_var->AddAttribute(new NetCDF_Attr<float>("scale_factor", 1.0f));
         nudge_dir_var->AddAttribute(new NetCDF_Attr<char>("coordinates", "lon lat"));
-    NetCDF_Var<float> *wind_speed_uncorr_var = new NetCDF_Var<float>("wind_speed_uncorrected", ncid, 2, dimensions, dimensions_sz);
+    NetCDF_Var<float> *wind_speed_uncorr_var = new NetCDF_Var<float>("retrieved_wind_speed_uncorrected", ncid, 2, dimensions, dimensions_sz);
         float wind_speed_uncorr_fill = -9999.0f, wind_speed_uncorr_min = 0.0f, wind_speed_uncorr_max = 100.f;
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("_FillValue", wind_speed_uncorr_fill));
         wind_speed_uncorr_var->AddAttribute(new NetCDF_Attr<float>("valid_min", wind_speed_uncorr_min));
