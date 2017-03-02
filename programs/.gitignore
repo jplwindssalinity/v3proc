@@ -1,5 +1,10 @@
 *~
+<<<<<<< HEAD
 l1b_scatsat_to_l1b
+=======
+ascat_szf_to_l1b_new
+l2a_ascat_to_l2b
+>>>>>>> develop-ascat
 gen_swath_e2b
 gen_qs_l1b_fp_ecmwf
 doy

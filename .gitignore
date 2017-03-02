@@ -1,3 +1,4 @@
+Makefile
 *.o
 *.s
 *.ii
@@ -23,9 +24,19 @@ config.log
 config.status
 eadata/.deps/
 eadata/.dirstamp
+<<<<<<< HEAD
 *.a
+=======
+libEAData.a
+libSim.a
+>>>>>>> develop-ascat
 libtool
 objs/.deps/
 objs/.dirstamp
 programs/.deps/
 programs/.dirstamp
+<<<<<<< HEAD
+=======
+stamp-h1
+
+>>>>>>> develop-ascat

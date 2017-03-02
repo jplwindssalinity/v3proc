@@ -12,8 +12,6 @@ static const char rcs_id_list_h[] =
 #include <stdio.h>
 #include "List.h"
 
-using namespace std;
-
 //======================================================================
 // CLASSES
 //    Node, List, SortableList
