@@ -176,7 +176,8 @@ bin_PROGRAMS = \
     programs/quick_winds                          \
     programs/ascat_szf_to_l1b                     \
     programs/ascat_szf_to_l1b_new                 \
-    programs/l2a_ascat_to_l2b
+    programs/l2a_ascat_to_l2b                     \
+    programs/gen_os2_l1b_fp_ecmwf
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files
