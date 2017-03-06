@@ -53,11 +53,8 @@ static const char rcs_id[] =
 
 #define QS_LANDMAP_FILE_KEYWORD         "QS_LANDMAP_FILE"
 #define QS_ICEMAP_FILE_KEYWORD          "QS_ICEMAP_FILE"
-<<<<<<< HEAD
-=======
 #define USE_COMPOSITING_KEYWORD         "USE_COMPOSITING"
 #define USE_FOOTPRINTS_KEYWORD          "USE_FOOTPRINTS"
->>>>>>> land-frac
 #define DO_COASTAL_PROCESSING_KEYWORD   "DO_COASTAL_PROCESSING"
 #define COASTAL_METHOD_KEYWORD          "COASTAL_PROCESSING_METHOD"
 #define COASTAL_DISTANCE_FILE_KEYWORD   "COASTAL_DISTANCE_FILE"
@@ -1163,7 +1160,8 @@ main(
               this_meas = new_meas_spot->GetNext();
 
              // Stick this meas in the measSpot
-             new_meas_spot->Append(new_meas);
+             new_meas_spot->Append(this_meas);
+            }
           }
 
           // Compute land fractions for various coastal_methos
