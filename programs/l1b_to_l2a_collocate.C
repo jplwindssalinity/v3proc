@@ -94,79 +94,64 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    double grid_start_time, grid_end_time;
-    double instrument_start_time, instrument_end_time;
-    double spacecraft_start_time, spacecraft_end_time;
+    ETime etime;
+    etime.FromCodeB("1970-001T00:00:00.000");
+    double time_base = (double)etime.GetSec() + (double)etime.GetMs()/1000;
 
-    printf("Generating grid/instrument start/stop times from L1B file.\n");
-    grid.l1b.OpenForReading();
+    etime.FromCodeB(config_list.Get("REV_START_TIME"));
+    double other_rev_start =
+        (double)etime.GetSec() + (double)etime.GetMs()/1000 - time_base;
 
-    int i_rec = 0;
-    double t_min, t_max;
+    etime.FromCodeB(config_list.Get("REV_STOP_TIME"));
+    double other_rev_stop =
+        (double)etime.GetSec() + (double)etime.GetMs()/1000 - time_base;
 
-    while (grid.l1b.ReadDataRec()) {
-        i_rec++;
 
-        MeasSpot* meas_spot = grid.l1b.frame.spotList.GetHead();
-        double t_now = meas_spot->time;
-
-        if(i_rec == 1) {
-            t_min = t_now;
-            t_max = t_now;
-        }
-        if(t_now > t_max) t_max = t_now;
-    }
-
-    // First and last measurement times
-    instrument_start_time = t_min;
-    instrument_end_time   = t_max;
-
-    // SOM binning uses this for setting up the SOM coordinate
-    // to grid index conversion; SUBTRACK binning does not.
-    grid_start_time = t_min;
-    grid_end_time   = t_max;
-
-    ETime dummy_time;
-    char  codeA_time_str[CODE_A_TIME_LENGTH];
-
-    printf("\n");
-    printf("Generated grid/instrument start/end times: \n");
-    
-    dummy_time.SetTime(instrument_start_time);
-    dummy_time.ToCodeA(&codeA_time_str[0]);
-    printf("INSTRUMENT_START_TIME = %s\n",codeA_time_str);
-
-    dummy_time.SetTime(instrument_end_time);
-    dummy_time.ToCodeA(&codeA_time_str[0]);
-    printf("INSTRUMENT_END_TIME   = %s\n",codeA_time_str);
-
-    dummy_time.SetTime(grid_start_time);
-    dummy_time.ToCodeA(&codeA_time_str[0]);
-    printf("GRID_START_TIME       = %s\n",codeA_time_str);
-
-    dummy_time.SetTime(grid_end_time);
-    dummy_time.ToCodeA(&codeA_time_str[0]);
-    printf("GRID_END_TIME         = %s\n",codeA_time_str);
-    printf("\n");
-
-    grid.l1b.Close();
-    grid.SetStartTime(grid_start_time);
-    grid.SetEndTime(grid_end_time);
-
-    if (instrument_end_time>grid_end_time) {
-        grid.lat_end_time = instrument_end_time;
-    } else {
-        grid.lat_end_time = grid_end_time;
-    }
+    grid.SetStartTime(other_rev_start);
+    grid.SetEndTime(other_rev_stop);
+    grid.lat_end_time = other_rev_stop;
 
     grid.l1b.OpenForReading();
     grid.l2a.OpenForWriting();
+
+
+    int nSpotSize = 4;
+    int timeSize = 8;
+    int scOSSize = 56;
+    int scAttSize = 15; // 3 float and 3 char (order of rpy)
+    int nMeasSize = 4;
+    int spotSize = timeSize + scOSSize + scAttSize;
+    int nSpot = 0;
+    int nm = 0;
+    off_t tmp = 0;
+
+    /* find byte length of a measurement from a spot list with */
+    /* positive number of measurements                         */
+    while (nm == 0) {
+        tmp = ftello(grid.l1b.GetInputFp());
+        if (!grid.l1b.ReadDataRec()) {
+            fprintf(stderr, "%s: error reading Level 1B data\n", command);
+            exit(1);
+        }
+
+        /* find out number of spots in the spotlist */
+        nSpot = grid.l1b.frame.spotList.NodeCount();
+
+          /* find out total number of measurements for all spots */
+        for (MeasSpot* meas_spot = grid.l1b.frame.spotList.GetHead();
+             meas_spot; meas_spot = grid.l1b.frame.spotList.GetNext()) {
+            nm += meas_spot->NodeCount();
+        }
+    }
+    int sumSize = nSpotSize + nSpot*(spotSize+nMeasSize);
+    grid.meas_length = (int)((ftello(grid.l1b.GetInputFp())-tmp-sumSize)/nm);
+    fseeko(grid.l1b.GetInputFp(), 0, SEEK_SET);
 
     int counter = 0;
     int spot_counter = 0;
     int meas_counter = 0;
 
-    double other_subtrack_start_time = (grid_start_time+grid_end_time)/2;
+    double other_subtrack_start_time = (other_rev_start + other_rev_stop)/2;
     double other_time = other_subtrack_start_time;
 
     OrbitState other_os;
@@ -212,8 +197,19 @@ int main(int argc, char* argv[]) {
                     r1_earth/other_os.rsat.Magnitude();
 
                 // solution increment (not first time through)
-                if(num_iters != 0)
+                if(num_iters != 0) {
                     other_time += (atd - atd_nadir) / vground;
+
+                    if(other_time > other_rev_stop) {
+                        other_time = other_rev_stop;
+                        break;
+                    }
+
+                    if(other_time < other_rev_start) {
+                        other_time = other_rev_start;
+                        break;
+                    }
+                }
 
                 // Compute other_ephem nadir point at that time
                 other_ephem.GetOrbitState(
