@@ -5,13 +5,12 @@
 
 #define QS_LANDMAP_FILE_KEYWORD "QS_LANDMAP_FILE"
 #define QS_ICEMAP_FILE_KEYWORD  "QS_ICEMAP_FILE"
-#define REV_START_TIME_KEYWORD "REV_START_TIME"
-#define REV_STOP_TIME_KEYWORD "REV_STOP_TIME"
 #define COASTAL_DISTANCE_FILE_KEYWORD "COASTAL_DISTANCE_FILE"
 
 #include <stdio.h>
-#include <stdlib.h>make -
+#include <stdlib.h>
 #include <string>
+#include <math.h>
 #include "List.h"
 #include "CoastDistance.h"
 #include "BufferedList.h"
@@ -69,10 +68,10 @@ int main(int argc, char* argv[]) {
     CoastDistance coast_dist;
     coast_dist.Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
 
-    Ephemeris ephem(config_list.Get(EPHEMERIS_FILE_KEYWORD), 10000);
+    Ephemeris ephem(config_list.Get(EPHEMERIS_FILE_KEYWORD), 100000);
 
-    int do_composite = 0;
-    config_list.GetInt("USE_COMPOSITING", &do_composite);
+    int grid_starts_south_pole;
+    config_list.GetInt("GRID_STARTS_SOUTH_POLE", &grid_starts_south_pole);
 
     L1B l1b;
     if(!l1b.OpenForWriting(config_list.Get(L1B_FILE_KEYWORD))) {
@@ -82,129 +81,168 @@ int main(int argc, char* argv[]) {
 
     ETime etime;
     etime.FromCodeB("1970-001T00:00:00.000");
-    char* time_string;
-    time_string = config_list.Get(REV_START_TIME_KEYWORD);
     double time_base = (
         (double)etime.GetSec() + (double)etime.GetMs()/1000);
-    etime.FromCodeB(time_string);
-
-    double rev_start_time = (
-        (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
-
-    time_string = config_list.Get(REV_STOP_TIME_KEYWORD);
-    etime.FromCodeB(time_string);
-    double rev_stop_time = (
-        (double)etime.GetSec()+(double)etime.GetMs()/1000 - time_base);
 
     etime.FromCodeA("2000-01-01T00:00:00.000");
     double ascat_base = (double)etime.GetSec()+(double)etime.GetMs()/1000;
 
-    AscatFile ascat_file;
-    int number_records, number_nodes;
-    if(ascat_file.open(
-        config_list.Get("L1B_SZF_FILE"), &number_records, &number_nodes)) {
-        fprintf(stderr, "%s: ERROR opening ascat szf file\n", command); 
-        exit(1);
+
+    char* l1b_szf_files[2] = {NULL, NULL};
+    l1b_szf_files[0] = config_list.Get("L1B_SZF_FILE");
+    config_list.WarnForMissingKeywords();
+    l1b_szf_files[1] = config_list.Get("L1B_SZF_FILE2");
+    config_list.ExitForMissingKeywords();
+
+    std::vector< double > minz_times;
+    double this_start_time = 0, this_stop_time = INFINITY;
+
+    if(grid_starts_south_pole) {
+        if(!l1b_szf_files[1]) {
+            fprintf(stderr, "%s: require two consecutive L1B SZF files if GRID_STARTS_SOUTH_POLE == 1\n", command);
+            exit(1);
+        }
+
+        // Solve for rev start/end times from ephem.
+        OrbitState this_os;
+        OrbitState prev_os;
+        ephem.GetNextOrbitState(&prev_os);
+        while(ephem.GetNextOrbitState(&this_os)) {
+            double this_vz = this_os.vsat.GetZ();
+            double prev_vz = prev_os.vsat.GetZ();
+
+            if(this_vz >= 0 && prev_vz < 0) {
+                double minz_time = 
+                    prev_os.time + (this_os.time-prev_os.time) *
+                    (0-prev_vz) / (this_vz-prev_vz);
+                minz_times.push_back(minz_time);
+            }
+            prev_os = this_os;
+        }
+        if(minz_times.size() < 2) {
+            fprintf(stderr, "%s: Too few minz times in ephem file\n", command);
+            exit(1);
+        }
+//         printf("minz times: %f %f\n", minz_times[0], minz_times[1]);
+        this_start_time = minz_times[0];
+        this_stop_time = minz_times[1];
     }
 
-    printf(
-        "version, n_recs, n_nodes: %d %d %d\n", ascat_file.fmt_maj,
-        number_records, number_nodes);
+    for(int ipart = 0; ipart < 2; ++ipart) {
 
-    if(ascat_file.fmt_maj < 12) {
-        fprintf(stderr, "%s only for format >= 12\n", command);
-        exit(1);
-    }
-
-    l1b.frame.spotList.FreeContents();
-    for(int irecord = 0; irecord < number_records; ++irecord) {
-        // Read the next measurement data record from the SZF file, skip on
-        // errors or dummy MDRs.
-        int is_dummy_mdr = 0;
-        if(ascat_file.read_mdr(&is_dummy_mdr) || is_dummy_mdr)
+        if(!l1b_szf_files[ipart])
             continue;
 
-        AscatSZFNodeNew ascat_szf_node_first;
-        ascat_file.get_node_new(0, &ascat_szf_node_first);
+        AscatFile ascat_file;
+        int number_records, number_nodes;
+        if(ascat_file.open(
+            l1b_szf_files[ipart], &number_records, &number_nodes)) {
+            fprintf(stderr, "%s: ERROR opening ascat szf file\n", command); 
+            exit(1);
+        }
 
-        double time = ascat_szf_node_first.tm*86400 + ascat_base;
+        printf(
+            "version, n_recs, n_nodes: %d %d %d\n", ascat_file.fmt_maj,
+            number_records, number_nodes);
 
-        MeasSpot* new_meas_spot = new MeasSpot();
+        if(ascat_file.fmt_maj < 12) {
+            fprintf(stderr, "%s only for format >= 12\n", command);
+            exit(1);
+        }
 
-        new_meas_spot->time = time;
-        new_meas_spot->scOrbitState.time = time;
-        ephem.GetOrbitState(
-            time, EPHEMERIS_INTERP_ORDER,
-            &new_meas_spot->scOrbitState);
-        new_meas_spot->scAttitude.SetRPY(0, 0, 0);
-
-        // Iterate over nudes in this MDR
-        for(int inode = 0; inode < number_nodes; ++inode) {
-
-            // Get this SZF node from the MDR
-            AscatSZFNodeNew ascat_szf_node;
-            ascat_file.get_node_new(inode, &ascat_szf_node);
-
-            // Check quality
-            if(ascat_szf_node.is_bad)
+        l1b.frame.spotList.FreeContents();
+        for(int irecord = 0; irecord < number_records; ++irecord) {
+            // Read the next measurement data record from the SZF file, skip on
+            // errors or dummy MDRs.
+            int is_dummy_mdr = 0;
+            if(ascat_file.read_mdr(&is_dummy_mdr) || is_dummy_mdr)
                 continue;
 
-            Meas* new_meas = new Meas();
+            AscatSZFNodeNew ascat_szf_node_first;
+            ascat_file.get_node_new(0, &ascat_szf_node_first);
 
-            new_meas->measType = Meas::C_BAND_VV_MEAS_TYPE;
-            new_meas->value = ascat_szf_node.s0;
-            new_meas->XK = 1.0;
+            double time = ascat_szf_node_first.tm*86400 + ascat_base;
 
-            double tmp_lon = dtr*ascat_szf_node.lon;
-            double tmp_lat = dtr*ascat_szf_node.lat;
-            if(tmp_lon<0) tmp_lon += two_pi;
+            if(time < this_start_time || time > this_stop_time)
+                continue;
 
-            new_meas->centroid.SetAltLonGDLat(0.0, tmp_lon, tmp_lat);
-            new_meas->incidenceAngle = dtr*ascat_szf_node.t0;
-//             new_meas->eastAzimuth = (450.0*dtr - dtr*ascat_szf_node.a0);
-            new_meas->eastAzimuth = gs_deg_to_pe_rad(ascat_szf_node.a0);
-            new_meas->numSlices = 1;
-            new_meas->startSliceIdx = inode;
-            new_meas->beamIdx = ascat_szf_node.beam - 1;
-            new_meas->azimuth_width = 20; // [km]; from documentation
-            new_meas->range_width = 10; // [km]; from documentation
-            new_meas->A = 1;
-            new_meas->B = 0;
-            new_meas->C = 0;
-            new_meas->landFlag = 0;
+            MeasSpot* new_meas_spot = new MeasSpot();
 
-            double distance;
-            coast_dist.Get(tmp_lon, tmp_lat, &distance);
+            new_meas_spot->time = time;
+            new_meas_spot->scOrbitState.time = time;
+            ephem.GetOrbitState(
+                time, EPHEMERIS_INTERP_ORDER,
+                &new_meas_spot->scOrbitState);
+            new_meas_spot->scAttitude.SetRPY(0, 0, 0);
 
-            if(distance < 30)
-                new_meas->landFlag += 1; // bit 0 for land
+            // Iterate over nudes in this MDR
+            for(int inode = 0; inode < number_nodes; ++inode) {
 
-            if(qs_icemap.IsIce(tmp_lon, tmp_lat, 0))
-                new_meas->landFlag += 2; // bit 1 for ice
+                // Get this SZF node from the MDR
+                AscatSZFNodeNew ascat_szf_node;
+                ascat_file.get_node_new(inode, &ascat_szf_node);
 
-            new_meas_spot->Append(new_meas);
+                // Check quality
+                if(ascat_szf_node.is_bad)
+                    continue;
+
+                Meas* new_meas = new Meas();
+
+                new_meas->measType = Meas::C_BAND_VV_MEAS_TYPE;
+                new_meas->value = ascat_szf_node.s0;
+                new_meas->XK = 1.0;
+
+                double tmp_lon = dtr*ascat_szf_node.lon;
+                double tmp_lat = dtr*ascat_szf_node.lat;
+                if(tmp_lon<0) tmp_lon += two_pi;
+
+                new_meas->centroid.SetAltLonGDLat(0.0, tmp_lon, tmp_lat);
+                new_meas->incidenceAngle = dtr*ascat_szf_node.t0;
+    //             new_meas->eastAzimuth = (450.0*dtr - dtr*ascat_szf_node.a0);
+                new_meas->eastAzimuth = gs_deg_to_pe_rad(ascat_szf_node.a0);
+                new_meas->numSlices = 1;
+                new_meas->startSliceIdx = inode;
+                new_meas->beamIdx = ascat_szf_node.beam - 1;
+                new_meas->azimuth_width = 20; // [km]; from documentation
+                new_meas->range_width = 10; // [km]; from documentation
+                new_meas->A = 1;
+                new_meas->B = 0;
+                new_meas->C = time;
+                new_meas->landFlag = 0;
+
+                double distance;
+                coast_dist.Get(tmp_lon, tmp_lat, &distance);
+
+                if(distance < 30)
+                    new_meas->landFlag += 1; // bit 0 for land
+
+                if(qs_icemap.IsIce(tmp_lon, tmp_lat, 0))
+                    new_meas->landFlag += 2; // bit 1 for ice
+
+                new_meas_spot->Append(new_meas);
+            }
+
+            if(new_meas_spot->NodeCount() > 0)
+                l1b.frame.spotList.Append(new_meas_spot);
+            else
+                delete new_meas_spot;
+
+            if(ascat_szf_node_first.beam == 5) {
+
+                // Dont write out empty L1B data records
+                if(l1b.frame.spotList.NodeCount() > 0)
+                    l1b.WriteDataRec();
+
+                l1b.frame.spotList.FreeContents();
+            }
+
+            if(irecord % 1000 == 0) {
+                printf(
+                    "Wrote %d of %d pulses; beam %d\n", irecord, number_records,
+                    ascat_szf_node_first.beam);
+            }
         }
-
-        if(new_meas_spot->NodeCount() > 0)
-            l1b.frame.spotList.Append(new_meas_spot);
-        else
-            delete new_meas_spot;
-
-        if(ascat_szf_node_first.beam == 5) {
-
-            // Dont write out empty L1B data records
-            if(l1b.frame.spotList.NodeCount() > 0)
-                l1b.WriteDataRec();
-
-            l1b.frame.spotList.FreeContents();
-        }
-
-        if(irecord % 1000 == 0) {
-            printf(
-                "Wrote %d of %d pulses; beam %d\n", irecord, number_records,
-                ascat_szf_node_first.beam);
-        }
+        ascat_file.close();
     }
-    ascat_file.close();
     return(0);
 }
