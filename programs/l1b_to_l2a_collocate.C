@@ -78,8 +78,8 @@ int main(int argc, char* argv[]) {
     config_list.ExitForMissingKeywords();
 
     const char* other_ephem_file = config_list.Get("EPHEMERIS_FILE");
-    Ephemeris this_ephem(this_ephem_file, 10000);
-    Ephemeris other_ephem(other_ephem_file, 10000);
+    Ephemeris this_ephem(this_ephem_file, 50000);
+    Ephemeris other_ephem(other_ephem_file, 50000);
 
     int use_compositing;
     config_list.GetInt("USE_COMPOSITING", &use_compositing);
@@ -170,6 +170,10 @@ int main(int argc, char* argv[]) {
 
             double spot_time = meas_spot->time;
             double other_ephem_time;
+
+            if (spot_time < other_rev_start - 600 ||
+                spot_time > other_rev_stop + 600)
+                continue;
 
             // Interpolate this_ephem to spot_time
             OrbitState this_os;
