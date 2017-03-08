@@ -68,6 +68,12 @@ int main(int argc, char* argv[]) {
     config_list.Read(config_file);
     config_list.ExitForMissingKeywords();
 
+    GMF gmf;
+    ConfigGMF(&gmf, &config_list);
+
+    Kp kp;
+    ConfigKp(&kp, &config_list);
+
     ETime etime;
     etime.FromCodeB("1970-001T00:00:00.000");
     double time_base = (double)etime.GetSec() + (double)etime.GetMs()/1000;
@@ -152,6 +158,14 @@ int main(int argc, char* argv[]) {
     std::vector<float> scatsat_only_spd(l2b_size), scatsat_only_dir(l2b_size);
     std::vector<float> spd(l2b_size), dir(l2b_size);
 
+    std::vector<float> scatsat_only_ambiguity_spd(l2b_size*4);
+    std::vector<float> scatsat_only_ambiguity_dir(l2b_size*4);
+    std::vector<float> ambiguity_spd(l2b_size*4);
+    std::vector<float> ambiguity_dir(l2b_size*4);
+    
+    std::vector<uint8> num_ambiguities(l2b_size);
+    std::vector<uint8> scatsat_only_num_ambiguities(l2b_size);
+
     std::vector<float> scatsat_sigma0_hh_fore(l2b_size);
     std::vector<float> scatsat_sigma0_hh_aft(l2b_size);
     std::vector<float> scatsat_sigma0_vv_fore(l2b_size);
@@ -182,6 +196,9 @@ int main(int argc, char* argv[]) {
     std::vector<float> ascat_azi_mid(l2b_size);
     std::vector<float> ascat_azi_aft(l2b_size);
 
+    WindSwath wind_swath;
+    wind_swath.Allocate(ncti, nati);
+
     for(int ati=0; ati<nati; ++ati) {
         if(ati%100 == 0)
             fprintf(stdout, "%d of %d\n", ati, nati);
@@ -194,6 +211,8 @@ int main(int argc, char* argv[]) {
             int l2bidx = ati + nati*cti;
 
             // initialized datasets
+            num_ambiguities[l2bidx] = 255;
+            scatsat_only_num_ambiguities[l2bidx] = 255;
             ascat_time_diff[l2bidx] = FILL_VALUE;
             lat[l2bidx] = FILL_VALUE;
             lon[l2bidx] = FILL_VALUE;
@@ -320,10 +339,16 @@ int main(int argc, char* argv[]) {
                     this_meas->measType = 
                         (ipol == 0) ? Meas::HH_MEAS_TYPE : Meas::VV_MEAS_TYPE;
 
-                    this_meas->A = 
-                        (sum_s02[ilook][ipol]-pow(sum_s0[ilook][ipol], 2)) / 
-                        (float)cnts[ilook][ipol]/(float)(cnts[ilook][ipol]-1);
+                    double this_var = 
+                        sum_s02[ilook][ipol]/(float)cnts[ilook][ipol];
 
+                    this_var *= (float)cnts[ilook][ipol] / 
+                        (float)(cnts[ilook][ipol]-1);
+
+                    this_meas->A = 1;
+                    this_meas->B = 0;
+                    this_meas->C = this_var;
+                    this_meas->numSlices = -1;
 
                     ml_joint.Append(this_meas);
 
@@ -333,28 +358,28 @@ int main(int argc, char* argv[]) {
 
                     if(ipol == 0 && ilook == 0) {
                         scatsat_sigma0_hh_fore[l2bidx] = this_meas->value;
-                        scatsat_var_sigma0_hh_fore[l2bidx] = this_meas->A;
+                        scatsat_var_sigma0_hh_fore[l2bidx] = this_meas->C;
                         scatsat_inc_hh_fore[l2bidx] = 
                             this_meas->incidenceAngle * rtd;
                         scatsat_azi_hh_fore[l2bidx] = this_azi;
 
                     } else if(ipol == 0 && ilook == 1) {
                         scatsat_sigma0_hh_aft[l2bidx] = this_meas->value;
-                        scatsat_var_sigma0_hh_aft[l2bidx] = this_meas->A;
+                        scatsat_var_sigma0_hh_aft[l2bidx] = this_meas->C;
                         scatsat_inc_hh_aft[l2bidx] = 
                             this_meas->incidenceAngle * rtd;
                         scatsat_azi_hh_aft[l2bidx] = this_azi;
 
                     } else if(ipol == 1 && ilook == 0) {
                         scatsat_sigma0_vv_fore[l2bidx] = this_meas->value;
-                        scatsat_var_sigma0_vv_fore[l2bidx] = this_meas->A;
+                        scatsat_var_sigma0_vv_fore[l2bidx] = this_meas->C;
                         scatsat_inc_vv_fore[l2bidx] = 
                             this_meas->incidenceAngle * rtd;
                         scatsat_azi_vv_fore[l2bidx] = this_azi;
 
                     } else if(ipol == 1 && ilook == 1) {
                         scatsat_sigma0_vv_aft[l2bidx] = this_meas->value;
-                        scatsat_var_sigma0_vv_aft[l2bidx] = this_meas->A;
+                        scatsat_var_sigma0_vv_aft[l2bidx] = this_meas->C;
                         scatsat_inc_vv_aft[l2bidx] = 
                             this_meas->incidenceAngle * rtd;
                         scatsat_azi_vv_aft[l2bidx] = this_azi;
@@ -442,15 +467,21 @@ int main(int argc, char* argv[]) {
                         this_meas->eastAzimuth = atan2(
                             sum_sin_azi[ibeam], sum_cos_azi[ibeam]);
 
-                        this_meas->A = 
-                            (sum_s02[ibeam]-pow(sum_s0[ibeam], 2) /
-                            (float)cnts[ibeam]) / (float)(cnts[ibeam]-1);
+                        double this_var = 
+                            sum_s02[ibeam]/(float)cnts[ibeam];
+
+                        this_var *= (float)cnts[ibeam]/(float)(cnts[ibeam]-1);
+
+                        this_meas->A = 1;
+                        this_meas->B = 0;
+                        this_meas->C = this_var;
+                        this_meas->numSlices = -1;
 
                         ml_joint.Append(this_meas);
 
                         if(ibeam == 0 || ibeam == 3) {
                             ascat_sigma0_fore[l2bidx] = this_meas->value;
-                            ascat_var_sigma0_fore[l2bidx] = this_meas->A;
+                            ascat_var_sigma0_fore[l2bidx] = this_meas->C;
                             ascat_inc_fore[l2bidx] = 
                                 this_meas->incidenceAngle * rtd;
                             ascat_azi_fore[l2bidx] = pe_rad_to_gs_deg(
@@ -458,7 +489,7 @@ int main(int argc, char* argv[]) {
 
                         } else if(ibeam == 1 || ibeam == 4) {
                             ascat_sigma0_mid[l2bidx] = this_meas->value;
-                            ascat_var_sigma0_mid[l2bidx] = this_meas->A;
+                            ascat_var_sigma0_mid[l2bidx] = this_meas->C;
                             ascat_inc_mid[l2bidx] = 
                                 this_meas->incidenceAngle * rtd;
                             ascat_azi_mid[l2bidx] = pe_rad_to_gs_deg(
@@ -466,7 +497,7 @@ int main(int argc, char* argv[]) {
 
                         } else if(ibeam == 2 || ibeam == 5) {
                             ascat_sigma0_aft[l2bidx] = this_meas->value;
-                            ascat_var_sigma0_aft[l2bidx] = this_meas->A;
+                            ascat_var_sigma0_aft[l2bidx] = this_meas->C;
                             ascat_inc_aft[l2bidx] = 
                                 this_meas->incidenceAngle * rtd;
                             ascat_azi_aft[l2bidx] = pe_rad_to_gs_deg(
@@ -478,6 +509,103 @@ int main(int argc, char* argv[]) {
                     sum_time/(float)cnts_time - row_time[ati])/60;
             }
 
+
+            WVC* wvc = new WVC();
+            gmf.RetrieveWinds_S3(&ml_joint, &kp, wvc);
+//             gmf.RetrieveWinds_S3(scatsat_ml, &kp, wvc);
+
+            if(wvc->ambiguities.NodeCount() > 0) {
+
+                // Nudge it with the SCATSAT only DIRTH wind direction
+                wvc->selected = wvc->GetNearestToDirection(
+                    ku_dirth_wvc->selected->dir);
+                wind_swath.Add(cti, ati, wvc);
+            } else
+                delete wvc;
+        }
+    }
+    // Nudge
+//     WindField nudge_field;
+//     nudge_field.ReadType(
+//         config_list.Get("NUDGE_WINDFIELD_FILE"),
+//         config_list.Get("NUDGE_WINDFIELD_TYPE"));
+// 
+//     int max_rank_for_nudging;
+//     config_list.GetInt("MAX_RANK_FOR_NUDGING", &max_rank_for_nudging);
+// 
+//     float nudge_thresholds[2];
+//     config_list.GetFloat("NEAR_SWATH_NUDGE_THRESHOLD", &nudge_thresholds[0]);
+//     config_list.GetFloat("FAR_SWATH_NUDGE_THRESHOLD", &nudge_thresholds[1]);
+// 
+//     wind_swath.GetNudgeVectors(&nudge_field);
+//     wind_swath.ThresNudge(max_rank_for_nudging, nudge_thresholds);
+
+    // Median filter ambig removal
+    int median_filter_max_passes, median_filter_window_size;
+    config_list.GetInt("MEDIAN_FILTER_MAX_PASSES", &median_filter_max_passes);
+    config_list.GetInt("MEDIAN_FILTER_WINDOW_SIZE", &median_filter_window_size);
+
+    // 4 pass-pass
+    wind_swath.MedianFilter_4Pass(
+        median_filter_window_size, median_filter_max_passes, 0);
+
+    // copy out ambiguities before DIRTH
+    for(int ati=0; ati<nati; ++ati) {
+        for(int cti=0; cti<ncti; ++cti) {
+            int l2bidx = ati + nati*cti;
+
+            WVC* wvc = wind_swath.GetWVC(cti, ati);
+            WVC* ku_ambig_wvc = l2b_scatsat_nofilt.frame.swath.GetWVC(cti, ati);
+            if(!wvc || !ku_ambig_wvc)
+                continue;
+
+            num_ambiguities[l2bidx] = wvc->ambiguities.NodeCount();
+            scatsat_only_num_ambiguities[l2bidx] =
+                ku_ambig_wvc->ambiguities.NodeCount();
+
+            int j_amb = 0;
+            for(WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+                wvp = wvc->ambiguities.GetNext()){
+
+                int ambidx = j_amb + 4*l2bidx;
+                ambiguity_spd[ambidx] = wvp->spd;
+                ambiguity_dir[ambidx] = pe_rad_to_gs_deg(wvp->dir);
+                if(ambiguity_dir[ambidx]>180) ambiguity_dir[ambidx] -= 360;
+                ++j_amb;
+            }
+
+            j_amb = 0;
+            for(WindVectorPlus* wvp = ku_ambig_wvc->ambiguities.GetHead(); wvp;
+                wvp = ku_ambig_wvc->ambiguities.GetNext()){
+
+                int ambidx = j_amb + 4*l2bidx;
+                scatsat_only_ambiguity_spd[ambidx] = wvp->spd;
+                scatsat_only_ambiguity_dir[ambidx] = pe_rad_to_gs_deg(wvp->dir);
+                if(scatsat_only_ambiguity_dir[ambidx]>180)
+                    scatsat_only_ambiguity_dir[ambidx] -= 360;
+                ++j_amb;
+            }
+
+
+        }
+    }
+
+    // DIRTH Pass
+    wind_swath.MedianFilter(
+        median_filter_window_size, median_filter_max_passes, 0, 0, 1);
+
+    // copy DIRTH outputs
+    for(int ati=0; ati<nati; ++ati) {
+        for(int cti=0; cti<ncti; ++cti) {
+            int l2bidx = ati + nati*cti;
+
+            WVC* wvc = wind_swath.GetWVC(cti, ati);
+            if(!wvc)
+                continue;
+
+            spd[l2bidx] = wvc->selected->spd;
+            dir[l2bidx] = pe_rad_to_gs_deg(wvc->selected->dir);
+            if(dir[l2bidx]>180) dir[l2bidx] -= 360;
         }
     }
 
@@ -540,6 +668,21 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "spd", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "spd", "valid_min", &valid_min, 1);
 
+    H5LTmake_dataset(
+        file_id, "scatsat_only_ambiguity_spd", 3, dims, H5T_NATIVE_FLOAT,
+        &scatsat_only_ambiguity_spd[0]);
+    H5LTset_attribute_float(
+        file_id, "scatsat_only_ambiguity_spd", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "scatsat_only_ambiguity_spd", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "ambiguity_spd", 3, dims, H5T_NATIVE_FLOAT, &ambiguity_spd[0]);
+    H5LTset_attribute_float(
+        file_id, "ambiguity_spd", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ambiguity_spd", "valid_min", &valid_min, 1);
+
 
     valid_max = 180; valid_min = -180;
     H5LTmake_dataset(
@@ -558,6 +701,22 @@ int main(int argc, char* argv[]) {
     H5LTmake_dataset(file_id, "dir", 2, dims, H5T_NATIVE_FLOAT, &dir[0]);
     H5LTset_attribute_float(file_id, "dir", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "dir", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "ambiguity_dir", 3, dims, H5T_NATIVE_FLOAT,
+        &ambiguity_dir[0]);
+    H5LTset_attribute_float(
+        file_id, "ambiguity_dir", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ambiguity_dir", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "scatsat_only_ambiguity_dir", 3, dims, H5T_NATIVE_FLOAT,
+        &scatsat_only_ambiguity_dir[0]);
+    H5LTset_attribute_float(
+        file_id, "scatsat_only_ambiguity_dir", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "scatsat_only_ambiguity_dir", "valid_min", &valid_min, 1);
 
     valid_max = 10; valid_min = -0.01;
     H5LTmake_dataset(
@@ -788,6 +947,27 @@ int main(int argc, char* argv[]) {
         file_id, "ascat_azi_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "ascat_azi_aft", "valid_min", &valid_min, 1);
+
+    unsigned char uchar_fill_value = 255;
+    unsigned char uchar_valid_max = 4;
+    unsigned char uchar_valid_min = 0;
+    H5LTmake_dataset(
+        file_id, "num_ambiguities", 2, dims, H5T_NATIVE_UCHAR,
+        &num_ambiguities[0]);
+    H5LTset_attribute_uchar(
+        file_id, "num_ambiguities", "valid_max", &uchar_valid_max, 1);
+    H5LTset_attribute_uchar(
+        file_id, "num_ambiguities", "valid_min", &uchar_valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "scatsat_only_num_ambiguities", 2, dims, H5T_NATIVE_UCHAR,
+        &scatsat_only_num_ambiguities[0]);
+    H5LTset_attribute_uchar(
+        file_id, "scatsat_only_num_ambiguities", "valid_max", &uchar_valid_max,
+        1);
+    H5LTset_attribute_uchar(
+        file_id, "scatsat_only_num_ambiguities", "valid_min", &uchar_valid_min,
+        1);
 
     H5Fclose(file_id);
 
