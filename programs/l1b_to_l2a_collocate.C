@@ -171,8 +171,8 @@ int main(int argc, char* argv[]) {
             double spot_time = meas_spot->time;
             double other_ephem_time;
 
-            if (spot_time < other_rev_start - 600 ||
-                spot_time > other_rev_stop + 600)
+            if (spot_time < other_rev_start - 60*60 ||
+                spot_time > other_rev_stop + 60*60)
                 continue;
 
             // Interpolate this_ephem to spot_time

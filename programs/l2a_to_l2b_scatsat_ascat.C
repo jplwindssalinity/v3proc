@@ -633,7 +633,7 @@ int main(int argc, char* argv[]) {
         file_id, "row_time", "units", "seconds since 2016-1-1 00:00:00 UTC");
     
 
-    valid_max = 90*60; valid_min = 0;
+    valid_max = 90*60; valid_min = -90*60;
     H5LTmake_dataset(
         file_id, "ascat_time_diff", 2, dims, H5T_NATIVE_FLOAT,
         &ascat_time_diff[0]);
