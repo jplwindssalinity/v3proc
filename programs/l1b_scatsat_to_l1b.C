@@ -239,6 +239,7 @@ main(int argc, char* argv[]) {
         read_SDS_h5(g_id,"Scan_start_time", &sst[0]);
 
         std::vector< std::vector<uint16> > s0(2);
+        std::vector< std::vector<uint16> > tb(2);
         std::vector< std::vector<uint16> > s0_flg(2);
         std::vector< std::vector<uint16> > snr(2);
         std::vector< std::vector<uint16> > xf(2);
@@ -255,6 +256,7 @@ main(int argc, char* argv[]) {
             int fp_size = nframes[ipart] * nfootprints[0];
             // resize and load in data for inner beam footprints
             s0[0].resize(fp_size);
+            tb[0].resize(fp_size);
             s0_flg[0].resize(fp_size);
             snr[0].resize(fp_size);
             xf[0].resize(fp_size);
@@ -267,6 +269,8 @@ main(int argc, char* argv[]) {
             inc[0].resize(fp_size);
             antazi[0].resize(fp_size);
             read_SDS_h5(g_id, "Inner_beam_footprint_sigma0", &s0[0][0]);
+            read_SDS_h5(
+                g_id, "Inner_beam_footprint_brightness_temperature", &tb[0][0]);
             read_SDS_h5(
                 g_id, "Inner_beam_footprint_sigma0_flag", &s0_flg[0][0]);
             read_SDS_h5(g_id, "Inner_beam_footprint_SNR", &snr[0][0]);
@@ -287,6 +291,7 @@ main(int argc, char* argv[]) {
             fp_size = nframes[ipart] * nfootprints[1];
             // resize and load in data for outer beam footprints
             s0[1].resize(fp_size);
+            tb[1].resize(fp_size);
             s0_flg[1].resize(fp_size);
             snr[1].resize(fp_size);
             xf[1].resize(fp_size);
@@ -299,6 +304,8 @@ main(int argc, char* argv[]) {
             inc[1].resize(fp_size);
             antazi[1].resize(fp_size);
             read_SDS_h5(g_id, "Outer_beam_footprint_sigma0", &s0[1][0]);
+            read_SDS_h5(
+                g_id, "Outer_beam_footprint_brightness_temperature", &tb[1][0]);
             read_SDS_h5(
                 g_id, "Outer_beam_footprint_sigma0_flag", &s0_flg[1][0]);
             read_SDS_h5(g_id, "Outer_beam_footprint_SNR", &snr[1][0]);
@@ -319,6 +326,7 @@ main(int argc, char* argv[]) {
             // resize and load in data for inner beam slices
             int slice_size = nslices[0]*nframes[ipart]*nfootprints[0];
             s0[0].resize(slice_size);
+            tb[0].resize(slice_size);
             s0_flg[0].resize(slice_size);
             snr[0].resize(slice_size);
             xf[0].resize(slice_size);
@@ -331,6 +339,8 @@ main(int argc, char* argv[]) {
             inc[0].resize(slice_size);
             antazi[0].resize(slice_size);
             read_SDS_h5(g_id, "Inner_beam_slice_sigma0", &s0[0][0]);
+            read_SDS_h5(
+                g_id, "Inner_beam_slice_brightness_temperature", &tb[0][0]);
             read_SDS_h5(
                 g_id, "Inner_beam_slice_sigma0_flag", &s0_flg[0][0]);
             read_SDS_h5(g_id, "Inner_beam_slice_SNR", &snr[0][0]);
@@ -350,6 +360,7 @@ main(int argc, char* argv[]) {
             // resize and load in data for outer beam slices
             slice_size = nslices[1]*nframes[ipart]*nfootprints[1];
             s0[1].resize(slice_size);
+            tb[1].resize(slice_size);
             s0_flg[1].resize(slice_size);
             snr[1].resize(slice_size);
             xf[1].resize(slice_size);
@@ -362,6 +373,9 @@ main(int argc, char* argv[]) {
             inc[1].resize(slice_size);
             antazi[1].resize(slice_size);
             read_SDS_h5(g_id, "Outer_beam_slice_sigma0", &s0[1][0]);
+            read_SDS_h5(
+                g_id, "Outer_beam_slice_brightness_temperature", &tb[1][0]);
+
             read_SDS_h5(
                 g_id, "Outer_beam_slice_sigma0_flag", &s0_flg[1][0]);
             read_SDS_h5(g_id, "Outer_beam_slice_SNR", &snr[1][0]);
@@ -524,6 +538,7 @@ main(int argc, char* argv[]) {
                             Meas::HH_MEAS_TYPE : Meas::VV_MEAS_TYPE;
 
                         new_meas->beamIdx = ipol;
+                        new_meas->txPulseWidth = 0.01*(double)tb[ipol][data_idx];
 
                         new_meas->landFlag = 0;
                         if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0))

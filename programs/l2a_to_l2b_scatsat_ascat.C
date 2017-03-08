@@ -78,6 +78,9 @@ int main(int argc, char* argv[]) {
     etime.FromCodeB("1970-001T00:00:00.000");
     double time_base = (double)etime.GetSec() + (double)etime.GetMs()/1000;
 
+    etime.FromCodeB("2016-001T00:00:00.000");
+    double out_time_base = (double)etime.GetSec() + (double)etime.GetMs()/1000;
+
     etime.FromCodeB(config_list.Get("REV_START_TIME"));
     double rev_start =
         (double)etime.GetSec() + (double)etime.GetMs()/1000 - time_base;
@@ -148,7 +151,7 @@ int main(int argc, char* argv[]) {
     // Output arrays
     int l2b_size = ncti * nati;
 
-    std::vector<double> row_time(nati);
+    std::vector<double> row_time(nati), out_row_time(nati);
     std::vector<float> ascat_time_diff(l2b_size);
     std::vector<float> lat(l2b_size), lon(l2b_size);
     std::vector<float> ascat_lat(l2b_size), ascat_lon(l2b_size);
@@ -156,6 +159,8 @@ int main(int argc, char* argv[]) {
 
     std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
     std::vector<float> scatsat_only_spd(l2b_size), scatsat_only_dir(l2b_size);
+    std::vector<float> scatsat_only_spd_uncorrected(l2b_size);
+    std::vector<float> scatsat_rain_impact(l2b_size);
     std::vector<float> spd(l2b_size), dir(l2b_size);
 
     std::vector<float> scatsat_only_ambiguity_spd(l2b_size*4);
@@ -182,6 +187,8 @@ int main(int argc, char* argv[]) {
     std::vector<float> scatsat_azi_hh_aft(l2b_size);
     std::vector<float> scatsat_azi_vv_fore(l2b_size);
     std::vector<float> scatsat_azi_vv_aft(l2b_size);
+    std::vector<float> scatsat_tb_h(l2b_size);
+    std::vector<float> scatsat_tb_v(l2b_size);
 
     std::vector<float> ascat_sigma0_fore(l2b_size);
     std::vector<float> ascat_sigma0_mid(l2b_size);
@@ -206,6 +213,8 @@ int main(int argc, char* argv[]) {
         row_time[ati] = 
             rev_start + (rev_stop-rev_start)*(double)ati/(double)nati;
 
+        out_row_time[ati] = row_time[ati] - out_time_base;
+
         for(int cti=0; cti<ncti; ++cti) {
 
             int l2bidx = ati + nati*cti;
@@ -221,7 +230,9 @@ int main(int argc, char* argv[]) {
             anc_spd[l2bidx] = FILL_VALUE;
             anc_dir[l2bidx] = FILL_VALUE;
             scatsat_only_spd[l2bidx] = FILL_VALUE;
+            scatsat_only_spd_uncorrected[l2bidx] = FILL_VALUE;
             scatsat_only_dir[l2bidx] = FILL_VALUE;
+            scatsat_rain_impact[l2bidx] = FILL_VALUE;
             spd[l2bidx] = FILL_VALUE;
             dir[l2bidx] = FILL_VALUE;
 
@@ -241,6 +252,8 @@ int main(int argc, char* argv[]) {
             scatsat_azi_hh_aft[l2bidx] = FILL_VALUE;
             scatsat_azi_vv_fore[l2bidx] = FILL_VALUE;
             scatsat_azi_vv_aft[l2bidx] = FILL_VALUE;
+            scatsat_tb_h[l2bidx] = FILL_VALUE;
+            scatsat_tb_v[l2bidx] = FILL_VALUE;
 
             ascat_sigma0_fore[l2bidx] = FILL_VALUE;
             ascat_sigma0_mid[l2bidx] = FILL_VALUE;
@@ -272,6 +285,11 @@ int main(int argc, char* argv[]) {
                 ku_dirth_wvc->selected->dir);
             if(scatsat_only_dir[l2bidx]>180) scatsat_only_dir[l2bidx]-=360;
 
+            scatsat_only_spd_uncorrected[l2bidx] =
+                ku_dirth_wvc->selected->spd + ku_dirth_wvc->speedBias;
+
+            if (ku_dirth_wvc->rainCorrectedSpeed != -1)
+                scatsat_rain_impact[l2bidx] = ku_dirth_wvc->rainImpact;
 
             MeasList* scatsat_ml = &(l2a_scatsat_swath[cti][ati]->measList);
 
@@ -283,13 +301,15 @@ int main(int argc, char* argv[]) {
             while(lon[l2bidx]>=180) lon[l2bidx] -= 360;
             while(lon[l2bidx]<-180) lon[l2bidx] += 360;
 
-            float sum_s0[2][2], sum_s02[2][2];
+            float sum_s0[2][2], sum_s02[2][2], sum_tb[2];
             float sum_cos_azi[2][2], sum_sin_azi[2][2];
             float sum_inc[2][2];
             int cnts[2][2];
 
-            for(int ilook=0; ilook < 2; ++ilook) {
-                for(int ipol=0; ipol < 2; ++ipol) {
+
+            for(int ipol=0; ipol < 2; ++ipol) {
+                sum_tb[ipol] = 0;
+                for(int ilook=0; ilook < 2; ++ilook) {
                     sum_s0[ilook][ipol] = 0;
                     sum_s02[ilook][ipol] = 0;
                     sum_cos_azi[ilook][ipol] = 0;
@@ -308,6 +328,7 @@ int main(int argc, char* argv[]) {
 
                 int ipol = meas->beamIdx;
 
+                sum_tb[ipol] += meas->txPulseWidth;
                 sum_s0[ilook][ipol] += meas->value;
                 sum_s02[ilook][ipol] += pow(meas->value, 2);
                 sum_cos_azi[ilook][ipol] += cos(meas->eastAzimuth);
@@ -386,6 +407,9 @@ int main(int argc, char* argv[]) {
                     }
                 }
             }
+
+            scatsat_tb_h[l2bidx] = sum_tb[0] / (cnts[0][0]+cnts[1][0]);
+            scatsat_tb_v[l2bidx] = sum_tb[1] / (cnts[0][1]+cnts[1][1]);
 
             if(l2a_ascat_swath[cti][ati]) {
                 MeasList* ascat_ml = &(l2a_ascat_swath[cti][ati]->measList);
@@ -479,34 +503,34 @@ int main(int argc, char* argv[]) {
 
                         ml_joint.Append(this_meas);
 
+                        float this_azi = pe_rad_to_gs_deg(
+                            this_meas->eastAzimuth);
+                        if(this_azi>=180) this_azi -= 360;
+
+                        float this_inc = this_meas->incidenceAngle * rtd;
+
                         if(ibeam == 0 || ibeam == 3) {
                             ascat_sigma0_fore[l2bidx] = this_meas->value;
                             ascat_var_sigma0_fore[l2bidx] = this_meas->C;
-                            ascat_inc_fore[l2bidx] = 
-                                this_meas->incidenceAngle * rtd;
-                            ascat_azi_fore[l2bidx] = pe_rad_to_gs_deg(
-                                this_meas->eastAzimuth);
+                            ascat_inc_fore[l2bidx] = this_inc;
+                            ascat_azi_fore[l2bidx] = this_azi;
 
                         } else if(ibeam == 1 || ibeam == 4) {
                             ascat_sigma0_mid[l2bidx] = this_meas->value;
                             ascat_var_sigma0_mid[l2bidx] = this_meas->C;
-                            ascat_inc_mid[l2bidx] = 
-                                this_meas->incidenceAngle * rtd;
-                            ascat_azi_mid[l2bidx] = pe_rad_to_gs_deg(
-                                this_meas->eastAzimuth);
+                            ascat_inc_mid[l2bidx] = this_inc;
+                            ascat_azi_mid[l2bidx] = this_azi;
 
                         } else if(ibeam == 2 || ibeam == 5) {
                             ascat_sigma0_aft[l2bidx] = this_meas->value;
                             ascat_var_sigma0_aft[l2bidx] = this_meas->C;
-                            ascat_inc_aft[l2bidx] = 
-                                this_meas->incidenceAngle * rtd;
-                            ascat_azi_aft[l2bidx] = pe_rad_to_gs_deg(
-                                this_meas->eastAzimuth);
+                            ascat_inc_aft[l2bidx] = this_inc;
+                            ascat_azi_aft[l2bidx] = this_azi;
                         }
                     }
                 }
                 ascat_time_diff[l2bidx] = (
-                    sum_time/(float)cnts_time - row_time[ati])/60;
+                    sum_time/(float)cnts_time - row_time[ati]);
             }
 
 
@@ -524,21 +548,6 @@ int main(int argc, char* argv[]) {
                 delete wvc;
         }
     }
-    // Nudge
-//     WindField nudge_field;
-//     nudge_field.ReadType(
-//         config_list.Get("NUDGE_WINDFIELD_FILE"),
-//         config_list.Get("NUDGE_WINDFIELD_TYPE"));
-// 
-//     int max_rank_for_nudging;
-//     config_list.GetInt("MAX_RANK_FOR_NUDGING", &max_rank_for_nudging);
-// 
-//     float nudge_thresholds[2];
-//     config_list.GetFloat("NEAR_SWATH_NUDGE_THRESHOLD", &nudge_thresholds[0]);
-//     config_list.GetFloat("FAR_SWATH_NUDGE_THRESHOLD", &nudge_thresholds[1]);
-// 
-//     wind_swath.GetNudgeVectors(&nudge_field);
-//     wind_swath.ThresNudge(max_rank_for_nudging, nudge_thresholds);
 
     // Median filter ambig removal
     int median_filter_max_passes, median_filter_window_size;
@@ -618,10 +627,13 @@ int main(int argc, char* argv[]) {
     hsize_t dims_amb[3] = {ncti, nati, 4};
 
     H5LTmake_dataset(
-        file_id, "row_time", 1, dims, H5T_NATIVE_FLOAT,
-        &row_time[0]);
+        file_id, "row_time", 1, (dims+1), H5T_NATIVE_DOUBLE,
+        &out_row_time[0]);
+    H5LTset_attribute_string(
+        file_id, "row_time", "units", "seconds since 2016-1-1 00:00:00 UTC");
+    
 
-    valid_max = 90; valid_min = 0;
+    valid_max = 90*60; valid_min = 0;
     H5LTmake_dataset(
         file_id, "ascat_time_diff", 2, dims, H5T_NATIVE_FLOAT,
         &ascat_time_diff[0]);
@@ -629,32 +641,57 @@ int main(int argc, char* argv[]) {
         file_id, "ascat_time_diff", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "ascat_time_diff", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(file_id, "ascat_time_diff", "units", "s");
+
+    valid_max = 9999; valid_min = -1;
+    H5LTmake_dataset(
+        file_id, "scatsat_rain_impact", 2, dims, H5T_NATIVE_FLOAT,
+        &scatsat_rain_impact[0]);
+    H5LTset_attribute_float(
+        file_id, "scatsat_rain_impact", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "scatsat_rain_impact", "valid_min", &valid_min, 1);
 
 
     valid_max = 90; valid_min = -90;
     H5LTmake_dataset(file_id, "lat", 2, dims, H5T_NATIVE_FLOAT, &lat[0]);
     H5LTset_attribute_float(file_id, "lat", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "lat", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(file_id, "lat", "units", "degrees_north");
 
-    H5LTmake_dataset(
-        file_id, "ascat_lat", 2, dims, H5T_NATIVE_FLOAT, &ascat_lat[0]);
-    H5LTset_attribute_float(file_id, "ascat_lat", "valid_max", &valid_max, 1);
-    H5LTset_attribute_float(file_id, "ascat_lat", "valid_min", &valid_min, 1);
+//     H5LTmake_dataset(
+//         file_id, "ascat_lat", 2, dims, H5T_NATIVE_FLOAT, &ascat_lat[0]);
+//     H5LTset_attribute_float(file_id, "ascat_lat", "valid_max", &valid_max, 1);
+//     H5LTset_attribute_float(file_id, "ascat_lat", "valid_min", &valid_min, 1);
+//     H5LTset_attribute_string(file_id, "ascat_lat", "units", "degrees_north");
 
     valid_max = 180; valid_min = -180;
     H5LTmake_dataset(file_id, "lon", 2, dims, H5T_NATIVE_FLOAT, &lon[0]);
     H5LTset_attribute_float(file_id, "lon", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "lon", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(file_id, "lon", "units", "degrees_east");
 
-    H5LTmake_dataset(
-        file_id, "ascat_lon", 2, dims, H5T_NATIVE_FLOAT, &ascat_lon[0]);
-    H5LTset_attribute_float(file_id, "ascat_lon", "valid_max", &valid_max, 1);
-    H5LTset_attribute_float(file_id, "ascat_lon", "valid_min", &valid_min, 1);
+//     H5LTmake_dataset(
+//         file_id, "ascat_lon", 2, dims, H5T_NATIVE_FLOAT, &ascat_lon[0]);
+//     H5LTset_attribute_float(file_id, "ascat_lon", "valid_max", &valid_max, 1);
+//     H5LTset_attribute_float(file_id, "ascat_lon", "valid_min", &valid_min, 1);
+//     H5LTset_attribute_string(file_id, "ascat_lon", "units", "degrees_east");
 
     valid_max = 100; valid_min = 0;
     H5LTmake_dataset(file_id, "anc_spd", 2, dims, H5T_NATIVE_FLOAT, &anc_spd[0]);
     H5LTset_attribute_float(file_id, "anc_spd", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "anc_spd", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(file_id, "anc_spd", "units", "m s-1");
+
+    H5LTmake_dataset(
+        file_id, "scatsat_only_spd_uncorrected", 2, dims, H5T_NATIVE_FLOAT, 
+        &scatsat_only_spd_uncorrected[0]);
+    H5LTset_attribute_float(
+        file_id, "scatsat_only_spd_uncorrected", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "scatsat_only_spd_uncorrected", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_only_spd_uncorrected", "units", "m s-1");
 
     H5LTmake_dataset(
         file_id, "scatsat_only_spd", 2, dims, H5T_NATIVE_FLOAT, 
@@ -663,10 +700,13 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_only_spd", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "scatsat_only_spd", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_only_spd", "units", "m s-1");
 
     H5LTmake_dataset(file_id, "spd", 2, dims, H5T_NATIVE_FLOAT, &spd[0]);
     H5LTset_attribute_float(file_id, "spd", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "spd", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(file_id, "spd", "units", "m s-1");
 
     H5LTmake_dataset(
         file_id, "scatsat_only_ambiguity_spd", 3, dims, H5T_NATIVE_FLOAT,
@@ -675,6 +715,8 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_only_ambiguity_spd", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "scatsat_only_ambiguity_spd", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_only_ambiguity_spd", "units", "m s-1");
 
     H5LTmake_dataset(
         file_id, "ambiguity_spd", 3, dims, H5T_NATIVE_FLOAT, &ambiguity_spd[0]);
@@ -682,6 +724,8 @@ int main(int argc, char* argv[]) {
         file_id, "ambiguity_spd", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "ambiguity_spd", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "ambiguity_spd", "units", "m s-1");
 
 
     valid_max = 180; valid_min = -180;
@@ -689,6 +733,7 @@ int main(int argc, char* argv[]) {
         file_id, "anc_dir", 2, dims, H5T_NATIVE_FLOAT, &anc_dir[0]);
     H5LTset_attribute_float(file_id, "anc_dir", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "anc_dir", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(file_id, "anc_dir", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "scatsat_only_dir", 2, dims, H5T_NATIVE_FLOAT,
@@ -697,10 +742,13 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_only_dir", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "scatsat_only_dir", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_only_dir", "units", "degrees");
 
     H5LTmake_dataset(file_id, "dir", 2, dims, H5T_NATIVE_FLOAT, &dir[0]);
     H5LTset_attribute_float(file_id, "dir", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "dir", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(file_id, "dir", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "ambiguity_dir", 3, dims, H5T_NATIVE_FLOAT,
@@ -709,6 +757,7 @@ int main(int argc, char* argv[]) {
         file_id, "ambiguity_dir", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "ambiguity_dir", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(file_id, "ambiguity_dir", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "scatsat_only_ambiguity_dir", 3, dims, H5T_NATIVE_FLOAT,
@@ -717,6 +766,29 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_only_ambiguity_dir", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "scatsat_only_ambiguity_dir", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_only_ambiguity_dir", "units", "degrees");
+
+    valid_max = 300; valid_min = 0;
+    H5LTmake_dataset(
+        file_id, "scatsat_tb_h", 2, dims, H5T_NATIVE_FLOAT,
+        &scatsat_tb_h[0]);
+    H5LTset_attribute_float(
+        file_id, "scatsat_tb_h", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "scatsat_tb_h", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_tb_h", "units", "degrees K");
+
+    H5LTmake_dataset(
+        file_id, "scatsat_tb_v", 2, dims, H5T_NATIVE_FLOAT,
+        &scatsat_tb_v[0]);
+    H5LTset_attribute_float(
+        file_id, "scatsat_tb_v", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "scatsat_tb_v", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_tb_v", "units", "degrees K");
 
     valid_max = 10; valid_min = -0.01;
     H5LTmake_dataset(
@@ -841,6 +913,8 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_inc_hh_fore", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "scatsat_inc_hh_fore", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_inc_hh_fore", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "scatsat_inc_hh_aft", 2, dims, H5T_NATIVE_FLOAT,
@@ -849,6 +923,8 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_inc_hh_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "scatsat_inc_hh_aft", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_inc_hh_aft", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "scatsat_inc_vv_fore", 2, dims, H5T_NATIVE_FLOAT,
@@ -857,6 +933,8 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_inc_vv_fore", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "scatsat_inc_vv_fore", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_inc_vv_fore", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "scatsat_inc_vv_aft", 2, dims, H5T_NATIVE_FLOAT,
@@ -865,6 +943,8 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_inc_vv_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "scatsat_inc_vv_aft", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_inc_vv_aft", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "ascat_inc_fore", 2, dims, H5T_NATIVE_FLOAT,
@@ -873,6 +953,8 @@ int main(int argc, char* argv[]) {
         file_id, "ascat_inc_fore", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "ascat_inc_fore", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "ascat_inc_fore", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "ascat_inc_mid", 2, dims, H5T_NATIVE_FLOAT,
@@ -881,6 +963,8 @@ int main(int argc, char* argv[]) {
         file_id, "ascat_inc_mid", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "ascat_inc_mid", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_inc_vv_aft", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "ascat_inc_aft", 2, dims, H5T_NATIVE_FLOAT,
@@ -889,7 +973,8 @@ int main(int argc, char* argv[]) {
         file_id, "ascat_inc_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "ascat_inc_aft", "valid_min", &valid_min, 1);
-
+    H5LTset_attribute_string(
+        file_id, "ascat_inc_aft", "units", "degrees");
 
     valid_max = 180; valid_min = -180;
     H5LTmake_dataset(
@@ -899,6 +984,8 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_azi_hh_fore", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "scatsat_azi_hh_fore", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_azi_hh_fore", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "scatsat_azi_hh_aft", 2, dims, H5T_NATIVE_FLOAT,
@@ -907,6 +994,8 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_azi_hh_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "scatsat_azi_hh_aft", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_azi_hh_aft", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "scatsat_azi_vv_fore", 2, dims, H5T_NATIVE_FLOAT,
@@ -915,6 +1004,8 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_azi_vv_fore", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "scatsat_azi_vv_fore", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_azi_vv_fore", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "scatsat_azi_vv_aft", 2, dims, H5T_NATIVE_FLOAT,
@@ -923,6 +1014,8 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_azi_vv_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "scatsat_azi_vv_aft", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_azi_vv_aft", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "ascat_azi_fore", 2, dims, H5T_NATIVE_FLOAT,
@@ -931,6 +1024,8 @@ int main(int argc, char* argv[]) {
         file_id, "ascat_azi_fore", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "ascat_azi_fore", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "ascat_azi_fore", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "ascat_azi_mid", 2, dims, H5T_NATIVE_FLOAT,
@@ -939,6 +1034,8 @@ int main(int argc, char* argv[]) {
         file_id, "ascat_azi_mid", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "ascat_azi_mid", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "ascat_azi_mid", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "ascat_azi_aft", 2, dims, H5T_NATIVE_FLOAT,
@@ -947,6 +1044,8 @@ int main(int argc, char* argv[]) {
         file_id, "ascat_azi_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "ascat_azi_aft", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "ascat_azi_aft", "units", "degrees");
 
     unsigned char uchar_fill_value = 255;
     unsigned char uchar_valid_max = 4;
