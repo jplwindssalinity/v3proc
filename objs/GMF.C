@@ -502,6 +502,41 @@ int GMF::ReadKuAndC(
     return c_res && ku_res;
 }
 
+int GMF::ReadKuAndCNew(
+		    const char*  ku_filename, const char* c_filename)
+{
+    _metCount = 7;
+
+    _incCount = 47;
+    _incMin = 20.0 * dtr;
+    _incMax = 66.0 * dtr;
+    _incStep = 1.0 * dtr;
+
+    _spdCount = 501;
+    _spdMin = 0.0;
+    _spdMax = 50.0;
+    _spdStep = 0.1;
+
+    _chiCount = 360;
+    _chiStep = two_pi / _chiCount;
+
+    if (! _Allocate())
+        return(0);
+
+    bool mirrorChiValues = false;
+    bool discardFirstVal = false;
+    int n_met = 2;
+
+    int met_idx_start = 5;
+    int c_res = _ReadArrayFileLoop(c_filename, mirrorChiValues, discardFirstVal,
+        met_idx_start, n_met);
+
+    met_idx_start = 0;
+    int ku_res = _ReadArrayFileLoop(ku_filename, mirrorChiValues, discardFirstVal,
+        met_idx_start, n_met);
+        
+    return c_res && ku_res;
+}
 //----------------------//
 // GMF:ReadPolarimetric //
 //----------------------//
@@ -6086,7 +6121,7 @@ GMF::RetrieveWinds_S3(
     int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
     if (delete_count > 0)
     {
-        fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
+        //fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
         for (int i = 0; i < delete_count; i++)
         {
             wvc->ambiguities.GotoTail();
