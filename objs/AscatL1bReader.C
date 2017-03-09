@@ -1322,7 +1322,7 @@ void AscatFile::get_node_new(int inode, AscatSZFNodeNew *ascat_szf_node) {
     unsigned char FLAGFIELD_PL_RED_MASK = 0x0F;
     unsigned char FLAGFIELD_GEN1_RED_MASK = 0x02;
     unsigned char FLAGFIELD_GEN1_AMBER_MASK = 0x01;
-    unsigned char FLAGFIELD_GEN2_RED_MASK = 0x02;
+    unsigned char FLAGFIELD_GEN2_RED_MASK = 0x04;
     unsigned char FLAGFIELD_GEN2_AMBER_MASK = 0x01;
 
     int is_red = 0;
