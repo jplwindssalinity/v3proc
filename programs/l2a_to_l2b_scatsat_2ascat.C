@@ -91,12 +91,16 @@ int main(int argc, char* argv[]) {
 
     char* l2b_file = config_list.Get("L2B_COMBINED_FILE");
 
-    L2A l2a_ascat, l2a_scatsat;
+    L2A l2a_ascat_a, l2a_ascat_b, l2a_scatsat;
     L2B l2b_scatsat, l2b_scatsat_nofilt;
 
-    l2a_ascat.SetInputFilename(config_list.Get("L2A_ASCAT_FILE"));
-    l2a_ascat.OpenForReading();
-    l2a_ascat.ReadHeader();
+    l2a_ascat_a.SetInputFilename(config_list.Get("L2A_ASCAT_A_FILE"));
+    l2a_ascat_a.OpenForReading();
+    l2a_ascat_a.ReadHeader();
+
+    l2a_ascat_b.SetInputFilename(config_list.Get("L2A_ASCAT_B_FILE"));
+    l2a_ascat_b.OpenForReading();
+    l2a_ascat_b.ReadHeader();
 
     l2a_scatsat.SetInputFilename(config_list.Get("L2A_SCATSAT_FILE"));
     l2a_scatsat.OpenForReading();
@@ -115,11 +119,13 @@ int main(int argc, char* argv[]) {
     l2b_scatsat_nofilt.ReadDataRec();
     l2b_scatsat_nofilt.Close();
 
-    int nati = l2a_ascat.header.alongTrackBins;
-    int ncti = l2a_ascat.header.crossTrackBins;
+    int nati = l2a_ascat_a.header.alongTrackBins;
+    int ncti = l2a_ascat_a.header.crossTrackBins;
 
     if (l2a_scatsat.header.alongTrackBins != nati || 
         l2a_scatsat.header.crossTrackBins != ncti || 
+        l2a_ascat_b.header.alongTrackBins != nati || 
+        l2a_ascat_b.header.crossTrackBins != ncti || 
         l2b_scatsat.frame.swath.GetAlongTrackBins() != nati ||
         l2b_scatsat.frame.swath.GetCrossTrackBins() != ncti ||
         l2b_scatsat_nofilt.frame.swath.GetAlongTrackBins() != nati ||
@@ -129,14 +135,24 @@ int main(int argc, char* argv[]) {
     }
 
     // Read in L2A ASCAT file
-    L2AFrame*** l2a_ascat_swath;
-    l2a_ascat_swath = (L2AFrame***)make_array(sizeof(L2AFrame *), 2, ncti, nati);
-    while(l2a_ascat.ReadDataRec()) {
+    std::vector<L2AFrame***> l2a_ascat_swaths(2);
+    l2a_ascat_swaths[0] = (L2AFrame***)make_array(
+        sizeof(L2AFrame *), 2, ncti, nati);
+    while(l2a_ascat_a.ReadDataRec()) {
         L2AFrame* this_frame = new L2AFrame();
-        this_frame->CopyFrame(this_frame, &l2a_ascat.frame);
-         *(*(l2a_ascat_swath + this_frame->cti) + this_frame->ati) = this_frame;
+        this_frame->CopyFrame(this_frame, &l2a_ascat_a.frame);
+         *(*(l2a_ascat_swaths[0] + this_frame->cti) + this_frame->ati) = this_frame;
     }
-    l2a_ascat.Close();
+    l2a_ascat_a.Close();
+
+    l2a_ascat_swaths[1] = (L2AFrame***)make_array(
+        sizeof(L2AFrame *), 2, ncti, nati);
+    while(l2a_ascat_b.ReadDataRec()) {
+        L2AFrame* this_frame = new L2AFrame();
+        this_frame->CopyFrame(this_frame, &l2a_ascat_b.frame);
+         *(*(l2a_ascat_swaths[1] + this_frame->cti) + this_frame->ati) = this_frame;
+    }
+    l2a_ascat_b.Close();
 
     // Read in L2A SCATSAT file
     L2AFrame*** l2a_scatsat_swath;
@@ -152,25 +168,21 @@ int main(int argc, char* argv[]) {
     int l2b_size = ncti * nati;
 
     std::vector<double> row_time(nati), out_row_time(nati);
-    std::vector<float> ascat_time_diff(l2b_size);
     std::vector<float> lat(l2b_size), lon(l2b_size);
-    std::vector<float> ascat_lat(l2b_size), ascat_lon(l2b_size);
-
-
+    std::vector<float> spd(l2b_size), dir(l2b_size);
     std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
+    std::vector<float> ambiguity_spd(l2b_size*4);
+    std::vector<float> ambiguity_dir(l2b_size*4);    
+    std::vector<uint8> num_ambiguities(l2b_size);
+    std::vector<uint16> flags(l2b_size);
+    std::vector<uint16> eflags(l2b_size);
+
     std::vector<float> scatsat_only_spd(l2b_size), scatsat_only_dir(l2b_size);
     std::vector<float> scatsat_only_spd_uncorrected(l2b_size);
     std::vector<float> scatsat_rain_impact(l2b_size);
-    std::vector<float> spd(l2b_size), dir(l2b_size);
-
     std::vector<float> scatsat_only_ambiguity_spd(l2b_size*4);
     std::vector<float> scatsat_only_ambiguity_dir(l2b_size*4);
-    std::vector<float> ambiguity_spd(l2b_size*4);
-    std::vector<float> ambiguity_dir(l2b_size*4);
-    
-    std::vector<uint8> num_ambiguities(l2b_size);
     std::vector<uint8> scatsat_only_num_ambiguities(l2b_size);
-
     std::vector<float> scatsat_sigma0_hh_fore(l2b_size);
     std::vector<float> scatsat_sigma0_hh_aft(l2b_size);
     std::vector<float> scatsat_sigma0_vv_fore(l2b_size);
@@ -190,18 +202,38 @@ int main(int argc, char* argv[]) {
     std::vector<float> scatsat_tb_h(l2b_size);
     std::vector<float> scatsat_tb_v(l2b_size);
 
-    std::vector<float> ascat_sigma0_fore(l2b_size);
-    std::vector<float> ascat_sigma0_mid(l2b_size);
-    std::vector<float> ascat_sigma0_aft(l2b_size);
-    std::vector<float> ascat_var_sigma0_fore(l2b_size);
-    std::vector<float> ascat_var_sigma0_mid(l2b_size);
-    std::vector<float> ascat_var_sigma0_aft(l2b_size);
-    std::vector<float> ascat_inc_fore(l2b_size);
-    std::vector<float> ascat_inc_mid(l2b_size);
-    std::vector<float> ascat_inc_aft(l2b_size);
-    std::vector<float> ascat_azi_fore(l2b_size);
-    std::vector<float> ascat_azi_mid(l2b_size);
-    std::vector<float> ascat_azi_aft(l2b_size);
+    std::vector<std::vector<float> > ascat_time_diff(2);
+    std::vector<std::vector<float> > ascat_lat(2), ascat_lon(2);
+    std::vector<std::vector<float> > ascat_sigma0_fore(2);
+    std::vector<std::vector<float> > ascat_sigma0_mid(2);
+    std::vector<std::vector<float> > ascat_sigma0_aft(2);
+    std::vector<std::vector<float> > ascat_var_sigma0_fore(2);
+    std::vector<std::vector<float> > ascat_var_sigma0_mid(2);
+    std::vector<std::vector<float> > ascat_var_sigma0_aft(2);
+    std::vector<std::vector<float> > ascat_inc_fore(2);
+    std::vector<std::vector<float> > ascat_inc_mid(2);
+    std::vector<std::vector<float> > ascat_inc_aft(2);
+    std::vector<std::vector<float> > ascat_azi_fore(2);
+    std::vector<std::vector<float> > ascat_azi_mid(2);
+    std::vector<std::vector<float> > ascat_azi_aft(2);
+
+    for(int ii = 0; ii < 2; ++ii) {
+        ascat_time_diff[ii].resize(l2b_size);
+        ascat_lat[ii].resize(l2b_size);
+        ascat_lon[ii].resize(l2b_size);
+        ascat_sigma0_fore[ii].resize(l2b_size);
+        ascat_sigma0_mid[ii].resize(l2b_size);
+        ascat_sigma0_aft[ii].resize(l2b_size);
+        ascat_var_sigma0_fore[ii].resize(l2b_size);
+        ascat_var_sigma0_mid[ii].resize(l2b_size);
+        ascat_var_sigma0_aft[ii].resize(l2b_size);
+        ascat_inc_fore[ii].resize(l2b_size);
+        ascat_inc_mid[ii].resize(l2b_size);
+        ascat_inc_aft[ii].resize(l2b_size);
+        ascat_azi_fore[ii].resize(l2b_size);
+        ascat_azi_mid[ii].resize(l2b_size);
+        ascat_azi_aft[ii].resize(l2b_size);
+    }
 
     WindSwath wind_swath;
     wind_swath.Allocate(ncti, nati);
@@ -220,13 +252,12 @@ int main(int argc, char* argv[]) {
             int l2bidx = ati + nati*cti;
 
             // initialized datasets
+            flags[l2bidx] = 65535
+            eflags[l2bidx] = 65535
             num_ambiguities[l2bidx] = 255;
             scatsat_only_num_ambiguities[l2bidx] = 255;
-            ascat_time_diff[l2bidx] = FILL_VALUE;
             lat[l2bidx] = FILL_VALUE;
             lon[l2bidx] = FILL_VALUE;
-            ascat_lon[l2bidx] = FILL_VALUE;
-            ascat_lon[l2bidx] = FILL_VALUE;
             anc_spd[l2bidx] = FILL_VALUE;
             anc_dir[l2bidx] = FILL_VALUE;
             scatsat_only_spd[l2bidx] = FILL_VALUE;
@@ -255,19 +286,23 @@ int main(int argc, char* argv[]) {
             scatsat_tb_h[l2bidx] = FILL_VALUE;
             scatsat_tb_v[l2bidx] = FILL_VALUE;
 
-            ascat_sigma0_fore[l2bidx] = FILL_VALUE;
-            ascat_sigma0_mid[l2bidx] = FILL_VALUE;
-            ascat_sigma0_aft[l2bidx] = FILL_VALUE;
-            ascat_var_sigma0_fore[l2bidx] = FILL_VALUE;
-            ascat_var_sigma0_mid[l2bidx] = FILL_VALUE;
-            ascat_var_sigma0_aft[l2bidx] = FILL_VALUE;
-            ascat_inc_fore[l2bidx] = FILL_VALUE;
-            ascat_inc_mid[l2bidx] = FILL_VALUE;
-            ascat_inc_aft[l2bidx] = FILL_VALUE;
-            ascat_azi_fore[l2bidx] = FILL_VALUE;
-            ascat_azi_mid[l2bidx] = FILL_VALUE;
-            ascat_azi_aft[l2bidx] = FILL_VALUE;
-
+            for(int ii=0; ii<2; ++ii) {
+                ascat_lon[ii][l2bidx] = FILL_VALUE;
+                ascat_lat[ii][l2bidx] = FILL_VALUE;
+                ascat_time_diff[ii][l2bidx] = FILL_VALUE;
+                ascat_sigma0_fore[ii][l2bidx] = FILL_VALUE;
+                ascat_sigma0_mid[ii][l2bidx] = FILL_VALUE;
+                ascat_sigma0_aft[ii][l2bidx] = FILL_VALUE;
+                ascat_var_sigma0_fore[ii][l2bidx] = FILL_VALUE;
+                ascat_var_sigma0_mid[ii][l2bidx] = FILL_VALUE;
+                ascat_var_sigma0_aft[ii][l2bidx] = FILL_VALUE;
+                ascat_inc_fore[ii][l2bidx] = FILL_VALUE;
+                ascat_inc_mid[ii][l2bidx] = FILL_VALUE;
+                ascat_inc_aft[ii][l2bidx] = FILL_VALUE;
+                ascat_azi_fore[ii][l2bidx] = FILL_VALUE;
+                ascat_azi_mid[ii][l2bidx] = FILL_VALUE;
+                ascat_azi_aft[ii][l2bidx] = FILL_VALUE;
+            }
 
             // Get pointer to prev L2B file and L2A swath
             WVC* ku_ambig_wvc = l2b_scatsat_nofilt.frame.swath.GetWVC(cti, ati);
@@ -411,51 +446,60 @@ int main(int argc, char* argv[]) {
             scatsat_tb_h[l2bidx] = sum_tb[0] / (cnts[0][0]+cnts[1][0]);
             scatsat_tb_v[l2bidx] = sum_tb[1] / (cnts[0][1]+cnts[1][1]);
 
-            // Step through ASCAT meas, discard more than 50 minutes and land/ice
-            int any_ascat_land = 0;
-            int any_ascat_ice = 0;
-            if(l2a_ascat_swath[cti][ati]) {
-                MeasList* ascat_ml = &(l2a_ascat_swath[cti][ati]->measList);
-                Meas* meas = ascat_ml->GetHead();
-                while(meas) {
-                    int delete_it = 0;
-                    if(fabs(row_time[ati] - meas->C) > 50*60)
-                        delete_it = 1;
+            int any_ascat_land[2] = {0, 0};
+            int any_ascat_ice[2] = {0, 0};
 
-                    if(meas->landFlag) {
-                        if(meas->landFlag == 1 || meas->landFlag == 3)
-                            any_ascat_land = 1;
+            // loop over both ASCATs
+            for(int imetop = 0; imetop < 2; ++imetop) {
 
-                        if(meas->landFlag == 2 || meas->landFlag == 3)
-                            any_ascat_ice = 1;
+                // If nothing here skip
+                if(!l2a_ascat_swaths[imetop][cti][ati])
+                    continue;
 
-                        delete_it = 1;
+                MeasList* ascat_ml =
+                    &(l2a_ascat_swaths[imetop][cti][ati]->measList);
+
+                // Step through ASCAT meas, discard more than 50 minutes and
+                // land/ice.
+                if (1) { // scope this down
+                    Meas* meas = ascat_ml->GetHead();
+                    while(meas) {
+                        int delete_it = 0;
+                        if(fabs(row_time[ati] - meas->C) > 50*60)
+                            delete_it = 1;
+
+                        if(meas->landFlag) {
+                            if(meas->landFlag == 1 || meas->landFlag == 3)
+                                any_ascat_land[imetop] = 1;
+
+                            if(meas->landFlag == 2 || meas->landFlag == 3)
+                                any_ascat_ice[imetop] = 1;
+
+                            delete_it = 1;
+                        }
+
+                        if(delete_it) {
+                            meas = ascat_ml->RemoveCurrent();
+                            delete meas;
+                            meas = ascat_ml->GetCurrent();
+                        } else {
+                            meas = ascat_ml->GetNext();
+                        }
                     }
 
-                    if(delete_it) {
-                        meas = ascat_ml->RemoveCurrent();
-                        delete meas;
-                        meas = ascat_ml->GetCurrent();
-                    } else {
-                        meas = ascat_ml->GetNext();
-                    }
                 }
-            }
 
-            // If any meas left
-            if (l2a_ascat_swath[cti][ati] &&
-                l2a_ascat_swath[cti][ati]->measList.NodeCount() > 0) {
-
-                MeasList* ascat_ml = &(l2a_ascat_swath[cti][ati]->measList);
+                // If tossed all of them skip
+                if(ascat_ml->NodeCount() == 0)
+                    continue;
 
                 LonLat lonlat = ascat_ml->AverageLonLat();
-                ascat_lon[l2bidx] = rtd * lonlat.longitude;
-                ascat_lat[l2bidx] = rtd * lonlat.latitude;
+                ascat_lon[imetop][l2bidx] = rtd * lonlat.longitude;
+                ascat_lat[imetop][l2bidx] = rtd * lonlat.latitude;
 
                 // wrap to [-180, 180) interval
-                while(ascat_lon[l2bidx]>=180) ascat_lon[l2bidx] -= 360;
-                while(ascat_lon[l2bidx]<-180) ascat_lon[l2bidx] += 360;
-
+                if(ascat_lon[imetop][l2bidx] >= 180)
+                    ascat_lon[imetop][l2bidx] -= 360;
 
                 float sum_s0[6], sum_s02[6];
                 float sum_cos_azi[6], sum_sin_azi[6];
@@ -529,36 +573,34 @@ int main(int argc, char* argv[]) {
 
                         float this_azi = pe_rad_to_gs_deg(
                             this_meas->eastAzimuth);
-                        if(this_azi>=180) this_azi -= 360;
+                        if(this_azi >= 180) this_azi -= 360;
 
                         float this_inc = this_meas->incidenceAngle * rtd;
 
                         if(ibeam == 0 || ibeam == 3) {
-                            ascat_sigma0_fore[l2bidx] = this_meas->value;
-                            ascat_var_sigma0_fore[l2bidx] = this_meas->C;
-                            ascat_inc_fore[l2bidx] = this_inc;
-                            ascat_azi_fore[l2bidx] = this_azi;
+                            ascat_sigma0_fore[imetop][l2bidx] = this_meas->value;
+                            ascat_var_sigma0_fore[imetop][l2bidx] = this_meas->C;
+                            ascat_inc_fore[imetop][l2bidx] = this_inc;
+                            ascat_azi_fore[imetop][l2bidx] = this_azi;
 
                         } else if(ibeam == 1 || ibeam == 4) {
-                            ascat_sigma0_mid[l2bidx] = this_meas->value;
-                            ascat_var_sigma0_mid[l2bidx] = this_meas->C;
-                            ascat_inc_mid[l2bidx] = this_inc;
-                            ascat_azi_mid[l2bidx] = this_azi;
+                            ascat_sigma0_mid[imetop][l2bidx] = this_meas->value;
+                            ascat_var_sigma0_mid[imetop][l2bidx] = this_meas->C;
+                            ascat_inc_mid[imetop][l2bidx] = this_inc;
+                            ascat_azi_mid[imetop][l2bidx] = this_azi;
 
                         } else if(ibeam == 2 || ibeam == 5) {
-                            ascat_sigma0_aft[l2bidx] = this_meas->value;
-                            ascat_var_sigma0_aft[l2bidx] = this_meas->C;
-                            ascat_inc_aft[l2bidx] = this_inc;
-                            ascat_azi_aft[l2bidx] = this_azi;
+                            ascat_sigma0_aft[imetop][l2bidx] = this_meas->value;
+                            ascat_var_sigma0_aft[imetop][l2bidx] = this_meas->C;
+                            ascat_inc_aft[imetop][l2bidx] = this_inc;
+                            ascat_azi_aft[imetop][l2bidx] = this_azi;
                         }
                     }
-
-                    ascat_time_diff[l2bidx] = (
-                        sum_time/(float)cnts_time - row_time[ati]);
-
                 }
-            }
 
+                ascat_time_diff[imetop][l2bidx] = (
+                    sum_time/(float)cnts_time - row_time[ati]);
+            }
 
             WVC* wvc = new WVC();
             gmf.RetrieveWinds_S3(&ml_joint, &kp, wvc);
@@ -570,6 +612,26 @@ int main(int argc, char* argv[]) {
                 wvc->selected = wvc->GetNearestToDirection(
                     ku_dirth_wvc->selected->dir);
                 wind_swath.Add(cti, ati, wvc);
+
+                // Set quality flags
+                flags[l2bidx] = 0;
+                eflags[l2bidx] = 0;
+
+                // land
+                if(ku_wvc->landiceFlagBits == 1 || ku_wvc->landiceFlagBits == 3)
+                    flags[l2bidx] |= 0x0080;
+
+                // ice
+                if(ku_wvc->landiceFlagBits == 2 || ku_wvc->landiceFlagBits == 3)
+                    flags[l2bidx] |= 0x0100;
+
+                // rain
+                if(ku_wvc->rainFlagBits & RAIN_FLAG_UNUSABLE)
+                    flags[l2bidx] |= 0x1000;
+
+                if(ku_wvc->rainFlagBits & L2B_QUAL_FLAG_RAIN)
+                    flags[l2bidx] |= 0x2000;
+
             } else
                 delete wvc;
         }
@@ -641,6 +703,7 @@ int main(int argc, char* argv[]) {
             spd[l2bidx] = wvc->selected->spd;
             dir[l2bidx] = pe_rad_to_gs_deg(wvc->selected->dir);
             if(dir[l2bidx]>180) dir[l2bidx] -= 360;
+
         }
     }
 
@@ -661,13 +724,22 @@ int main(int argc, char* argv[]) {
 
     valid_max = 90*60; valid_min = -90*60;
     H5LTmake_dataset(
-        file_id, "ascat_time_diff", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_time_diff[0]);
+        file_id, "ascat_a_time_diff", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_time_diff[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_time_diff", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_time_diff", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_time_diff", "valid_min", &valid_min, 1);
-    H5LTset_attribute_string(file_id, "ascat_time_diff", "units", "s");
+        file_id, "ascat_a_time_diff", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(file_id, "ascat_a_time_diff", "units", "s");
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_time_diff", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_time_diff[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_time_diff", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_time_diff", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(file_id, "ascat_b_time_diff", "units", "s");
 
     valid_max = 9999; valid_min = -1;
     H5LTmake_dataset(
@@ -850,28 +922,52 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_sigma0_vv_aft", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
-        file_id, "ascat_sigma0_fore", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_sigma0_fore[0]);
+        file_id, "ascat_a_sigma0_fore", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_sigma0_fore[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_sigma0_fore", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_sigma0_fore", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_sigma0_fore", "valid_min", &valid_min, 1);
+        file_id, "ascat_a_sigma0_fore", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
-        file_id, "ascat_sigma0_mid", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_sigma0_mid[0]);
+        file_id, "ascat_a_sigma0_mid", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_sigma0_mid[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_sigma0_mid", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_sigma0_mid", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_sigma0_mid", "valid_min", &valid_min, 1);
+        file_id, "ascat_a_sigma0_mid", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
-        file_id, "ascat_sigma0_aft", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_sigma0_aft[0]);
+        file_id, "ascat_a_sigma0_aft", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_sigma0_aft[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_sigma0_aft", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_sigma0_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_sigma0_aft", "valid_min", &valid_min, 1);
+        file_id, "ascat_a_sigma0_aft", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_sigma0_fore", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_sigma0_fore[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_sigma0_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_sigma0_fore", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_sigma0_mid", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_sigma0_mid[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_sigma0_mid", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_sigma0_mid", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_sigma0_aft", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_sigma0_aft[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_sigma0_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_sigma0_aft", "valid_min", &valid_min, 1);
 
 
     H5LTmake_dataset(
@@ -907,28 +1003,52 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_var_sigma0_vv_aft", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
-        file_id, "ascat_var_sigma0_fore", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_var_sigma0_fore[0]);
+        file_id, "ascat_a_var_sigma0_fore", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_var_sigma0_fore[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_var_sigma0_fore", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_var_sigma0_fore", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_var_sigma0_fore", "valid_min", &valid_min, 1);
+        file_id, "ascat_a_var_sigma0_fore", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
-        file_id, "ascat_var_sigma0_mid", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_var_sigma0_mid[0]);
+        file_id, "ascat_a_var_sigma0_mid", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_var_sigma0_mid[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_var_sigma0_mid", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_var_sigma0_mid", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_var_sigma0_mid", "valid_min", &valid_min, 1);
+        file_id, "ascat_a_var_sigma0_mid", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
-        file_id, "ascat_var_sigma0_aft", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_var_sigma0_aft[0]);
+        file_id, "ascat_a_var_sigma0_aft", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_var_sigma0_aft[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_var_sigma0_aft", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_var_sigma0_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_var_sigma0_aft", "valid_min", &valid_min, 1);
+        file_id, "ascat_a_var_sigma0_aft", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_var_sigma0_fore", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_var_sigma0_fore[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_var_sigma0_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_var_sigma0_fore", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_var_sigma0_mid", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_var_sigma0_mid[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_var_sigma0_mid", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_var_sigma0_mid", "valid_min", &valid_min, 1);
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_var_sigma0_aft", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_var_sigma0_aft[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_var_sigma0_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_var_sigma0_aft", "valid_min", &valid_min, 1);
 
 
     valid_max = 90; valid_min = 0;
@@ -973,34 +1093,64 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_inc_vv_aft", "units", "degrees");
 
     H5LTmake_dataset(
-        file_id, "ascat_inc_fore", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_inc_fore[0]);
+        file_id, "ascat_a_inc_fore", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_inc_fore[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_inc_fore", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_inc_fore", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_inc_fore", "valid_min", &valid_min, 1);
+        file_id, "ascat_a_inc_fore", "valid_min", &valid_min, 1);
     H5LTset_attribute_string(
-        file_id, "ascat_inc_fore", "units", "degrees");
+        file_id, "ascat_a_inc_fore", "units", "degrees");
 
     H5LTmake_dataset(
-        file_id, "ascat_inc_mid", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_inc_mid[0]);
+        file_id, "ascat_a_inc_mid", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_inc_mid[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_inc_mid", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_inc_mid", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_inc_mid", "valid_min", &valid_min, 1);
+        file_id, "ascat_a_inc_mid", "valid_min", &valid_min, 1);
     H5LTset_attribute_string(
         file_id, "scatsat_inc_vv_aft", "units", "degrees");
 
     H5LTmake_dataset(
-        file_id, "ascat_inc_aft", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_inc_aft[0]);
+        file_id, "ascat_a_inc_aft", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_inc_aft[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_inc_aft", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_inc_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_inc_aft", "valid_min", &valid_min, 1);
+        file_id, "ascat_a_inc_aft", "valid_min", &valid_min, 1);
     H5LTset_attribute_string(
-        file_id, "ascat_inc_aft", "units", "degrees");
+        file_id, "ascat_a_inc_aft", "units", "degrees");
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_inc_fore", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_inc_fore[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_inc_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_inc_fore", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "ascat_b_inc_fore", "units", "degrees");
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_inc_mid", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_inc_mid[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_inc_mid", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_inc_mid", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "scatsat_inc_vv_aft", "units", "degrees");
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_inc_aft", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_inc_aft[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_inc_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_inc_aft", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "ascat_b_inc_aft", "units", "degrees");
 
     valid_max = 180; valid_min = -180;
     H5LTmake_dataset(
@@ -1044,34 +1194,64 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_azi_vv_aft", "units", "degrees");
 
     H5LTmake_dataset(
-        file_id, "ascat_azi_fore", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_azi_fore[0]);
+        file_id, "ascat_a_azi_fore", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_azi_fore[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_azi_fore", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_azi_fore", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_azi_fore", "valid_min", &valid_min, 1);
+        file_id, "ascat_a_azi_fore", "valid_min", &valid_min, 1);
     H5LTset_attribute_string(
-        file_id, "ascat_azi_fore", "units", "degrees");
+        file_id, "ascat_a_azi_fore", "units", "degrees");
 
     H5LTmake_dataset(
-        file_id, "ascat_azi_mid", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_azi_mid[0]);
+        file_id, "ascat_a_azi_mid", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_azi_mid[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_azi_mid", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_azi_mid", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_azi_mid", "valid_min", &valid_min, 1);
+        file_id, "ascat_a_azi_mid", "valid_min", &valid_min, 1);
     H5LTset_attribute_string(
-        file_id, "ascat_azi_mid", "units", "degrees");
+        file_id, "ascat_a_azi_mid", "units", "degrees");
 
     H5LTmake_dataset(
-        file_id, "ascat_azi_aft", 2, dims, H5T_NATIVE_FLOAT,
-        &ascat_azi_aft[0]);
+        file_id, "ascat_a_azi_aft", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_azi_aft[0][0]);
     H5LTset_attribute_float(
-        file_id, "ascat_azi_aft", "valid_max", &valid_max, 1);
+        file_id, "ascat_a_azi_aft", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "ascat_azi_aft", "valid_min", &valid_min, 1);
+        file_id, "ascat_a_azi_aft", "valid_min", &valid_min, 1);
     H5LTset_attribute_string(
-        file_id, "ascat_azi_aft", "units", "degrees");
+        file_id, "ascat_a_azi_aft", "units", "degrees");
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_azi_fore", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_azi_fore[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_azi_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_azi_fore", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "ascat_b_azi_fore", "units", "degrees");
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_azi_mid", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_azi_mid[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_azi_mid", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_azi_mid", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "ascat_b_azi_mid", "units", "degrees");
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_azi_aft", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_azi_aft[1][0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_azi_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_b_azi_aft", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "ascat_b_azi_aft", "units", "degrees");
 
     unsigned char uchar_fill_value = 255;
     unsigned char uchar_valid_max = 4;
@@ -1097,7 +1277,8 @@ int main(int argc, char* argv[]) {
     H5Fclose(file_id);
 
     // free the l2a swaths
-    free_array((void *)l2a_ascat_swath, 2, ncti, nati);
+    free_array((void *)l2a_ascat_swaths[0], 2, ncti, nati);
+    free_array((void *)l2a_ascat_swaths[1], 2, ncti, nati);
     free_array((void *)l2a_scatsat_swath, 2, ncti, nati);
     return(0);
 }

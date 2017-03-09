@@ -88,10 +88,11 @@ int main(int argc, char* argv[]) {
     double ascat_base = (double)etime.GetSec()+(double)etime.GetMs()/1000;
 
 
-    char* l1b_szf_files[2] = {NULL, NULL};
+    char* l1b_szf_files[3] = {NULL, NULL, NULL};
     l1b_szf_files[0] = config_list.Get("L1B_SZF_FILE");
     config_list.WarnForMissingKeywords();
     l1b_szf_files[1] = config_list.Get("L1B_SZF_FILE2");
+    l1b_szf_files[2] = config_list.Get("L1B_SZF_FILE3");
     config_list.ExitForMissingKeywords();
 
     std::vector< double > minz_times;
@@ -128,7 +129,7 @@ int main(int argc, char* argv[]) {
         this_stop_time = minz_times[1];
     }
 
-    for(int ipart = 0; ipart < 2; ++ipart) {
+    for(int ipart = 0; ipart < 3; ++ipart) {
 
         if(!l1b_szf_files[ipart])
             continue;
@@ -162,9 +163,6 @@ int main(int argc, char* argv[]) {
             ascat_file.get_node_new(0, &ascat_szf_node_first);
 
             double time = ascat_szf_node_first.tm*86400 + ascat_base;
-
-            if(time < this_start_time || time > this_stop_time)
-                continue;
 
             MeasSpot* new_meas_spot = new MeasSpot();
 

@@ -182,7 +182,8 @@ bin_PROGRAMS = \
     programs/l2a_ascat_to_l2b                     \
     programs/gen_os2_l1b_fp_ecmwf                 \
     programs/l1b_to_l2a_collocate                 \
-    programs/l2a_to_l2b_scatsat_ascat
+    programs/l2a_to_l2b_scatsat_ascat             \
+    programs/l2a_to_l2b_scatsat_2ascat
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files
