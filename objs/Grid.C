@@ -224,7 +224,8 @@ Grid::Add(
     Meas*   meas,
     double  meas_time,
     long    spot_id,
-    int     do_composite)
+    int     do_composite,
+    int     no_check_bounds)
 {
     //----------------------------------//
     // calculate the subtrack distances //
@@ -246,12 +247,13 @@ Grid::Add(
 
       // If meas time closer to start than stop && atlon closer to stop
       // subtract 360 degrees
-      if(fabs(meas_time-_start_time) < fabs(meas_time-_end_time)) {
-        if(fabs(ijbin_atlon) > 270.0) ijbin_atlon -= 360;
-      } else {
-        if(fabs(ijbin_atlon) < 90.0) ijbin_atlon += 360;
+      if(!no_check_bounds) {
+        if(fabs(meas_time-_start_time) < fabs(meas_time-_end_time)) {
+          if(fabs(ijbin_atlon) > 270.0) ijbin_atlon -= 360;
+        } else {
+          if(fabs(ijbin_atlon) < 90.0) ijbin_atlon += 360;
+        }
       }
-
 
       // # of along-track bins for 360 of along-track longitude.
       double r_n_at_bins = 1624.0 * 25.0 / _alongtrack_res; 

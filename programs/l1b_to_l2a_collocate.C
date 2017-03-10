@@ -171,8 +171,9 @@ int main(int argc, char* argv[]) {
             double spot_time = meas_spot->time;
             double other_ephem_time;
 
-            if (spot_time < other_rev_start - 60*60 ||
-                spot_time > other_rev_stop + 60*60)
+            // don't collocate more than 3000 seconds apart
+            if (spot_time < other_rev_start - 50*60 ||
+                spot_time > other_rev_stop + 50*60)
                 continue;
 
             // Interpolate this_ephem to spot_time
@@ -246,7 +247,7 @@ int main(int argc, char* argv[]) {
                     meas->azimuth_width > 1000)
                     continue;
 
-                grid.Add(meas, other_time, spot_counter, use_compositing);
+                grid.Add(meas, other_time, spot_counter, use_compositing, 1);
                 meas_counter++;
             }
             spot_counter++;
