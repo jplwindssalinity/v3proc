@@ -87,47 +87,12 @@ int main(int argc, char* argv[]) {
     etime.FromCodeA("2000-01-01T00:00:00.000");
     double ascat_base = (double)etime.GetSec()+(double)etime.GetMs()/1000;
 
-
     char* l1b_szf_files[3] = {NULL, NULL, NULL};
     l1b_szf_files[0] = config_list.Get("L1B_SZF_FILE");
     config_list.WarnForMissingKeywords();
     l1b_szf_files[1] = config_list.Get("L1B_SZF_FILE2");
     l1b_szf_files[2] = config_list.Get("L1B_SZF_FILE3");
     config_list.ExitForMissingKeywords();
-
-    std::vector< double > minz_times;
-    double this_start_time = 0, this_stop_time = INFINITY;
-
-    if(grid_starts_south_pole) {
-        if(!l1b_szf_files[1]) {
-            fprintf(stderr, "%s: require two consecutive L1B SZF files if GRID_STARTS_SOUTH_POLE == 1\n", command);
-            exit(1);
-        }
-
-        // Solve for rev start/end times from ephem.
-        OrbitState this_os;
-        OrbitState prev_os;
-        ephem.GetNextOrbitState(&prev_os);
-        while(ephem.GetNextOrbitState(&this_os)) {
-            double this_vz = this_os.vsat.GetZ();
-            double prev_vz = prev_os.vsat.GetZ();
-
-            if(this_vz >= 0 && prev_vz < 0) {
-                double minz_time = 
-                    prev_os.time + (this_os.time-prev_os.time) *
-                    (0-prev_vz) / (this_vz-prev_vz);
-                minz_times.push_back(minz_time);
-            }
-            prev_os = this_os;
-        }
-        if(minz_times.size() < 2) {
-            fprintf(stderr, "%s: Too few minz times in ephem file\n", command);
-            exit(1);
-        }
-//         printf("minz times: %f %f\n", minz_times[0], minz_times[1]);
-        this_start_time = minz_times[0];
-        this_stop_time = minz_times[1];
-    }
 
     for(int ipart = 0; ipart < 3; ++ipart) {
 

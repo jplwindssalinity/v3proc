@@ -252,8 +252,8 @@ int main(int argc, char* argv[]) {
             int l2bidx = ati + nati*cti;
 
             // initialized datasets
-            flags[l2bidx] = 65535
-            eflags[l2bidx] = 65535
+            flags[l2bidx] = 65535;
+            eflags[l2bidx] = 65535;
             num_ambiguities[l2bidx] = 255;
             scatsat_only_num_ambiguities[l2bidx] = 255;
             lat[l2bidx] = FILL_VALUE;
@@ -396,7 +396,8 @@ int main(int argc, char* argv[]) {
                         (ipol == 0) ? Meas::HH_MEAS_TYPE : Meas::VV_MEAS_TYPE;
 
                     double this_var = 
-                        sum_s02[ilook][ipol]/(float)cnts[ilook][ipol];
+                        sum_s02[ilook][ipol]/(float)cnts[ilook][ipol] - 
+                        pow(this_meas->value, 2);
 
                     this_var *= (float)cnts[ilook][ipol] / 
                         (float)(cnts[ilook][ipol]-1);
@@ -486,7 +487,6 @@ int main(int argc, char* argv[]) {
                             meas = ascat_ml->GetNext();
                         }
                     }
-
                 }
 
                 // If tossed all of them skip
@@ -549,52 +549,52 @@ int main(int argc, char* argv[]) {
                             continue;
                     }
 
-                    if(cnts[ibeam]>0) {
-                        Meas* this_meas = new Meas();
-                        this_meas->value = sum_s0[ibeam]/(float)cnts[ibeam];
-                        this_meas->measType = Meas::C_BAND_VV_MEAS_TYPE;
-                        this_meas->incidenceAngle =
-                            sum_inc[ibeam]/(float)cnts[ibeam];
+                    if(cnts[ibeam] < 2)
+                        continue;
 
-                        this_meas->eastAzimuth = atan2(
-                            sum_sin_azi[ibeam], sum_cos_azi[ibeam]);
+                    Meas* this_meas = new Meas();
+                    this_meas->value = sum_s0[ibeam]/(float)cnts[ibeam];
+                    this_meas->measType = Meas::C_BAND_VV_MEAS_TYPE;
+                    this_meas->incidenceAngle =
+                        sum_inc[ibeam]/(float)cnts[ibeam];
 
-                        double this_var = 
-                            sum_s02[ibeam]/(float)cnts[ibeam];
+                    this_meas->eastAzimuth = atan2(
+                        sum_sin_azi[ibeam], sum_cos_azi[ibeam]);
 
-                        this_var *= (float)cnts[ibeam]/(float)(cnts[ibeam]-1);
+                    double this_var = 
+                        sum_s02[ibeam]/(float)cnts[ibeam] -
+                        pow(this_meas->value, 2);
 
-                        this_meas->A = 1;
-                        this_meas->B = 0;
-                        this_meas->C = this_var;
-                        this_meas->numSlices = -1;
+                    this_var *= (float)cnts[ibeam]/(float)(cnts[ibeam]-1);
 
-                        ml_joint.Append(this_meas);
+                    this_meas->A = 1;
+                    this_meas->B = 0;
+                    this_meas->C = this_var;
+                    this_meas->numSlices = -1;
 
-                        float this_azi = pe_rad_to_gs_deg(
-                            this_meas->eastAzimuth);
-                        if(this_azi >= 180) this_azi -= 360;
+                    ml_joint.Append(this_meas);
 
-                        float this_inc = this_meas->incidenceAngle * rtd;
+                    float this_azi = pe_rad_to_gs_deg(
+                        this_meas->eastAzimuth);
+                    if(this_azi >= 180) this_azi -= 360;
 
-                        if(ibeam == 0 || ibeam == 3) {
-                            ascat_sigma0_fore[imetop][l2bidx] = this_meas->value;
-                            ascat_var_sigma0_fore[imetop][l2bidx] = this_meas->C;
-                            ascat_inc_fore[imetop][l2bidx] = this_inc;
-                            ascat_azi_fore[imetop][l2bidx] = this_azi;
+                    if(ibeam == 0 || ibeam == 3) {
+                        ascat_sigma0_fore[imetop][l2bidx] = this_meas->value;
+                        ascat_var_sigma0_fore[imetop][l2bidx] = this_meas->C;
+                        ascat_inc_fore[imetop][l2bidx] = this_inc;
+                        ascat_azi_fore[imetop][l2bidx] = this_azi;
 
-                        } else if(ibeam == 1 || ibeam == 4) {
-                            ascat_sigma0_mid[imetop][l2bidx] = this_meas->value;
-                            ascat_var_sigma0_mid[imetop][l2bidx] = this_meas->C;
-                            ascat_inc_mid[imetop][l2bidx] = this_inc;
-                            ascat_azi_mid[imetop][l2bidx] = this_azi;
+                    } else if(ibeam == 1 || ibeam == 4) {
+                        ascat_sigma0_mid[imetop][l2bidx] = this_meas->value;
+                        ascat_var_sigma0_mid[imetop][l2bidx] = this_meas->C;
+                        ascat_inc_mid[imetop][l2bidx] = this_inc;
+                        ascat_azi_mid[imetop][l2bidx] = this_azi;
 
-                        } else if(ibeam == 2 || ibeam == 5) {
-                            ascat_sigma0_aft[imetop][l2bidx] = this_meas->value;
-                            ascat_var_sigma0_aft[imetop][l2bidx] = this_meas->C;
-                            ascat_inc_aft[imetop][l2bidx] = this_inc;
-                            ascat_azi_aft[imetop][l2bidx] = this_azi;
-                        }
+                    } else if(ibeam == 2 || ibeam == 5) {
+                        ascat_sigma0_aft[imetop][l2bidx] = this_meas->value;
+                        ascat_var_sigma0_aft[imetop][l2bidx] = this_meas->C;
+                        ascat_inc_aft[imetop][l2bidx] = this_inc;
+                        ascat_azi_aft[imetop][l2bidx] = this_azi;
                     }
                 }
 
@@ -618,18 +618,20 @@ int main(int argc, char* argv[]) {
                 eflags[l2bidx] = 0;
 
                 // land
-                if(ku_wvc->landiceFlagBits == 1 || ku_wvc->landiceFlagBits == 3)
+                if (ku_dirth_wvc->landiceFlagBits == 1 || 
+                    ku_dirth_wvc->landiceFlagBits == 3)
                     flags[l2bidx] |= 0x0080;
 
                 // ice
-                if(ku_wvc->landiceFlagBits == 2 || ku_wvc->landiceFlagBits == 3)
+                if (ku_dirth_wvc->landiceFlagBits == 2 ||
+                    ku_dirth_wvc->landiceFlagBits == 3)
                     flags[l2bidx] |= 0x0100;
 
                 // rain
-                if(ku_wvc->rainFlagBits & RAIN_FLAG_UNUSABLE)
+                if(ku_dirth_wvc->rainFlagBits & RAIN_FLAG_UNUSABLE)
                     flags[l2bidx] |= 0x1000;
 
-                if(ku_wvc->rainFlagBits & L2B_QUAL_FLAG_RAIN)
+                if(ku_dirth_wvc->rainFlagBits & RAIN_FLAG_RAIN)
                     flags[l2bidx] |= 0x2000;
 
             } else
@@ -1274,6 +1276,18 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_only_num_ambiguities", "valid_min", &uchar_valid_min,
         1);
 
+    uint16 u16_value = 65535;
+    H5LTmake_dataset(file_id, "flags", 2, dims, H5T_NATIVE_USHORT, &flags[0]);
+    H5LTset_attribute_ushort(file_id, "flags", "_FillValue", &u16_value, 1);
+
+    u16_value = 128;
+    H5LTset_attribute_ushort(file_id, "flags", "LAND_FLAG", &u16_value, 1);
+    u16_value = 256;
+    H5LTset_attribute_ushort(file_id, "flags", "ICE_FLAG", &u16_value, 1);
+    u16_value = 4096;
+    H5LTset_attribute_ushort(file_id, "flags", "RAIN_FLAG_VALID", &u16_value, 1);
+    u16_value = 8192;
+    H5LTset_attribute_ushort(file_id, "flags", "RAIN_FLAG_RAIN", &u16_value, 1);
     H5Fclose(file_id);
 
     // free the l2a swaths
