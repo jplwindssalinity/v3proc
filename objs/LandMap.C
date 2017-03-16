@@ -1016,3 +1016,83 @@ int QSIceMap::IsIce( float lon,          // radians
     return(0);
 }
 
+
+// ICECMap is a class for the binary files extracted from GRIB files from
+// ftp://polar.ncep.noaa.gov/cdas or
+// ftp://ftpprd.ncep.noaa.gov/pub/data/nccf/com/omb/prod/
+//
+// They are for lon in [0, 360], lat in [-90, 90] with 1/12 deg spacing
+ICECMap::ICECMap() : _map(NULL) {
+    return;
+}
+
+ICECMap::ICECMap(const char* filename) : _map(NULL) {
+    Read(filename);
+    return;
+}
+
+ICECMap::~ICECMap() {
+    if(_map)
+        _Deallocate();
+    _map = NULL;
+    return;
+}
+
+int ICECMap::_Allocate() {
+    _map = (float**)make_array(sizeof(float), 2, 180*12, 360*12);
+    if(_map == NULL)
+        return(0);
+    return(1);
+}
+
+int ICECMap::_Deallocate() {
+    free_array((void*)_map, 2, 180*12, 360*12);
+    return(1);
+}
+
+int ICECMap::Read(const char* filename) {
+    if(!_Allocate()) {
+        fprintf(stderr,"ICECMap::Read, Error allocating ice map!\n");
+        return(0);
+    }
+
+    int junk;
+    FILE* ifp = fopen(filename, "r");
+    if (ifp == NULL)
+        return(0);
+
+    fread(&junk, sizeof(int), 1, ifp);
+    for(int ilat = 0; ilat < 180*12; ++ilat) {
+        if(!fread((void*)*(_map+ilat), sizeof(float), 12*360, ifp) != 12*360) {
+            fclose(ifp);
+            return(0);
+        }
+    }
+    fclose(ifp);
+    return(1);
+}
+
+int ICECMap::Get(float lon, float lat, float* ice_concentation) {
+
+    // Convert to degrees
+    float lon_deg = lon * rtd;
+    float lat_deg = lat * rtd;
+
+    // map has lon in [0, 360]
+    while(lon_deg<0) lon_deg += 360;
+    while(lon_deg>=360) lon_deg -= 360;
+
+    int ilon = floor(lon_deg*12);
+    int ilat = floor((lat_deg+90)*12);
+
+    if(ilon == 12*360) ilon = 0;
+    if(ilat == 12*180) ilat = 12*180 - 1;
+
+    if(ilat > 0 || ilat < 12*180) {
+        *ice_concentation = _map[ilat][ilon];
+        return(1);
+    } else {
+        return(0);
+    }
+}
+
