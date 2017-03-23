@@ -130,6 +130,7 @@ public:
     int    RetrieveWinds_S2(MeasList* meas_list, Kp* kp, WVC* wvc);
     int    RetrieveWinds_S3(MeasList* meas_list, Kp* kp, WVC* wvc,
 			    int s4_flag = 0,float prior_dir=0);
+    int    RetrieveWinds_S3MV(MeasList* meas_list, Kp* kp, WVC* wvc);
     int    RetrieveWinds_CoastSpecial(MeasList* meas_list, Kp* kp, WVC* wvc,
 				      int s4_flag = 0, int dirth_flag=1);
     int    RetrieveWinds_S3Rain(MeasList* meas_list, Kp* kp, WVC* wvc,float prior_dir=0);

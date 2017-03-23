@@ -258,6 +258,11 @@ L2AToL2B::SetWindRetrievalMethod(
         wrMethod = S3;
         return(1);
     }
+    else if (strcasecmp(wr_method, "S3MV") == 0)
+    {
+        wrMethod = S3MV;
+        return(1);
+    }
     else if (strcasecmp(wr_method, "S4") == 0)
     {
         wrMethod = S4;
@@ -2119,6 +2124,14 @@ L2AToL2B::ConvertAndWrite(
 
     case S3:
         if (! gmf->RetrieveWinds_S3(meas_list, kp, wvc))
+        {
+            delete wvc;
+            return(11);
+        }
+        break;
+
+    case S3MV:
+        if (! gmf->RetrieveWinds_S3MV(meas_list, kp, wvc))
         {
             delete wvc;
             return(11);
