@@ -6056,6 +6056,86 @@ GMF::RetrieveWinds_CoastSpecial(
   }
   return(retval);
 }
+
+
+//
+// code only makes sense for two-beam conically-scanning scatterometer
+//
+int GMF::RetrieveWinds_S3MV(MeasList* meas_list, Kp* kp, WVC* wvc) {
+
+    float sum_s0[2][2], sum_s02[2][2];
+    float sum_cos_azi[2][2], sum_sin_azi[2][2];
+    float sum_inc[2][2];
+    int cnts[2][2];
+
+    for(int ipol=0; ipol < 2; ++ipol) {
+        for(int ilook=0; ilook < 2; ++ilook) {
+            sum_s0[ilook][ipol] = 0;
+            sum_s02[ilook][ipol] = 0;
+            sum_cos_azi[ilook][ipol] = 0;
+            sum_sin_azi[ilook][ipol] = 0;
+            sum_inc[ilook][ipol] = 0;
+            cnts[ilook][ipol] = 0;
+        }
+    }
+
+    for(Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext()) {
+
+        int ilook = 0;
+        if(meas->scanAngle > pi/2 && meas->scanAngle < 3*pi/2)
+            ilook = 1;
+
+        int ipol = meas->beamIdx;
+        sum_s0[ilook][ipol] += meas->value;
+        sum_s02[ilook][ipol] += pow(meas->value, 2);
+        sum_cos_azi[ilook][ipol] += cos(meas->eastAzimuth);
+        sum_sin_azi[ilook][ipol] += sin(meas->eastAzimuth);
+        sum_inc[ilook][ipol] += meas->incidenceAngle;
+        cnts[ilook][ipol]++;
+    }
+
+    MeasList meas_list_agg;
+
+    for(int ilook=0; ilook < 2; ++ilook) {
+        for(int ipol=0; ipol < 2; ++ipol) {
+
+            if(cnts[ilook][ipol] < 2)
+                continue;
+
+            Meas* this_meas = new Meas();
+            this_meas->value = 
+                sum_s0[ilook][ipol]/(float)cnts[ilook][ipol];
+
+            this_meas->incidenceAngle = 
+                sum_inc[ilook][ipol]/(float)cnts[ilook][ipol];
+
+            this_meas->eastAzimuth = atan2(
+                sum_sin_azi[ilook][ipol], sum_cos_azi[ilook][ipol]);
+
+            this_meas->beamIdx = ipol;
+
+            this_meas->measType = 
+                (ipol == 0) ? Meas::HH_MEAS_TYPE : Meas::VV_MEAS_TYPE;
+
+            double this_var = 
+                sum_s02[ilook][ipol]/(float)cnts[ilook][ipol] - 
+                pow(this_meas->value, 2);
+
+            this_var *= (float)cnts[ilook][ipol] / 
+                (float)(cnts[ilook][ipol]-1);
+
+            this_meas->A = 1;
+            this_meas->B = 0;
+            this_meas->C = this_var;
+            this_meas->numSlices = -1;
+
+            meas_list_agg.Append(this_meas);
+        }
+    }
+
+    return RetrieveWinds_S3(&meas_list_agg, kp, wvc);
+}
+
 //-----------------------//
 // GMF::RetrieveWinds_S3 //
 //-----------------------//
