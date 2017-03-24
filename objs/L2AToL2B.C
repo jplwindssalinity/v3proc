@@ -2674,6 +2674,7 @@ L2AToL2B::InitAndFilter(
     switch(wrMethod)
     {
     case S3:
+    case S3MV:
     case S3RAIN:
     case CoastSpecial:
         special=1;
