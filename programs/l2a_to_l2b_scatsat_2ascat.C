@@ -64,6 +64,20 @@ int main(int argc, char* argv[]) {
     const char* command = no_path(argv[0]);
     char* config_file = argv[1];
 
+    int optind = 2;
+    int ascat_only = 0;
+    while((optind < argc) && (argv[optind][0] == '-')) {
+        std::string sw = argv[optind];
+        if(sw == "--ascat-only") {
+            ascat_only = 1;
+            printf("ASCAT only\n");
+        } else {
+            fprintf(stderr,"%s: Unknown option: %s\n", command, sw.c_str());
+            exit(1);
+        }
+        optind++;
+    }
+
     ConfigList config_list;
     config_list.Read(config_file);
     config_list.ExitForMissingKeywords();
@@ -447,6 +461,9 @@ int main(int argc, char* argv[]) {
             scatsat_tb_h[l2bidx] = sum_tb[0] / (cnts[0][0]+cnts[1][0]);
             scatsat_tb_v[l2bidx] = sum_tb[1] / (cnts[0][1]+cnts[1][1]);
 
+            if(ascat_only)
+                ml_joint.FreeContents();
+
             int any_ascat_land[2] = {0, 0};
             int any_ascat_ice[2] = {0, 0};
 
@@ -603,6 +620,10 @@ int main(int argc, char* argv[]) {
             }
 
             WVC* wvc = new WVC();
+
+            if(ml_joint.NodeCount() == 0)
+                continue;
+
             gmf.RetrieveWinds_S3(&ml_joint, &kp, wvc);
 //             gmf.RetrieveWinds_S3(scatsat_ml, &kp, wvc);
 
@@ -760,10 +781,16 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_string(file_id, "lat", "units", "degrees_north");
 
 //     H5LTmake_dataset(
-//         file_id, "ascat_lat", 2, dims, H5T_NATIVE_FLOAT, &ascat_lat[0]);
-//     H5LTset_attribute_float(file_id, "ascat_lat", "valid_max", &valid_max, 1);
-//     H5LTset_attribute_float(file_id, "ascat_lat", "valid_min", &valid_min, 1);
-//     H5LTset_attribute_string(file_id, "ascat_lat", "units", "degrees_north");
+//         file_id, "ascat_a_lat", 2, dims, H5T_NATIVE_FLOAT, &ascat_lat[0][0]);
+//     H5LTset_attribute_float(file_id, "ascat_a_lat", "valid_max", &valid_max, 1);
+//     H5LTset_attribute_float(file_id, "ascat_a_lat", "valid_min", &valid_min, 1);
+//     H5LTset_attribute_string(file_id, "ascat_a_lat", "units", "degrees_north");
+// 
+//     H5LTmake_dataset(
+//         file_id, "ascat_b_lat", 2, dims, H5T_NATIVE_FLOAT, &ascat_lat[1][0]);
+//     H5LTset_attribute_float(file_id, "ascat_a_lat", "valid_max", &valid_max, 1);
+//     H5LTset_attribute_float(file_id, "ascat_a_lat", "valid_min", &valid_min, 1);
+//     H5LTset_attribute_string(file_id, "ascat_a_lat", "units", "degrees_north");
 
     valid_max = 180; valid_min = -180;
     H5LTmake_dataset(file_id, "lon", 2, dims, H5T_NATIVE_FLOAT, &lon[0]);
@@ -772,10 +799,16 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_string(file_id, "lon", "units", "degrees_east");
 
 //     H5LTmake_dataset(
-//         file_id, "ascat_lon", 2, dims, H5T_NATIVE_FLOAT, &ascat_lon[0]);
-//     H5LTset_attribute_float(file_id, "ascat_lon", "valid_max", &valid_max, 1);
-//     H5LTset_attribute_float(file_id, "ascat_lon", "valid_min", &valid_min, 1);
-//     H5LTset_attribute_string(file_id, "ascat_lon", "units", "degrees_east");
+//         file_id, "ascat_a_lon", 2, dims, H5T_NATIVE_FLOAT, &ascat_lon[0][0]);
+//     H5LTset_attribute_float(file_id, "ascat_a_lon", "valid_max", &valid_max, 1);
+//     H5LTset_attribute_float(file_id, "ascat_a_lon", "valid_min", &valid_min, 1);
+//     H5LTset_attribute_string(file_id, "ascat_a_lon", "units", "degrees_north");
+// 
+//     H5LTmake_dataset(
+//         file_id, "ascat_b_lon", 2, dims, H5T_NATIVE_FLOAT, &ascat_lon[1][0]);
+//     H5LTset_attribute_float(file_id, "ascat_b_lon", "valid_max", &valid_max, 1);
+//     H5LTset_attribute_float(file_id, "ascat_b_lon", "valid_min", &valid_min, 1);
+//     H5LTset_attribute_string(file_id, "ascat_b_lon", "units", "degrees_north");
 
     valid_max = 100; valid_min = 0;
     H5LTmake_dataset(file_id, "anc_spd", 2, dims, H5T_NATIVE_FLOAT, &anc_spd[0]);
