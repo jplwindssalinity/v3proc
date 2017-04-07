@@ -66,11 +66,19 @@ int main(int argc, char* argv[]) {
 
     int optind = 2;
     int ascat_only = 0;
+    int scatsat_only = 0;
+    float ku_s0_adj = 0;
     while((optind < argc) && (argv[optind][0] == '-')) {
         std::string sw = argv[optind];
         if(sw == "--ascat-only") {
             ascat_only = 1;
             printf("ASCAT only\n");
+        } else if(sw == "--scatsat-only") {
+            scatsat_only = 1;
+            printf("SCATSAT only\n");
+        } else if(sw == "--ku-s0-adj") {
+            ku_s0_adj = atof(argv[++optind]);
+            printf("Ku sigma0 adj %f\n", ku_s0_adj);
         } else {
             fprintf(stderr,"%s: Unknown option: %s\n", command, sw.c_str());
             exit(1);
@@ -398,6 +406,8 @@ int main(int argc, char* argv[]) {
                     this_meas->value = 
                         sum_s0[ilook][ipol]/(float)cnts[ilook][ipol];
 
+                    this_meas->value *= pow(10, 0.1*ku_s0_adj);
+
                     this_meas->incidenceAngle = 
                         sum_inc[ilook][ipol]/(float)cnts[ilook][ipol];
 
@@ -471,7 +481,7 @@ int main(int argc, char* argv[]) {
             for(int imetop = 0; imetop < 2; ++imetop) {
 
                 // If nothing here skip
-                if(!l2a_ascat_swaths[imetop][cti][ati])
+                if(!l2a_ascat_swaths[imetop][cti][ati] || scatsat_only)
                     continue;
 
                 MeasList* ascat_ml =
