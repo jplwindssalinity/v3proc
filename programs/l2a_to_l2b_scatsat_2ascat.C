@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
     int optind = 2;
     int ascat_only = 0;
     int scatsat_only = 0;
-    float ku_s0_adj = 0;
+    float ku_s0_adj_lin = 0;
     while((optind < argc) && (argv[optind][0] == '-')) {
         std::string sw = argv[optind];
         if(sw == "--ascat-only") {
@@ -77,8 +77,8 @@ int main(int argc, char* argv[]) {
             scatsat_only = 1;
             printf("SCATSAT only\n");
         } else if(sw == "--ku-s0-adj") {
-            ku_s0_adj = atof(argv[++optind]);
-            printf("Ku sigma0 adj %f\n", ku_s0_adj);
+            ku_s0_adj_lin = pow(10.0, 0.1*atof(argv[++optind]));
+            printf("Ku sigma0 adj %f\n", ku_s0_adj_lin);
         } else {
             fprintf(stderr,"%s: Unknown option: %s\n", command, sw.c_str());
             exit(1);
@@ -386,8 +386,8 @@ int main(int argc, char* argv[]) {
                 int ipol = meas->beamIdx;
 
                 sum_tb[ipol] += meas->txPulseWidth;
-                sum_s0[ilook][ipol] += meas->value;
-                sum_s02[ilook][ipol] += pow(meas->value, 2);
+                sum_s0[ilook][ipol] += meas->value*ku_s0_adj_lin;
+                sum_s02[ilook][ipol] += pow(meas->value*ku_s0_adj_lin, 2);
                 sum_cos_azi[ilook][ipol] += cos(meas->eastAzimuth);
                 sum_sin_azi[ilook][ipol] += sin(meas->eastAzimuth);
                 sum_inc[ilook][ipol] += meas->incidenceAngle;
@@ -405,8 +405,6 @@ int main(int argc, char* argv[]) {
                     Meas* this_meas = new Meas();
                     this_meas->value = 
                         sum_s0[ilook][ipol]/(float)cnts[ilook][ipol];
-
-                    this_meas->value *= pow(10, 0.1*ku_s0_adj);
 
                     this_meas->incidenceAngle = 
                         sum_inc[ilook][ipol]/(float)cnts[ilook][ipol];
@@ -438,29 +436,37 @@ int main(int argc, char* argv[]) {
                     while(this_azi<-180) this_azi += 360;
 
                     if(ipol == 0 && ilook == 0) {
-                        scatsat_sigma0_hh_fore[l2bidx] = this_meas->value;
-                        scatsat_var_sigma0_hh_fore[l2bidx] = this_meas->C;
+                        scatsat_sigma0_hh_fore[l2bidx] =
+                            this_meas->value/ku_s0_adj_lin;
+                        scatsat_var_sigma0_hh_fore[l2bidx] =
+                            this_meas->C / pow(ku_s0_adj_lin, 2);
                         scatsat_inc_hh_fore[l2bidx] = 
                             this_meas->incidenceAngle * rtd;
                         scatsat_azi_hh_fore[l2bidx] = this_azi;
 
                     } else if(ipol == 0 && ilook == 1) {
-                        scatsat_sigma0_hh_aft[l2bidx] = this_meas->value;
-                        scatsat_var_sigma0_hh_aft[l2bidx] = this_meas->C;
+                        scatsat_sigma0_hh_aft[l2bidx] =
+                            this_meas->value/ku_s0_adj_lin;
+                        scatsat_var_sigma0_hh_aft[l2bidx] =
+                            this_meas->C / pow(ku_s0_adj_lin, 2);
                         scatsat_inc_hh_aft[l2bidx] = 
                             this_meas->incidenceAngle * rtd;
                         scatsat_azi_hh_aft[l2bidx] = this_azi;
 
                     } else if(ipol == 1 && ilook == 0) {
-                        scatsat_sigma0_vv_fore[l2bidx] = this_meas->value;
-                        scatsat_var_sigma0_vv_fore[l2bidx] = this_meas->C;
+                        scatsat_sigma0_vv_fore[l2bidx] =
+                            this_meas->value/ku_s0_adj_lin;
+                        scatsat_var_sigma0_vv_fore[l2bidx] =
+                            this_meas->C / pow(ku_s0_adj_lin, 2);
                         scatsat_inc_vv_fore[l2bidx] = 
                             this_meas->incidenceAngle * rtd;
                         scatsat_azi_vv_fore[l2bidx] = this_azi;
 
                     } else if(ipol == 1 && ilook == 1) {
-                        scatsat_sigma0_vv_aft[l2bidx] = this_meas->value;
-                        scatsat_var_sigma0_vv_aft[l2bidx] = this_meas->C;
+                        scatsat_sigma0_vv_aft[l2bidx] =
+                            this_meas->value/ku_s0_adj_lin;
+                        scatsat_var_sigma0_vv_aft[l2bidx] =
+                            this_meas->C / pow(ku_s0_adj_lin, 2);
                         scatsat_inc_vv_aft[l2bidx] = 
                             this_meas->incidenceAngle * rtd;
                         scatsat_azi_vv_aft[l2bidx] = this_azi;
