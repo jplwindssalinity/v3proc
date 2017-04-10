@@ -67,12 +67,19 @@ int main(int argc, char* argv[]) {
     int optind = 2;
     int ascat_only = 0;
     int scatsat_only = 0;
+    int drop_ascat[2] = {0, 0};
     float ku_s0_adj_lin = 0;
     while((optind < argc) && (argv[optind][0] == '-')) {
         std::string sw = argv[optind];
         if(sw == "--ascat-only") {
             ascat_only = 1;
             printf("ASCAT only\n");
+        } else if(sw == "--drop-ascat-a") {
+            drop_ascat[0] = 1;
+            printf("Drop ASCAT-A\n");
+        } else if(sw == "--drop-ascat-b") {
+            drop_ascat[1] = 1;
+            printf("Drop ASCAT-B\n");
         } else if(sw == "--scatsat-only") {
             scatsat_only = 1;
             printf("SCATSAT only\n");
@@ -487,7 +494,8 @@ int main(int argc, char* argv[]) {
             for(int imetop = 0; imetop < 2; ++imetop) {
 
                 // If nothing here skip
-                if(!l2a_ascat_swaths[imetop][cti][ati] || scatsat_only)
+                if(!l2a_ascat_swaths[imetop][cti][ati] || scatsat_only ||
+                    drop_ascat[imetop])
                     continue;
 
                 MeasList* ascat_ml =
