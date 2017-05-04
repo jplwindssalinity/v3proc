@@ -199,6 +199,7 @@ int main(int argc, char* argv[]) {
     std::vector<double> row_time(nati), out_row_time(nati);
     std::vector<float> lat(l2b_size), lon(l2b_size);
     std::vector<float> spd(l2b_size), dir(l2b_size);
+    std::vector<float> ascat_only_spd(l2b_size), ascat_only_dir(l2b_size);
     std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
     std::vector<float> ambiguity_spd(l2b_size*4);
     std::vector<float> ambiguity_dir(l2b_size*4);    
@@ -264,8 +265,9 @@ int main(int argc, char* argv[]) {
         ascat_azi_aft[ii].resize(l2b_size);
     }
 
-    WindSwath wind_swath;
+    WindSwath wind_swath, wind_swath_ascat_only;
     wind_swath.Allocate(ncti, nati);
+    wind_swath_ascat_only.Allocate(ncti, nati);
 
     for(int ati=0; ati<nati; ++ati) {
         if(ati%100 == 0)
@@ -295,6 +297,8 @@ int main(int argc, char* argv[]) {
             scatsat_rain_impact[l2bidx] = FILL_VALUE;
             spd[l2bidx] = FILL_VALUE;
             dir[l2bidx] = FILL_VALUE;
+            ascat_only_spd[l2bidx] = FILL_VALUE;
+            ascat_only_dir[l2bidx] = FILL_VALUE;
 
             scatsat_sigma0_hh_fore[l2bidx] = FILL_VALUE;
             scatsat_sigma0_hh_aft[l2bidx] = FILL_VALUE;
@@ -643,11 +647,10 @@ int main(int argc, char* argv[]) {
                     sum_time/(float)cnts_time - row_time[ati]);
             }
 
-            WVC* wvc = new WVC();
-
             if(ml_joint.NodeCount() == 0)
                 continue;
 
+            WVC* wvc = new WVC();
             gmf.RetrieveWinds_S3(&ml_joint, &kp, wvc);
 //             gmf.RetrieveWinds_S3(scatsat_ml, &kp, wvc);
 
@@ -681,6 +684,36 @@ int main(int argc, char* argv[]) {
 
             } else
                 delete wvc;
+
+            // Next level of scope so vars get destroyed
+            if (1) {
+                // toss Ku meas flavors
+                Meas* meas = ml_joint.GetHead();
+                while(meas) {
+                    if (meas->measType == Meas::HH_MEAS_TYPE ||
+                        meas->measType == Meas::VV_MEAS_TYPE) {
+                        meas = ml_joint.RemoveCurrent();
+                        delete meas;
+                        meas = ml_joint.GetCurrent();
+                    } else {
+                        meas = ml_joint.GetNext();
+                    }
+                }
+            }
+
+            if(ml_joint.NodeCount() == 0)
+                continue;
+
+            WVC* ascat_only_wvc = new WVC();
+            gmf.RetrieveWinds_S3(&ml_joint, &kp, ascat_only_wvc);
+            if(ascat_only_wvc->ambiguities.NodeCount() > 0) {
+                // Nudge it with the SCATSAT only DIRTH wind direction
+                ascat_only_wvc->selected = ascat_only_wvc->GetNearestToDirection(
+                    ku_dirth_wvc->selected->dir);
+                wind_swath_ascat_only.Add(cti, ati, ascat_only_wvc);
+
+            } else
+                delete ascat_only_wvc;
         }
     }
 
@@ -734,8 +767,15 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // DIRTH Pass
+    // DIRTH Pass on joint C/Ku swath
     wind_swath.MedianFilter(
+        median_filter_window_size, median_filter_max_passes, 0, 0, 1);
+
+    // Do ASCAT-only ambiguity removal and DIRTH
+    wind_swath_ascat_only.MedianFilter_4Pass(
+        median_filter_window_size, median_filter_max_passes, 0);
+
+    wind_swath_ascat_only.MedianFilter(
         median_filter_window_size, median_filter_max_passes, 0, 0, 1);
 
     // copy DIRTH outputs
@@ -744,13 +784,18 @@ int main(int argc, char* argv[]) {
             int l2bidx = ati + nati*cti;
 
             WVC* wvc = wind_swath.GetWVC(cti, ati);
-            if(!wvc)
-                continue;
+            if(wvc) {
+                spd[l2bidx] = wvc->selected->spd;
+                dir[l2bidx] = pe_rad_to_gs_deg(wvc->selected->dir);
+                if(dir[l2bidx]>180) dir[l2bidx] -= 360;
+            }
 
-            spd[l2bidx] = wvc->selected->spd;
-            dir[l2bidx] = pe_rad_to_gs_deg(wvc->selected->dir);
-            if(dir[l2bidx]>180) dir[l2bidx] -= 360;
-
+            wvc = wind_swath_ascat_only.GetWVC(cti, ati);
+            if(wvc) {
+                ascat_only_spd[l2bidx] = wvc->selected->spd;
+                ascat_only_dir[l2bidx] = pe_rad_to_gs_deg(wvc->selected->dir);
+                if(dir[l2bidx]>180) dir[l2bidx] -= 360;
+            }
         }
     }
 
@@ -866,6 +911,15 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_string(file_id, "spd", "units", "m s-1");
 
     H5LTmake_dataset(
+        file_id, "ascat_only_spd", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_only_spd[0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_only_spd", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_only_spd", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(file_id, "ascat_only_spd", "units", "m s-1");
+
+    H5LTmake_dataset(
         file_id, "scatsat_only_ambiguity_spd", 3, dims, H5T_NATIVE_FLOAT,
         &scatsat_only_ambiguity_spd[0]);
     H5LTset_attribute_float(
@@ -906,6 +960,15 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "dir", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "dir", "valid_min", &valid_min, 1);
     H5LTset_attribute_string(file_id, "dir", "units", "degrees");
+
+    H5LTmake_dataset(
+        file_id, "ascat_only_dir", 2, dims, H5T_NATIVE_FLOAT,
+        &ascat_only_dir[0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_only_dir", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_only_dir", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(file_id, "ascat_only_dir", "units", "degrees");
 
     H5LTmake_dataset(
         file_id, "ambiguity_dir", 3, dims, H5T_NATIVE_FLOAT,
