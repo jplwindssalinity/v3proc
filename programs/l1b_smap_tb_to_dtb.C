@@ -221,6 +221,19 @@ int main(int argc, char* argv[]){
         CAP_ANC_L1B anc_sst(anc_sst_files[ipart]);
         CAP_ANC_L1B anc_swh(anc_swh_files[ipart]);
 
+        // ensure use same array size
+        if(anc_u10.nframes != nframes[ipart] ||
+           anc_u10.nfootprints != nfootprints[ipart] ||
+           anc_v10.nframes != nframes[ipart] ||
+           anc_v10.nfootprints != nfootprints[ipart] ||
+           anc_sst.nframes != nframes[ipart] ||
+           anc_sst.nfootprints != nfootprints[ipart] ||
+           anc_sss.nframes != nframes[ipart] ||
+           anc_sss.nfootprints != nfootprints[ipart] ||
+           anc_swh.nframes != nframes[ipart] ||
+           anc_swh.nfootprints != nfootprints[ipart])
+            continue;
+
         // Iterate over scans
         for(int iframe = 0; iframe < nframes[ipart]; ++iframe) {
             // Iterate over low-res footprints
@@ -234,9 +247,16 @@ int main(int argc, char* argv[]){
                     if(0x1 & tb_flag[ipol][fp_idx])
                         continue;
 
+                    if(lat[fp_idx] < -90)
+                        continue;
+
                     double tmp_lon = dtr*lon[fp_idx];
                     double tmp_lat = dtr*lat[fp_idx];
                     if(tmp_lon<0) tmp_lon += two_pi;
+
+                    if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0) ||
+                       qs_icemap.IsIce(tmp_lon, tmp_lat, 0))
+                        continue;
 
                     double distance;
                     coast_dist.Get(tmp_lon, tmp_lat, &distance);

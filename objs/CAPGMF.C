@@ -939,6 +939,84 @@ int TBGalCorr::Get(
     }
 }
 
+TBVsLatDOYCorr::TBVsLatDOYCorr() {
+    return;
+}
+
+TBVsLatDOYCorr::TBVsLatDOYCorr(const char* filename) {
+    Read(filename);
+    return;
+}
+
+TBVsLatDOYCorr::~TBVsLatDOYCorr() {
+    return;
+}
+
+int TBVsLatDOYCorr::Read(const char* filename) {
+
+    FILE* ifp = fopen(filename, "r");
+
+    fread(&_dlat, 1, sizeof(float), ifp);
+    _nlat = (int)180/_dlat;
+
+    _dtb_table.resize(2);
+    for(int ipol=0; ipol<2; ++ipol) {
+        _dtb_table[ipol].resize(_ndays*_nlat*2);
+        fread(&_dtb_table[ipol][0], _ndays*_nlat*2, sizeof(float), ifp);
+    }
+    fclose(ifp);
+
+    return(1);
+}
+
+int TBVsLatDOYCorr::Get(
+    float lat, int doy, int is_asc, Meas::MeasTypeE met, float* dtb) {
+
+    int idoy = doy-1;
+
+    if(idoy<0 || idoy>=366) {
+        fprintf(stderr, "TBVsLatDOYCorr::Get: Invalid day of year\n");
+        return(0);
+    }
+
+    int ipol;
+    if(met == Meas::L_BAND_TBV_MEAS_TYPE) {
+        ipol = 0;
+    } else if(met == Meas::L_BAND_TBH_MEAS_TYPE) {
+        ipol = 1;
+    } else {
+        fprintf(stderr, "TBVsLatDOYCorr::Get: Invalid measType\n");
+        return(0);
+    }
+
+    int ilat0 = (int)floor((lat+90)/_dlat);
+    if(ilat0 < 0) ilat0 = 0;
+    if(ilat0 >= _nlat-1) ilat0 = _nlat-2;
+
+    int ilat1 = ilat0 + 1;
+
+    float lat0 = -90 + _dlat * (float)ilat0;
+    float lat1 = -90 + _dlat * (float)ilat1;
+
+    float factor = (lat-lat0)/(lat1-lat0);
+
+    // 0 - ascending, 1 - decending
+    int iasc = (is_asc) ? 0: 1;
+    int idx0 = idoy + _ndays * (ilat0 + _nlat * iasc);
+    int idx1 = idoy + _ndays * (ilat1 + _nlat * iasc);
+
+    float dtb0 = _dtb_table[ipol][idx0];
+    float dtb1 = _dtb_table[ipol][idx1];
+
+    // Check for fill value
+    if (dtb0 < -900) dtb0 = 0;
+    if (dtb1 < -900) dtb1 = 0;
+
+    *dtb = dtb0 + factor * (dtb1-dtb0);
+
+    return(1);
+}
+
 double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
     // Need this call structure for NLopt library call
 
