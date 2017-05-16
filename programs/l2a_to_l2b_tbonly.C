@@ -18,7 +18,9 @@
 #define USE_MEASUREMENT_VARIANCE_KEYWORD "USE_MEASUREMENT_VARIANCE"
 #define DO_DTB_VS_LAT_DOY_CORRECTION_KEYWORD "DO_DTB_VS_LAT_DOY_CORRECTION"
 #define DTB_VS_LAT_DOY_CORRECTION_FILE_KEYWORD "DTB_VS_LAT_DOY_CORRECTION_FILE"
-
+#define NRT_HALF_REV_IS_ASC_KEYWORD "IS_ASCENDING"
+#define IS_NRT_KEYWORD "USE_NRT_PROCESSING"
+#define PRED_SWATH_FILE_KEYWORD "PRED_SWATH_FILE"
 #define FILL_VALUE -9999
 
 //----------//
@@ -146,9 +148,25 @@ int main(int argc, char* argv[]) {
     char* s0_rough_file = config_list.Get(S0_ROUGH_MODEL_FILE_KEYWORD);
     char* anc_sss_file = config_list.Get(ANC_SSS_FILE_KEYWORD);
     char* anc_sst_file = config_list.Get(ANC_SST_FILE_KEYWORD);
-    char* anc_swh_file = config_list.Get(ANC_SWH_FILE_KEYWORD);
     char* anc_u10_file = config_list.Get(ANC_U10_FILE_KEYWORD);
     char* anc_v10_file = config_list.Get(ANC_V10_FILE_KEYWORD);
+
+    char* anc_swh_file = NULL;
+    char* pred_swath_file = NULL;
+
+    int is_asc = 0;
+    int is_nrt = 0;
+    config_list.DoNothingForMissingKeywords();
+    config_list.GetInt(IS_NRT_KEYWORD, &is_nrt);
+    config_list.ExitForMissingKeywords();
+
+    if(!is_nrt) {
+        anc_swh_file = config_list.Get(ANC_SWH_FILE_KEYWORD);
+    } else {
+        printf("NRT Processing\n");
+        pred_swath_file = config_list.Get(PRED_SWATH_FILE_KEYWORD);
+        config_list.GetInt(NRT_HALF_REV_IS_ASC_KEYWORD, &is_asc);
+    }
 
     config_list.DoNothingForMissingKeywords();
     int do_dtb_vs_lat_doy_corr = 0;
@@ -184,6 +202,8 @@ int main(int argc, char* argv[]) {
 
     int ncti = l2a_tb.header.crossTrackBins;
     int nati = l2a_tb.header.alongTrackBins;
+    int nati_half = nati / 2;
+    int this_nati = (is_nrt) ? nati_half : nati;
 
     // Read in L2A TB file
     L2AFrame*** l2a_tb_swath;
@@ -197,12 +217,15 @@ int main(int argc, char* argv[]) {
 
     CAP_ANC_L2B cap_anc_sss(anc_sss_file);
     CAP_ANC_L2B cap_anc_sst(anc_sst_file);
-    CAP_ANC_L2B cap_anc_swh(anc_swh_file);
+    CAP_ANC_L2B cap_anc_swh;
+    if(!is_nrt)
+        cap_anc_swh.Read(anc_swh_file);
     CAP_ANC_L2B cap_anc_u10(anc_u10_file);
     CAP_ANC_L2B cap_anc_v10(anc_v10_file);
 
     // Output arrays
-    int l2b_size = ncti * nati;
+    int l2b_size = ncti * this_nati;
+
     std::vector<float> lat(l2b_size), lon(l2b_size);
     std::vector<float> tb_h_fore(l2b_size), tb_h_aft(l2b_size);
     std::vector<float> tb_v_fore(l2b_size), tb_v_aft(l2b_size);
@@ -223,7 +246,7 @@ int main(int argc, char* argv[]) {
     std::vector<float> galaxy_corr_v_fore(l2b_size), galaxy_corr_v_aft(l2b_size);
     std::vector<float> land_fraction_fore(l2b_size), land_fraction_aft(l2b_size);
     std::vector<uint16> quality_flag(l2b_size);
-    std::vector<float> row_time(nati);
+    std::vector<float> row_time(this_nati);
     std::vector<uint8> num_ambiguities(l2b_size);
     std::vector<float> smap_ambiguity_spd(l2b_size*4);
     std::vector<float> smap_ambiguity_dir(l2b_size*4);
@@ -246,29 +269,34 @@ int main(int argc, char* argv[]) {
     double t_day_start = etime_day_start.GetTime();
 
     CAPWindSwath cap_wind_swath;
-    cap_wind_swath.Allocate(ncti, nati);
+    cap_wind_swath.Allocate(ncti, this_nati);
 
-    for(int ati=0; ati<nati; ++ati) {
+    for(int ati=0; ati<this_nati; ++ati) {
+
+        int ati_full = ati;
+        if(is_nrt)
+            ati_full = (is_asc) ? ati : ati + nati_half;
 
         row_time[ati] = 
-            t_start + (t_stop-t_start)*(double)ati/(double)nati - t_day_start;
+            t_start + (t_stop-t_start)*(double)ati_full/(double)nati -
+            t_day_start;
 
         if(ati%100 == 0)
             fprintf(stdout, "%d of %d; %f\n", ati, nati, row_time[ati]);
 
         // Set the bias adjustments per ascending / decending portion of orbit.
-        float dtbh_fore = (ati < nati/2) ? dtbh_fore_asc : dtbh_fore_dec;
-        float dtbv_fore = (ati < nati/2) ? dtbv_fore_asc : dtbv_fore_dec;
-        float dtbh_aft = (ati < nati/2) ? dtbh_aft_asc : dtbh_aft_dec;
-        float dtbv_aft = (ati < nati/2) ? dtbv_aft_asc : dtbv_aft_dec;
+        float dtbh_fore = (ati_full < nati/2) ? dtbh_fore_asc : dtbh_fore_dec;
+        float dtbv_fore = (ati_full < nati/2) ? dtbv_fore_asc : dtbv_fore_dec;
+        float dtbh_aft = (ati_full < nati/2) ? dtbh_aft_asc : dtbh_aft_dec;
+        float dtbv_aft = (ati_full < nati/2) ? dtbv_aft_asc : dtbv_aft_dec;
 
         for(int cti=0; cti<ncti; ++cti) {
 
-            int l2bidx = ati + nati*cti;
+            int l2bidx = ati + this_nati*cti;
 
             // Hack to index into (approx) correct location in ancillary files.
             int anc_cti = (is_25km) ? cti*2 : cti;
-            int anc_ati = (is_25km) ? ati*2 : ati;
+            int anc_ati = (is_25km) ? ati_full*2 : ati_full;
 
             // Initialize to fill values
             lon[l2bidx] = FILL_VALUE;
@@ -317,14 +345,14 @@ int main(int argc, char* argv[]) {
             }
 
             // Check for valid measList at this WVC
-            if(!l2a_tb_swath[cti][ati])
+            if(!l2a_tb_swath[cti][ati_full])
                 continue;
 
             // Check for useable ancillary data
             if(cap_anc_sst.data[0][anc_ati][anc_cti] < 0)
                 continue;
 
-            MeasList* tb_ml = &(l2a_tb_swath[cti][ati]->measList);
+            MeasList* tb_ml = &(l2a_tb_swath[cti][ati_full]->measList);
 
             LonLat lonlat = tb_ml->AverageLonLat();
 
@@ -513,7 +541,8 @@ int main(int argc, char* argv[]) {
 
             anc_sst[l2bidx] = cap_anc_sst.data[0][anc_ati][anc_cti] + 273.16;
             anc_sss[l2bidx] = cap_anc_sss.data[0][anc_ati][anc_cti];
-            anc_swh[l2bidx] = cap_anc_swh.data[0][anc_ati][anc_cti];
+            if(!is_nrt)
+                anc_swh[l2bidx] = cap_anc_swh.data[0][anc_ati][anc_cti];
 
             float this_anc_dir = gs_deg_to_pe_rad(anc_dir[l2bidx]);
 
@@ -686,10 +715,10 @@ int main(int argc, char* argv[]) {
 
     cap_wind_swath.MedianFilter(3, 200, 0, 1);
 //     cap_wind_swath.MedianFilterTBWinds(3, 200, 0, 1); 
-    for(int ati=0; ati<nati; ++ati) {
+    for(int ati=0; ati<this_nati; ++ati) {
         for(int cti=0; cti<ncti; ++cti) {
 
-            int l2bidx = ati + nati*cti;
+            int l2bidx = ati + this_nati*cti;
             CAPWVC* wvc = cap_wind_swath.swath[cti][ati];
 
             if(!wvc)
@@ -704,10 +733,10 @@ int main(int argc, char* argv[]) {
 
     cap_wind_swath.MedianFilter(3, 200, 2, 0);
 //     cap_wind_swath.MedianFilterTBWinds(3, 200, 4, 0);
-    for(int ati=0; ati<nati; ++ati) {
+    for(int ati=0; ati<this_nati; ++ati) {
         for(int cti=0; cti<ncti; ++cti) {
 
-            int l2bidx = ati + nati*cti;
+            int l2bidx = ati + this_nati*cti;
             CAPWVC* wvc = cap_wind_swath.swath[cti][ati];
 
             if(!wvc)
@@ -727,8 +756,8 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_int(file_id, "/", "REV_START_YEAR", &start_year, 1);
     H5LTset_attribute_int(file_id, "/", "REV_START_DAY_OF_YEAR", &start_doy, 1);
     H5LTset_attribute_int(file_id, "/", "Number of Cross Track Bins", &ncti, 1);
-    H5LTset_attribute_int(file_id, "/", "Number of Cross Track Bins", &ncti, 1);
-    H5LTset_attribute_int(file_id, "/", "Number of Along Track Bins", &nati, 1);
+    H5LTset_attribute_int(
+        file_id, "/", "Number of Along Track Bins", &this_nati, 1);
 
     H5LTset_attribute_string(
         file_id, "/", "REV_START_TIME", config_list.Get("REV_START_TIME"));
@@ -736,16 +765,20 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_string(
         file_id, "/", "REV_STOP_TIME", config_list.Get("REV_STOP_TIME"));
 
-    H5LTset_attribute_string(
-        file_id, "/", "TB_CRID", config_list.Get("TB_CRID"));
 
-    H5LTset_attribute_string(
-        file_id, "/", "L1B_TB_LORES_ASC_FILE",
-        config_list.Get("L1B_TB_LORES_ASC_FILE"));
+    if(!is_nrt)
+        H5LTset_attribute_string(
+            file_id, "/", "TB_CRID", config_list.Get("TB_CRID"));
 
-    H5LTset_attribute_string(
-        file_id, "/", "L1B_TB_LORES_DEC_FILE",
-        config_list.Get("L1B_TB_LORES_DEC_FILE"));
+    if(!is_nrt || is_asc)
+        H5LTset_attribute_string(
+            file_id, "/", "L1B_TB_LORES_ASC_FILE",
+            config_list.Get("L1B_TB_LORES_ASC_FILE"));
+
+    if(!is_nrt || !is_asc)
+        H5LTset_attribute_string(
+            file_id, "/", "L1B_TB_LORES_DEC_FILE",
+            config_list.Get("L1B_TB_LORES_DEC_FILE"));
 
     H5LTset_attribute_float(
         file_id, "/", "Delta TBH Fore Ascending", &dtbh_fore_asc, 1);
@@ -805,10 +838,10 @@ int main(int argc, char* argv[]) {
 
     float valid_max, valid_min;
 
-    hsize_t dims[2] = {ncti, nati};
-    hsize_t dims_amb[3] = {ncti, nati, 4};
+    hsize_t dims[2] = {ncti, this_nati};
+    hsize_t dims_amb[3] = {ncti, this_nati, 4};
 
-    hsize_t ati_dim = nati;
+    hsize_t ati_dim = this_nati;
 
     valid_max = 90; valid_min = -90;
     H5LTmake_dataset(file_id, "lat", 2, dims, H5T_NATIVE_FLOAT, &lat[0]);

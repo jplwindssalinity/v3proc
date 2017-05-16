@@ -20,7 +20,7 @@
 #define L1B_TB_ASC_ANC_V10_FILE_KEYWORD "L1B_TB_ASC_ANC_V10_FILE"
 #define L1B_TB_DEC_ANC_V10_FILE_KEYWORD "L1B_TB_DEC_ANC_V10_FILE"
 #define GAL_CORR_FILE_KEYWORD "SMAP_TB_GAL_CORR_FILE"
-
+#define IS_NRT_KEYWORD "USE_NRT_PROCESSING"
 
 //----------//
 // INCLUDES //
@@ -137,15 +137,21 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
+    int optind = 2;
+    int is_nrt = 0;
     char* l1b_tbfiles[2] = {NULL, NULL};
 
     config_list.DoNothingForMissingKeywords();
+    config_list.GetInt(IS_NRT_KEYWORD, &is_nrt);
+    config_list.ExitForMissingKeywords();
+
+    if(is_nrt)
+        config_list.DoNothingForMissingKeywords();
+
     l1b_tbfiles[0] = config_list.Get(L1B_TB_LORES_ASC_FILE_KEYWORD);
     l1b_tbfiles[1] = config_list.Get(L1B_TB_LORES_DEC_FILE_KEYWORD);
-    printf("l1b_tbfiles: %s %s\n", l1b_tbfiles[0], l1b_tbfiles[1]);
-
-    // These ones are required
     config_list.ExitForMissingKeywords();
+    printf("l1b_tbfiles: %s %s\n", l1b_tbfiles[0], l1b_tbfiles[1]);
 
     QSLandMap qs_landmap;
     char* qslandmap_file = config_list.Get(QS_LANDMAP_FILE_KEYWORD);
@@ -181,7 +187,9 @@ int main(int argc, char* argv[]){
     if(do_smap_tb_gal_corr) {
         char* gal_corr_filename = config_list.Get(GAL_CORR_FILE_KEYWORD);
         tb_gal_corr_map.Read(gal_corr_filename);
-        config_list.DoNothingForMissingKeywords();
+        if(is_nrt)
+            config_list.DoNothingForMissingKeywords();
+
         anc_u10_files[0] = config_list.Get(L1B_TB_ASC_ANC_U10_FILE_KEYWORD);
         anc_u10_files[1] = config_list.Get(L1B_TB_DEC_ANC_U10_FILE_KEYWORD);
         anc_v10_files[0] = config_list.Get(L1B_TB_ASC_ANC_V10_FILE_KEYWORD);
@@ -272,8 +280,6 @@ int main(int argc, char* argv[]){
         std::vector< std::vector<float> > tb_gal_corr(2);
 
         int data_size = nframes[ipart]*nfootprints[ipart];
-
-        printf("data_size: %d\n", data_size);
 
         azi.resize(data_size);
         antazi.resize(data_size);
