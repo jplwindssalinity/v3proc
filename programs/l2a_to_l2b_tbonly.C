@@ -7,6 +7,7 @@
 #define L2B_TB_FILE_KEYWORD "L2B_TB_FILE"
 #define TB_FLAT_MODEL_FILE_KEYWORD "TB_FLAT_MODEL_FILE"
 #define TB_ROUGH_MODEL_FILE_KEYWORD "TB_ROUGH_MODEL_FILE"
+#define TB_ROUGH_HIGH_SPEED_MODEL_FILE_KEYWORD "TB_ROUGH_HIGH_SPEED_MODEL_FILE"
 #define S0_ROUGH_MODEL_FILE_KEYWORD "S0_ROUGH_MODEL_FILE"
 #define ANC_SSS_FILE_KEYWORD "ANC_SSS_FILE"
 #define ANC_SST_FILE_KEYWORD "ANC_SST_FILE"
@@ -15,6 +16,9 @@
 #define ANC_V10_FILE_KEYWORD "ANC_V10_FILE"
 #define L2B_TB_BIAS_ADJ_FILE_KEYWORD "L2B_TB_BIAS_ADJ_FILE"
 #define USE_MEASUREMENT_VARIANCE_KEYWORD "USE_MEASUREMENT_VARIANCE"
+#define DO_DTB_VS_LAT_DOY_CORRECTION_KEYWORD "DO_DTB_VS_LAT_DOY_CORRECTION"
+#define DTB_VS_LAT_DOY_CORRECTION_FILE_KEYWORD "DTB_VS_LAT_DOY_CORRECTION_FILE"
+
 #define FILL_VALUE -9999
 
 //----------//
@@ -137,26 +141,40 @@ int main(int argc, char* argv[]) {
     char* l2b_tb_file = config_list.Get(L2B_TB_FILE_KEYWORD);
     char* tb_flat_file = config_list.Get(TB_FLAT_MODEL_FILE_KEYWORD);
     char* tb_rough_file = config_list.Get(TB_ROUGH_MODEL_FILE_KEYWORD);
+    char* tb_rough_high_speed_file = config_list.Get(
+        TB_ROUGH_HIGH_SPEED_MODEL_FILE_KEYWORD);
     char* s0_rough_file = config_list.Get(S0_ROUGH_MODEL_FILE_KEYWORD);
     char* anc_sss_file = config_list.Get(ANC_SSS_FILE_KEYWORD);
     char* anc_sst_file = config_list.Get(ANC_SST_FILE_KEYWORD);
-//     char* anc_swh_file = config_list.Get(ANC_SWH_FILE_KEYWORD);
+    char* anc_swh_file = config_list.Get(ANC_SWH_FILE_KEYWORD);
     char* anc_u10_file = config_list.Get(ANC_U10_FILE_KEYWORD);
     char* anc_v10_file = config_list.Get(ANC_V10_FILE_KEYWORD);
 
     config_list.DoNothingForMissingKeywords();
-    char* l2b_tb_bias_adj_file = config_list.Get(L2B_TB_BIAS_ADJ_FILE_KEYWORD);
-
+    int do_dtb_vs_lat_doy_corr = 0;
+    config_list.GetInt(
+        DO_DTB_VS_LAT_DOY_CORRECTION_KEYWORD, &do_dtb_vs_lat_doy_corr);
     int use_meas_var = 0;
     config_list.GetInt(USE_MEASUREMENT_VARIANCE_KEYWORD, &use_meas_var);
     config_list.ExitForMissingKeywords();
 
+    TBVsLatDOYCorr tb_vs_lat_doy_corr;
+    if(do_dtb_vs_lat_doy_corr) {
+        char* tb_vs_lat_doy_corr_file = config_list.Get(
+            DTB_VS_LAT_DOY_CORRECTION_FILE_KEYWORD);
+        tb_vs_lat_doy_corr.Read(tb_vs_lat_doy_corr_file);
+    }
 
     // Configure the model functions
     CAPGMF cap_gmf;
     cap_gmf.ReadFlat(tb_flat_file);
     cap_gmf.ReadRough(tb_rough_file);
     cap_gmf.ReadModelS0(s0_rough_file);
+
+    CAPGMF cap_gmf_high_speed;
+    cap_gmf_high_speed.ReadFlat(tb_flat_file);
+    cap_gmf_high_speed.ReadRough(tb_rough_high_speed_file);
+    cap_gmf_high_speed.ReadModelS0(s0_rough_file);
 
     L2A l2a_tb;
     l2a_tb.SetInputFilename(l2a_tb_file);
@@ -179,13 +197,9 @@ int main(int argc, char* argv[]) {
 
     CAP_ANC_L2B cap_anc_sss(anc_sss_file);
     CAP_ANC_L2B cap_anc_sst(anc_sst_file);
-//     CAP_ANC_L2B cap_anc_swh(anc_swh_file);
+    CAP_ANC_L2B cap_anc_swh(anc_swh_file);
     CAP_ANC_L2B cap_anc_u10(anc_u10_file);
     CAP_ANC_L2B cap_anc_v10(anc_v10_file);
-
-    CAP_ANC_L2B cap_anc_tb_bias;
-    if(l2b_tb_bias_adj_file)
-        cap_anc_tb_bias.Read(l2b_tb_bias_adj_file);
 
     // Output arrays
     int l2b_size = ncti * nati;
@@ -202,7 +216,7 @@ int main(int argc, char* argv[]) {
     std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
     std::vector<float> anc_sss(l2b_size), anc_sst(l2b_size), anc_swh(l2b_size);
     std::vector<float> smap_sss(l2b_size), smap_spd(l2b_size);
-    std::vector<float> smap_spdonly(l2b_size), smap_high_spd(l2b_size);
+    std::vector<float> smap_high_spd(l2b_size);
     std::vector<float> smap_high_dir(l2b_size), smap_high_dir_smooth(l2b_size);
     std::vector<float> smap_sss_bias_adj(l2b_size), smap_spd_bias_adj(l2b_size);
     std::vector<float> galaxy_corr_h_fore(l2b_size), galaxy_corr_h_aft(l2b_size);
@@ -287,7 +301,6 @@ int main(int argc, char* argv[]) {
             n_v_fore[l2bidx] = 0;
             n_v_aft[l2bidx] = 0;
             quality_flag[l2bidx] = 65535;
-            smap_spdonly[l2bidx] = FILL_VALUE;
             smap_high_spd[l2bidx] = FILL_VALUE;
             smap_high_dir[l2bidx] = FILL_VALUE;
             galaxy_corr_h_fore[l2bidx] = FILL_VALUE;
@@ -500,7 +513,7 @@ int main(int argc, char* argv[]) {
 
             anc_sst[l2bidx] = cap_anc_sst.data[0][anc_ati][anc_cti] + 273.16;
             anc_sss[l2bidx] = cap_anc_sss.data[0][anc_ati][anc_cti];
-//             anc_swh[l2bidx] = cap_anc_swh.data[0][anc_ati][anc_cti];
+            anc_swh[l2bidx] = cap_anc_swh.data[0][anc_ati][anc_cti];
 
             float this_anc_dir = gs_deg_to_pe_rad(anc_dir[l2bidx]);
 
@@ -523,20 +536,10 @@ int main(int argc, char* argv[]) {
                 smap_sss[l2bidx] = final_sss;
                 smap_spd[l2bidx] = final_spd;
 
-                anc_spd_std_prior = 100;
-                cap_gmf.Retrieve(
-                    &tb_ml_avg, NULL, anc_spd[l2bidx], this_anc_dir,
-                    smap_sss[l2bidx], anc_spd[l2bidx], this_anc_dir,
-                    anc_sst[l2bidx], anc_swh[l2bidx], 0, anc_spd_std_prior, 0,
-                    1, CAPGMF::RETRIEVE_SPEED_ONLY,
-                    &final_spd, &final_dir, &final_sss, &final_obj);
-
-                smap_spdonly[l2bidx] = final_spd;
-
                 // Do vector wind processing
                 CAPWVC* wvc = new CAPWVC();
 
-                cap_gmf.CAPGMF::BuildSolutionCurvesSpdOnly(
+                cap_gmf_high_speed.CAPGMF::BuildSolutionCurvesSpdOnly(
                     &tb_ml_avg, NULL, anc_spd[l2bidx], anc_sss[l2bidx],
                     anc_spd[l2bidx], this_anc_dir, anc_sst[l2bidx],
                     anc_swh[l2bidx], 0, 100, 0, 1, wvc);
@@ -580,18 +583,25 @@ int main(int argc, char* argv[]) {
                 }
 
                 // Retreive salinity and speed again using bias adjusted TB
-                if(l2b_tb_bias_adj_file) {
-                    float this_tb_v_bias_adj = 
-                        -cap_anc_tb_bias.data[0][anc_ati][anc_cti];
+                if(do_dtb_vs_lat_doy_corr) {
 
-                    float this_tb_h_bias_adj = 
-                        -cap_anc_tb_bias.data[1][anc_ati][anc_cti];
+                    int is_asc = (anc_ati < 1624) ? 1 : 0;
+                    float this_lat = lat[l2bidx];
+                    float this_tb_v_bias_adj, this_tb_h_bias_adj;
+
+                    tb_vs_lat_doy_corr.Get(
+                        this_lat, start_doy, is_asc, Meas::L_BAND_TBV_MEAS_TYPE,
+                        &this_tb_v_bias_adj);
+
+                    tb_vs_lat_doy_corr.Get(
+                        this_lat, start_doy, is_asc, Meas::L_BAND_TBH_MEAS_TYPE,
+                        &this_tb_h_bias_adj);
 
                     if(fabs(this_tb_v_bias_adj) < 3 && 
                        fabs(this_tb_h_bias_adj) < 3) {
 
-                        tb_v_bias_adj[l2bidx] = this_tb_v_bias_adj;
-                        tb_h_bias_adj[l2bidx] = this_tb_h_bias_adj;
+                        tb_v_bias_adj[l2bidx] = -this_tb_v_bias_adj;
+                        tb_h_bias_adj[l2bidx] = -this_tb_h_bias_adj;
 
                         // iterate over tb_ml_avg, adjust tbs
                         for(Meas* meas = tb_ml_avg.GetHead(); meas; ) {
@@ -726,8 +736,8 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_string(
         file_id, "/", "REV_STOP_TIME", config_list.Get("REV_STOP_TIME"));
 
-//     H5LTset_attribute_string(
-//         file_id, "/", "TB_CRID", config_list.Get("TB_CRID"));
+    H5LTset_attribute_string(
+        file_id, "/", "TB_CRID", config_list.Get("TB_CRID"));
 
     H5LTset_attribute_string(
         file_id, "/", "L1B_TB_LORES_ASC_FILE",
@@ -1089,7 +1099,8 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(file_id, "anc_swh", "valid_min", &valid_min, 1);
 
     valid_max = 100; valid_min = 0;
-    H5LTmake_dataset(file_id, "smap_spd", 2, dims, H5T_NATIVE_FLOAT, &smap_spd[0]);
+    H5LTmake_dataset(
+        file_id, "smap_spd", 2, dims, H5T_NATIVE_FLOAT, &smap_spd_bias_adj[0]);
     H5LTset_attribute_string(
         file_id, "smap_spd", "long_name", "SMAP wind speed");
     H5LTset_attribute_string(file_id, "smap_spd", "units", "Meters/second");
@@ -1111,20 +1122,20 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(
         file_id, "smap_high_spd", "valid_min", &valid_min, 1);
 
-    H5LTmake_dataset(
-        file_id, "smap_spd_bias_adj", 2, dims, H5T_NATIVE_FLOAT,
-        &smap_spd_bias_adj[0]);
-    H5LTset_attribute_string(
-        file_id, "smap_spd_bias_adj", "long_name",
-        "SMAP wind speed using bias adjusted brightness temperatures");
-    H5LTset_attribute_string(
-        file_id, "smap_spd_bias_adj", "units", "Meters/second");
-    H5LTset_attribute_float(
-        file_id, "smap_spd_bias_adj", "_FillValue", &_fill_value, 1);
-    H5LTset_attribute_float(
-        file_id, "smap_spd_bias_adj", "valid_max", &valid_max, 1);
-    H5LTset_attribute_float(
-        file_id, "smap_spd_bias_adj", "valid_min", &valid_min, 1);
+//     H5LTmake_dataset(
+//         file_id, "smap_spd_bias_adj", 2, dims, H5T_NATIVE_FLOAT,
+//         &smap_spd_bias_adj[0]);
+//     H5LTset_attribute_string(
+//         file_id, "smap_spd_bias_adj", "long_name",
+//         "SMAP wind speed using bias adjusted brightness temperatures");
+//     H5LTset_attribute_string(
+//         file_id, "smap_spd_bias_adj", "units", "Meters/second");
+//     H5LTset_attribute_float(
+//         file_id, "smap_spd_bias_adj", "_FillValue", &_fill_value, 1);
+//     H5LTset_attribute_float(
+//         file_id, "smap_spd_bias_adj", "valid_max", &valid_max, 1);
+//     H5LTset_attribute_float(
+//         file_id, "smap_spd_bias_adj", "valid_min", &valid_min, 1);
 
     H5LTmake_dataset(
         file_id, "smap_ambiguity_spd", 3, dims_amb, H5T_NATIVE_FLOAT,
@@ -1142,29 +1153,32 @@ int main(int argc, char* argv[]) {
         file_id, "smap_ambiguity_spd", "valid_min", &valid_min, 1);
 
 
-    valid_max = 40; valid_min = 0;
-    H5LTmake_dataset(file_id, "smap_sss", 2, dims, H5T_NATIVE_FLOAT, &smap_sss[0]);
-    H5LTset_attribute_string(
-        file_id, "smap_sss", "long_name", "SMAP sea surface salinity");
-    H5LTset_attribute_string(file_id, "smap_sss", "units", "PSU");
-    H5LTset_attribute_float(file_id, "smap_sss", "_FillValue", &_fill_value, 1);
-    H5LTset_attribute_float(file_id, "smap_sss", "valid_max", &valid_max, 1);
-    H5LTset_attribute_float(file_id, "smap_sss", "valid_min", &valid_min, 1);
+//     valid_max = 40; valid_min = 0;
+//     H5LTmake_dataset(
+//         file_id, "smap_sss_noadj", 2, dims, H5T_NATIVE_FLOAT, &smap_sss[0]);
+//     H5LTset_attribute_string(
+//         file_id, "smap_sss_noadj", "long_name",
+//         "SMAP sea surface salinity without bias adjusted brightness temperatures");
+//     H5LTset_attribute_string(file_id, "smap_sss_noadj", "units", "PSU");
+//     H5LTset_attribute_float(file_id, "smap_sss_noadj", "_FillValue", &_fill_value, 1);
+//     H5LTset_attribute_float(file_id, "smap_sss_noadj", "valid_max", &valid_max, 1);
+//     H5LTset_attribute_float(file_id, "smap_sss_noadj", "valid_min", &valid_min, 1);
 
+    valid_max = 40; valid_min = 0;
     H5LTmake_dataset(
-        file_id, "smap_sss_bias_adj", 2, dims, H5T_NATIVE_FLOAT,
+        file_id, "smap_sss", 2, dims, H5T_NATIVE_FLOAT,
         &smap_sss_bias_adj[0]);
     H5LTset_attribute_string(
-        file_id, "smap_sss_bias_adj", "long_name",
-        "SMAP sea surface salinity using bias adjusted brightness temperatures");
+        file_id, "smap_sss", "long_name",
+        "SMAP sea surface salinity");
     H5LTset_attribute_string(
-        file_id, "smap_sss_bias_adj", "units", "PSU");
+        file_id, "smap_sss", "units", "PSU");
     H5LTset_attribute_float(
-        file_id, "smap_sss_bias_adj", "_FillValue", &_fill_value, 1);
+        file_id, "smap_sss", "_FillValue", &_fill_value, 1);
     H5LTset_attribute_float(
-        file_id, "smap_sss_bias_adj", "valid_max", &valid_max, 1);
+        file_id, "smap_sss", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
-        file_id, "smap_sss_bias_adj", "valid_min", &valid_min, 1);
+        file_id, "smap_sss", "valid_min", &valid_min, 1);
 
     valid_max = 86400; valid_min = 0;
     H5LTmake_dataset(
