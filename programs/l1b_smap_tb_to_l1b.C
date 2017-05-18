@@ -178,8 +178,10 @@ int main(int argc, char* argv[]){
     if(do_ice_correction) {
         smap_ice_tb_near_map.Read(
             config_list.Get(SMAP_ICE_NEAR_MAP_FILE_KEYWORD));
-        icec_map.Read(
-            config_list.Get(ICE_CONCECTRATION_FILE_KEYWORD));
+        if(!icec_map.Read(
+            config_list.Get(ICE_CONCECTRATION_FILE_KEYWORD))) {
+            fprintf(stderr, "error reading icecmap\n");
+        }
     }
 
     char* anc_u10_files[2] = {NULL, NULL};
@@ -451,7 +453,7 @@ int main(int argc, char* argv[]){
                         new_meas->B = this_dtg;
                     }
 
-                    if(do_land_correction && distance < 500 & distance > 0) {
+                    if(do_land_correction && distance < 1000 & distance > 0) {
 
                         float land_frac, land_near_value;
                         if(!smap_land_tb_near_map.Get(new_meas, this_month, &land_near_value)||
@@ -461,9 +463,9 @@ int main(int argc, char* argv[]){
                         }
 
                         // linearly scale land_frac to exactly zero at 500
-                        if(distance >= 400 & distance <= 500) {
+                        if(distance >= 800 & distance <= 1000) {
                             land_frac = land_frac + (
-                                (distance-400)/100) * (0-land_frac);
+                                (distance-800)/200) * (0-land_frac);
                         }
 
 
@@ -501,7 +503,8 @@ int main(int argc, char* argv[]){
                     if(do_ice_correction) {
                         float ice_frac, ice_near_value;
                         if(!smap_ice_tb_near_map.Get(new_meas, this_month, &ice_near_value)||
-                           !icec_map.Get(tmp_lon, tmp_lat, &ice_frac)) {
+                           !icec_map.Get(tmp_lon, tmp_lat, &ice_frac)||
+                           ice_frac > 0.5) {
                             ice_frac = 0;
                             ice_near_value = 0;
                         }
@@ -531,7 +534,6 @@ int main(int argc, char* argv[]){
                         // only apply correction if non-empty ice near value,
                         // otherwise will increase TB not decrease it.
                         if(ice_near_value > 0) {
-                            new_meas->EnSlice = new_meas->value - Tc;
                             new_meas->value = Tc;
                             new_meas->A = var_Tc;
                         }
@@ -564,7 +566,7 @@ int main(int argc, char* argv[]){
                 exit(1);
             }
 
-            if(this_frame % 1 == 0){
+            if(this_frame % 100 == 0){
                 printf("Wrote %d of %d frames\n", this_frame,
                     nframes[0] + nframes[1]);
             }
