@@ -1056,14 +1056,17 @@ int ICECMap::Read(const char* filename) {
         return(0);
     }
 
-    int junk;
     FILE* ifp = fopen(filename, "r");
-    if (ifp == NULL)
+    if (ifp == NULL) {
+        fprintf(stderr,"ICECMap::Read, Error opening ice map!\n");
         return(0);
-
-    fread(&junk, sizeof(int), 1, ifp);
-    for(int ilat = 0; ilat < 180*12; ++ilat) {
-        if(!fread((void*)*(_map+ilat), sizeof(float), 12*360, ifp) != 12*360) {
+    }
+    fseek(ifp, 4, SEEK_SET);
+    for(int ilat = 0; ilat < 12*180; ++ilat) {
+        if(fread((void*)*(_map+ilat), sizeof(float), 4320, ifp) != 4320) {
+            fprintf(
+                stderr, "ICECMap::Read, Error reading ice map at ilat: %d!\n",
+                ilat);
             fclose(ifp);
             return(0);
         }
