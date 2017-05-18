@@ -116,12 +116,15 @@ main(int argc, char* argv[]) {
     const char* command = no_path(argv[0]);
     char* config_file = argv[1];
     int do_footprint = 0;
+    int flag_old_slice_sizes = 0;
 
     optind = 2;
     while((optind < argc) && (argv[optind][0]=='-')) {
         std::string sw = argv[optind];
         if(sw == "--do-footprint" || sw == "-fp") {
             do_footprint = 1;
+        } else if(sw == "--old-slice-sizes") {
+            flag_old_slice_sizes = 1;
         } else {
             fprintf(stderr,"%s: Unknow option\n", command);
             exit(1);
@@ -180,8 +183,12 @@ main(int argc, char* argv[]) {
     attenmap.ReadWentzAttenMap(attenmap_file);
 
     int nfootprints[2] = {281, 282};
-    int nslices[2] = {9, 15};
+    int nslices[2] = {9, 14};
     int nframes[2];
+
+    if(flag_old_slice_sizes) {
+        nslices[1] = 15;
+    }
 
     // read in slice balancing table if commanded in config file
     config_list.DoNothingForMissingKeywords();
