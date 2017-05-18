@@ -368,13 +368,17 @@ int main(int argc, char* argv[]) {
 
                 // Skip land flagged observations
                 if(meas->landFlag) {
-                    if(meas->landFlag == 1 || meas->landFlag == 3)
+//                     if(meas->landFlag == 1 || meas->landFlag == 3)
+//                         any_land = 1;
+
+                    if(meas->bandwidth > 0.01)
                         any_land = 1;
 
                     if(meas->landFlag == 2 || meas->landFlag == 3)
                         any_ice = 1;
 
-                    continue;
+                    if(any_land || any_ice)
+                        continue;
                 }
 
                 int idx_look = 0;
@@ -520,6 +524,9 @@ int main(int argc, char* argv[]) {
             // Check validity of ancillary data
             if(anc_swh[l2bidx]>10)
                 anc_swh[l2bidx] = FILL_VALUE;
+
+            if(anc_sss[l2bidx]<0 || anc_sss[l2bidx]>40)
+                anc_sss[l2bidx] = 0;
 
             if(tb_ml_avg.NodeCount() > 0) {
                 float final_dir, final_spd, final_sss, final_obj;
