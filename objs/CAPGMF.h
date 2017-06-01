@@ -144,7 +144,7 @@ protected:
     static const float _sstMin = -2.0;
     static const float _sstStep = 1.0;
 
-    static const int _sssCount = 41;
+    static const int _sssCount = 46;
     static const float _sssMin = 0.0;
     static const float _sssStep = 1.0;
 
