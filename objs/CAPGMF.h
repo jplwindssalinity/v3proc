@@ -81,6 +81,11 @@ public:
         float anc_spd, float anc_dir, float anc_swh, float anc_sst,
         float anc_spd_std_prior);
 
+    double SSSFWHM(
+        MeasList* tb_ml, MeasList* s0_ml, float spd, float dir, float sss,
+        float anc_spd, float anc_dir, float anc_swh, float anc_sst,
+        float anc_spd_std_prior, float active_weight, float passive_weight);
+
     int GetTBFlat(
         Meas::MeasTypeE met, float inc, float sst, float sss, float* tbflat);
 

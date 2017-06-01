@@ -216,6 +216,7 @@ int main(int argc, char* argv[]) {
     std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
     std::vector<float> anc_sss(l2b_size), anc_sst(l2b_size), anc_swh(l2b_size);
     std::vector<float> smap_sss(l2b_size), smap_spd(l2b_size);
+    std::vector<float> smap_sss_uncertainty(l2b_size);
     std::vector<float> smap_high_spd(l2b_size);
     std::vector<float> smap_high_dir(l2b_size), smap_high_dir_smooth(l2b_size);
     std::vector<float> smap_sss_bias_adj(l2b_size), smap_spd_bias_adj(l2b_size);
@@ -294,6 +295,7 @@ int main(int argc, char* argv[]) {
             anc_swh[l2bidx] = FILL_VALUE;
             smap_sss[l2bidx] = FILL_VALUE;
             smap_spd[l2bidx] = FILL_VALUE;
+            smap_sss_uncertainty[l2bidx] = FILL_VALUE;
             smap_sss_bias_adj[l2bidx] = FILL_VALUE;
             smap_spd_bias_adj[l2bidx] = FILL_VALUE;
             n_h_fore[l2bidx] = 0;
@@ -632,6 +634,15 @@ int main(int argc, char* argv[]) {
 
                         smap_sss_bias_adj[l2bidx] = final_sss;
                         smap_spd_bias_adj[l2bidx] = final_spd;
+
+                        float sss_fwhm = cap_gmf.SSSFWHM(
+                            &tb_ml_avg, NULL, final_spd, this_anc_dir,
+                            final_sss, anc_spd[l2bidx], this_anc_dir,
+                            anc_swh[l2bidx], anc_sst[l2bidx],
+                            anc_spd_std_prior, 0, 1);
+
+                        smap_sss_uncertainty[l2bidx] = sss_fwhm;
+
                     }
                 }
 
@@ -1076,7 +1087,7 @@ int main(int argc, char* argv[]) {
         file_id, "smap_ambiguity_dir", "valid_min", &valid_min, 1);
 
 
-    valid_max = 40; valid_min = 0;
+    valid_max = 45; valid_min = 0;
     H5LTmake_dataset(file_id, "anc_sss", 2, dims, H5T_NATIVE_FLOAT, &anc_sss[0]);
     H5LTset_attribute_string(
         file_id, "anc_sss", "long_name", "HYCOM salinity");
@@ -1171,7 +1182,7 @@ int main(int argc, char* argv[]) {
 //     H5LTset_attribute_float(file_id, "smap_sss_noadj", "valid_max", &valid_max, 1);
 //     H5LTset_attribute_float(file_id, "smap_sss_noadj", "valid_min", &valid_min, 1);
 
-    valid_max = 40; valid_min = 0;
+    valid_max = 45; valid_min = 0;
     H5LTmake_dataset(
         file_id, "smap_sss", 2, dims, H5T_NATIVE_FLOAT,
         &smap_sss_bias_adj[0]);
@@ -1186,6 +1197,23 @@ int main(int argc, char* argv[]) {
         file_id, "smap_sss", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(
         file_id, "smap_sss", "valid_min", &valid_min, 1);
+
+    valid_max = 10; valid_min = 0;
+    H5LTmake_dataset(
+        file_id, "smap_sss_uncertainty", 2, dims, H5T_NATIVE_FLOAT,
+        &smap_sss_uncertainty[0]);
+    H5LTset_attribute_string(
+        file_id, "smap_sss_uncertainty", "long_name",
+        "SMAP sea surface salinity uncertainty");
+    H5LTset_attribute_string(
+        file_id, "smap_sss_uncertainty", "units", "PSU");
+    H5LTset_attribute_float(
+        file_id, "smap_sss_uncertainty", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_sss_uncertainty", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "smap_sss_uncertainty", "valid_min", &valid_min, 1);
+
 
     valid_max = 86400; valid_min = 0;
     H5LTmake_dataset(

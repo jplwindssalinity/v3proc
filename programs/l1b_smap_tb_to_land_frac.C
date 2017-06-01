@@ -218,6 +218,10 @@ int main(int argc, char* argv[]){
                 land_frac[0][fp_idx] = -9999;
                 land_frac[1][fp_idx] = -9999;
 
+                // skip every other footprint
+                if(ifootprint % 2 == 1)
+                    continue;
+
                 if(lat[fp_idx] < -90)
                     continue;
 

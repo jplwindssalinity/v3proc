@@ -313,7 +313,7 @@ int CAPGMF::Retrieve(
         x[0] = init_spd;
 
     } else if (mode == RETRIEVE_SALINITY_ONLY) {
-        lb[0] = 0; ub[0] = 40; // salinity
+        lb[0] = 0; ub[0] = 45; // salinity
         x[0] = init_sss;
 
     } else if (mode == RETRIEVE_SPEED_DIRECTION) {
@@ -325,7 +325,7 @@ int CAPGMF::Retrieve(
 
     } else if (mode == RETRIEVE_SPEED_SALINITY) {
         lb[0] = 0; ub[0] = 100;
-        lb[1] = 0; ub[1] = 40; // salinity
+        lb[1] = 0; ub[1] = 45; // salinity
 
         x[0] = init_spd;
         x[1] = init_sss;
@@ -333,7 +333,7 @@ int CAPGMF::Retrieve(
     } else if (mode == RETRIEVE_SPEED_DIRECTION_SALINITY) {
         lb[0] = 0; ub[0] = 100;
         lb[1] = 0; ub[1] = two_pi;
-        lb[0] = 0; ub[0] = 40; // salinity
+        lb[0] = 0; ub[0] = 45; // salinity
 
         x[0] = init_spd;
         x[1] = init_dir;
@@ -485,6 +485,62 @@ double CAPGMF::ObjectiveFunctionActive(
     }
     return(obj);
 }
+
+double CAPGMF::SSSFWHM(
+    MeasList* tb_ml, MeasList* s0_ml, float spd, float dir, float sss,
+    float anc_spd, float anc_dir, float anc_swh, float anc_sst,
+    float anc_spd_std_prior, float active_weight, float passive_weight) {
+
+
+    // Get peak obj func value
+    float peak_obj = exp(-ObjectiveFunctionCAP(
+        tb_ml, s0_ml, spd, dir, sss, anc_spd, anc_dir, anc_swh, anc_sst,
+        anc_spd_std_prior, active_weight, passive_weight));
+
+    float dsss = 0.1;
+    float sss_left, sss_right;
+
+    for(int idir = -1; idir <= 1; idir += 2) {
+
+        float sss_plus = sss + (float)idir * dsss;
+        float sss_minus = sss;
+        float obj_plus, obj_minus;
+
+        int found = 0;
+
+        // bracket 1/2 obj func value SSS on each side
+        obj_plus = 1;
+        while(!found) {
+
+            obj_minus = obj_plus;
+
+            obj_plus = exp(-ObjectiveFunctionCAP(
+                tb_ml, s0_ml, spd, dir, sss_plus, anc_spd, anc_dir, anc_swh,
+                anc_sst, anc_spd_std_prior, active_weight, passive_weight)
+                ) / peak_obj;
+
+            if(obj_plus < 0.5)
+                break;
+
+            sss_minus = sss_plus;
+            sss_plus += (float)idir * dsss;
+
+        }
+
+        // interpolate for crossing SSS value
+        if(idir == -1) {
+            sss_left = sss_minus + (sss_plus - sss_minus) *
+                (0.5-obj_minus) / (obj_plus-obj_minus);
+        } else {
+            sss_right = sss_minus + (sss_plus - sss_minus) *
+                (0.5-obj_minus) / (obj_plus-obj_minus);
+        }
+
+    }
+
+    return(sss_right-sss_left);
+}
+
 
 int CAPGMF::GetModelS0(
         Meas::MeasTypeE met, float inc_in, float spd, float dir_in, float swh,

@@ -539,7 +539,10 @@ int main(int argc, char* argv[]){
                         }
                     }
 
-                    new_meas_spot->Append(new_meas);
+                    if(do_land_correction && new_meas->bandwidth > 0.1)
+                        delete new_meas;
+                    else
+                        new_meas_spot->Append(new_meas);
 
                     if(new_meas_spot->NodeCount() > 0)
                         l1b.frame.spotList.Append(new_meas_spot);
