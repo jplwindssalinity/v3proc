@@ -1198,7 +1198,7 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_float(
         file_id, "smap_sss", "valid_min", &valid_min, 1);
 
-    valid_max = 10; valid_min = 0;
+    valid_max = 50; valid_min = 0;
     H5LTmake_dataset(
         file_id, "smap_sss_uncertainty", 2, dims, H5T_NATIVE_FLOAT,
         &smap_sss_uncertainty[0]);
