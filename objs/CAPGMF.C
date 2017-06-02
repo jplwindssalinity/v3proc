@@ -491,6 +491,7 @@ double CAPGMF::SSSFWHM(
     float anc_spd, float anc_dir, float anc_swh, float anc_sst,
     float anc_spd_std_prior, float active_weight, float passive_weight) {
 
+    // Computes width at half max of exp(-obj_func) in SSS dimension.
 
     // Get peak obj func value
     float peak_obj = exp(-ObjectiveFunctionCAP(
@@ -510,7 +511,7 @@ double CAPGMF::SSSFWHM(
 
         // bracket 1/2 obj func value SSS on each side
         obj_plus = 1;
-        while(!found) {
+        while(1) {
 
             obj_minus = obj_plus;
 
@@ -519,26 +520,50 @@ double CAPGMF::SSSFWHM(
                 anc_sst, anc_spd_std_prior, active_weight, passive_weight)
                 ) / peak_obj;
 
-            if(obj_plus < 0.5)
+            if(obj_plus < 0.5) {
+                found = 1;
                 break;
+            }
 
             sss_minus = sss_plus;
             sss_plus += (float)idir * dsss;
 
+            if(sss_plus < 0 || sss_plus > 45) {
+                break;
+            }
         }
 
+        float this_sss = -1;
         // interpolate for crossing SSS value
-        if(idir == -1) {
-            sss_left = sss_minus + (sss_plus - sss_minus) *
-                (0.5-obj_minus) / (obj_plus-obj_minus);
-        } else {
-            sss_right = sss_minus + (sss_plus - sss_minus) *
-                (0.5-obj_minus) / (obj_plus-obj_minus);
+        if(found) {
+            this_sss =
+                sss_minus + (sss_plus - sss_minus) * (0.5-obj_minus) /
+                (obj_plus-obj_minus);
         }
+
+        if(idir == -1)
+            sss_left = this_sss;
+        else
+            sss_right = this_sss;
 
     }
 
-    return(sss_right-sss_left);
+    float sss_fwhm;
+
+
+    if(sss_left < 0)
+        sss_fwhm = 2*fabs(sss_right-sss);
+
+    else if(sss_right < 0)
+        sss_fwhm = 2*fabs(sss_left-sss);
+
+    else if(sss_right < 0 && sss_left < 0)
+        sss_fwhm = -9999;
+
+    else
+        sss_fwhm = fabs(sss_right - sss_left);
+
+    return sss_fwhm;
 }
 
 
