@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
     int ascat_only = 0;
     int scatsat_only = 0;
     int drop_ascat[2] = {0, 0};
-    float ku_s0_adj_lin = 0;
+    float ku_s0_adj_lin = 1;
     while((optind < argc) && (argv[optind][0] == '-')) {
         std::string sw = argv[optind];
         if(sw == "--ascat-only") {
