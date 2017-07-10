@@ -191,12 +191,8 @@ int main(int argc, char* argv[]) {
             // using the subtrack coordinate methods in the other_ephem class
             // instance.
             int num_iters = 0;
-            float atd, ctd, atd_nadir, ctd_nadir;
-            while(num_iters < 1 && fabs(atd_nadir - atd) > 1) {
-
-//                 printf(
-//                     "ii, atd, atd-atd_nadir, other_time: %d %f %f %f\n",
-//                     num_iters, atd, atd-atd_nadir, other_time);
+            float atd, ctd, atd_nadir = -999999, ctd_nadir;
+            while(num_iters < 10 && fabs(atd_nadir - atd) > 1) {
 
                 double vground = other_os.vsat.Magnitude() *
                     r1_earth/other_os.rsat.Magnitude();
@@ -232,12 +228,12 @@ int main(int argc, char* argv[]) {
                     other_subtrack_start_time, other_time, &ctd_nadir,
                     &atd_nadir);
 
+//                 printf(
+//                     "ii, atd, atd_nadir, other_time: %d %f %f %f\n",
+//                     num_iters, atd, atd_nadir, other_time);
+
                 num_iters++;
             }
-//             printf(
-//                 "ii, atd, atd-atd_nadir, other_time: %d %f %f %f\n",
-//                 num_iters, atd, atd-atd_nadir, other_time);
-
 
             for(Meas* meas = meas_spot->GetHead(); meas;
                 meas = meas_spot->GetNext()) {
