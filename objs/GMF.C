@@ -33,6 +33,7 @@ static const char rcs_id_gmf_c[] =
 #include "AngleInterval.h"
 #include "Array.h"
 
+
 //=====//
 // GMF //
 //=====//
@@ -6712,3 +6713,38 @@ GMF::CalculateSigma0Weights(
 //     } // loop over measurements
 //     return;
 // }
+
+
+SSTGMF::SSTGMF(const char* gmf_basename) {
+    _gmfBasename = gmf_basename;
+    return;
+}
+
+int SSTGMF::Get(float sst, GMF* gmf) {
+    // gmf is pointer to GMF class for the sst value requested
+    // on success returns 1; fail returns 0 and pointer is NULL
+    if(!_GetIfLoaded(float sst, GMF* gmf)) {
+        if(!_LoadAndGet(float sst, GMF* gmf)) {
+            gmf = NULL;
+            return(0);
+        }
+    }
+    return(1);
+}
+
+int SSTGMF::_GetIfLoaded(float sst, GMF* gmf) {
+    return(1);
+}
+
+int SSTGMF::_LoadAndGet(float sst, GMF* gmf) {
+    return(1);
+}
+
+SSTGMF::~SSTGMF() {
+    // delete all entires
+    for(int ii=0; ii < _gmfs.size(); ++ii) {
+        delete _gmfs[ii];
+        _gmfs[ii] = NULL;
+    }
+    return;
+}
