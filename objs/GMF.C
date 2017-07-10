@@ -6733,7 +6733,33 @@ int SSTGMF::Get(float sst, GMF* gmf) {
 }
 
 int SSTGMF::_GetIfLoaded(float sst, GMF* gmf) {
-    return(1);
+
+    isst = (int)round((sst - _sstMin)/_sstStep);
+
+    // Force in bounds
+    if(isst < 0) isst = 0;
+    if(isst >= _nSST) isst = _nSST-1;
+
+    // See if it is loaded
+    int which_idx = -1;
+    for(int ii=0; ii < _gmfs.size(); ++ii) {
+        if(_isst[ii] == isst) {
+            which_idx = ii;
+            gmf = _gmfs[ii];
+            break
+        }
+    }
+
+    // If on end put it back on top
+    if(which_idx == _nBuffer - 1) {
+        std::swap(_gmfs[which_idx], _gmfs[0])
+        std::swap(_isst[which_idx], _isst[0])
+    }
+
+    if(which_idx == -1)
+        return(0);
+    else
+        return(1);
 }
 
 int SSTGMF::_LoadAndGet(float sst, GMF* gmf) {
