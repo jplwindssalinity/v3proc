@@ -32,7 +32,9 @@ static const char rcs_id_gmf_c[] =
 #include "List.h"
 #include "AngleInterval.h"
 #include "Array.h"
-
+#include "ConfigSim.h"
+#include "ConfigSimDefs.h"
+#include "ConfigList.h"
 
 //=====//
 // GMF //
@@ -6715,16 +6717,29 @@ GMF::CalculateSigma0Weights(
 // }
 
 
-SSTGMF::SSTGMF(const char* gmf_basename) {
-    _gmfBasename = gmf_basename;
+SSTGMF::SSTGMF(ConfigList* config_list, int n_buffer) {
+    // Keep pointer to config_list object to use for configurating the GMFs
+    // we keep creating when loading in different SST GMF slices.
+    _configList = config_list;
+    _nBuffer = n_buffer;
+    _gmfBasename = config_list->Get(SST_GMF_BASEPATH_KEYWORD);
     return;
+}
+
+int SSTGMF::_STToIdx(float sst) {
+    // Converts float SST to index in SST GMFs
+    int isst = (int)round((sst - _sstMin)/_sstStep);
+    // Force in bounds
+    if(isst < 0) isst = 0;
+    if(isst >= _nSST) isst = _nSST-1;
+    return(isst);
 }
 
 int SSTGMF::Get(float sst, GMF* gmf) {
     // gmf is pointer to GMF class for the sst value requested
     // on success returns 1; fail returns 0 and pointer is NULL
-    if(!_GetIfLoaded(float sst, GMF* gmf)) {
-        if(!_LoadAndGet(float sst, GMF* gmf)) {
+    if(!_GetIfLoaded(sst, gmf)) {
+        if(!_LoadAndGet(sst, gmf)) {
             gmf = NULL;
             return(0);
         }
@@ -6734,11 +6749,7 @@ int SSTGMF::Get(float sst, GMF* gmf) {
 
 int SSTGMF::_GetIfLoaded(float sst, GMF* gmf) {
 
-    isst = (int)round((sst - _sstMin)/_sstStep);
-
-    // Force in bounds
-    if(isst < 0) isst = 0;
-    if(isst >= _nSST) isst = _nSST-1;
+    int isst = _STToIdx(sst);
 
     // See if it is loaded
     int which_idx = -1;
@@ -6746,14 +6757,14 @@ int SSTGMF::_GetIfLoaded(float sst, GMF* gmf) {
         if(_isst[ii] == isst) {
             which_idx = ii;
             gmf = _gmfs[ii];
-            break
+            break;
         }
     }
 
     // If on end put it back on top
     if(which_idx == _nBuffer - 1) {
-        std::swap(_gmfs[which_idx], _gmfs[0])
-        std::swap(_isst[which_idx], _isst[0])
+        std::swap(_gmfs[which_idx], _gmfs[0]);
+        std::swap(_isst[which_idx], _isst[0]);
     }
 
     if(which_idx == -1)
@@ -6763,6 +6774,39 @@ int SSTGMF::_GetIfLoaded(float sst, GMF* gmf) {
 }
 
 int SSTGMF::_LoadAndGet(float sst, GMF* gmf) {
+    char filename[1024];
+    sprintf(filename, "%s_%04.1f.dat", sst);
+    FILE* ifp = fopen(filename, "r");
+    if (!ifp) {
+        fprintf(stderr, "Error reading GMF from file: %s\n", filename);
+        return(0);
+    }
+
+    // Allocate and construct GMF pointed to by this_gmf
+    GMF* this_gmf = new GMF();
+
+    // Loading actually done by ConfigSim::ConfigGMF() method
+    // modify key in config_list to point to desired GMF file
+    _configList->StompOrAppend(GMF_FILE_KEYWORD, filename);
+
+    if(!ConfigGMF(this_gmf, _configList)) {
+        fprintf(stderr, "Error reading GMF from file: %s\n", filename);
+        delete this_gmf;
+        return(0);
+    }
+
+    // If buffer already maxed out delete last thing in there
+    if(_gmfs.size() == _nBuffer-1) {
+        delete _gmfs[_nBuffer-1];
+        _gmfs.pop_back();
+        _isst.pop_back();
+    }
+
+    // Put this GMF on front of list of GMFs buffered
+    _gmfs.insert(_gmfs.begin(), this_gmf);
+    _isst.insert(_isst.begin(), _STToIdx(sst));
+
+    gmf = this_gmf;
     return(1);
 }
 

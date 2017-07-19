@@ -15,6 +15,7 @@ static const char rcs_id_gmf_h[] =
 #include "Meas.h"
 #include "Constants.h"
 #include "Kp.h"
+#include "ConfigList.h"
 
 
 //======================================================================
@@ -249,17 +250,16 @@ public:
     //--------------//
     // construction //
     //--------------//
-    SSTGMF(const char* gmf_basename, int n_buffer=4);
+    SSTGMF(ConfigList* config_list, int n_buffer=4);
     ~SSTGMF();
 
     int Get(float sst, GMF* gmf);
 
 private:
-    float _sstMin;
-    float _sstStep
-    int _nSST;
+    static const float _sstMin = 1.5;
+    static const float _sstStep = 0.2;
+    static const int _nSST = 150;
     int _nBuffer;
-    int _numAllocated;
     std::vector<GMF*> _gmfs;
     std::vector<int> _isst;
 
@@ -267,6 +267,7 @@ private:
     int _GetIfLoaded(float sst, GMF* gmf);
     int _LoadAndGet(float sst, GMF* gmf);
     const char* _gmfBasename;
+    ConfigList* _configList;
 };
 
 
