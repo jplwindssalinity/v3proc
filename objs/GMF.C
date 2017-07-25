@@ -6735,19 +6735,19 @@ int SSTGMF::_STToIdx(float sst) {
     return(isst);
 }
 
-int SSTGMF::Get(float sst, GMF* gmf) {
+int SSTGMF::Get(float sst, GMF** gmf) {
     // gmf is pointer to GMF class for the sst value requested
     // on success returns 1; fail returns 0 and pointer is NULL
     if(!_GetIfLoaded(sst, gmf)) {
         if(!_LoadAndGet(sst, gmf)) {
-            gmf = NULL;
+            *gmf = NULL;
             return(0);
         }
     }
     return(1);
 }
 
-int SSTGMF::_GetIfLoaded(float sst, GMF* gmf) {
+int SSTGMF::_GetIfLoaded(float sst, GMF** gmf) {
 
     int isst = _STToIdx(sst);
 
@@ -6756,7 +6756,7 @@ int SSTGMF::_GetIfLoaded(float sst, GMF* gmf) {
     for(int ii=0; ii < _gmfs.size(); ++ii) {
         if(_isst[ii] == isst) {
             which_idx = ii;
-            gmf = _gmfs[ii];
+            *gmf = _gmfs[ii];
             break;
         }
     }
@@ -6773,14 +6773,10 @@ int SSTGMF::_GetIfLoaded(float sst, GMF* gmf) {
         return(1);
 }
 
-int SSTGMF::_LoadAndGet(float sst, GMF* gmf) {
+int SSTGMF::_LoadAndGet(float sst, GMF** gmf) {
     char filename[1024];
-    sprintf(filename, "%s_%04.1f.dat", sst);
-    FILE* ifp = fopen(filename, "r");
-    if (!ifp) {
-        fprintf(stderr, "Error reading GMF from file: %s\n", filename);
-        return(0);
-    }
+    float gmf_sst = _sstMin + (float)_STToIdx(sst) * _sstStep;
+    sprintf(filename, "%s_%04.1f.dat", _gmfBasename, gmf_sst);
 
     // Allocate and construct GMF pointed to by this_gmf
     GMF* this_gmf = new GMF();
@@ -6796,7 +6792,7 @@ int SSTGMF::_LoadAndGet(float sst, GMF* gmf) {
     }
 
     // If buffer already maxed out delete last thing in there
-    if(_gmfs.size() == _nBuffer-1) {
+    if(_gmfs.size() == _nBuffer) {
         delete _gmfs[_nBuffer-1];
         _gmfs.pop_back();
         _isst.pop_back();
@@ -6806,7 +6802,7 @@ int SSTGMF::_LoadAndGet(float sst, GMF* gmf) {
     _gmfs.insert(_gmfs.begin(), this_gmf);
     _isst.insert(_isst.begin(), _STToIdx(sst));
 
-    gmf = this_gmf;
+    *gmf = this_gmf;
     return(1);
 }
 

@@ -44,6 +44,8 @@ template class TrackerBase<unsigned short>;
 template class List<AngleInterval>;
 template class std::list<string>;
 template class std::map<string,string,Options::ltstr>;
+template class std::vector<GMF*>;
+template class std::vector<int>;
 
 //--------------//
 // MAIN PROGRAM //
@@ -58,7 +60,7 @@ main(int argc, char* argv[]) {
     optind = 2;
     while((optind < argc) && (argv[optind][0]=='-')) {
         std::string sw = argv[optind];
-        if(sw == "--out-nntrain-file" || sw == "t") {
+        if(sw == "--out-nntrain-file" || sw == "-t") {
             ofp_nntrain = fopen(argv[++optind], "w");
         } else {
             fprintf(stderr,"%s: Unknow option\n", command);
@@ -151,7 +153,7 @@ main(int argc, char* argv[]) {
         int cti = l2a.frame.cti;
         int anc_idx = cti + 152*ati;
         float this_sst = anc_sst[anc_idx];
-        sst_gmf.Get(this_sst, gmf);
+        sst_gmf.Get(this_sst, &gmf);
         int retval = l2a_to_l2b.ConvertAndWrite(&l2a, gmf, &kp, &l2b);
 
         //--------------------------//

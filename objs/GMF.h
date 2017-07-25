@@ -250,10 +250,10 @@ public:
     //--------------//
     // construction //
     //--------------//
-    SSTGMF(ConfigList* config_list, int n_buffer=4);
+    SSTGMF(ConfigList* config_list, int n_buffer=20);
     ~SSTGMF();
 
-    int Get(float sst, GMF* gmf);
+    int Get(float sst, GMF** gmf);
 
 private:
     static const float _sstMin = 1.5;
@@ -264,8 +264,8 @@ private:
     std::vector<int> _isst;
 
     int _STToIdx(float sst);
-    int _GetIfLoaded(float sst, GMF* gmf);
-    int _LoadAndGet(float sst, GMF* gmf);
+    int _GetIfLoaded(float sst, GMF** gmf);
+    int _LoadAndGet(float sst, GMF** gmf);
     const char* _gmfBasename;
     ConfigList* _configList;
 };
