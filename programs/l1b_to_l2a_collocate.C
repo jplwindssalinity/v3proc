@@ -191,7 +191,7 @@ int main(int argc, char* argv[]) {
             // using the subtrack coordinate methods in the other_ephem class
             // instance.
             int num_iters = 0;
-            float atd, ctd, atd_nadir = -999999, ctd_nadir;
+            float atd, ctd, atd_nadir, ctd_nadir;
             while(num_iters < 10 && fabs(atd_nadir - atd) > 1) {
 
                 double vground = other_os.vsat.Magnitude() *
@@ -199,7 +199,7 @@ int main(int argc, char* argv[]) {
 
                 // solution increment (not first time through)
                 if(num_iters != 0) {
-                    other_time += (atd - atd_nadir) / vground;
+                    other_time -= (atd - atd_nadir) / vground;
 
                     if(other_time > other_rev_stop) {
                         other_time = other_rev_stop;
