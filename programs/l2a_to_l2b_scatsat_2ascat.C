@@ -201,8 +201,9 @@ int main(int argc, char* argv[]) {
     std::vector<float> spd(l2b_size), dir(l2b_size);
     std::vector<float> ascat_only_spd(l2b_size), ascat_only_dir(l2b_size);
     std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
+    std::vector<float> ambiguity_obj(l2b_size*4);
     std::vector<float> ambiguity_spd(l2b_size*4);
-    std::vector<float> ambiguity_dir(l2b_size*4);    
+    std::vector<float> ambiguity_dir(l2b_size*4);
     std::vector<uint8> num_ambiguities(l2b_size);
     std::vector<uint16> flags(l2b_size);
     std::vector<uint16> eflags(l2b_size);
@@ -318,6 +319,13 @@ int main(int argc, char* argv[]) {
             scatsat_azi_vv_aft[l2bidx] = FILL_VALUE;
             scatsat_tb_h[l2bidx] = FILL_VALUE;
             scatsat_tb_v[l2bidx] = FILL_VALUE;
+
+            for(int ii=0; ii<4; ++ii) {
+                int ambidx = ii + 4*l2bidx;
+                ambiguity_spd[ambidx] = FILL_VALUE;
+                ambiguity_dir[ambidx] = FILL_VALUE;
+                ambiguity_obj[ambidx] = FILL_VALUE;
+            }
 
             for(int ii=0; ii<2; ++ii) {
                 ascat_lon[ii][l2bidx] = FILL_VALUE;
@@ -747,6 +755,7 @@ int main(int argc, char* argv[]) {
                 int ambidx = j_amb + 4*l2bidx;
                 ambiguity_spd[ambidx] = wvp->spd;
                 ambiguity_dir[ambidx] = pe_rad_to_gs_deg(wvp->dir);
+                ambiguity_obj[ambidx] = wvp->obj;
                 if(ambiguity_dir[ambidx]>180) ambiguity_dir[ambidx] -= 360;
                 ++j_amb;
             }
@@ -1374,6 +1383,15 @@ int main(int argc, char* argv[]) {
         file_id, "ascat_b_azi_aft", "valid_min", &valid_min, 1);
     H5LTset_attribute_string(
         file_id, "ascat_b_azi_aft", "units", "degrees");
+
+    valid_max = 0; valid_min = -199;
+    H5LTmake_dataset(
+        file_id, "ambiguity_obj", 3, dims, H5T_NATIVE_FLOAT,
+        &ambiguity_obj[0]);
+    H5LTset_attribute_float(
+        file_id, "ambiguity_obj", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ambiguity_obj", "valid_min", &valid_min, 1);
 
     unsigned char uchar_fill_value = 255;
     unsigned char uchar_valid_max = 4;
