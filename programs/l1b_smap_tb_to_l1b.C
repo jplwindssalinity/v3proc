@@ -462,7 +462,7 @@ int main(int argc, char* argv[]){
                             land_near_value = 0;
                         }
 
-                        // linearly scale land_frac to exactly zero at 500
+                        // linearly scale land_frac to exactly zero at 1000
                         if(distance >= 800 & distance <= 1000) {
                             land_frac = land_frac + (
                                 (distance-800)/200) * (0-land_frac);

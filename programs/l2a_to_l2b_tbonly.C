@@ -369,11 +369,11 @@ int main(int argc, char* argv[]) {
             for(Meas* meas = tb_ml->GetHead(); meas; meas = tb_ml->GetNext()) {
 
                 // Skip land flagged observations
-                if(meas->landFlag) {
+                if(meas->landFlag || meas->bandwidth > 0.05) {
 //                     if(meas->landFlag == 1 || meas->landFlag == 3)
 //                         any_land = 1;
 
-                    if(meas->bandwidth > 0.01)
+                    if(meas->bandwidth > 0.05)
                         any_land = 1;
 
                     if(meas->landFlag == 2 || meas->landFlag == 3)
