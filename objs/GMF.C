@@ -3242,6 +3242,10 @@ GMF::Calculate_Init_Wind_Solutions(
             float random = uniform_dist.GetNumber();
             _dir_mle_maxima[1] = 2+(int)round(random*(num_dir_samples-3));
         }
+
+        // Set objective function ridge to a constant
+        for(k=1; k<=num_dir_samples; ++k)
+            obj_avg[k] = 0;
     }
 
     if( num_mle_maxima == 0 )
