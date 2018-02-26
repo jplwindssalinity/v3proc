@@ -502,6 +502,38 @@ int main(int argc, char* argv[]) {
             int any_ascat_land[2] = {0, 0};
             int any_ascat_ice[2] = {0, 0};
 
+            // First compute time offset for each ASCAT
+            for(int imetop = 0; imetop < 2; ++imetop) {
+
+                // If nothing here skip
+                if(!l2a_ascat_swaths[imetop][cti][ati] || scatsat_only ||
+                    drop_ascat[imetop])
+                    continue;
+
+                MeasList* ascat_ml =
+                    &(l2a_ascat_swaths[imetop][cti][ati]->measList);
+
+                double sum_time = 0;
+                int cnts_time = 0;
+
+                // Average over each beam per WVC
+                for(Meas* meas = ascat_ml->GetHead(); meas;
+                    meas = ascat_ml->GetNext()) {
+                    sum_time += meas->C;
+                    cnts_time++;
+                }
+                ascat_time_diff[imetop][l2bidx] = (
+                    sum_time/(float)cnts_time - row_time[ati]);
+            }
+
+            int use_this_ascat[2] = {0, 0};
+            if (fabs(ascat_time_diff[0][l2bidx]) <
+                fabs(ascat_time_diff[1][l2bidx])) use_this_ascat[0] = 1;
+
+            if (fabs(ascat_time_diff[1][l2bidx]) <
+                fabs(ascat_time_diff[0][l2bidx])) use_this_ascat[1] = 1;
+
+
             // loop over both ASCATs
             for(int imetop = 0; imetop < 2; ++imetop) {
 
@@ -625,7 +657,11 @@ int main(int argc, char* argv[]) {
                     this_meas->C = this_var;
                     this_meas->numSlices = -1;
 
-                    ml_joint.Append(this_meas);
+                    // Only append on with smallest matchup time
+                    if(use_this_ascat[imetop])
+                        ml_joint.Append(this_meas);
+                    else
+                        delete this_meas;
 
                     float this_azi = pe_rad_to_gs_deg(
                         this_meas->eastAzimuth);
@@ -650,9 +686,6 @@ int main(int argc, char* argv[]) {
                         ascat_azi_aft[imetop][l2bidx] = this_azi;
                     }
                 }
-
-                ascat_time_diff[imetop][l2bidx] = (
-                    sum_time/(float)cnts_time - row_time[ati]);
             }
 
             if(ml_joint.NodeCount() == 0)
