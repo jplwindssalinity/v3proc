@@ -153,6 +153,7 @@ int main(int argc, char* argv[]){
     int do_ncep = 0;
     int use_bigE = 0;
     int for_ascat = 0;
+    int use_rev_mid_time = 0;
 
     int optind=1;
     while(optind<argc && (argv[optind][0]=='-')){
@@ -193,6 +194,9 @@ int main(int argc, char* argv[]){
 
         } else if(sw == "-ascat"){
             for_ascat = 1;
+
+        } else if(sw == "-rev_mid_time"){
+            use_rev_mid_time = 1;
 
         } else {
             fprintf(stderr,"%s: Unknown option: %s\n", command, sw.c_str());
@@ -244,6 +248,10 @@ int main(int argc, char* argv[]){
 
     for (int ati=0; ati<n_ati; ++ati){
         double t_curr = t_start + orbit_period*double(ati)/double(n_ati);
+        if(use_rev_mid_time) {
+            t_curr = t_start + 0.5*orbit_period;
+        }
+
         etime_curr.SetTime( t_curr );
         char code_B_str_curr[CODE_B_TIME_LENGTH];
 
