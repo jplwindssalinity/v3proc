@@ -184,7 +184,8 @@ static int set_global_attributes(int argc, char **argv,
         const L2B *l2b, int ncid);
 static void read_attr_h5(hid_t obj_id, char *name, void *buffer);
 static void bin_to_latlon(int at_ind, int ct_ind,
-        const latlon_config *config, float *lat, float *lon);
+        const latlon_config *config, int rev_starts_north_pole, 
+        float *lat, float *lon);
 static char * rtrim(char *str);
 static struct timeval str_to_timeval(const char *end);
 static double difftime(const struct timeval t1, const struct timeval t0);
@@ -211,6 +212,8 @@ int main(int argc, char **argv) {
     l2b_to_netcdf_config run_config;
     L2B l2b, l2b_ambig;
 
+    int rev_starts_north_pole = 0;
+
     config_list.Read(config_file);
 
     // set run_config from config file
@@ -221,9 +224,12 @@ int main(int argc, char **argv) {
     run_config.l1bhdf_file_asc = config_list.Get("S1L1B_ASC_FILE");
     run_config.l1bhdf_file_dec = config_list.Get("S1L1B_DEC_FILE");
     run_config.revtag = config_list.Get("REVNO");
-
     config_list.GetFloat("HH_BIAS_ADJ", &run_config.hpol_adj);
     config_list.GetFloat("VV_BIAS_ADJ", &run_config.vpol_adj);
+
+    config_list.DoNothingForMissingKeywords();
+    config_list.GetInt("GRID_STARTS_NORTH_POLE", &rev_starts_north_pole);
+    config_list.ExitForMissingKeywords();
 
     /* File IDs */
     int ncid;
@@ -711,7 +717,8 @@ int main(int argc, char **argv) {
             } else {
 
                 /* Assumes these flags are initially set... */
-                bin_to_latlon(idx[0], idx[1], &orbit_config, &lat, &lon);
+                bin_to_latlon(idx[0], idx[1], &orbit_config,
+                              rev_starts_north_pole, &lat, &lon);
 
                 lat_var->SetData(idx, lat);
                 lon_var->SetData(idx, lon);
@@ -964,7 +971,8 @@ static void read_attr_h5(hid_t obj_id, char *name, void *buffer) {
 }
 
 static void bin_to_latlon(int at_ind, int ct_ind,
-        const latlon_config *config, float *lat, float *lon) {
+        const latlon_config *config, int rev_starts_north_pole,
+        float *lat, float *lon) {
 
     /* Utilizes e2, r1_earth from Constants.h */
     const static double P1 = 60*1440.0f;
@@ -975,7 +983,15 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     const double at_res = config->at_res;
     const double xt_res = config->xt_res;
 
-    const double lambda_0 = DEG_TO_RAD(config->lambda_0);
+
+    double lambda_0_;
+    if(rev_starts_north_pole) {
+        lambda_0_ = config->lambda_0 + 2*P2/(2*P1) * 360;
+        if( lambda_0_ > 360 ) lambda_0_ -= 360;
+    } else {
+        lambda_0_ = config->lambda_0;
+    }
+    const double lambda_0 = DEG_TO_RAD(lambda_0_);
 
     const double r_n_at_bins = 1624.0 * 25.0 / at_res;
     const double atrack_bin_const = two_pi/r_n_at_bins;
@@ -992,7 +1008,11 @@ static void bin_to_latlon(int at_ind, int ct_ind,
     sini = sinf(inc);
     cosi = cosf(inc);
 
-    lambda_pp = (at_ind + 0.5)*atrack_bin_const - pi_over_two;
+    if (rev_starts_north_pole) {
+        lambda_pp = (at_ind + 0.5)*atrack_bin_const - pi_over_two + pi;
+    } else {
+        lambda_pp = (at_ind + 0.5)*atrack_bin_const - pi_over_two;
+    }
     phi_pp = -(ct_ind - (r_n_xt_bins/2 - 0.5))*xtrack_bin_const;
 
     sin_phi_pp = sinf(phi_pp);
