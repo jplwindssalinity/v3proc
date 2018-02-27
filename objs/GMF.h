@@ -9,17 +9,20 @@
 static const char rcs_id_gmf_h[] =
     "@(#) $Id$";
 
+#include <vector>
 #include "MiscTable.h"
 #include "Wind.h"
 #include "Meas.h"
 #include "Constants.h"
 #include "Kp.h"
+#include "ConfigList.h"
 
 
 //======================================================================
 // CLASSES
-//    GMF
+//    GMF, SSTGMF
 //======================================================================
+
 
 //======================================================================
 // CLASS
@@ -239,5 +242,34 @@ public:
     float*  _objective_buffer;    // array to hold best objective for each dir
     int*    _dir_mle_maxima;      // storage for a copy of obj
 };
+
+
+
+class SSTGMF
+{
+public:
+    //--------------//
+    // construction //
+    //--------------//
+    SSTGMF(ConfigList* config_list, int n_buffer=20);
+    ~SSTGMF();
+
+    int Get(float sst, GMF** gmf);
+
+private:
+    static const float _sstMin = 1.5;
+    static const float _sstStep = 0.2;
+    static const int _nSST = 150;
+    int _nBuffer;
+    std::vector<GMF*> _gmfs;
+    std::vector<int> _isst;
+
+    int _STToIdx(float sst);
+    int _GetIfLoaded(float sst, GMF** gmf);
+    int _LoadAndGet(float sst, GMF** gmf);
+    const char* _gmfBasename;
+    ConfigList* _configList;
+};
+
 
 #endif
