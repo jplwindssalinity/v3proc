@@ -6009,7 +6009,7 @@ GMF::RetrieveWinds_S3(
     int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
     if (delete_count > 0)
     {
-        fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
+        //fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
         for (int i = 0; i < delete_count; i++)
         {
             wvc->ambiguities.GotoTail();
