@@ -310,9 +310,6 @@ int main(int argc, char* argv[]){
         read_SDS_h5(
             id, "/Brightness_Temperature/solar_specular_theta",
             &solar_spec_theta[0]);
-        read_SDS_h5(
-            id, "/Brightness_Temperature/surface_water_fraction_mb",
-            &surface_water_fraction_mb[0]);
 
         read_SDS_h5(id, "/Brightness_Temperature/tb_v", &tb[0][0]);
         read_SDS_h5(id, "/Brightness_Temperature/tb_h", &tb[1][0]);
