@@ -427,7 +427,7 @@ int main(int argc, char* argv[]){
                     double distance;
                     coast_dist.Get(tmp_lon, tmp_lat, &distance);
 
-                    if(distance < 45 || this_land_frac > 0.01)
+                    if(distance < 35)
                         new_meas->landFlag += 1; // bit 0 for land
 
                     if(qs_icemap.IsIce(tmp_lon, tmp_lat, 0))
