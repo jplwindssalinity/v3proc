@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 2015, California Institute of Technology.      //
+// Copyright (C) 2015-2017, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -14,6 +14,9 @@
 #define DO_LAND_CORRECTION_KEYWORD "DO_LAND_CORRECTION"
 #define SMAP_LAND_FRAC_MAP_FILE_KEYWORD "SMAP_LAND_FRAC_MAP_FILE"
 #define SMAP_LAND_NEAR_MAP_FILE_KEYWORD "SMAP_LAND_NEAR_MAP_FILE"
+#define DO_ICE_CORRECTION_KEYWORD "DO_ICE_CORRECTION"
+#define ICE_CONCECTRATION_FILE_KEYWORD "ICE_CONCECTRATION_FILE"
+#define SMAP_ICE_NEAR_MAP_FILE_KEYWORD "SMAP_ICE_NEAR_MAP_FILE"
 #define DO_GAL_CORR_KEYWORD "DO_SMAP_TB_GAL_CORR"
 #define L1B_TB_ASC_ANC_U10_FILE_KEYWORD "L1B_TB_ASC_ANC_U10_FILE"
 #define L1B_TB_DEC_ANC_U10_FILE_KEYWORD "L1B_TB_DEC_ANC_U10_FILE"
@@ -169,16 +172,30 @@ int main(int argc, char* argv[]){
 
     int do_land_correction = 0;
     int do_smap_tb_gal_corr = 0;
+    int do_ice_correction = 0;
     config_list.DoNothingForMissingKeywords();
     config_list.GetInt(DO_LAND_CORRECTION_KEYWORD, &do_land_correction);
     config_list.GetInt(DO_GAL_CORR_KEYWORD, &do_smap_tb_gal_corr);
+    config_list.GetInt(DO_ICE_CORRECTION_KEYWORD, &do_ice_correction);
     config_list.ExitForMissingKeywords();
 
-    SMAPLandTBNearMap smap_tb_near_map;
+    SMAPLandTBNearMap smap_land_tb_near_map;
     SMAPLandFracMap smap_land_frac_map;
     if(do_land_correction) {
         smap_land_frac_map.Read(config_list.Get(SMAP_LAND_FRAC_MAP_FILE_KEYWORD));
-        smap_tb_near_map.Read(config_list.Get(SMAP_LAND_NEAR_MAP_FILE_KEYWORD));
+        smap_land_tb_near_map.Read(
+            config_list.Get(SMAP_LAND_NEAR_MAP_FILE_KEYWORD));
+    }
+
+    SMAPLandTBNearMap smap_ice_tb_near_map;
+    ICECMap icec_map;
+    if(do_ice_correction) {
+        smap_ice_tb_near_map.Read(
+            config_list.Get(SMAP_ICE_NEAR_MAP_FILE_KEYWORD));
+        if(!icec_map.Read(
+            config_list.Get(ICE_CONCECTRATION_FILE_KEYWORD))) {
+            fprintf(stderr, "error reading icecmap\n");
+        }
     }
 
     char* anc_u10_files[2] = {NULL, NULL};
@@ -368,7 +385,7 @@ int main(int argc, char* argv[]){
                 if(solar_spec_theta[fp_idx] < 25)
                     continue;
 
-                float this_land_frac = 1 - surface_water_fraction_mb[fp_idx];
+                float this_land_frac = 0;
 
                 for(int ipol=0; ipol<2; ++ipol){
 
@@ -460,14 +477,21 @@ int main(int argc, char* argv[]){
                         new_meas->B = this_dtg;
                     }
 
-                    if(do_land_correction && distance < 500 & distance > 0) {
+                    if(do_land_correction && distance < 1000 & distance > 0) {
 
                         float land_frac, land_near_value;
-                        if(!smap_tb_near_map.Get(new_meas, this_month, &land_near_value)||
+                        if(!smap_land_tb_near_map.Get(new_meas, this_month, &land_near_value)||
                            !smap_land_frac_map.Get(new_meas, &land_frac)) {
                             land_frac = 0;
                             land_near_value = 0;
                         }
+
+                        // linearly scale land_frac to exactly zero at 1000
+                        if(distance >= 800 & distance <= 1000) {
+                            land_frac = land_frac + (
+                                (distance-800)/200) * (0-land_frac);
+                        }
+
 
                         float Tc = 
                             (new_meas->value - land_frac*land_near_value) /
@@ -500,7 +524,49 @@ int main(int argc, char* argv[]){
                         }
                     }
 
-                    new_meas_spot->Append(new_meas);
+                    if(do_ice_correction) {
+                        float ice_frac, ice_near_value;
+                        if(!smap_ice_tb_near_map.Get(new_meas, this_month, &ice_near_value)||
+                           !icec_map.Get(tmp_lon, tmp_lat, &ice_frac)||
+                           ice_frac > 0.5) {
+                            ice_frac = 0;
+                            ice_near_value = 0;
+                        }
+
+                        float Tc = 
+                            (new_meas->value - ice_frac*ice_near_value) /
+                            (1-ice_frac);
+
+                        float dTc_dF = 
+                            (new_meas->value - ice_near_value) / 
+                            pow(1-ice_frac, 2);
+
+                        float dTc_dT = 1/(1-ice_frac);
+                        float dTc_dTice = ice_frac/(1-ice_frac);
+
+                        float var_T = new_meas->A;
+                        float var_Tice = pow(10, 2);
+                        float var_F = pow(ice_frac/4, 2);
+
+                        float var_Tc = 
+                            pow(dTc_dF, 2) * var_F + pow(dTc_dT, 2) * var_T + 
+                            pow(dTc_dTice, 2) * var_Tice;
+
+                        // Set corrected values for TB and variance of TB
+                        new_meas->txPulseWidth = ice_frac;
+
+                        // only apply correction if non-empty ice near value,
+                        // otherwise will increase TB not decrease it.
+                        if(ice_near_value > 0) {
+                            new_meas->value = Tc;
+                            new_meas->A = var_Tc;
+                        }
+                    }
+
+                    if(do_land_correction && new_meas->bandwidth > 0.5)
+                        delete new_meas;
+                    else
+                        new_meas_spot->Append(new_meas);
 
                     if(new_meas_spot->NodeCount() > 0)
                         l1b.frame.spotList.Append(new_meas_spot);
@@ -527,7 +593,7 @@ int main(int argc, char* argv[]){
                 exit(1);
             }
 
-            if(this_frame % 1 == 0){
+            if(this_frame % 100 == 0){
                 printf("Wrote %d of %d frames\n", this_frame,
                     nframes[0] + nframes[1]);
             }
