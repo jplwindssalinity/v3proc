@@ -388,7 +388,7 @@ int main(int argc, char* argv[]){
                     // remove version 4 reflector correction
                     float loss_v4 =
                         cal_loss1_reflector[ipol*nframes[ipart]+iframe];
-                    float loss_v3 = 1.002;
+                    float loss_v3 = (ipol==0) ? 1.003 : 1.002;
                     float this_trefl =
                         cal_temp1_reflector[ipol*nframes[ipart]+iframe];
                     float tb_nc = 
