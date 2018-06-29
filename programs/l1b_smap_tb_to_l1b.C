@@ -266,6 +266,8 @@ int main(int argc, char* argv[]){
         std::vector<float> surface_water_fraction_mb;
         std::vector<float> ra;
         std::vector<float> dec;
+        std::vector<float> cal_loss1_reflector;
+        std::vector<float> cal_temp1_reflector;
 
         std::vector< std::vector<float> > tb(2);
         std::vector< std::vector<float> > nedt(2);
@@ -282,6 +284,9 @@ int main(int argc, char* argv[]){
         inc.resize(data_size);
         solar_spec_theta.resize(data_size);
         surface_water_fraction_mb.resize(data_size);
+
+        cal_loss1_reflector.resize(nframes[ipart]*2);
+        cal_temp1_reflector.resize(nframes[ipart]*2);
 
         // resize arrays for data dimensions
         for(int ipol = 0; ipol < 2; ++ipol) {
@@ -321,6 +326,13 @@ int main(int argc, char* argv[]){
         read_SDS_h5(
             id, "/Brightness_Temperature/galactic_reflected_correction_h",
             &tb_gal_corr[1][0]);
+
+        read_SDS_h5(
+            id, "/Calibration_Data/cal_loss1_reflector",
+            &cal_loss1_reflector[0]);
+        read_SDS_h5(
+            id, "/Calibration_Data/cal_temp1_reflector",
+            &cal_temp1_reflector[0]);
 
         // Iterate over scans
         for(int iframe = 0; iframe < nframes[ipart]; ++iframe) {
@@ -371,6 +383,19 @@ int main(int argc, char* argv[]){
                     if(0x1 & tb_flag[ipol][fp_idx])
                         continue;
 
+                    float this_tb = tb[ipol][fp_idx];
+
+                    // remove version 4 reflector correction
+                    float loss_v4 =
+                        cal_loss1_reflector[ipol*nframes[ipart]+iframe];
+                    float loss_v3 = 1.002;
+                    float this_trefl =
+                        cal_temp1_reflector[ipol*nframes[ipart]+iframe];
+                    float tb_nc = 
+                        this_tb/loss_v4 +(1-1/loss_v4)*this_trefl;
+
+                    this_tb = loss_v3*(tb_nc-(1-1/loss_v3)*this_trefl);
+
                    MeasSpot* new_meas_spot = new MeasSpot();
 
                    // Is this good enough (interpolate within each scan)
@@ -392,7 +417,7 @@ int main(int argc, char* argv[]){
                     else
                         new_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
 
-                    new_meas->value = tb[ipol][fp_idx];
+                    new_meas->value = this_tb;
                     new_meas->XK = 1.0;
 
                     double tmp_lon = dtr*lon[fp_idx];
@@ -450,7 +475,7 @@ int main(int argc, char* argv[]){
                         // corrected TB (add back in SDS correction, remove my
                         // own estimate).
                         new_meas->value =
-                            tb[ipol][fp_idx] + tb_gal_corr[ipol][fp_idx] -
+                            this_tb + tb_gal_corr[ipol][fp_idx] -
                             this_dtg;
 
                         // Store galaxy correction value for flagging later
