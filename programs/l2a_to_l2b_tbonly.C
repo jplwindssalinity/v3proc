@@ -206,7 +206,8 @@ int main(int argc, char* argv[]) {
     std::vector<float> lat(l2b_size), lon(l2b_size);
     std::vector<float> tb_h_fore(l2b_size), tb_h_aft(l2b_size);
     std::vector<float> tb_v_fore(l2b_size), tb_v_aft(l2b_size);
-    std::vector<float> tb_v_bias_adj(l2b_size), tb_h_bias_adj(l2b_size);
+    std::vector<float> tb_v_bias_adj_fore(l2b_size), tb_h_bias_adj_fore(l2b_size);
+    std::vector<float> tb_v_bias_adj_aft(l2b_size), tb_h_bias_adj_aft(l2b_size);
     std::vector<float> nedt_h_fore(l2b_size), nedt_h_aft(l2b_size);
     std::vector<float> nedt_v_fore(l2b_size), nedt_v_aft(l2b_size);
     std::vector<uint8> n_h_fore(l2b_size), n_h_aft(l2b_size);
@@ -278,8 +279,10 @@ int main(int argc, char* argv[]) {
             tb_h_aft[l2bidx] = FILL_VALUE;
             tb_v_fore[l2bidx] = FILL_VALUE;
             tb_v_aft[l2bidx] = FILL_VALUE;
-            tb_v_bias_adj[l2bidx] = FILL_VALUE;
-            tb_h_bias_adj[l2bidx] = FILL_VALUE;
+            tb_v_bias_adj_fore[l2bidx] = FILL_VALUE;
+            tb_h_bias_adj_fore[l2bidx] = FILL_VALUE;
+            tb_v_bias_adj_aft[l2bidx] = FILL_VALUE;
+            tb_h_bias_adj_aft[l2bidx] = FILL_VALUE;
             nedt_h_fore[l2bidx] = FILL_VALUE;
             nedt_h_aft[l2bidx] = FILL_VALUE;
             nedt_v_fore[l2bidx] = FILL_VALUE;
@@ -343,22 +346,32 @@ int main(int argc, char* argv[]) {
             float sum_A[2][2];
             float sum_lf[2];
             float sum_gal_corr[2][2];
+            float sum_sc_lat[2][2];
             int cnts[2][2];
 
             float sum_cos_azi[2]; // fore - 0; aft 1
             float sum_sin_azi[2];
+            float sum_cos_scan[2];
+            float sum_sin_scan[2];
             float sum_inc[2];
+
+            float sc_lat_v_fore, sc_lat_v_aft;
+            float sc_lat_h_fore, sc_lat_h_aft;
+            float scan_fore, scan_aft;
 
             for(int ilook = 0; ilook < 2; ++ilook) {
                 sum_inc[ilook] = 0;
                 sum_sin_azi[ilook] = 0;
                 sum_cos_azi[ilook] = 0;
+                sum_sin_scan[ilook] = 0;
+                sum_cos_scan[ilook] = 0;
                 sum_lf[ilook] = 0;
                 for(int ipol = 0; ipol < 2; ++ipol) {
                     sum_tb[ilook][ipol] = 0;
                     sum_tb2[ilook][ipol] = 0;
                     sum_A[ilook][ipol] = 0;
                     sum_gal_corr[ilook][ipol] = 0;
+                    sum_sc_lat[ilook][ipol] = 0;
                     cnts[ilook][ipol] = 0;
                 }
             }
@@ -401,8 +414,11 @@ int main(int argc, char* argv[]) {
                 sum_inc[idx_look] += meas->incidenceAngle;
                 sum_cos_azi[idx_look] += cos(meas->eastAzimuth);
                 sum_sin_azi[idx_look] += sin(meas->eastAzimuth);
+                sum_cos_scan[idx_look] += cos(meas->scanAngle);
+                sum_sin_scan[idx_look] += sin(meas->scanAngle);
                 sum_lf[idx_look] += meas->bandwidth;
                 sum_gal_corr[idx_look][idx_pol] += meas->B;
+                sum_sc_lat[idx_look][idx_pol] += meas->C;
             }
 
             // Compute averaged TB observations from four looks
@@ -412,6 +428,7 @@ int main(int argc, char* argv[]) {
                 inc_fore[l2bidx] = rtd*sum_inc[0]/(float)cnts_fore;
                 azi_fore[l2bidx] = rtd*atan2(sum_cos_azi[0], sum_sin_azi[0]);
                 land_fraction_fore[l2bidx] = sum_lf[0]/(float)cnts_fore;
+                scan_fore = rtd*atan2(sum_cos_scan[0], sum_sin_scan[0]);
             }
 
             int cnts_aft = cnts[1][0] + cnts[1][1];
@@ -419,6 +436,7 @@ int main(int argc, char* argv[]) {
                 inc_aft[l2bidx] = rtd*sum_inc[1]/(float)cnts_aft;
                 azi_aft[l2bidx] = rtd*atan2(sum_cos_azi[1], sum_sin_azi[1]);
                 land_fraction_aft[l2bidx] = sum_lf[1]/(float)cnts_aft;
+                scan_aft = rtd*atan2(sum_cos_scan[1], sum_sin_scan[1]);
             }
 
             MeasList tb_ml_avg;
@@ -428,12 +446,14 @@ int main(int argc, char* argv[]) {
                     sum_A[0][0]/pow((float)cnts[0][0], 2));
                 n_v_fore[l2bidx] = cnts[0][0];
                 galaxy_corr_v_fore[l2bidx] = sum_gal_corr[0][0]/(float)n_v_fore[l2bidx];
+                sc_lat_v_fore = sum_sc_lat[0][0]/(float)n_v_fore[l2bidx];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_v_fore[l2bidx];
                 this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_fore[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[l2bidx]);
+                this_meas->scanAngle = scan_fore;
                 this_meas->A = sum_A[0][0]/pow((float)cnts[0][0], 2);
                 if(use_meas_var) {
                     this_meas->A =
@@ -449,12 +469,14 @@ int main(int argc, char* argv[]) {
                     sum_A[1][0]/pow((float)cnts[1][0], 2));
                 n_v_aft[l2bidx] = cnts[1][0];
                 galaxy_corr_v_aft[l2bidx] = sum_gal_corr[1][0]/(float)n_v_aft[l2bidx];
+                sc_lat_v_aft = sum_sc_lat[1][0]/(float)n_v_aft[l2bidx];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_v_aft[l2bidx];
                 this_meas->measType = Meas::L_BAND_TBV_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_aft[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[l2bidx]);
+                this_meas->scanAngle = scan_aft;
                 this_meas->A = sum_A[1][0]/pow((float)cnts[1][0], 2);
                 if(use_meas_var) {
                     this_meas->A =
@@ -470,12 +492,14 @@ int main(int argc, char* argv[]) {
                     sum_A[0][1]/pow((float)cnts[0][1], 2));
                 n_h_fore[l2bidx] = cnts[0][1];
                 galaxy_corr_h_fore[l2bidx] = sum_gal_corr[0][1]/(float)n_h_fore[l2bidx];
+                sc_lat_h_fore = sum_sc_lat[0][1]/(float)n_h_fore[l2bidx];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_h_fore[l2bidx];
                 this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_fore[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_fore[l2bidx]);
+                this_meas->scanAngle = scan_fore;
                 this_meas->A = sum_A[0][1]/pow((float)cnts[0][1], 2);
                 if(use_meas_var) {
                     this_meas->A =
@@ -491,12 +515,14 @@ int main(int argc, char* argv[]) {
                     sum_A[1][1]/pow((float)cnts[1][1], 2));
                 n_h_aft[l2bidx] = cnts[1][1];
                 galaxy_corr_h_aft[l2bidx] = sum_gal_corr[1][1]/(float)n_h_aft[l2bidx];
+                sc_lat_h_aft = sum_sc_lat[1][1]/(float)n_h_aft[l2bidx];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_h_aft[l2bidx];
                 this_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
                 this_meas->incidenceAngle = dtr * inc_aft[l2bidx];
                 this_meas->eastAzimuth = gs_deg_to_pe_rad(azi_aft[l2bidx]);
+                this_meas->scanAngle = scan_aft;
                 this_meas->A = sum_A[1][1]/pow((float)cnts[1][1], 2);
                 if(use_meas_var) {
                     this_meas->A =
@@ -593,28 +619,53 @@ int main(int argc, char* argv[]) {
 
                     int is_asc = (anc_ati < 1624) ? 1 : 0;
                     float this_lat = lat[l2bidx];
-                    float this_tb_v_bias_adj, this_tb_h_bias_adj;
+                    float this_tb_v_bias_adj_fore, this_tb_v_bias_adj_aft;
+                    float this_tb_h_bias_adj_fore, this_tb_h_bias_adj_aft;
 
                     tb_vs_lat_doy_corr.Get(
-                        this_lat, start_doy, is_asc, Meas::L_BAND_TBV_MEAS_TYPE,
-                        &this_tb_v_bias_adj);
+                        sc_lat_v_fore, start_doy, is_asc,
+                        Meas::L_BAND_TBV_MEAS_TYPE, &this_tb_v_bias_adj_fore);
 
                     tb_vs_lat_doy_corr.Get(
-                        this_lat, start_doy, is_asc, Meas::L_BAND_TBH_MEAS_TYPE,
-                        &this_tb_h_bias_adj);
+                        sc_lat_v_aft, start_doy, is_asc,
+                        Meas::L_BAND_TBV_MEAS_TYPE, &this_tb_v_bias_adj_aft);
 
-                    if(fabs(this_tb_v_bias_adj) < 3 && 
-                       fabs(this_tb_h_bias_adj) < 3) {
+                    tb_vs_lat_doy_corr.Get(
+                        sc_lat_h_fore, start_doy, is_asc,
+                        Meas::L_BAND_TBH_MEAS_TYPE, &this_tb_h_bias_adj_fore);
 
-                        tb_v_bias_adj[l2bidx] = -this_tb_v_bias_adj;
-                        tb_h_bias_adj[l2bidx] = -this_tb_h_bias_adj;
+                    tb_vs_lat_doy_corr.Get(
+                        sc_lat_h_aft, start_doy, is_asc,
+                        Meas::L_BAND_TBH_MEAS_TYPE, &this_tb_h_bias_adj_aft);
+
+
+                    if(fabs(this_tb_v_bias_adj_fore) < 3 && 
+                       fabs(this_tb_v_bias_adj_aft) < 3 &&
+                       fabs(this_tb_h_bias_adj_fore) < 3 && 
+                       fabs(this_tb_h_bias_adj_aft) < 3) {
+
+                        tb_v_bias_adj_fore[l2bidx] = -this_tb_v_bias_adj_fore;
+                        tb_v_bias_adj_aft[l2bidx] = -this_tb_v_bias_adj_aft;
+                        tb_h_bias_adj_fore[l2bidx] = -this_tb_h_bias_adj_fore;
+                        tb_h_bias_adj_aft[l2bidx] = -this_tb_h_bias_adj_aft;
 
                         // iterate over tb_ml_avg, adjust tbs
                         for(Meas* meas = tb_ml_avg.GetHead(); meas; ) {
+
+                            int is_fore = 0;
+                            if (meas->scanAngle > pi/2 &&
+                                meas->scanAngle < 3*pi/2) is_fore = 1;
+
                             if(meas->measType == Meas::L_BAND_TBH_MEAS_TYPE) {
-                                meas->value += tb_h_bias_adj[l2bidx];
+                                if(is_fore)
+                                    meas->value += tb_h_bias_adj_fore[l2bidx];
+                                else
+                                    meas->value += tb_h_bias_adj_aft[l2bidx];
                             } else {
-                                meas->value += tb_v_bias_adj[l2bidx];
+                                if(is_fore)
+                                    meas->value += tb_v_bias_adj_fore[l2bidx];
+                                else
+                                    meas->value += tb_v_bias_adj_aft[l2bidx];
                             }
                             meas = tb_ml_avg.GetNext();
                         }
@@ -884,25 +935,52 @@ int main(int argc, char* argv[]) {
 
     valid_max = 3; valid_min = -3;
     H5LTmake_dataset(
-        file_id, "tb_v_bias_adj", 2, dims, H5T_NATIVE_FLOAT, &tb_v_bias_adj[0]);
+        file_id, "tb_v_bias_adj_fore", 2, dims, H5T_NATIVE_FLOAT,
+        &tb_v_bias_adj_fore[0]);
     H5LTset_attribute_string(
-        file_id, "tb_v_bias_adj", "long_name",
-        "Brightness temperature bias adjustment for all V-pol looks");
-    H5LTset_attribute_string(file_id, "tb_v_bias_adj", "units", "Degrees kelvin");
-    H5LTset_attribute_float(file_id, "tb_v_bias_adj", "_FillValue", &_fill_value, 1);
-    H5LTset_attribute_float(file_id, "tb_v_bias_adj", "valid_max", &valid_max, 1);
-    H5LTset_attribute_float(file_id, "tb_v_bias_adj", "valid_min", &valid_min, 1);
+        file_id, "tb_v_bias_adj_fore", "long_name",
+        "Brightness temperature bias adjustment for V-pol fore looks");
+    H5LTset_attribute_string(file_id, "tb_v_bias_adj_fore", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "tb_v_bias_adj_fore", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "tb_v_bias_adj_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "tb_v_bias_adj_fore", "valid_min", &valid_min, 1);
 
     valid_max = 3; valid_min = -3;
     H5LTmake_dataset(
-        file_id, "tb_h_bias_adj", 2, dims, H5T_NATIVE_FLOAT, &tb_h_bias_adj[0]);
+        file_id, "tb_v_bias_adj_aft", 2, dims, H5T_NATIVE_FLOAT,
+        &tb_v_bias_adj_aft[0]);
     H5LTset_attribute_string(
-        file_id, "tb_h_bias_adj", "long_name",
-        "Brightness temperature bias adjustment for all H-pol looks");
-    H5LTset_attribute_string(file_id, "tb_h_bias_adj", "units", "Degrees kelvin");
-    H5LTset_attribute_float(file_id, "tb_h_bias_adj", "_FillValue", &_fill_value, 1);
-    H5LTset_attribute_float(file_id, "tb_h_bias_adj", "valid_max", &valid_max, 1);
-    H5LTset_attribute_float(file_id, "tb_h_bias_adj", "valid_min", &valid_min, 1);
+        file_id, "tb_v_bias_adj_aft", "long_name",
+        "Brightness temperature bias adjustment for V-pol aft looks");
+    H5LTset_attribute_string(file_id, "tb_v_bias_adj_aft", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "tb_v_bias_adj_aft", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "tb_v_bias_adj_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "tb_v_bias_adj_aft", "valid_min", &valid_min, 1);
+
+
+    valid_max = 3; valid_min = -3;
+    H5LTmake_dataset(
+        file_id, "tb_h_bias_adj_fore", 2, dims, H5T_NATIVE_FLOAT,
+        &tb_h_bias_adj_fore[0]);
+    H5LTset_attribute_string(
+        file_id, "tb_h_bias_adj_fore", "long_name",
+        "Brightness temperature bias adjustment for V-pol fore looks");
+    H5LTset_attribute_string(file_id, "tb_h_bias_adj_fore", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "tb_h_bias_adj_fore", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "tb_h_bias_adj_fore", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "tb_h_bias_adj_fore", "valid_min", &valid_min, 1);
+
+    valid_max = 3; valid_min = -3;
+    H5LTmake_dataset(
+        file_id, "tb_h_bias_adj_aft", 2, dims, H5T_NATIVE_FLOAT,
+        &tb_h_bias_adj_aft[0]);
+    H5LTset_attribute_string(
+        file_id, "tb_h_bias_adj_aft", "long_name",
+        "Brightness temperature bias adjustment for V-pol aft looks");
+    H5LTset_attribute_string(file_id, "tb_h_bias_adj_aft", "units", "Degrees kelvin");
+    H5LTset_attribute_float(file_id, "tb_h_bias_adj_aft", "_FillValue", &_fill_value, 1);
+    H5LTset_attribute_float(file_id, "tb_h_bias_adj_aft", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "tb_h_bias_adj_aft", "valid_min", &valid_min, 1);
 
     valid_max = 3; valid_min = 0;
     H5LTmake_dataset(
