@@ -329,11 +329,10 @@ int main(int argc, char* argv[]){
 
 
                     // remove version 4 reflector correction
-                    float loss_v4 =
-                        cal_loss1_reflector[ipol*nframes[ipart]+iframe];
+                    int temp_idx = iframe*2 + ipol;
+                    float loss_v4 = cal_loss1_reflector[temp_idx];
                     float loss_v3 = (ipol==0) ? 1.003 : 1.002;
-                    float this_trefl =
-                        cal_temp1_reflector[ipol*nframes[ipart]+iframe];
+                    float this_trefl = cal_temp1_reflector[temp_idx];
                     float tb_nc = 
                         tb[ipol][fp_idx]/loss_v4 +(1-1/loss_v4)*this_trefl;
 
