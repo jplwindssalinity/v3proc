@@ -87,6 +87,14 @@ int main(int argc, char* argv[]){
     char* config_file = argv[1];
     char* out_file = argv[2];
 
+    int do_lr = 0;
+    if(argc > 3) {
+        std::string sw = argv[3];
+        if(sw == "--do-left-right") do_lr = 1;
+    }
+
+    printf("do lr: %d\n", do_lr);
+
     ConfigList config_list;
     if(!config_list.Read(config_file)) {
         fprintf(
@@ -345,6 +353,11 @@ int main(int argc, char* argv[]){
                     counts[ipol] += 1;
 
                     int is_fore = (antazi[fp_idx] < 90 || antazi[fp_idx] > 270) ? 1 : 0;
+
+                    if(do_lr)
+                        is_fore = (
+                            antazi[fp_idx] >= 0 && antazi[fp_idx] < 180) ? 1 : 0;
+
                     int is_asc = (ipart == 0) ? 1 : 0;
 
                     // Accumulate into fore/aft x asc/dec seperatly also
