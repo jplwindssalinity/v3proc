@@ -179,8 +179,6 @@ int main(int argc, char* argv[]){
         std::vector<float> antazi;
         std::vector<float> inc;
         std::vector<float> solar_spec_theta;
-        std::vector<float> cal_loss1_reflector;
-        std::vector<float> cal_temp1_reflector;
 
         std::vector< std::vector<float> > tb(2);
         std::vector< std::vector<float> > ta(2);
@@ -195,9 +193,6 @@ int main(int argc, char* argv[]){
         inc.resize(data_size);
         solar_spec_theta.resize(data_size);
 
-        cal_loss1_reflector.resize(nframes[ipart]*2);
-        cal_temp1_reflector.resize(nframes[ipart]*2);
-
         // resize arrays for data dimensions
         for(int ipol = 0; ipol < 2; ++ipol) {
             tb[ipol].resize(data_size);
@@ -207,13 +202,6 @@ int main(int argc, char* argv[]){
         }
 
         // These data only have footprint versions
-        read_SDS_h5(
-            id, "/Calibration_Data/cal_loss1_reflector",
-            &cal_loss1_reflector[0]);
-        read_SDS_h5(
-            id, "/Calibration_Data/cal_temp1_reflector",
-            &cal_temp1_reflector[0]);
-
         read_SDS_h5(id, "/Brightness_Temperature/tb_lat", &lat[0]);
         read_SDS_h5(id, "/Brightness_Temperature/tb_lon", &lon[0]);
         read_SDS_h5(id, "/Brightness_Temperature/earth_boresight_azimuth", &azi[0]);
@@ -335,18 +323,7 @@ int main(int argc, char* argv[]){
                        solar_spec_theta[fp_idx] < 25)
                         continue;
 
-
-                    // remove version 4 reflector correction
-                    int temp_idx = iframe*2 + ipol;
-                    float loss_v4 = cal_loss1_reflector[temp_idx];
-                    float loss_v3 = (ipol==0) ? 1.003 : 1.002;
-                    float this_trefl = cal_temp1_reflector[temp_idx];
-                    float tb_nc = 
-                        tb[ipol][fp_idx]/loss_v4 +(1-1/loss_v4)*this_trefl;
-
-                    float tb_c = loss_v3*(tb_nc-(1-1/loss_v3)*this_trefl);
-
-                    float this_delta = tb_c - model_tb;
+                    float this_delta = tb[ipol][fp_idx] - model_tb;
 
                     // Accumulate delta tb
                     sum_dtb[ipol] += this_delta;
