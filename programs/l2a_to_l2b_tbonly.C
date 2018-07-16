@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
     config_list.GetInt(USE_MEASUREMENT_VARIANCE_KEYWORD, &use_meas_var);
     config_list.ExitForMissingKeywords();
 
-    TBVsLatDOYCorr tb_vs_lat_doy_corr;
+    TBVsLatDOYAntAziCorr tb_vs_lat_doy_corr;
     if(do_dtb_vs_lat_doy_corr) {
         char* tb_vs_lat_doy_corr_file = config_list.Get(
             DTB_VS_LAT_DOY_CORRECTION_FILE_KEYWORD);
@@ -346,7 +346,6 @@ int main(int argc, char* argv[]) {
             float sum_A[2][2];
             float sum_lf[2];
             float sum_gal_corr[2][2];
-            float sum_sc_lat[2][2];
             int cnts[2][2];
 
             float sum_cos_azi[2]; // fore - 0; aft 1
@@ -371,7 +370,6 @@ int main(int argc, char* argv[]) {
                     sum_tb2[ilook][ipol] = 0;
                     sum_A[ilook][ipol] = 0;
                     sum_gal_corr[ilook][ipol] = 0;
-                    sum_sc_lat[ilook][ipol] = 0;
                     cnts[ilook][ipol] = 0;
                 }
             }
@@ -418,7 +416,6 @@ int main(int argc, char* argv[]) {
                 sum_sin_scan[idx_look] += sin(meas->scanAngle);
                 sum_lf[idx_look] += meas->bandwidth;
                 sum_gal_corr[idx_look][idx_pol] += meas->B;
-                sum_sc_lat[idx_look][idx_pol] += meas->C;
             }
 
             // Compute averaged TB observations from four looks
@@ -446,7 +443,6 @@ int main(int argc, char* argv[]) {
                     sum_A[0][0]/pow((float)cnts[0][0], 2));
                 n_v_fore[l2bidx] = cnts[0][0];
                 galaxy_corr_v_fore[l2bidx] = sum_gal_corr[0][0]/(float)n_v_fore[l2bidx];
-                sc_lat_v_fore = sum_sc_lat[0][0]/(float)n_v_fore[l2bidx];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_v_fore[l2bidx];
@@ -469,7 +465,6 @@ int main(int argc, char* argv[]) {
                     sum_A[1][0]/pow((float)cnts[1][0], 2));
                 n_v_aft[l2bidx] = cnts[1][0];
                 galaxy_corr_v_aft[l2bidx] = sum_gal_corr[1][0]/(float)n_v_aft[l2bidx];
-                sc_lat_v_aft = sum_sc_lat[1][0]/(float)n_v_aft[l2bidx];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_v_aft[l2bidx];
@@ -492,7 +487,6 @@ int main(int argc, char* argv[]) {
                     sum_A[0][1]/pow((float)cnts[0][1], 2));
                 n_h_fore[l2bidx] = cnts[0][1];
                 galaxy_corr_h_fore[l2bidx] = sum_gal_corr[0][1]/(float)n_h_fore[l2bidx];
-                sc_lat_h_fore = sum_sc_lat[0][1]/(float)n_h_fore[l2bidx];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_h_fore[l2bidx];
@@ -515,7 +509,6 @@ int main(int argc, char* argv[]) {
                     sum_A[1][1]/pow((float)cnts[1][1], 2));
                 n_h_aft[l2bidx] = cnts[1][1];
                 galaxy_corr_h_aft[l2bidx] = sum_gal_corr[1][1]/(float)n_h_aft[l2bidx];
-                sc_lat_h_aft = sum_sc_lat[1][1]/(float)n_h_aft[l2bidx];
 
                 Meas* this_meas = new Meas();
                 this_meas->value = tb_h_aft[l2bidx];
@@ -623,19 +616,19 @@ int main(int argc, char* argv[]) {
                     float this_tb_h_bias_adj_fore, this_tb_h_bias_adj_aft;
 
                     tb_vs_lat_doy_corr.Get(
-                        sc_lat_v_fore, start_doy, is_asc,
+                        this_lat, start_doy, is_asc, scan_fore,
                         Meas::L_BAND_TBV_MEAS_TYPE, &this_tb_v_bias_adj_fore);
 
                     tb_vs_lat_doy_corr.Get(
-                        sc_lat_v_aft, start_doy, is_asc,
+                        this_lat, start_doy, is_asc, scan_aft,
                         Meas::L_BAND_TBV_MEAS_TYPE, &this_tb_v_bias_adj_aft);
 
                     tb_vs_lat_doy_corr.Get(
-                        sc_lat_h_fore, start_doy, is_asc,
+                        this_lat, start_doy, is_asc, scan_fore,
                         Meas::L_BAND_TBH_MEAS_TYPE, &this_tb_h_bias_adj_fore);
 
                     tb_vs_lat_doy_corr.Get(
-                        sc_lat_h_aft, start_doy, is_asc,
+                        this_lat, start_doy, is_asc, scan_aft,
                         Meas::L_BAND_TBH_MEAS_TYPE, &this_tb_h_bias_adj_aft);
 
 
