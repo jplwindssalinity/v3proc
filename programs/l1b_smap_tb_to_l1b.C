@@ -274,12 +274,14 @@ int main(int argc, char* argv[]){
         std::vector<float> yaw(nframes[ipart]);
         std::vector<float> pitch(nframes[ipart]);
         std::vector<float> roll(nframes[ipart]);
+        std::vector<float> sc_lat(nframes[ipart]);
 
         read_SDS_h5(
             id, "/Spacecraft_Data/antenna_scan_time_utc", &antenna_scan_time_utc[0][0]);
         H5LTread_dataset_float(id, "/Spacecraft_Data/yaw", &yaw[0]);
         H5LTread_dataset_float(id, "/Spacecraft_Data/pitch", &pitch[0]);
         H5LTread_dataset_float(id, "/Spacecraft_Data/roll", &roll[0]);
+        H5LTread_dataset_float(id, "/Spacecraft_Data/sc_nadir_lat", &sc_lat[0]);
 
         std::vector<float> lat;
         std::vector<float> lon;
@@ -393,6 +395,8 @@ int main(int argc, char* argv[]){
                     if(0x1 & tb_flag[ipol][fp_idx])
                         continue;
 
+                    float this_tb = tb[ipol][fp_idx];
+
                    MeasSpot* new_meas_spot = new MeasSpot();
 
                    // Is this good enough (interpolate within each scan)
@@ -414,7 +418,7 @@ int main(int argc, char* argv[]){
                     else
                         new_meas->measType = Meas::L_BAND_TBH_MEAS_TYPE;
 
-                    new_meas->value = tb[ipol][fp_idx];
+                    new_meas->value = this_tb;
                     new_meas->XK = 1.0;
 
                     double tmp_lon = dtr*lon[fp_idx];
@@ -454,7 +458,9 @@ int main(int argc, char* argv[]){
                     // Need to figure out the KP (a, b, c) terms.
                     new_meas->A = pow(nedt[ipol][fp_idx], 2);
                     new_meas->B = 0;
-                    new_meas->C = 0;
+
+                    // HACK spacecraft latitude into unused Meas attribute
+                    new_meas->C = sc_lat[iframe];
 
                     if(do_smap_tb_gal_corr) {
 
@@ -470,7 +476,7 @@ int main(int argc, char* argv[]){
                         // corrected TB (add back in SDS correction, remove my
                         // own estimate).
                         new_meas->value =
-                            tb[ipol][fp_idx] + tb_gal_corr[ipol][fp_idx] -
+                            this_tb + tb_gal_corr[ipol][fp_idx] -
                             this_dtg;
 
                         // Store galaxy correction value for flagging later

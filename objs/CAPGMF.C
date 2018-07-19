@@ -1098,6 +1098,107 @@ int TBVsLatDOYCorr::Get(
     return(1);
 }
 
+TBVsLatDOYAntAziCorr::TBVsLatDOYAntAziCorr() {
+    return;
+}
+
+TBVsLatDOYAntAziCorr::TBVsLatDOYAntAziCorr(const char* filename) {
+    Read(filename);
+    return;
+}
+
+TBVsLatDOYAntAziCorr::~TBVsLatDOYAntAziCorr() {
+    return;
+}
+
+int TBVsLatDOYAntAziCorr::Read(const char* filename) {
+
+    FILE* ifp = fopen(filename, "r");
+
+    fread(&_dlat, 1, sizeof(float), ifp);
+    fread(&_dazi, 1, sizeof(float), ifp);
+
+    _nlat = (int)180/_dlat;
+    _nazi = (int)360/_dazi;
+
+    _dtb_table.resize(2);
+    for(int ipol=0; ipol<2; ++ipol) {
+        _dtb_table[ipol].resize(_ndays*_nlat*_nazi*2);
+        fread(&_dtb_table[ipol][0], _ndays*_nlat*_nazi*2, sizeof(float), ifp);
+    }
+    fclose(ifp);
+
+    return(1);
+}
+
+int TBVsLatDOYAntAziCorr::Get(
+    float lat, int doy, int is_asc, float antazi, Meas::MeasTypeE met,
+    float* dtb) {
+
+    int idoy = doy-1;
+
+    if(idoy<0 || idoy>=366) {
+        fprintf(stderr, "TBVsLatDOYAntAziCorr::Get: Invalid day of year\n");
+        return(0);
+    }
+
+    int ipol;
+    if(met == Meas::L_BAND_TBV_MEAS_TYPE) {
+        ipol = 0;
+    } else if(met == Meas::L_BAND_TBH_MEAS_TYPE) {
+        ipol = 1;
+    } else {
+        fprintf(stderr, "TBVsLatDOYAntAziCorr::Get: Invalid measType\n");
+        return(0);
+    }
+
+    int ilat0 = (int)floor((lat+90)/_dlat);
+    if(ilat0 < 0) ilat0 = 0;
+    if(ilat0 >= _nlat-1) ilat0 = _nlat-2;
+    int ilat1 = ilat0 + 1;
+
+    float lat0 = -90 + _dlat * (float)ilat0;
+    float lat1 = -90 + _dlat * (float)ilat1;
+    float lat_factor = (lat-lat0)/(lat1-lat0);
+
+    while(antazi<0) antazi+= 360;
+    while(antazi>=360) antazi -= 360;
+    int iazi = (int)floor(antazi/_dazi + 0.5);
+    if(iazi==-1) iazi = _nazi-1;
+    if(iazi==_nazi) iazi = 0;
+
+    int iazi0 = (int)floor(antazi/_dazi);
+    if(iazi0<0) iazi0 = 0;
+    if(iazi0>_nazi-2) iazi0 = _nazi-2;
+    int iazi1 = iazi0 + 1;
+
+    float azi0 = _nazi * (float)ilat0;
+    float azi1 = _nazi * (float)iazi1;
+    float azi_factor = (antazi-azi0)/(azi1-azi0);
+
+    // 0 - ascending, 1 - decending
+    int iasc = (is_asc) ? 1: 0; // asc part first then dec part in table
+    int idx0 = idoy + _ndays * (ilat0 + _nlat * (iasc + 2 * iazi));
+    int idx1 = idoy + _ndays * (ilat1 + _nlat * (iasc + 2 * iazi));
+
+    *dtb = 
+        (1-lat_factor) * _dtb_table[ipol][idx0] +
+        lat_factor * _dtb_table[ipol][idx1];
+
+
+//     int idx00 = idoy + _ndays * (ilat0 + _nlat * (iasc + 2 * iazi0));
+//     int idx01 = idoy + _ndays * (ilat0 + _nlat * (iasc + 2 * iazi1));
+//     int idx10 = idoy + _ndays * (ilat1 + _nlat * (iasc + 2 * iazi0));
+//     int idx11 = idoy + _ndays * (ilat1 + _nlat * (iasc + 2 * iazi1));
+//     *dtb = 
+//         (1-lat_factor) * (1-azi_factor) * _dtb_table[ipol][idx00] +
+//         (1-lat_factor) * azi_factor * _dtb_table[ipol][idx01] +
+//         lat_factor * (1-azi_factor) * _dtb_table[ipol][idx10] +
+//         lat_factor * azi_factor * _dtb_table[ipol][idx11];
+
+    return(1);
+}
+
 double cap_obj_func(unsigned n, const double* x, double* grad, void* data) {
     // Need this call structure for NLopt library call
 

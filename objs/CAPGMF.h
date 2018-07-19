@@ -216,6 +216,30 @@ protected:
 
 };
 
+class TBVsLatDOYAntAziCorr {
+
+public:
+    TBVsLatDOYAntAziCorr();
+    TBVsLatDOYAntAziCorr(const char* filename);
+    ~TBVsLatDOYAntAziCorr();
+
+    int Read(const char* filename);
+    int Get(
+        float lat, int doy, int is_asc, float antazi, Meas::MeasTypeE met,
+        float* dtb);
+
+protected:
+    std::vector<std::vector<float> > _dtb_table;
+    static const int _ndays = 366;
+    float _dlat;
+    float _dazi;
+    int _nlat;
+    int _nazi;
+
+};
+
+
+
 // For use with NLopt
 typedef struct {
     MeasList* tb_ml;
