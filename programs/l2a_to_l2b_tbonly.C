@@ -678,11 +678,14 @@ int main(int argc, char* argv[]) {
                         smap_sss_bias_adj[l2bidx] = final_sss;
                         smap_spd_bias_adj[l2bidx] = final_spd;
 
-                        float sss_fwhm = cap_gmf.SSSFWHM(
-                            &tb_ml_avg, NULL, final_spd, this_anc_dir,
-                            final_sss, anc_spd[l2bidx], this_anc_dir,
-                            anc_swh[l2bidx], anc_sst[l2bidx],
-                            anc_spd_std_prior, 0, 1);
+                        float sss_fwhm = -9999;
+                        if(final_sss==final_sss) {
+                            cap_gmf.SSSFWHM(
+                                &tb_ml_avg, NULL, final_spd, this_anc_dir,
+                                final_sss, anc_spd[l2bidx], this_anc_dir,
+                                anc_swh[l2bidx], anc_sst[l2bidx],
+                                anc_spd_std_prior, 0, 1);
+                        }
 
                         smap_sss_uncertainty[l2bidx] = sss_fwhm;
 
