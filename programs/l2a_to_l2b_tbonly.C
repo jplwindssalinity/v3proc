@@ -708,6 +708,9 @@ int main(int argc, char* argv[]) {
                         smap_sss_bias_adj[l2bidx] = final_sss + 0.2;
                         smap_spd_bias_adj[l2bidx] = final_spd;
 
+                        if(smap_sss_bias_adj[l2bidx]>45)
+                        smap_sss_bias_adj[l2bidx] = 45;
+
                         float sss_fwhm = -9999;
                         if(final_sss==final_sss) {
                             cap_gmf.SSSFWHM(
