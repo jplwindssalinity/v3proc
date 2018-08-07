@@ -675,7 +675,8 @@ int main(int argc, char* argv[]) {
                             CAPGMF::RETRIEVE_SPEED_SALINITY, &final_spd,
                             &final_dir, &final_sss, &final_obj);
 
-                        smap_sss_bias_adj[l2bidx] = final_sss;
+                        // STUPID HACK because v4 TBs are terrible!
+                        smap_sss_bias_adj[l2bidx] = final_sss + 0.2;
                         smap_spd_bias_adj[l2bidx] = final_spd;
 
                         float sss_fwhm = -9999;
