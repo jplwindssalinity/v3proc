@@ -23,7 +23,7 @@
 #define L1B_TB_ASC_ANC_V10_FILE_KEYWORD "L1B_TB_ASC_ANC_V10_FILE"
 #define L1B_TB_DEC_ANC_V10_FILE_KEYWORD "L1B_TB_DEC_ANC_V10_FILE"
 #define GAL_CORR_FILE_KEYWORD "SMAP_TB_GAL_CORR_FILE"
-
+#define IS_NRT_KEYWORD "USE_NRT_PROCESSING"
 
 //----------//
 // INCLUDES //
@@ -85,6 +85,11 @@ const char* usage_array[] = {"config_file", NULL};
 int determine_l1b_sizes(char* l1b_tbfiles[], int nframes[], int nfootprints[]){
 
     for(int ipart=0; ipart<2; ++ipart) {
+        if(!l1b_tbfiles[ipart]) {
+            nframes[ipart] = 0;
+            nfootprints[ipart] = 0;
+            continue;
+        }
         hid_t id = H5Fopen(l1b_tbfiles[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
         if(id<0) return(0);
 
@@ -135,11 +140,20 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
+    int optind = 2;
+    int is_nrt = 0;
     char* l1b_tbfiles[2] = {NULL, NULL};
-    // These ones are required
+
+    config_list.DoNothingForMissingKeywords();
+    config_list.GetInt(IS_NRT_KEYWORD, &is_nrt);
     config_list.ExitForMissingKeywords();
+
+    if(is_nrt)
+        config_list.DoNothingForMissingKeywords();
+
     l1b_tbfiles[0] = config_list.Get(L1B_TB_LORES_ASC_FILE_KEYWORD);
     l1b_tbfiles[1] = config_list.Get(L1B_TB_LORES_DEC_FILE_KEYWORD);
+    config_list.ExitForMissingKeywords();
     printf("l1b_tbfiles: %s %s\n", l1b_tbfiles[0], l1b_tbfiles[1]);
 
     QSLandMap qs_landmap;
@@ -190,10 +204,14 @@ int main(int argc, char* argv[]){
     if(do_smap_tb_gal_corr) {
         char* gal_corr_filename = config_list.Get(GAL_CORR_FILE_KEYWORD);
         tb_gal_corr_map.Read(gal_corr_filename);
+        if(is_nrt)
+            config_list.DoNothingForMissingKeywords();
+
         anc_u10_files[0] = config_list.Get(L1B_TB_ASC_ANC_U10_FILE_KEYWORD);
         anc_u10_files[1] = config_list.Get(L1B_TB_DEC_ANC_U10_FILE_KEYWORD);
         anc_v10_files[0] = config_list.Get(L1B_TB_ASC_ANC_V10_FILE_KEYWORD);
         anc_v10_files[1] = config_list.Get(L1B_TB_DEC_ANC_V10_FILE_KEYWORD);
+        config_list.ExitForMissingKeywords();
     }
 
     L1B l1b;
@@ -233,6 +251,14 @@ int main(int argc, char* argv[]){
 
     // Iterate over ascending / decending portions of orbit
     for(int ipart = 0; ipart < 2; ++ipart){
+
+        if(!l1b_tbfiles[ipart])
+            continue;
+
+        printf(
+            "%d %s %d %d\n", ipart, l1b_tbfiles[ipart], nframes[ipart],
+            nfootprints[ipart]);
+
         hid_t id = H5Fopen(l1b_tbfiles[ipart], H5F_ACC_RDONLY, H5P_DEFAULT);
 
         CAP_ANC_L1B cap_anc_u10;
@@ -273,6 +299,7 @@ int main(int argc, char* argv[]){
         std::vector< std::vector<float> > tb_gal_corr(2);
 
         int data_size = nframes[ipart]*nfootprints[ipart];
+
         azi.resize(data_size);
         antazi.resize(data_size);
         lat.resize(data_size);
@@ -302,9 +329,6 @@ int main(int argc, char* argv[]){
         read_SDS_h5(
             id, "/Brightness_Temperature/solar_specular_theta",
             &solar_spec_theta[0]);
-        read_SDS_h5(
-            id, "/Brightness_Temperature/surface_water_fraction_mb_h",
-            &surface_water_fraction_mb[0]);
 
         read_SDS_h5(id, "/Brightness_Temperature/tb_v", &tb[0][0]);
         read_SDS_h5(id, "/Brightness_Temperature/tb_h", &tb[1][0]);
@@ -363,7 +387,7 @@ int main(int argc, char* argv[]){
                 if(solar_spec_theta[fp_idx] < 25)
                     continue;
 
-                float this_land_frac = 1 - surface_water_fraction_mb[fp_idx];
+                float this_land_frac = 0;
 
                 for(int ipol=0; ipol<2; ++ipol){
 

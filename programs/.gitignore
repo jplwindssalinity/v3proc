@@ -1,5 +1,9 @@
 *~
+<<<<<<< HEAD
+l2a_to_l2b_tbonly_nrt_halfrevs
+=======
 l1b_smap_tb_to_land_frac
+>>>>>>> origin/develop
 l2a_to_l2b_tbonly_spdadj
 smap_match_l1b_l1c
 l2a_to_l2b_cap_tbonly_avg_s0
