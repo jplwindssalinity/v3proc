@@ -713,7 +713,7 @@ int main(int argc, char* argv[]) {
 
                         float sss_fwhm = -9999;
                         if(final_sss==final_sss) {
-                            cap_gmf.SSSFWHM(
+                            sss_fwhm = cap_gmf.SSSFWHM(
                                 &tb_ml_avg, NULL, final_spd, this_anc_dir,
                                 final_sss, anc_spd[l2bidx], this_anc_dir,
                                 anc_swh[l2bidx], anc_sst[l2bidx],
