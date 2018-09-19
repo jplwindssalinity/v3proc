@@ -670,6 +670,35 @@ int GMF::ReadPolarimetric(
     return(1);
 }
 
+int GMF::ReadSMAPRadarOnly(const char*  filename) {
+    _metCount = 4;
+
+    _incCount = 11;
+    _incMin = 35.0 * dtr;
+    _incMax = 45.0 * dtr;
+    _incStep = 1.0 * dtr;
+
+    _spdCount = 501;
+    _spdMin = 0.0;
+    _spdMax = 50.0;
+    _spdStep = 0.1;
+
+    _chiCount = 360;
+    _chiStep = two_pi / _chiCount;
+
+    if (! _Allocate())
+        return(0);
+
+    bool mirrorChiValues = false;
+    bool discardFirstVal = false;
+    int met_idx_start = 0;
+    int n_met = 4;
+
+    return _ReadArrayFileLoop(filename, mirrorChiValues, discardFirstVal,
+        met_idx_start, n_met);
+}
+
+
 //---------------//
 // GMF::GetCoefs //
 //---------------//
@@ -2253,7 +2282,12 @@ GMF::_ObjectiveFunctionOld(
             meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
         	wt=cBandWeight;
         }
-        
+
+        if(meas->measType==Meas::VH_MEAS_TYPE||
+           meas->measType==Meas::HV_MEAS_TYPE) {
+            wt=0;
+        }
+
         //printf("%6d %15.9f %12.6f %12.6f\n",
         //      ii,meas->value,meas->incidenceAngle*rtd,
         //      pe_rad_to_gs_deg(meas->eastAzimuth));        

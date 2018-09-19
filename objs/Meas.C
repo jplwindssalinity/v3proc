@@ -38,7 +38,7 @@ static const char rcs_id_measurement_c[] =
 //======//
 
 const char* meas_type_map[] = { "None", "VV", "HH", "VH", "HV", "VVHV",
-				"HHVH", "CVV", "CHH", NULL };
+				"HHVH", "CVV", "CHH", "LTBH", "LTBV", NULL };
 
 Meas::Meas()
 :   value(0.0), XK(0.0), EnSlice(0.0), bandwidth(0.0), txPulseWidth(0.0),

@@ -189,5 +189,24 @@ protected:
     unsigned char** _map;
 };
 
+class ICECMap {
+public:
+    ICECMap();
+    ICECMap(const char* filename);
+    ~ICECMap();
+
+    int Read(const char* filename);
+    int Get(float lon, float lat, float* ice_concentration);
+
+protected:
+    int  _Allocate();
+    int  _Deallocate();
+
+    //-----------//
+    // variables //
+    //-----------//
+    float** _map;
+};
+
 
 #endif

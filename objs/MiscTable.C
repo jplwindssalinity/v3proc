@@ -554,16 +554,16 @@ MiscTable::_MetToIndex(
 	case Meas::HH_MEAS_TYPE:
 		idx = 1;
 		break;
-	case Meas::VV_HV_CORR_MEAS_TYPE:
+	case Meas::HV_MEAS_TYPE:
 	  idx = 2;
 	  break;
-	case Meas::HH_VH_CORR_MEAS_TYPE:
+	case Meas::VH_MEAS_TYPE:
 	  idx = 3;
 	  break;
-	case Meas::HV_MEAS_TYPE:
+	case Meas::VV_HV_CORR_MEAS_TYPE:
 	  idx = 4;
 	  break;
-	case Meas::VH_MEAS_TYPE:
+	case Meas::HH_VH_CORR_MEAS_TYPE:
 	  idx = 4;
 	  break;
 	case Meas::C_BAND_VV_MEAS_TYPE:
@@ -571,6 +571,12 @@ MiscTable::_MetToIndex(
 		break;
 	case Meas::C_BAND_HH_MEAS_TYPE:
 		idx = 6;
+		break;
+	case Meas::L_BAND_TBH_MEAS_TYPE:
+		idx = 7;
+		break;
+	case Meas::L_BAND_TBV_MEAS_TYPE:
+		idx = 8;
 		break;
 	default:
 		fprintf(stderr,

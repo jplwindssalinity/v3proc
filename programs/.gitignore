@@ -1,8 +1,24 @@
 *~
+<<<<<<< HEAD
 l1b_scatsat_to_l1b
 ascat_szf_to_l1b_new
 l2a_ascat_to_l2b
 l2a_to_l2b_sstgmf
+l2a_to_l2b_tbonly_nrt_halfrevs
+l1b_smap_tb_to_land_frac
+l2a_to_l2b_tbonly_spdadj
+smap_match_l1b_l1c
+l2a_to_l2b_cap_tbonly_avg_s0
+l2a_to_l2b_cap_tbonly
+l2a_to_l2b_tbonly
+l2a_to_l2b_tbonly_wsat
+smap_match_l1c_l1b
+l1b_smap_tb_to_exptb
+l2a_fix_SMAP_composites
+l2a_to_l2b_cap
+l1b_smap_tb_to_dtb
+l1b_smap_tb_to_l1b
+l1b_smap_to_l1b
 gen_swath_e2b
 gen_qs_l1b_fp_ecmwf
 doy
