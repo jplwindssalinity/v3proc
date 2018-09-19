@@ -184,6 +184,7 @@ bin_PROGRAMS = \
     programs/l1b_to_l2a_collocate                 \
     programs/l2a_to_l2b_scatsat_ascat             \
     programs/l2a_to_l2b_scatsat_2ascat
+    programs/l2a_to_l2b_sstgmf
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files

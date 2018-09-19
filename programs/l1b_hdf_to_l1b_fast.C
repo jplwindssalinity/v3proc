@@ -1250,7 +1250,10 @@ main(
         printf("Wrote %d frames of %d\n", i_frame, num_l1b_frames);
         //if( i_frame == 1000 ) exit(1);
     }
-    
+
+    if(coastal_method == LCRES_ACCUM)
+        lcres_accum->Write(config_list.Get(LCRES_ACCUM_FILE_KEYWORD));
+
     fclose(eph_fp);
     
     //Free the calloc-ed arrays.
