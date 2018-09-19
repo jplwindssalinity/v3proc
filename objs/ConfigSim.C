@@ -1961,6 +1961,16 @@ ConfigGMF(
       if (! gmf->ReadKuAndC(gmf_filename,cgmf_filename))
             return(0);
     }
+
+    else if (strcasecmp(gmf_format, "KU_AND_C_NEW") == 0)
+    {
+
+      char* cgmf_filename = config_list->Get(C_BAND_GMF_FILE_KEYWORD);
+      if (cgmf_filename == NULL)
+        return(0);
+      if (! gmf->ReadKuAndCNew(gmf_filename, cgmf_filename))
+            return(0);
+    }
     else if (strcasecmp(gmf_format, "POLARIMETRIC") == 0)
     {
         if (! gmf->ReadPolarimetric(gmf_filename))
@@ -2029,6 +2039,10 @@ ConfigGMF(
         gmf->objectiveFunctionMethod = tmp_int;
     else
         gmf->objectiveFunctionMethod = 0;
+
+    if (! config_list->GetInt(DO_LOW_SPEED_RANDOM_DIRECTION_KEYWORD, &tmp_int))
+        return(0);
+    gmf->retrieveRandomDirectionForLowSpeeds = tmp_int;
 
     config_list->ExitForMissingKeywords();
 

@@ -174,7 +174,17 @@ bin_PROGRAMS = \
     programs/RS_GSE_to_ephem_quat                 \
     programs/l2a_geom_noise                       \
     programs/quick_winds                          \
-    programs/gen_os2_l1b_fp_ecmwf
+    programs/gen_os2_l1b_fp_ecmwf                 \
+    programs/l1b_scatsat_to_l1b                   \
+    programs/scatsat_l2b_to_netcdf                \
+    programs/ascat_szf_to_l1b                     \
+    programs/ascat_szf_to_l1b_new                 \
+    programs/l2a_ascat_to_l2b                     \
+    programs/gen_os2_l1b_fp_ecmwf                 \
+    programs/l1b_to_l2a_collocate                 \
+    programs/l2a_to_l2b_scatsat_ascat             \
+    programs/l2a_to_l2b_scatsat_2ascat
+    programs/l2a_to_l2b_sstgmf
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files
@@ -360,6 +370,8 @@ libSim_a_SOURCES =                   \
     objs/CheckFrame.h                \
     objs/CoastalMaps.C               \
     objs/CoastalMaps.h               \
+    objs/CoastDistance.C             \
+    objs/CoastDistance.h             \
     objs/ColorMap.C                  \
     objs/ColorMap.h                  \
     objs/ConfigList.C                \
@@ -428,6 +440,8 @@ libSim_a_SOURCES =                   \
     objs/Kpr.h                       \
     objs/KpStatistics.C              \
     objs/KpStatistics.h              \
+    objs/LCRESMap.C                  \
+    objs/LCRESMap.h                  \
     objs/L00.C                       \
     objs/L00Frame.C                  \
     objs/L00Frame.h                  \

@@ -52,7 +52,8 @@ public:
 	// adding measurements //
 	//---------------------//
 
-	int		Add(Meas *meas, double meas_time, long spot_id, int do_composite);
+	int		Add(Meas *meas, double meas_time, long spot_id, int do_composite,
+	            int no_check_bounds = 0);
 	//--------------//
 	// input/output //
 	//--------------//

@@ -9,17 +9,20 @@
 static const char rcs_id_gmf_h[] =
     "@(#) $Id$";
 
+#include <vector>
 #include "MiscTable.h"
 #include "Wind.h"
 #include "Meas.h"
 #include "Constants.h"
 #include "Kp.h"
+#include "ConfigList.h"
 
 
 //======================================================================
 // CLASSES
-//    GMF
+//    GMF, SSTGMF
 //======================================================================
+
 
 //======================================================================
 // CLASS
@@ -69,6 +72,7 @@ public:
     int  ReadQScatStyleDualPolExtended(const char*  filename);
     int  ReadHighWind(const char* filename);
     int  ReadKuAndC(const char* ku_filename,const char* c_filename);
+    int  ReadKuAndCNew(const char* ku_filename,const char* c_filename);
     int  ReadCBand(const char* filename);
     int  ReadPolarimetric(const char* filename);
 
@@ -130,6 +134,7 @@ public:
     int    RetrieveWinds_S2(MeasList* meas_list, Kp* kp, WVC* wvc);
     int    RetrieveWinds_S3(MeasList* meas_list, Kp* kp, WVC* wvc,
 			    int s4_flag = 0,float prior_dir=0);
+    int    RetrieveWinds_S3MV(MeasList* meas_list, Kp* kp, WVC* wvc);
     int    RetrieveWinds_CoastSpecial(MeasList* meas_list, Kp* kp, WVC* wvc,
 				      int s4_flag = 0, int dirth_flag=1);
     int    RetrieveWinds_S3Rain(MeasList* meas_list, Kp* kp, WVC* wvc,float prior_dir=0);
@@ -186,6 +191,7 @@ public:
     int  retrieveOverCoast;
     int  smartNudgeFlag;
     int  retrieveUsingCriteriaFlag;
+    int  retrieveRandomDirectionForLowSpeeds;
 
     float minimumAzimuthDiversity;
 
@@ -213,6 +219,7 @@ public:
     float  _ObjectiveFunctionMeasVarWt(MeasList* meas_list, float u, float phi, Kp* kp);
 
     float  _ObjectiveFunctionFixedTrial(MeasList* meas_list, float u, float phi, Kp* kp, float fixed_sigma0);
+    float  _ObjectiveFunctionVarSpecified(MeasList* meas_list, float u, float phi, Kp* kp);
     int    _ObjectiveToProbability(float scale, int radius);
 
     //-----------//
@@ -238,5 +245,34 @@ public:
     float*  _objective_buffer;    // array to hold best objective for each dir
     int*    _dir_mle_maxima;      // storage for a copy of obj
 };
+
+
+
+class SSTGMF
+{
+public:
+    //--------------//
+    // construction //
+    //--------------//
+    SSTGMF(ConfigList* config_list, int n_buffer=20);
+    ~SSTGMF();
+
+    int Get(float sst, GMF** gmf);
+
+private:
+    static const float _sstMin = 1.5;
+    static const float _sstStep = 0.2;
+    static const int _nSST = 150;
+    int _nBuffer;
+    std::vector<GMF*> _gmfs;
+    std::vector<int> _isst;
+
+    int _STToIdx(float sst);
+    int _GetIfLoaded(float sst, GMF** gmf);
+    int _LoadAndGet(float sst, GMF** gmf);
+    const char* _gmfBasename;
+    ConfigList* _configList;
+};
+
 
 #endif

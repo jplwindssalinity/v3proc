@@ -152,6 +152,8 @@ int main(int argc, char* argv[]){
     int do_neutral = 0;
     int do_ncep = 0;
     int use_bigE = 0;
+    int for_ascat = 0;
+    int use_rev_mid_time = 0;
 
     int optind=1;
     while(optind<argc && (argv[optind][0]=='-')){
@@ -189,6 +191,12 @@ int main(int argc, char* argv[]){
 
         } else if(sw == "-bigE"){
             use_bigE = 1;
+
+        } else if(sw == "-ascat"){
+            for_ascat = 1;
+
+        } else if(sw == "-rev_mid_time"){
+            use_rev_mid_time = 1;
 
         } else {
             fprintf(stderr,"%s: Unknown option: %s\n", command, sw.c_str());
@@ -240,6 +248,10 @@ int main(int argc, char* argv[]){
 
     for (int ati=0; ati<n_ati; ++ati){
         double t_curr = t_start + orbit_period*double(ati)/double(n_ati);
+        if(use_rev_mid_time) {
+            t_curr = t_start + 0.5*orbit_period;
+        }
+
         etime_curr.SetTime( t_curr );
         char code_B_str_curr[CODE_B_TIME_LENGTH];
 
@@ -329,7 +341,12 @@ int main(int argc, char* argv[]){
         for (int cti = 0; cti < n_cti; ++cti ) {
             // Get lat lon for this wvc
             float wvc_lat, wvc_lon;
-            bin_to_latlon( ati, cti, &orbit_config, &wvc_lat, &wvc_lon );
+
+            int bin_ati = ati;
+            if(for_ascat)
+                bin_ati -= n_ati/2;
+
+            bin_to_latlon( bin_ati, cti, &orbit_config, &wvc_lat, &wvc_lon );
 
             double     wvc_lon_deg = double( RAD_TO_DEG(wvc_lon) );
             double     wvc_lat_deg = double( RAD_TO_DEG(wvc_lat) );      

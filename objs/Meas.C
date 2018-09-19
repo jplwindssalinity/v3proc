@@ -236,9 +236,9 @@ Meas::Composite(
         // Ensure we do not composite over missing slices. // AGF 11/1/2010
         //-------------------------------------------------// Assumes slice-ordered L1B file....
         if( meas != meas_start && meas->startSliceIdx != prev_slice_idx + 1 ) {
-          fprintf(stderr,
-                  "Meas::Composite: Non-consecutive slices (start, prev, curr): %d %d %d\n",
-                  min_slice_idx, prev_slice_idx, meas->startSliceIdx );
+//           fprintf(stderr,
+//                   "Meas::Composite: Non-consecutive slices (start, prev, curr): %d %d %d\n",
+//                   min_slice_idx, prev_slice_idx, meas->startSliceIdx );
           return(0);
         }
         // Stupid HACK----------------------------------------------------------
@@ -1456,11 +1456,14 @@ int MeasSpot::ComputeRangeWidth(Meas* meas, float* range_width) {
 #define COAST_NYSTEPS 25
 
 int MeasSpot::ComputeLandFraction( LandMap*   lmap,
-                                   QSLandMap* qs_lmap,
+                                   CoastDistance* coast_dist,
                                    Antenna*   ant,
                                    float      freq_shift,
                                    double     spot_lon,
-                                   double     spot_lat) {
+                                   double     spot_lat,
+                                   LCRESMap*  lcres_map,
+                                   LCRESMapTileList* lcres_map_tiles) {
+
   //printf("Length MeasSpot: %d\n",NodeCount());
   
   if( NodeCount() == 0 ) return(1);
@@ -1531,23 +1534,31 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
   // Loop over Meas in this MeasSpot
   for( Meas* meas = GetHead(); meas; meas = GetNext() ) {
     // Only compute land fraction for coastal slices
-    double lon,lat,alt;
-    meas->centroid.GetAltLonGDLat(&alt,&lon,&lat);
     // If not near the coast, set land fraction to zero or one
     // depending on other land flag method.
-    int qs_lmap_bits;
-    qs_lmap_bits = qs_lmap->IsLand( lon, lat, -1 );
-    if (qs_lmap_bits==0||qs_lmap_bits==255)  {
+
+    double lon, lat, alt, dist;
+    coast_dist->Get(&(meas->centroid), &dist);
+
+    if(fabs(dist)>35) {
       if( meas->landFlag==1 || meas->landFlag==3 ) {
         meas->bandwidth = 1;
+        if(lcres_map_tiles) {
+          meas->txPulseWidth = 1;
+        }
       } else {
         meas->bandwidth = 0;
+        if(lcres_map_tiles) {
+          meas->txPulseWidth = 0;
+        }
       }
       continue;
     }
-    
+
     float  sum     = 0;
     float  landsum = 0;
+    float  sum_es = 0;
+    float  landsum_es = 0;
     float  bbf0    = NominalQuikScatBaseBandFreq(meas->centroid);
     float  bbf1    = NominalQuikScatBaseBandFreq(meas->centroid+xvec*0.1);
     float  bw      = meas->bandwidth;
@@ -1560,9 +1571,9 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
     int    nysteps = COAST_NYSTEPS;
     double dx      = (xmax-xmin)/nxsteps;
     double dy      = (ymax-ymin)/nysteps;
-    
+
     CoordinateSwitch spotframe_to_gc = gc_to_spotframe.ReverseDirection();
-    
+
     for(int ix=0;ix<nxsteps;ix++){
       for(int iy=0;iy<nysteps;iy++){
         float x = xmin + dx/2 + dx*ix;
@@ -1575,7 +1586,7 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
         
         lon = atan2( p.GetY(), p.GetX() );
         lat = atan( tan( asin( p.GetZ() / p.Magnitude() ) ) / (1-e2) );
-        
+
         if( lon < 0 ) lon += two_pi;
 
         Vector3 antenna_look = gc_to_antenna.Forward(p - scOrbitState.rsat);
@@ -1587,12 +1598,42 @@ int MeasSpot::ComputeLandFraction( LandMap*   lmap,
         if( !ant->beam[meas->beamIdx].GetPowerGainProduct(
             theta, phi, rtt, ant->spinRate, &g2)) g2=0.0;
 
-         float dW = g2*dx*dy / (range*range*range*range);
-         sum     += dW;
-         landsum += lmap->IsLand(lon,lat) ? dW : 0;
+        int ipol = -1;
+        if(meas->measType == Meas::VV_MEAS_TYPE) ipol = 0;
+        if(meas->measType == Meas::HH_MEAS_TYPE) ipol = 1;
+
+        int is_asc = (scOrbitState.vsat.GetZ() < 0) ? 0 : 1;
+        int is_land = lmap->IsLand(lon, lat);
+
+        float dW = g2*dx*dy / (range*range*range*range);
+        sum     += dW;
+        landsum += (is_land == 1) ? dW : 0;
+
+        // Accumulate into the LCRES map if one is specified
+        if(lcres_map) {
+            lcres_map->Add(&p, meas->eastAzimuth, dW, ipol, is_asc, meas->value);
+        }
+
+        // Compute integrated ES value
+        if(lcres_map_tiles) {
+            float land_expected_value;
+            lcres_map_tiles->Get(
+                lon, lat, meas->eastAzimuth, ipol, is_asc,
+                &land_expected_value);
+
+            sum_es += dW * land_expected_value;
+            landsum_es += (is_land == 1) ? (dW * land_expected_value) : 0;
+        }
       } // iy loop
     }   // ix loop
-    meas->bandwidth = landsum / sum; // Use EnSlice to hold land fraction values
+
+    // Use bandwidth to hold land fraction values
+    meas->bandwidth = landsum / sum; 
+
+    // Use EnSlice, txPulseWidth to hold land expected sigma0 values
+    if(lcres_map_tiles) {
+      meas->txPulseWidth = landsum_es / sum;
+    }
   } // loop over Meas in MeasSpot
   return(1);
 }

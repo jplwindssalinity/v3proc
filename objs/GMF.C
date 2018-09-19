@@ -32,6 +32,10 @@ static const char rcs_id_gmf_c[] =
 #include "List.h"
 #include "AngleInterval.h"
 #include "Array.h"
+#include "Distributions.h"
+#include "ConfigSim.h"
+#include "ConfigSimDefs.h"
+#include "ConfigList.h"
 
 //=====//
 // GMF //
@@ -46,7 +50,7 @@ GMF::GMF()
     _phiCount(0), _phiStepSize(0.0), _spdTol(DEFAULT_SPD_TOL), _sepAngle(DEFAULT_SEP_ANGLE),
     _smoothAngle(DEFAULT_SMOOTH_ANGLE), _maxSolutions(DEFAULT_MAX_SOLUTIONS),
     _bestSpd(NULL), _bestObj(NULL), _copyObj(NULL), _speed_buffer(NULL),
-    _objective_buffer(NULL), _dir_mle_maxima(NULL)
+    _objective_buffer(NULL), _dir_mle_maxima(NULL), retrieveRandomDirectionForLowSpeeds(0)
 {
     SetPhiCount(DEFAULT_PHI_COUNT);
 
@@ -501,6 +505,41 @@ int GMF::ReadKuAndC(
     return c_res && ku_res;
 }
 
+int GMF::ReadKuAndCNew(
+		    const char*  ku_filename, const char* c_filename)
+{
+    _metCount = 7;
+
+    _incCount = 47;
+    _incMin = 20.0 * dtr;
+    _incMax = 66.0 * dtr;
+    _incStep = 1.0 * dtr;
+
+    _spdCount = 501;
+    _spdMin = 0.0;
+    _spdMax = 50.0;
+    _spdStep = 0.1;
+
+    _chiCount = 360;
+    _chiStep = two_pi / _chiCount;
+
+    if (! _Allocate())
+        return(0);
+
+    bool mirrorChiValues = false;
+    bool discardFirstVal = false;
+    int n_met = 2;
+
+    int met_idx_start = 5;
+    int c_res = _ReadArrayFileLoop(c_filename, mirrorChiValues, discardFirstVal,
+        met_idx_start, n_met);
+
+    met_idx_start = 0;
+    int ku_res = _ReadArrayFileLoop(ku_filename, mirrorChiValues, discardFirstVal,
+        met_idx_start, n_met);
+        
+    return c_res && ku_res;
+}
 //----------------------//
 // GMF:ReadPolarimetric //
 //----------------------//
@@ -2137,6 +2176,10 @@ GMF::_ObjectiveFunction(
 	    fv = _ObjectiveFunctionDirPrior(meas_list,spd,phi,kp,phi_prior);
 	    break;
 
+        case 5:
+        fv = _ObjectiveFunctionVarSpecified(meas_list,spd,phi,kp);
+        break;
+
         default:
             fv = _ObjectiveFunctionOld(meas_list, spd, phi, kp);
             break;       
@@ -2391,6 +2434,66 @@ GMF::_ObjectiveFunctionMeasVar(
             fv += wt*s*s / var;
         }
 	//printf("fv %g wt %g s %g var %g A %g B %g\n",fv,wt,s,var,meas->EnSlice,meas->bandwidth);
+    }
+    return(-fv);
+}
+
+float GMF::_ObjectiveFunctionVarSpecified(
+    MeasList*  meas_list,
+    float      spd,
+    float      phi,
+    Kp*        kp)
+{
+    //-----------------------------------------//
+    // initialize the objective function value //
+    //-----------------------------------------//
+
+    float fv = 0.0;
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+        //---------------------------------------//
+        // get sigma-0 for the trial wind vector //
+        //---------------------------------------//
+
+        float chi = phi - meas->eastAzimuth + pi;
+        float trial_value;
+        GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
+            &trial_value);
+
+        //------------------------------------------------------------//
+        // find the difference between the trial and measured sigma-0 //
+        //------------------------------------------------------------//
+
+        // Sanity check on measurement
+        double tmp=meas->value;
+        if (! finite(tmp))
+            continue;
+
+        float s = trial_value - meas->value;
+        float wt=kuBandWeight;
+        if(meas->measType==Meas::C_BAND_VV_MEAS_TYPE || 
+           meas->measType==Meas::C_BAND_HH_MEAS_TYPE){
+           wt=cBandWeight;
+        }
+
+        //-------------------------------------------------------//
+        // Get variance from meas->A                             //
+        //-------------------------------------------------------//
+
+        float var = meas->A;
+        if (var == 0.0)
+        {
+            // variances all turned off, so use uniform weighting.
+            fv += wt*s*s;
+        }
+        else if (retrieveUsingLogVar)
+        {
+            fv += wt*s*s / var + wt*log(var);
+        }
+        else
+        {
+            fv += wt*s*s / var;
+        }
     }
     return(-fv);
 }
@@ -3227,6 +3330,25 @@ GMF::Calculate_Init_Wind_Solutions(
     //for (int k = 2; k <= num_dir_samples - 1; k++) {
     //  fprintf(stdout,"angle, obj, avg_obj: %12.6f %12.6f %12.6f\n",dir_spacing*(k-2),_objective_buffer[k],obj_avg[k]);
     //}
+
+    if(retrieveRandomDirectionForLowSpeeds && num_mle_maxima == 0) {
+        float mean_speed = 0;
+        for(k = 2; k <= num_dir_samples - 1; k++)
+            mean_speed += _speed_buffer[k];
+
+        mean_speed /= (float)(num_dir_samples-2);
+
+        if(mean_speed < 1) {
+            num_mle_maxima = 1;
+            Uniform uniform_dist(0.5, 0.5);
+            float random = uniform_dist.GetNumber();
+            _dir_mle_maxima[1] = 2+(int)round(random*(num_dir_samples-3));
+        }
+
+        // Set objective function ridge to a constant
+        for(k=1; k<=num_dir_samples; ++k)
+            obj_avg[k] = 0;
+    }
 
     if( num_mle_maxima == 0 )
       return(0);
@@ -5941,6 +6063,86 @@ GMF::RetrieveWinds_CoastSpecial(
   }
   return(retval);
 }
+
+
+//
+// code only makes sense for two-beam conically-scanning scatterometer
+//
+int GMF::RetrieveWinds_S3MV(MeasList* meas_list, Kp* kp, WVC* wvc) {
+
+    float sum_s0[2][2], sum_s02[2][2];
+    float sum_cos_azi[2][2], sum_sin_azi[2][2];
+    float sum_inc[2][2];
+    int cnts[2][2];
+
+    for(int ipol=0; ipol < 2; ++ipol) {
+        for(int ilook=0; ilook < 2; ++ilook) {
+            sum_s0[ilook][ipol] = 0;
+            sum_s02[ilook][ipol] = 0;
+            sum_cos_azi[ilook][ipol] = 0;
+            sum_sin_azi[ilook][ipol] = 0;
+            sum_inc[ilook][ipol] = 0;
+            cnts[ilook][ipol] = 0;
+        }
+    }
+
+    for(Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext()) {
+
+        int ilook = 0;
+        if(meas->scanAngle > pi/2 && meas->scanAngle < 3*pi/2)
+            ilook = 1;
+
+        int ipol = meas->beamIdx;
+        sum_s0[ilook][ipol] += meas->value;
+        sum_s02[ilook][ipol] += pow(meas->value, 2);
+        sum_cos_azi[ilook][ipol] += cos(meas->eastAzimuth);
+        sum_sin_azi[ilook][ipol] += sin(meas->eastAzimuth);
+        sum_inc[ilook][ipol] += meas->incidenceAngle;
+        cnts[ilook][ipol]++;
+    }
+
+    MeasList meas_list_agg;
+
+    for(int ilook=0; ilook < 2; ++ilook) {
+        for(int ipol=0; ipol < 2; ++ipol) {
+
+            if(cnts[ilook][ipol] < 2)
+                continue;
+
+            Meas* this_meas = new Meas();
+            this_meas->value = 
+                sum_s0[ilook][ipol]/(float)cnts[ilook][ipol];
+
+            this_meas->incidenceAngle = 
+                sum_inc[ilook][ipol]/(float)cnts[ilook][ipol];
+
+            this_meas->eastAzimuth = atan2(
+                sum_sin_azi[ilook][ipol], sum_cos_azi[ilook][ipol]);
+
+            this_meas->beamIdx = ipol;
+
+            this_meas->measType = 
+                (ipol == 0) ? Meas::HH_MEAS_TYPE : Meas::VV_MEAS_TYPE;
+
+            double this_var = 
+                sum_s02[ilook][ipol]/(float)cnts[ilook][ipol] - 
+                pow(this_meas->value, 2);
+
+            this_var *= (float)cnts[ilook][ipol] / 
+                (float)(cnts[ilook][ipol]-1);
+
+            this_meas->A = 1;
+            this_meas->B = 0;
+            this_meas->C = this_var;
+            this_meas->numSlices = -1;
+
+            meas_list_agg.Append(this_meas);
+        }
+    }
+
+    return RetrieveWinds_S3(&meas_list_agg, kp, wvc);
+}
+
 //-----------------------//
 // GMF::RetrieveWinds_S3 //
 //-----------------------//
@@ -6006,7 +6208,7 @@ GMF::RetrieveWinds_S3(
     int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
     if (delete_count > 0)
     {
-        fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
+        //fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
         for (int i = 0; i < delete_count; i++)
         {
             wvc->ambiguities.GotoTail();
@@ -6712,3 +6914,102 @@ GMF::CalculateSigma0Weights(
 //     } // loop over measurements
 //     return;
 // }
+
+
+SSTGMF::SSTGMF(ConfigList* config_list, int n_buffer) {
+    // Keep pointer to config_list object to use for configurating the GMFs
+    // we keep creating when loading in different SST GMF slices.
+    _configList = config_list;
+    _nBuffer = n_buffer;
+    _gmfBasename = config_list->Get(SST_GMF_BASEPATH_KEYWORD);
+    return;
+}
+
+int SSTGMF::_STToIdx(float sst) {
+    // Converts float SST to index in SST GMFs
+    int isst = (int)round((sst - _sstMin)/_sstStep);
+    // Force in bounds
+    if(isst < 0) isst = 0;
+    if(isst >= _nSST) isst = _nSST-1;
+    return(isst);
+}
+
+int SSTGMF::Get(float sst, GMF** gmf) {
+    // gmf is pointer to GMF class for the sst value requested
+    // on success returns 1; fail returns 0 and pointer is NULL
+    if(!_GetIfLoaded(sst, gmf)) {
+        if(!_LoadAndGet(sst, gmf)) {
+            *gmf = NULL;
+            return(0);
+        }
+    }
+    return(1);
+}
+
+int SSTGMF::_GetIfLoaded(float sst, GMF** gmf) {
+
+    int isst = _STToIdx(sst);
+
+    // See if it is loaded
+    int which_idx = -1;
+    for(int ii=0; ii < _gmfs.size(); ++ii) {
+        if(_isst[ii] == isst) {
+            which_idx = ii;
+            *gmf = _gmfs[ii];
+            break;
+        }
+    }
+
+    // If on end put it back on top
+    if(which_idx == _nBuffer - 1) {
+        std::swap(_gmfs[which_idx], _gmfs[0]);
+        std::swap(_isst[which_idx], _isst[0]);
+    }
+
+    if(which_idx == -1)
+        return(0);
+    else
+        return(1);
+}
+
+int SSTGMF::_LoadAndGet(float sst, GMF** gmf) {
+    char filename[1024];
+    float gmf_sst = _sstMin + (float)_STToIdx(sst) * _sstStep;
+    sprintf(filename, "%s_%04.1f.dat", _gmfBasename, gmf_sst);
+
+    // Allocate and construct GMF pointed to by this_gmf
+    GMF* this_gmf = new GMF();
+
+    // Loading actually done by ConfigSim::ConfigGMF() method
+    // modify key in config_list to point to desired GMF file
+    _configList->StompOrAppend(GMF_FILE_KEYWORD, filename);
+
+    if(!ConfigGMF(this_gmf, _configList)) {
+        fprintf(stderr, "Error reading GMF from file: %s\n", filename);
+        delete this_gmf;
+        return(0);
+    }
+
+    // If buffer already maxed out delete last thing in there
+    if(_gmfs.size() == _nBuffer) {
+        delete _gmfs[_nBuffer-1];
+        _gmfs.pop_back();
+        _isst.pop_back();
+    }
+
+    // Put this GMF on front of list of GMFs buffered
+    _gmfs.insert(_gmfs.begin(), this_gmf);
+    _isst.insert(_isst.begin(), _STToIdx(sst));
+
+    *gmf = this_gmf;
+    return(1);
+}
+
+SSTGMF::~SSTGMF() {
+    // delete all entires
+    for(int ii=0; ii < _gmfs.size(); ++ii) {
+        delete _gmfs[ii];
+        _gmfs[ii] = NULL;
+    }
+    return;
+}

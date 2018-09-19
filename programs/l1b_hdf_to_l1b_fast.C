@@ -53,9 +53,16 @@ static const char rcs_id[] =
 
 #define QS_LANDMAP_FILE_KEYWORD         "QS_LANDMAP_FILE"
 #define QS_ICEMAP_FILE_KEYWORD          "QS_ICEMAP_FILE"
-#define DO_COASTAL_PROCESSING_KEYWORD   "DO_COASTAL_PROCESSING"
 #define USE_COMPOSITING_KEYWORD         "USE_COMPOSITING"
 #define USE_FOOTPRINTS_KEYWORD          "USE_FOOTPRINTS"
+#define DO_COASTAL_PROCESSING_KEYWORD   "DO_COASTAL_PROCESSING"
+#define COASTAL_METHOD_KEYWORD          "COASTAL_PROCESSING_METHOD"
+#define COASTAL_DISTANCE_FILE_KEYWORD   "COASTAL_DISTANCE_FILE"
+#define LCRES_ACCUM_FILE_KEYWORD        "LCRES_ACCUM_FILE"
+#define LCRES_MAP_TILE_DIR_KEYWORD      "LCRES_MAP_TILE_DIR"
+#define LCR_THRESHOLD_FLAG_KEYWORD      "LCR_THRESHOLD_FLAG"
+#define LCRES_THRESHOLD_FLAG_KEYWORD    "LCRES_THRESHOLD_FLAG"
+#define LCRES_THRESHOLD_CORR_KEYWORD    "LCRES_THRESHOLD_CORR"
 
 //----------//
 // INCLUDES //
@@ -77,6 +84,8 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "SeaPac.h"
 #include "AttenMap.h"
+#include "CoastDistance.h"
+#include "LCRESMap.h"
 
 using std::list;
 using std::map;
@@ -487,10 +496,9 @@ main(
     char*        attenmap_file   = NULL;
     char*        qslandmap_file  = NULL;
     char*        qsicemap_file   = NULL;
-    
     int          compute_land_frac = 0;
     float        sigma0_adjust = 0;
-    
+
     ConfigList   config_list;
     AttenMap     attenmap;
     QSLandMap    qs_landmap;
@@ -498,6 +506,9 @@ main(
     Kp           kp;
     LandMap      lmap;
     Antenna      antenna;
+
+    enum CoastalProcMethod {NONE, LCR, LCRES_FLAG, LCRES_CORR, LCRES_ACCUM};
+
     //QSKpr        qs_kpr;
 
     //------------------------//
@@ -511,9 +522,6 @@ main(
       if( sw == "-c" ) {
         ++optind;
         config_file = argv[optind];
-      } else if( sw == "--sigma0-adjust" ) {
-        ++optind;
-        sigma0_adjust = atof(argv[optind]);
       } else {
         fprintf(stderr,"%s: Unknow option\n", command);
         exit(1);
@@ -551,14 +559,82 @@ main(
       exit(1);
     }
     
-    float land_frac_threshold;
-    config_list.GetInt(DO_COASTAL_PROCESSING_KEYWORD,&compute_land_frac);
-    
-    if( compute_land_frac && 
-        !config_list.GetFloat("COASTAL_LAND_FRAC_THRESH",&land_frac_threshold) ) {
-      fprintf(stderr,"%s: Must specify COASTAL_LAND_FRAC_THRESH if DO_COASTAL_PROCESSING = 1\n",
-              command );
-      exit(1);
+    int do_coastal_processing = 0;
+    CoastalProcMethod coastal_method = NONE;
+    float land_frac_threshold = 1;
+    float lcres_thresh_flag = 1;
+    float lcres_thresh_corr = 1;
+
+    // Declare these as null pointers and new them if commanded to in config
+    // file.  They consume large amounts of RAM
+    CoastDistance* coast_dist = NULL;
+    LCRESMap* lcres_accum = NULL;
+    LCRESMapTileList* lcres_map_tiles = NULL;
+
+    config_list.DoNothingForMissingKeywords();
+    config_list.GetInt(DO_COASTAL_PROCESSING_KEYWORD,&do_coastal_processing);
+
+    if(do_coastal_processing) {
+        config_list.ExitForMissingKeywords();
+
+        // Determine which method to use
+        const char* method = config_list.Get(COASTAL_METHOD_KEYWORD);
+        fprintf(stdout, "%s\n", method);
+
+        // Land Contamination Ratio method (simple land fraction threshold).
+        if (strcmp(method, "LCR") == 0){
+            coastal_method = LCR;
+
+            coast_dist = new CoastDistance();
+            coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
+
+            config_list.GetFloat(
+                LCR_THRESHOLD_FLAG_KEYWORD, &land_frac_threshold);
+
+        // Land Contamination Ratio Expected Sigma0 threshold
+        } else if (strcmp(method, "LCRES_FLAG") == 0) {
+            coastal_method = LCRES_FLAG;
+
+            char* lcres_map_tile_dir = config_list.Get(
+                LCRES_MAP_TILE_DIR_KEYWORD);
+
+            lcres_map_tiles = new LCRESMapTileList(lcres_map_tile_dir);
+
+            coast_dist = new CoastDistance();
+            coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
+
+            config_list.GetFloat(
+                LCRES_THRESHOLD_FLAG_KEYWORD, &lcres_thresh_flag);
+
+        // Land Contamination Ratio Expected Sigma0 correction
+        } else if (strcmp(method, "LCRES_CORR") == 0) {
+            coastal_method = LCRES_CORR;
+
+            char* lcres_map_tile_dir = config_list.Get(
+                LCRES_MAP_TILE_DIR_KEYWORD);
+
+            lcres_map_tiles = new LCRESMapTileList(lcres_map_tile_dir);
+
+            coast_dist = new CoastDistance();
+            coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
+
+            config_list.GetFloat(
+                LCRES_THRESHOLD_CORR_KEYWORD, &lcres_thresh_corr);
+
+        // Mode to accumulate the LCRES maps
+        } else if (strcmp(method, "LCRES_ACCUM") == 0) {
+            coastal_method = LCRES_ACCUM;
+
+            lcres_accum = new LCRESMap();
+            if(!lcres_accum->Read(config_list.Get(LCRES_ACCUM_FILE_KEYWORD))) {
+                fprintf(stderr, "Error reading lcres accum file\n");
+            }
+
+            coast_dist = new CoastDistance();
+            coast_dist->Read(config_list.Get(COASTAL_DISTANCE_FILE_KEYWORD));
+        }
+
+        config_list.DoNothingForMissingKeywords();
     }
     
     fprintf(stdout,"%s: Using QS LANDMAP %s\n",command,qslandmap_file);
@@ -610,20 +686,19 @@ main(
     
     
     int do_composite = 0;
-    if( !config_list.GetInt(USE_COMPOSITING_KEYWORD, &do_composite) ) {
+    if( !config_list.GetInt("USE_COMPOSITING",&do_composite) ) {
       fprintf(stderr,"%s: Error reading from config file\n",command);
       exit(1);
     }
     printf("%s: Use compositing flag: %d\n", command, do_composite);
 
     int do_footprint = 0;
-    if( !config_list.GetInt(USE_FOOTPRINTS_KEYWORD, &do_footprint) ) {
-      fprintf(stderr,"%s: Error reading from config file\n", command);
-      exit(1);
-    }
+    config_list.DoNothingForMissingKeywords();
+    config_list.GetInt(USE_FOOTPRINTS_KEYWORD, &do_footprint);
+    config_list.ExitForMissingKeywords();
 
     // Check for Coastal maps & configure landmap if commanded
-    if( compute_land_frac ) {
+    if(coastal_method != NONE) {
       if(!ConfigLandMap(&lmap,&config_list)) {
         fprintf(stderr,"%s: Error configuring LandMap\n",command);
         exit(1);
@@ -693,11 +768,6 @@ main(
     
     float* cell_lat = (float*)calloc(sizeof(float),num_l1b_frames*100);
     float* cell_lon = (float*)calloc(sizeof(float),num_l1b_frames*100);
-    uint16* cell_inc = (uint16*)calloc(sizeof(uint16),num_l1b_frames*100);
-    uint16* cell_azi = (uint16*)calloc(sizeof(uint16),num_l1b_frames*100);
-    int16* cell_snr = (int16*)calloc(sizeof(int16),num_l1b_frames*100);
-    int16* cell_sigma0 = (int16*)calloc(sizeof(int16),num_l1b_frames*100);
-    int16* cell_kpc_a = (int16*)calloc(sizeof(int16),num_l1b_frames*100);
     
     int16* frequency_shift = (int16*)calloc(sizeof(int16),num_l1b_frames*100);
     
@@ -733,9 +803,7 @@ main(
     if( !read_SDS( sd_id, "cell_lat",        &cell_lat[0]        ) ||
         !read_SDS( sd_id, "cell_lon",        &cell_lon[0]        ) ||
         !read_SDS( sd_id, "antenna_azimuth", &antenna_azimuth[0] ) ||
-        !read_SDS( sd_id, "frequency_shift", &frequency_shift[0] ) ||
-        !read_SDS( sd_id, "cell_incidence",  &cell_inc[0]        ) ||
-        !read_SDS( sd_id, "cell_azimuth",    &cell_azi[0]        ) )  // uint16
+        !read_SDS( sd_id, "frequency_shift", &frequency_shift[0] ) )  // uint16
     {
       fprintf(stderr,"Error reading geolocation from HDF file!\n");
       exit(1);
@@ -756,10 +824,7 @@ main(
     }  
     
     if( !read_SDS( sd_id, "sigma0_mode_flag", &sigma0_mode_flag[0] ) ||
-        !read_SDS( sd_id, "sigma0_qual_flag", &sigma0_qual_flag[0] ) ||
-        !read_SDS( sd_id, "cell_sigma0",      &cell_sigma0[0]      ) ||
-        !read_SDS( sd_id, "cell_snr",         &cell_snr[0]         ) ||
-        !read_SDS( sd_id, "cell_kpc_a",       &cell_kpc_a[0]       ) )
+        !read_SDS( sd_id, "sigma0_qual_flag", &sigma0_qual_flag[0] ) )
     {
       fprintf(stderr,"Error reading egg sigma0 flags from HDF file!\n");
       exit(1);
@@ -861,323 +926,290 @@ main(
         new_meas_spot->scAttitude.SetRPY(
             this_roll*dtr, this_pitch*dtr, this_yaw*dtr);
 
-        if(do_footprint)
+        for( int i_slice = 0; i_slice < 8; ++i_slice )
         {
+           // Using 1d arrays 
+           int slice_ind = i_frame * 100 * 8 + i_pulse * 8 + i_slice;
 
-          // do footprint stuff
-          if(!(sigma0_mode_flag[pulse_ind] & (uint16)0x3) &&
-             !(sigma0_qual_flag[pulse_ind] & (uint16)0x1)) {
-
-            // Done checking flags; create memory for this Meas object
-            Meas* new_meas = new Meas();           
-
-            new_meas->azimuth_width = 25;
-            new_meas->range_width = 30;
-
-            double tmp_lon = cell_lon[pulse_ind]*dtr;
-            double tmp_lat = cell_lat[pulse_ind]*dtr;
-
-            new_meas->centroid.SetAltLonGDLat(0.0, tmp_lon, tmp_lat);
-            new_meas->incidenceAngle = 0.01*dtr*double(cell_inc[pulse_ind]);
-
-            // Get attenuation map value
-            float atten_dB = 0;
-            if(use_atten_map)
-              atten_dB = attenmap.GetNadirAtten(tmp_lon, tmp_lat, sec_year)
-                       / cos(new_meas->incidenceAngle);
-
-            float atten_lin = pow(10.0,0.1*atten_dB);
-
-            // Set azimuth angle & change for QSCATsim convention
-            float northAzimuth       = 0.01*dtr*double(cell_azi[pulse_ind]);
-            new_meas->eastAzimuth    = (450.0*dtr - northAzimuth);
-            if (new_meas->eastAzimuth >= two_pi) new_meas->eastAzimuth -= two_pi;
-
-            // Set scanAngle
-            new_meas->scanAngle = 0.01*dtr*double(antenna_azimuth[pulse_ind]);
-
-            // Set measurement type
-            if (sigma0_mode_flag[pulse_ind] & 0x4) {
-              new_meas->beamIdx = 1;
-              new_meas->measType = Meas::VV_MEAS_TYPE;
-            } 
-            else {
-              new_meas->beamIdx = 0;
-              new_meas->measType = Meas::HH_MEAS_TYPE;
-            }
-
-            // Get sigma-0 Mode from flags
-            // Sigma0 mode is index into kpr table
-            // gate width flags are bits (6,7,8).
-            uint16 gatewidth = (sigma0_mode_flag[pulse_ind] & (uint16)0x1C0 ) >> 6;
-
-            if( (gatewidth != (uint16)3) && (gatewidth != (uint16)4)) {
-              fprintf(stderr,"%s: Gatewidth not equal to 3 or 4; %d!\n",command,gatewidth);
-              exit(1);
-            }
-
-            if(gatewidth==(uint16)3) {
-              new_meas->bandwidth = 6.929 * 1000 * 10;
-            } else if ( gatewidth==(uint16)4) {
-              new_meas->bandwidth = 12.933 * 1000 * 10;
-            }
-
-            new_meas->value = pow(
-              10.0, (sigma0_adjust + atten_dB + 0.01*double(cell_sigma0[pulse_ind]))/10.0);
-
-            // Check for negative sigma-0
-            if(sigma0_qual_flag[pulse_ind] & 0x4)
-              new_meas->value *= -1;
-
-            new_meas->XK = 1;
-            new_meas->EnSlice = (
-                new_meas->XK * new_meas->value / 
-                pow(10, 0.1*0.01*double(cell_snr[pulse_ind])));
-
-            // Get Land map value
-            new_meas->landFlag = 0;
-            if(qs_landmap.IsLand(tmp_lon, tmp_lat, 0))
-              new_meas->landFlag += 1; // bit 0 for land
-
-            // Get Ice map value
-            if( qs_icemap.IsIce(tmp_lon,tmp_lat,new_meas->beamIdx) )
-              new_meas->landFlag += 2; // bit 1 for ice
-
-
-            // Set numslices == -1 to indicate software to 
-            // treat A,B,C as kp_alpha, kp_beta, kp_gamma.
-            new_meas->startSliceIdx = -1;
-            new_meas->numSlices = -1;
-            double kprs2 = 0.0;
-            if (! kp.GetKprs2(new_meas, &kprs2)) {
-              fprintf(stderr, "%s: Error computing Kprs2\n",command);
-              exit(1);
-            }
-
-            double kpri2 = 0.0;
-            if( !kp.GetKpri2( &kpri2) ) {
-              fprintf(stderr,"%s: Error computing Kpri2\n",command);
-              exit(1);
-            }
-
-            // compute sigma-0 over SNR ratio.
-            double sos = 0.01*double(cell_sigma0[pulse_ind])
-                       - 0.01*double(cell_snr[pulse_ind]);
-            sos        = pow( 10.0, sos/10.0 ); 
-      
-            double kpr2      = 1 + kprs2 + kpri2;
-            double kp_alpha  = (1+double(1e-4*cell_kpc_a[pulse_ind]))  * kpr2;
-            double kp_beta   = 0.1*kp_B[gatewidth*2+new_meas->beamIdx] * kpr2 * sos;
-            double kp_gamma  = 0.1*kp_C[gatewidth*2+new_meas->beamIdx] * kpr2 * sos * sos;
-       
-            // Set kp alpha, beta, gamma and correct for attenuation
-            new_meas->A = 1 + ( kp_alpha - 1 ) * atten_lin * atten_lin;
-            new_meas->B = kp_beta              * atten_lin * atten_lin;
-            new_meas->C = kp_gamma             * atten_lin * atten_lin;  
-
-            // Stick this meas in the measSpot
-            new_meas_spot->Append(new_meas);
-          }
-        } else {
-
-          // do slice stuff
-          for( int i_slice = 0; i_slice < 8; ++i_slice )
-          {
-             // Using 1d arrays 
-             int slice_ind = i_frame * 100 * 8 + i_pulse * 8 + i_slice;
-
-             //Check that pulse is a measurement pulse.
-             //(bits 0,1 in state 0,0 => meas pulse)
-             if( sigma0_mode_flag[pulse_ind] & (uint16)0x3 )
-               continue;
+           //Check that pulse is a measurement pulse.
+           //(bits 0,1 in state 0,0 => meas pulse)
+           if( sigma0_mode_flag[pulse_ind] & (uint16)0x3 )
+             continue;
            
-             //Check that egg sigma0 is useable.
-             if( sigma0_qual_flag[pulse_ind] & (uint16)0x1 ) // Sigma0 useable bit
-               continue;
+           //Check that egg sigma0 is useable.
+           if( sigma0_qual_flag[pulse_ind] & (uint16)0x1 ) // Sigma0 useable bit
+             continue;
 
-             // Create unsigned ints for checking slice flags.
-             unsigned int peak_gain_flag  = (unsigned int)(1 << (i_slice * 4 + 0) );
-             unsigned int neg_sig0_flag   = (unsigned int)(1 << (i_slice * 4 + 1) );
-             unsigned int low_snr_flag    = (unsigned int)(1 << (i_slice * 4 + 2) );
-             unsigned int center_loc_flag = (unsigned int)(1 << (i_slice * 4 + 3) );
+           // Create unsigned ints for checking slice flags.
+           unsigned int peak_gain_flag  = (unsigned int)(1 << (i_slice * 4 + 0) );
+           unsigned int neg_sig0_flag   = (unsigned int)(1 << (i_slice * 4 + 1) );
+           unsigned int low_snr_flag    = (unsigned int)(1 << (i_slice * 4 + 2) );
+           unsigned int center_loc_flag = (unsigned int)(1 << (i_slice * 4 + 3) );
         
-             // Skip observations with peak_gain_flag or center_loc_flag set.
-             if( slice_qual_flag[pulse_ind] & peak_gain_flag  ||
-                 slice_qual_flag[pulse_ind] & center_loc_flag )
-               continue;
+           // Skip observations with peak_gain_flag or center_loc_flag set.
+           if( slice_qual_flag[pulse_ind] & peak_gain_flag  ||
+               slice_qual_flag[pulse_ind] & center_loc_flag )
+             continue;
            
-             // Done checking flags; create memory for this Meas object
-             Meas* new_meas = new Meas();           
+           // Done checking flags; create memory for this Meas object
+           Meas* new_meas = new Meas();           
            
-             // Set XK, EnSlice
-             new_meas->XK      = pow(10.0,0.01*double(x_factor[slice_ind])/10.0);
-             new_meas->EnSlice = pow(10.0,0.01*double(slice_sigma0[slice_ind])/10.0)
-                               * pow(10.0,0.01*double(x_factor[slice_ind])/10.0)
-                               / pow(10.0,0.01*double(slice_snr[slice_ind])/10.0);
+           // Set XK, EnSlice
+           new_meas->XK      = pow(10.0,0.01*double(x_factor[slice_ind])/10.0);
+           new_meas->EnSlice = pow(10.0,0.01*double(slice_sigma0[slice_ind])/10.0)
+                             * pow(10.0,0.01*double(x_factor[slice_ind])/10.0)
+                             / pow(10.0,0.01*double(slice_snr[slice_ind])/10.0);
         
-             // Set lon, lat of observation
-             double tmp_lat = 1e-4*dtr*double(slice_lat[slice_ind]);
-             double tmp_lon = 1e-4*dtr*double(slice_lon[slice_ind]) 
-                            / cos( cell_lat[pulse_ind]*dtr );
+           // Set lon, lat of observation
+           double tmp_lat = 1e-4*dtr*double(slice_lat[slice_ind]);
+           double tmp_lon = 1e-4*dtr*double(slice_lon[slice_ind]) 
+                          / cos( cell_lat[pulse_ind]*dtr );
            
-             tmp_lon += double(cell_lon[pulse_ind])*dtr;
-             tmp_lat += double(cell_lat[pulse_ind])*dtr;
+           tmp_lon += double(cell_lon[pulse_ind])*dtr;
+           tmp_lat += double(cell_lat[pulse_ind])*dtr;
            
-             // make longitude, latitude to be in range.
-             if( tmp_lon < 0       ) tmp_lon += two_pi;
-             if( tmp_lon >= two_pi ) tmp_lon -= two_pi;
-             if( tmp_lat < -pi     ) tmp_lat = -pi;
-             if( tmp_lat >  pi     ) tmp_lat =  pi;
+           // make longitude, latitude to be in range.
+           if( tmp_lon < 0       ) tmp_lon += two_pi;
+           if( tmp_lon >= two_pi ) tmp_lon -= two_pi;
+           if( tmp_lat < -pi     ) tmp_lat = -pi;
+           if( tmp_lat >  pi     ) tmp_lat =  pi;
            
-             new_meas->centroid.SetAltLonGDLat( 0.0, tmp_lon, tmp_lat );
+           new_meas->centroid.SetAltLonGDLat( 0.0, tmp_lon, tmp_lat );
            
-             // Set inc angle
-             new_meas->incidenceAngle = 0.01*dtr*double(slice_incidence[slice_ind]);
+           // Set inc angle
+           new_meas->incidenceAngle = 0.01*dtr*double(slice_incidence[slice_ind]);
 
-             // Get attenuation map value
-             float atten_dB = 0;
-             if( use_atten_map )
-               atten_dB = attenmap.GetNadirAtten( tmp_lon, tmp_lat, sec_year )
-                        / cos( new_meas->incidenceAngle );
+           // Get attenuation map value
+           float atten_dB = 0;
+           if( use_atten_map )
+             atten_dB = attenmap.GetNadirAtten( tmp_lon, tmp_lat, sec_year )
+                      / cos( new_meas->incidenceAngle );
 
-             float atten_lin = pow(10.0,0.1*atten_dB);
+           float atten_lin = pow(10.0,0.1*atten_dB);
            
-             // Set slice azimuth angle & change for QSCATsim convention
-             float northAzimuth       = 0.01*dtr*double(slice_azimuth[slice_ind]);
-             new_meas->eastAzimuth    = (450.0*dtr - northAzimuth);
-             if (new_meas->eastAzimuth >= two_pi) new_meas->eastAzimuth -= two_pi;
+           // Set slice azimuth angle & change for QSCATsim convention
+           float northAzimuth       = 0.01*dtr*double(slice_azimuth[slice_ind]);
+           new_meas->eastAzimuth    = (450.0*dtr - northAzimuth);
+           if (new_meas->eastAzimuth >= two_pi) new_meas->eastAzimuth -= two_pi;
            
-             // Set scanAngle
-             new_meas->scanAngle = 0.01*dtr*double(antenna_azimuth[pulse_ind]);
-             //if (new_meas->scanAngle < 0) new_meas->scanAngle += two_pi;
+           // Set scanAngle
+           new_meas->scanAngle = 0.01*dtr*double(antenna_azimuth[pulse_ind]);
+           //if (new_meas->scanAngle < 0) new_meas->scanAngle += two_pi;
 
-             // Set measurement type
-             if (sigma0_mode_flag[pulse_ind] & 0x4) {
-               new_meas->beamIdx = 1;
-               new_meas->measType = Meas::VV_MEAS_TYPE;
-             } 
-             else {
-               new_meas->beamIdx = 0;
-               new_meas->measType = Meas::HH_MEAS_TYPE;
-             }
+           // Set measurement type
+           if (sigma0_mode_flag[pulse_ind] & 0x4) {
+    	     new_meas->beamIdx = 1;
+    	     new_meas->measType = Meas::VV_MEAS_TYPE;
+           } 
+           else {
+    	     new_meas->beamIdx = 0;
+		     new_meas->measType = Meas::HH_MEAS_TYPE;
+    	   }
 
-             // Get sigma-0 Mode from flags
-             // Sigma0 mode is index into kpr table
-             // gate width flags are bits (6,7,8).
-             uint16 gatewidth = (sigma0_mode_flag[pulse_ind] & (uint16)0x1C0 ) >> 6;
+           // Get sigma-0 Mode from flags
+           // Sigma0 mode is index into kpr table
+           // gate width flags are bits (6,7,8).
+           uint16 gatewidth = (sigma0_mode_flag[pulse_ind] & (uint16)0x1C0 ) >> 6;
            
-             if( (gatewidth != (uint16)3) && (gatewidth != (uint16)4)) {
-               fprintf(stderr,"%s: Gatewidth not equal to 3 or 4; %d!\n",command,gatewidth);
-               exit(1);
-             }
+           if( (gatewidth != (uint16)3) && (gatewidth != (uint16)4)) {
+             fprintf(stderr,"%s: Gatewidth not equal to 3 or 4; %d!\n",command,gatewidth);
+             exit(1);
+           }
            
-             if(gatewidth==(uint16)3) {
-               new_meas->bandwidth = 6.929 * 1000;
-             } else if ( gatewidth==(uint16)4) {
-               new_meas->bandwidth = 12.933 * 1000;
-             }
-             // Set sigma0 + correct for attenuation if !do_composote
-             if( do_composite )
-               new_meas->value   = pow(
-                 10.0, sigma0_adjust+0.01*double(slice_sigma0[slice_ind])/10.0);
-             else
-               new_meas->value   = pow(
-                 10.0,(sigma0_adjust+atten_dB+0.01*double(slice_sigma0[slice_ind]))/10.0);
+           if(gatewidth==(uint16)3) {
+             new_meas->bandwidth = 6.929 * 1000;
+           } else if ( gatewidth==(uint16)4) {
+             new_meas->bandwidth = 12.933 * 1000;
+           }
+           // Set sigma0 + correct for attenuation if !do_composote
+           if( do_composite )
+             new_meas->value   = pow(10.0,0.01*double(slice_sigma0[slice_ind])/10.0);
+           else
+             new_meas->value   = pow(10.0,(atten_dB+0.01*double(slice_sigma0[slice_ind]))/10.0);
 
-             // Check for negative sigma-0
-             if ( slice_qual_flag[pulse_ind] & neg_sig0_flag )  
-               new_meas->value *= -1;
+           // Check for negative sigma-0
+           if ( slice_qual_flag[pulse_ind] & neg_sig0_flag )  
+             new_meas->value *= -1;
                       
-             // Set starting slice number of best 8 slices based on quality flags.
-             uint16 slice_shift_bits = (sigma0_qual_flag[pulse_ind] & (uint16)0xC00) >> 10;
-             if( slice_shift_bits == 0 )      // slices 0-7 of 0-9 used
-               new_meas->startSliceIdx = i_slice;   
-             else if( slice_shift_bits == 1 ) // slices 1-8 of 0-9 used
-               new_meas->startSliceIdx = i_slice + 1; 
-             else if( slice_shift_bits == 2 ) // slices 2-9 of 0-9 used
-               new_meas->startSliceIdx = i_slice + 2; 
-             else {
-               fprintf(stderr,"Unexpected value of slice shift flags!\n");
+           // Set starting slice number of best 8 slices based on quality flags.
+           uint16 slice_shift_bits = (sigma0_qual_flag[pulse_ind] & (uint16)0xC00) >> 10;
+           if( slice_shift_bits == 0 )      // slices 0-7 of 0-9 used
+             new_meas->startSliceIdx = i_slice;   
+           else if( slice_shift_bits == 1 ) // slices 1-8 of 0-9 used
+             new_meas->startSliceIdx = i_slice + 1; 
+           else if( slice_shift_bits == 2 ) // slices 2-9 of 0-9 used
+             new_meas->startSliceIdx = i_slice + 2; 
+           else {
+             fprintf(stderr,"Unexpected value of slice shift flags!\n");
+             exit(1);
+           }
+           //printf("pulse_ind, slice_shift_bits: %d %x\n", pulse_ind, slice_shift_bits );
+           
+           new_meas->startSliceIdx -= 5;
+           if( new_meas->startSliceIdx >= 0 ) new_meas->startSliceIdx += 1;
+           
+           // Get Land map value
+           new_meas->landFlag = 0;
+           if( qs_landmap.IsLand(tmp_lon,tmp_lat,1) )
+             new_meas->landFlag += 1; // bit 0 for land
+           
+           // Get Ice map value
+           if( qs_icemap.IsIce(tmp_lon,tmp_lat,new_meas->beamIdx) )
+             new_meas->landFlag += 2; // bit 1 for ice
+           
+           // Set numSlices, A, B, and C terms depending on if USE_COMPOSITING is set or not
+           if( do_composite == 0 ) {
+             // Set numslices == -1 to indicate software to 
+             // treat A,B,C as kp_alpha, kp_beta, kp_gamma.
+             new_meas->numSlices = -1;
+             double kprs2 = 0.0;
+             if (! kp.GetKprs2(new_meas, &kprs2)) {
+               fprintf(stderr, "%s: Error computing Kprs2\n",command);
                exit(1);
              }
-             //printf("pulse_ind, slice_shift_bits: %d %x\n", pulse_ind, slice_shift_bits );
-           
-             new_meas->startSliceIdx -= 5;
-             if( new_meas->startSliceIdx >= 0 ) new_meas->startSliceIdx += 1;
-           
-             // Get Land map value
-             new_meas->landFlag = 0;
-             if( qs_landmap.IsLand(tmp_lon,tmp_lat,1) )
-               new_meas->landFlag += 1; // bit 0 for land
-           
-             // Get Ice map value
-             if( qs_icemap.IsIce(tmp_lon,tmp_lat,new_meas->beamIdx) )
-               new_meas->landFlag += 2; // bit 1 for ice
-           
-             // Set numSlices, A, B, and C terms depending on if USE_COMPOSITING is set or not
-             if( do_composite == 0 ) {
-               // Set numslices == -1 to indicate software to 
-               // treat A,B,C as kp_alpha, kp_beta, kp_gamma.
-               new_meas->numSlices = -1;
-               double kprs2 = 0.0;
-               if (! kp.GetKprs2(new_meas, &kprs2)) {
-                 fprintf(stderr, "%s: Error computing Kprs2\n",command);
-                 exit(1);
-               }
              
-               double kpri2 = 0.0;
-               if( !kp.GetKpri2( &kpri2) ) {
-                 fprintf(stderr,"%s: Error computing Kpri2\n",command);
-                 exit(1);
-               }
+             double kpri2 = 0.0;
+             if( !kp.GetKpri2( &kpri2) ) {
+               fprintf(stderr,"%s: Error computing Kpri2\n",command);
+               exit(1);
+             }
 
-               // compute sigma-0 over SNR ratio.
-               double sos = 0.01*double(slice_sigma0[slice_ind])
-                          - 0.01*double(slice_snr[slice_ind]);
-               sos        = pow( 10.0, sos/10.0 ); 
+             // compute sigma-0 over SNR ratio.
+             double sos = 0.01*double(slice_sigma0[slice_ind])
+                        - 0.01*double(slice_snr[slice_ind]);
+             sos        = pow( 10.0, sos/10.0 ); 
              
-               double kpr2      = 1 + kprs2 + kpri2;
-               double kp_alpha  = (1+double(1e-4*slice_kpc_a[slice_ind])) * kpr2;
-               double kp_beta   = kp_B[gatewidth*2+new_meas->beamIdx]     * kpr2 * sos;
-               double kp_gamma  = kp_C[gatewidth*2+new_meas->beamIdx]     * kpr2 * sos * sos;
+             double kpr2      = 1 + kprs2 + kpri2;
+             double kp_alpha  = (1+double(1e-4*slice_kpc_a[slice_ind])) * kpr2;
+             double kp_beta   = kp_B[gatewidth*2+new_meas->beamIdx]     * kpr2 * sos;
+             double kp_gamma  = kp_C[gatewidth*2+new_meas->beamIdx]     * kpr2 * sos * sos;
               
-               // Set kp alpha, beta, gamma and correct for attenuation
-               new_meas->A = 1 + ( kp_alpha - 1 ) * atten_lin * atten_lin;
-               new_meas->B = kp_beta              * atten_lin * atten_lin;
-               new_meas->C = kp_gamma             * atten_lin * atten_lin;           
-             }
-             else {
-               // Set numslices == 1 to indicate software to treat A,B,C as kp_a, kp_b, kp_c.
-               new_meas->numSlices = 1; 
+             // Set kp alpha, beta, gamma and correct for attenuation
+             new_meas->A = 1 + ( kp_alpha - 1 ) * atten_lin * atten_lin;
+             new_meas->B = kp_beta              * atten_lin * atten_lin;
+             new_meas->C = kp_gamma             * atten_lin * atten_lin;           
+           }
+           else {
+             // Set numslices == 1 to indicate software to treat A,B,C as kp_a, kp_b, kp_c.
+             new_meas->numSlices = 1; 
            
-               // Set A, B, C for later compositing.
-               new_meas->A = double(1e-4*slice_kpc_a[slice_ind]);
-               new_meas->B = kp_B[gatewidth*2+new_meas->beamIdx];
-               new_meas->C = kp_C[gatewidth*2+new_meas->beamIdx];
-             }
+             // Set A, B, C for later compositing.
+             new_meas->A = double(1e-4*slice_kpc_a[slice_ind]);
+             new_meas->B = kp_B[gatewidth*2+new_meas->beamIdx];
+             new_meas->C = kp_C[gatewidth*2+new_meas->beamIdx];
+           }
            
-             if( fabs(new_meas->value) > 1.0e5 ) {
-               delete new_meas;
-               continue;
-             }
-           
+           if( fabs(new_meas->value) > 1.0e5 ) {
+             delete new_meas;
+             continue;
+           }
+
+           // Stick this meas in the measSpot
+           new_meas_spot->Append(new_meas);
+        }
+
+        // Compute land fractions for various coastal_methos
+        if(coastal_method != NONE) {
+
+          float this_frequency_shift = (float)frequency_shift[pulse_ind];
+          double spot_lon = double(cell_lon[pulse_ind])*dtr;
+          double spot_lat = double(cell_lat[pulse_ind])*dtr;
+
+          new_meas_spot->ComputeLandFraction( &lmap, coast_dist,
+                                              &antenna, this_frequency_shift,
+                                              spot_lon, spot_lat, lcres_accum,
+                                              lcres_map_tiles);
+
+          // Loop through Meas in this MeasSpot, decide to discard or not.
+          Meas* this_meas = new_meas_spot->GetHead();
+          while(this_meas) {
+            int remove_it = 0;
+
+            // Land contamination ratio
+            float lcr = this_meas->bandwidth;
+            float lcres = this_meas->txPulseWidth;
+
+            switch (coastal_method) {
+                case LCR:
+                    if(lcr > land_frac_threshold) remove_it = 1;
+                    break;
+
+                case LCRES_FLAG:
+                    if(lcres > lcres_thresh_flag) remove_it = 1;
+                    break;
+
+                case LCRES_CORR:
+                    if(lcres > lcres_thresh_corr || lcres >= this_meas->value) {
+                        remove_it = 1;
+                    } else {
+                        this_meas->value = (this_meas->value - lcres) / (1-lcr);
+                        if(fabs(this_meas->value) > 1.0e5)
+                            remove_it = 1;
+                    }
+                    break;
+
+            }
+
+            if(remove_it) {
+              this_meas = new_meas_spot->RemoveCurrent();
+              delete this_meas;
+              this_meas = new_meas_spot->GetCurrent();
+            } else {
+              // unset land flag
+              this_meas->landFlag &= ~(1<<0);
+              this_meas = new_meas_spot->GetNext();
+
              // Stick this meas in the measSpot
-             new_meas_spot->Append(new_meas);
+             new_meas_spot->Append(this_meas);
+            }
           }
-        
-          // Optionally compute land fractions
-          if( compute_land_frac ) {
+
+          // Compute land fractions for various coastal_methos
+          if(coastal_method != NONE && !do_footprint) {
+
             float this_frequency_shift = (float)frequency_shift[pulse_ind];
             double spot_lon = double(cell_lon[pulse_ind])*dtr;
             double spot_lat = double(cell_lat[pulse_ind])*dtr;
 
-            new_meas_spot->ComputeLandFraction( &lmap, &qs_landmap, 
+            new_meas_spot->ComputeLandFraction( &lmap, coast_dist,
                                                 &antenna, this_frequency_shift,
-                                                spot_lon, spot_lat);
-          
+                                                spot_lon, spot_lat, lcres_accum,
+                                                lcres_map_tiles);
+
+            // Loop through Meas in this MeasSpot, decide to discard or not.
             Meas* this_meas = new_meas_spot->GetHead();
-            while( this_meas ) {
-              if( this_meas->bandwidth > land_frac_threshold ) {
+            while(this_meas) {
+              int remove_it = 0;
+
+              // Land contamination ratio
+              float lcr = this_meas->bandwidth;
+              float lcres = this_meas->txPulseWidth;
+
+              switch (coastal_method) {
+                  case LCR:
+                      if(lcr > land_frac_threshold) remove_it = 1;
+                      break;
+
+                  case LCRES_FLAG:
+                      if(lcres > lcres_thresh_flag) remove_it = 1;
+                      break;
+
+                  case LCRES_CORR:
+                      if(lcres > lcres_thresh_corr) {
+                          remove_it = 1;
+                      } else {
+                          double sos = this_meas->EnSlice / this_meas->XK;
+                          this_meas->value = (this_meas->value - 1.75 * lcres);
+                          this_meas->C += 0.5 * pow(10*lcres/sos, 2);
+
+                          if(fabs(this_meas->value) > 1.0e5)
+                              remove_it = 1;
+                      }
+                      break;
+
+              }
+
+              if(remove_it) {
                 this_meas = new_meas_spot->RemoveCurrent();
                 delete this_meas;
                 this_meas = new_meas_spot->GetCurrent();
@@ -1188,6 +1220,8 @@ main(
               }
             }
           }
+
+
         }
         // Stick this measSpot in the spotList.
         l1b.frame.spotList.Append(new_meas_spot);
@@ -1216,7 +1250,10 @@ main(
         printf("Wrote %d frames of %d\n", i_frame, num_l1b_frames);
         //if( i_frame == 1000 ) exit(1);
     }
-    
+
+    if(coastal_method == LCRES_ACCUM)
+        lcres_accum->Write(config_list.Get(LCRES_ACCUM_FILE_KEYWORD));
+
     fclose(eph_fp);
     
     //Free the calloc-ed arrays.
@@ -1232,11 +1269,6 @@ main(
     free(antenna_azimuth);
     free(cell_lat);
     free(cell_lon);
-    free(cell_inc);
-    free(cell_azi);
-    free(cell_snr);
-    free(cell_sigma0);
-    free(cell_kpc_a);
     free(frequency_shift);
     free(slice_lat);
     free(slice_lon);

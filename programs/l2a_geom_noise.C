@@ -50,6 +50,8 @@ static const char rcs_id[] =
 #define CROSS_DIST 1900  // works for QuikSCAT.
 #define CENTER_OFFSET 20
 
+using namespace std;
+
 //-----------//
 // TEMPLATES //
 //-----------//
