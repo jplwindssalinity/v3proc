@@ -6,3 +6,35 @@ This software may be subject to U.S. export control laws. By accepting this soft
 
 # Instructions for building
 
+You will probably need to install some libs to make it build:
+
+hdf-4.2.13
+```
+./configure --prefix=$PREFIX --enable-netcdf=no --disable-fortran
+make -j && make install && make clean
+```
+
+IAU SOFA:
+go to http://www.iausofa.org/current_C.html and download the most recent c tarball.
+```
+cd sofa/20180130/c/src 
+make
+cp libsofa_c.a $PREFIX/lib
+```
+
+nlopt (most recent 2.5 uses cmake build system)
+```
+mkdir build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=/usr . && make all install
+```
+Eigen
+```
+mkdir build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=/usr . && make all install
+```
+
+Assuming you build and install the various libs into PREFIX enviornment variable.
+```
+./autogen.sh
+./configure -I$PREFIX/include -L"$PREFIX/lib $PREFIX/lib64"
+```
