@@ -8,10 +8,6 @@ AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_MACRO_DIR([m4])
 
-# Default values
-CPPFLAGS+=" -I/home/fore/software/sofa/20120301_a/c/src/ -I/home/fore/include"
-LDFLAGS+=" -L/home/fore/software/sofa/20120301_a/c/src/ -L/home/fore/lib"
-
 # Checks for programs.
 AC_PROG_AWK
 AC_PROG_CXX
