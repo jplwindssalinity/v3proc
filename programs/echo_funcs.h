@@ -10,6 +10,7 @@ static const char rcs_id_echo_funcs_h[] =
     "@(#) $Id$";
 
 #include <stdio.h>
+#include <unistd.h>
 #include "Qscat.h"
 #include "Array.h"
 #include "Index.h"

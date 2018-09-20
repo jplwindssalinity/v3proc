@@ -9,6 +9,8 @@
 #include <string.h>
 #include <signal.h>
 #include <vector>
+#include <unistd.h>
+
 #include "List.h"
 #include "BufferedList.h"
 #include "Misc.h"
