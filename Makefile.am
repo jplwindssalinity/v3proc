@@ -183,8 +183,8 @@ bin_PROGRAMS = \
     programs/gen_os2_l1b_fp_ecmwf                 \
     programs/l1b_to_l2a_collocate                 \
     programs/l2a_to_l2b_scatsat_ascat             \
-    programs/l2a_to_l2b_scatsat_2ascat
-    programs/l2a_to_l2b_sstgmf
+    programs/l2a_to_l2b_scatsat_2ascat            \
+    programs/l2a_to_l2b_sstgmf                    \
     programs/l1b_smap_to_l1b                      \
     programs/l1b_smap_tb_to_l1b                   \
     programs/l1b_smap_tb_to_dtb                   \
