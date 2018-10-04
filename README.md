@@ -1,3 +1,4 @@
+![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.png?v=103)
 # JPL Ocean Vector Winds and Sea Surface Salinity Processing Suite
 
 Copyright 1997-2018, by the California Institute of Technology. ALL RIGHTS RESERVED. United States Government Sponsorship acknowledged. Any commercial use must be negotiated with the Office of Technology Transfer at the California Institute of Technology.
