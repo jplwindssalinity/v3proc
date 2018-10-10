@@ -44,6 +44,7 @@ Assuming you build and install the various libs into PREFIX enviornment variable
 ```
 declare -x CPPFLAGS=-fpermissive\ -I$PREFIX/include\ -I$PREFIX/include/eigen3
 declare -x LDFLAGS=-L$PREFIX/lib\ -L$PREFIX/lib64\ -lhdf5_hl
+declare -x LD_LIBRARY_PATH=$PREFIX/lib:$PREFIX/lib64
 ./autogen.sh
 ./configure
 make -j
