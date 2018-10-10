@@ -26,12 +26,12 @@ cp libsofa_c.a $PREFIX/lib
 nlopt (most recent 2.5 uses cmake build system)
 ```
 mkdir build && cd build
-cmake -DCMAKE_INSTALL_PREFIX=/usr . && make -j && make install
+cmake -DCMAKE_INSTALL_PREFIX=$PREFIX .. && make -j && make install
 ```
 Eigen
 ```
 mkdir build && cd build
-cmake -DCMAKE_INSTALL_PREFIX=/usr . && make all install
+cmake -DCMAKE_INSTALL_PREFIX=$PREFIX .. && make -j && make install
 ```
 
 HDF5, must be built with the high-level interface enabled
