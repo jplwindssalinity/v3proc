@@ -171,7 +171,6 @@ bin_PROGRAMS = \
     programs/gen_os2_l1b_fp_ecmwf                 \
     programs/gen_qs_l1b_fp_ecmwf                  \
     programs/generate_rgc_from_ephem_quat_files   \
-    programs/RS_GSE_to_ephem_quat                 \
     programs/l2a_geom_noise                       \
     programs/quick_winds                          \
     programs/gen_os2_l1b_fp_ecmwf                 \
