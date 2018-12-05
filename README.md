@@ -11,7 +11,7 @@ You will probably need to install some libs to make it build:
 
 hdf-4.2.13
 ```
-./configure --prefix=$PREFIX --enable-netcdf=no --disable-fortran
+./configure --prefix=$PREFIX --enable-netcdf=no --disable-fortran --enable-shared=yes
 make -j && make install && make clean
 ```
 
