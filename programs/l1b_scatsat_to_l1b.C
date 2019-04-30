@@ -228,6 +228,15 @@ main(int argc, char* argv[]) {
             exit(1);
         }
         nframes[ipart] = atoi(attr_text);
+
+        hid_t sds_id = H5Dopen1(g_id, "Inner_beam_footprint_sigma0");
+        hid_t dspace = H5Dget_space(sds_id);
+        const int ndims = H5Sget_simple_extent_ndims(dspace);
+        hsize_t dims[ndims];
+        H5Sget_simple_extent_dims(dspace, dims, NULL);
+
+        printf("nframes attr, dset: %d %d\n", nframes[ipart], dims[0]);
+        nframes[ipart] = dims[0];
         H5Gclose(g_id);
         H5Fclose(h_id);
     }
