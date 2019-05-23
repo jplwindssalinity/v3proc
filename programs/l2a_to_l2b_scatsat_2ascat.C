@@ -2,7 +2,7 @@
 // Copyright (C) 2017, California Institute of Technology.      //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
-
+#define ANCILLARY_SST2B_FILE_KEYWORD "ANCILLARY_SST2B_FILE"
 #define FILL_VALUE -9999
 
 
@@ -97,8 +97,27 @@ int main(int argc, char* argv[]) {
     config_list.Read(config_file);
     config_list.ExitForMissingKeywords();
 
-    GMF gmf;
-    ConfigGMF(&gmf, &config_list);
+    GMF* gmf;
+
+    config_list.DoNothingForMissingKeywords();
+    SSTGMF sst_gmf(&config_list);
+    char* sstgmf_basepath = config_list.Get("SST_GMF_BASEPATH");
+    config_list.ExitForMissingKeywords();
+    int do_sst_gmf = (sstgmf_basepath != NULL);
+    std::vector<float> anc_sst;
+    anc_sst.resize(152*3248);
+
+    if (do_sst_gmf) {
+        printf("Using SST GMF\n");
+        char* anc_sst_filename = config_list.Get(ANCILLARY_SST2B_FILE_KEYWORD);
+        FILE* anc_sst_ifp = fopen(anc_sst_filename, "r");
+        fread(&anc_sst[0], sizeof(float), 152*3248, anc_sst_ifp);
+        fclose(anc_sst_ifp);
+    } else {
+        printf("Not using SST GMF\n");
+        gmf = new GMF();
+        ConfigGMF(gmf, &config_list);
+    }
 
     Kp kp;
     ConfigKp(&kp, &config_list);
@@ -282,6 +301,11 @@ int main(int argc, char* argv[]) {
         for(int cti=0; cti<ncti; ++cti) {
 
             int l2bidx = ati + nati*cti;
+
+            if(do_sst_gmf) {
+                float this_sst = anc_sst[l2bidx];
+                sst_gmf.Get(this_sst, &gmf);
+            }
 
             // initialized datasets
             flags[l2bidx] = 65535;
@@ -692,8 +716,8 @@ int main(int argc, char* argv[]) {
                 continue;
 
             WVC* wvc = new WVC();
-            gmf.RetrieveWinds_S3(&ml_joint, &kp, wvc);
-//             gmf.RetrieveWinds_S3(scatsat_ml, &kp, wvc);
+            gmf->RetrieveWinds_S3(&ml_joint, &kp, wvc);
+//             gmf->RetrieveWinds_S3(scatsat_ml, &kp, wvc);
 
             if(wvc->ambiguities.NodeCount() > 0) {
 
@@ -746,7 +770,7 @@ int main(int argc, char* argv[]) {
                 continue;
 
             WVC* ascat_only_wvc = new WVC();
-            gmf.RetrieveWinds_S3(&ml_joint, &kp, ascat_only_wvc);
+            gmf->RetrieveWinds_S3(&ml_joint, &kp, ascat_only_wvc);
             if(ascat_only_wvc->ambiguities.NodeCount() > 0) {
                 // Nudge it with the SCATSAT only DIRTH wind direction
                 ascat_only_wvc->selected = ascat_only_wvc->GetNearestToDirection(
@@ -1465,6 +1489,8 @@ int main(int argc, char* argv[]) {
     free_array((void *)l2a_ascat_swaths[0], 2, ncti, nati);
     free_array((void *)l2a_ascat_swaths[1], 2, ncti, nati);
     free_array((void *)l2a_scatsat_swath, 2, ncti, nati);
+ 
+    if(!do_sst_gmf) delete gmf;
     return(0);
 }
 
