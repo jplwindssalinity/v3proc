@@ -255,7 +255,7 @@ public:
     //--------------//
     // construction //
     //--------------//
-    SSTGMF(ConfigList* config_list, int n_buffer=20);
+    SSTGMF(ConfigList* config_list, int n_buffer=40);
     ~SSTGMF();
 
     int Get(float sst, GMF** gmf);
