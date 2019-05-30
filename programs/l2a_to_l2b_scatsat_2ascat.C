@@ -219,7 +219,7 @@ int main(int argc, char* argv[]) {
     std::vector<float> lat(l2b_size), lon(l2b_size);
     std::vector<float> spd(l2b_size), dir(l2b_size);
     std::vector<float> ascat_only_spd(l2b_size), ascat_only_dir(l2b_size);
-    std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size);
+    std::vector<float> anc_spd(l2b_size), anc_dir(l2b_size), out_anc_sst(l2b_size);
     std::vector<float> ambiguity_obj(l2b_size*4);
     std::vector<float> ambiguity_spd(l2b_size*4);
     std::vector<float> ambiguity_dir(l2b_size*4);
@@ -303,7 +303,9 @@ int main(int argc, char* argv[]) {
             int l2bidx = ati + nati*cti;
 
             if(do_sst_gmf) {
-                float this_sst = anc_sst[l2bidx];
+                int anc_idx = cti + ncti*ati;
+                float this_sst = anc_sst[anc_idx];
+                out_anc_sst[l2bidx] = this_sst + 273.15;
                 sst_gmf.Get(this_sst, &gmf);
             }
 
@@ -944,6 +946,16 @@ int main(int argc, char* argv[]) {
 //     H5LTset_attribute_float(file_id, "ascat_b_lon", "valid_max", &valid_max, 1);
 //     H5LTset_attribute_float(file_id, "ascat_b_lon", "valid_min", &valid_min, 1);
 //     H5LTset_attribute_string(file_id, "ascat_b_lon", "units", "degrees_north");
+
+    if(do_sst_gmf) {
+        valid_max = 340; valid_min = 0;
+        H5LTmake_dataset(
+            file_id, "anc_sst", 2, dims, H5T_NATIVE_FLOAT, &out_anc_sst[0]);
+        H5LTset_attribute_float(file_id, "anc_sst", "valid_max", &valid_max, 1);
+        H5LTset_attribute_float(file_id, "anc_sst", "valid_min", &valid_min, 1);
+        H5LTset_attribute_string(file_id, "anc_sst", "units", "K");
+    }
+
 
     valid_max = 100; valid_min = 0;
     H5LTmake_dataset(file_id, "anc_spd", 2, dims, H5T_NATIVE_FLOAT, &anc_spd[0]);
