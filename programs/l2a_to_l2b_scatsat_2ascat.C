@@ -227,6 +227,10 @@ int main(int argc, char* argv[]) {
     std::vector<uint16> flags(l2b_size);
     std::vector<uint16> eflags(l2b_size);
 
+    std::vector<float> ascat_only_ambiguity_spd(l2b_size*4);
+    std::vector<float> ascat_only_ambiguity_dir(l2b_size*4);
+    std::vector<uint8> ascat_only_num_ambiguities(l2b_size);
+
     std::vector<float> scatsat_only_spd(l2b_size), scatsat_only_dir(l2b_size);
     std::vector<float> scatsat_only_spd_uncorrected(l2b_size);
     std::vector<float> scatsat_rain_impact(l2b_size);
@@ -266,6 +270,7 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<float> > ascat_azi_fore(2);
     std::vector<std::vector<float> > ascat_azi_mid(2);
     std::vector<std::vector<float> > ascat_azi_aft(2);
+    std::vector<std::vector<uint8> > ascat_midbeam_index(2);
 
     for(int ii = 0; ii < 2; ++ii) {
         ascat_time_diff[ii].resize(l2b_size);
@@ -283,6 +288,7 @@ int main(int argc, char* argv[]) {
         ascat_azi_fore[ii].resize(l2b_size);
         ascat_azi_mid[ii].resize(l2b_size);
         ascat_azi_aft[ii].resize(l2b_size);
+        ascat_midbeam_index[ii].resize(l2b_size);
     }
 
     WindSwath wind_swath, wind_swath_ascat_only;
@@ -313,6 +319,7 @@ int main(int argc, char* argv[]) {
             flags[l2bidx] = 65535;
             eflags[l2bidx] = 65535;
             num_ambiguities[l2bidx] = 255;
+            ascat_only_num_ambiguities[l2bidx] = 255;
             scatsat_only_num_ambiguities[l2bidx] = 255;
             lat[l2bidx] = FILL_VALUE;
             lon[l2bidx] = FILL_VALUE;
@@ -351,6 +358,8 @@ int main(int argc, char* argv[]) {
                 ambiguity_spd[ambidx] = FILL_VALUE;
                 ambiguity_dir[ambidx] = FILL_VALUE;
                 ambiguity_obj[ambidx] = FILL_VALUE;
+                ascat_only_ambiguity_spd[ambidx] = FILL_VALUE;
+                ascat_only_ambiguity_dir[ambidx] = FILL_VALUE;
             }
 
             for(int ii=0; ii<2; ++ii) {
@@ -369,6 +378,7 @@ int main(int argc, char* argv[]) {
                 ascat_azi_fore[ii][l2bidx] = FILL_VALUE;
                 ascat_azi_mid[ii][l2bidx] = FILL_VALUE;
                 ascat_azi_aft[ii][l2bidx] = FILL_VALUE;
+                ascat_midbeam_index[ii][l2bidx] = 255;
             }
 
             // Get pointer to prev L2B file and L2A swath
@@ -700,6 +710,7 @@ int main(int argc, char* argv[]) {
                         ascat_azi_fore[imetop][l2bidx] = this_azi;
 
                     } else if(ibeam == 1 || ibeam == 4) {
+                        ascat_midbeam_index[imetop][l2bidx] = ibeam;
                         ascat_sigma0_mid[imetop][l2bidx] = this_meas->value;
                         ascat_var_sigma0_mid[imetop][l2bidx] = this_meas->C;
                         ascat_inc_mid[imetop][l2bidx] = this_inc;
@@ -800,6 +811,8 @@ int main(int argc, char* argv[]) {
 
             WVC* wvc = wind_swath.GetWVC(cti, ati);
             WVC* ku_ambig_wvc = l2b_scatsat_nofilt.frame.swath.GetWVC(cti, ati);
+            WVC* c_ambig_wvc = wind_swath_ascat_only.GetWVC(cti, ati);
+
             if(!wvc || !ku_ambig_wvc)
                 continue;
 
@@ -828,6 +841,24 @@ int main(int argc, char* argv[]) {
                 scatsat_only_ambiguity_dir[ambidx] = pe_rad_to_gs_deg(wvp->dir);
                 if(scatsat_only_ambiguity_dir[ambidx]>180)
                     scatsat_only_ambiguity_dir[ambidx] -= 360;
+                ++j_amb;
+            }
+
+            if(!c_ambig_wvc)
+                continue;
+
+            ascat_only_num_ambiguities[l2bidx] =
+                c_ambig_wvc->ambiguities.NodeCount();
+
+            j_amb = 0;
+            for(WindVectorPlus* wvp = c_ambig_wvc->ambiguities.GetHead(); wvp;
+                wvp = c_ambig_wvc->ambiguities.GetNext()){
+
+                int ambidx = j_amb + 4*l2bidx;
+                ascat_only_ambiguity_spd[ambidx] = wvp->spd;
+                ascat_only_ambiguity_dir[ambidx] = pe_rad_to_gs_deg(wvp->dir);
+                if(ascat_only_ambiguity_dir[ambidx]>180)
+                    ascat_only_ambiguity_dir[ambidx] -= 360;
                 ++j_amb;
             }
 
@@ -1016,6 +1047,16 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_string(
         file_id, "ambiguity_spd", "units", "m s-1");
 
+    H5LTmake_dataset(
+        file_id, "ascat_only_ambiguity_spd", 3, dims, H5T_NATIVE_FLOAT,
+        &ascat_only_ambiguity_spd[0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_only_ambiguity_spd", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_only_ambiguity_spd", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "ascat_only_ambiguity_spd", "units", "m s-1");
+
 
     valid_max = 180; valid_min = -180;
     H5LTmake_dataset(
@@ -1066,6 +1107,16 @@ int main(int argc, char* argv[]) {
         file_id, "scatsat_only_ambiguity_dir", "valid_min", &valid_min, 1);
     H5LTset_attribute_string(
         file_id, "scatsat_only_ambiguity_dir", "units", "degrees");
+
+    H5LTmake_dataset(
+        file_id, "ascat_only_ambiguity_dir", 3, dims, H5T_NATIVE_FLOAT,
+        &ascat_only_ambiguity_dir[0]);
+    H5LTset_attribute_float(
+        file_id, "ascat_only_ambiguity_dir", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(
+        file_id, "ascat_only_ambiguity_dir", "valid_min", &valid_min, 1);
+    H5LTset_attribute_string(
+        file_id, "ascat_only_ambiguity_dir", "units", "degrees");
 
     valid_max = 300; valid_min = 0;
     H5LTmake_dataset(
@@ -1481,6 +1532,36 @@ int main(int argc, char* argv[]) {
         1);
     H5LTset_attribute_uchar(
         file_id, "scatsat_only_num_ambiguities", "valid_min", &uchar_valid_min,
+        1);
+
+    H5LTmake_dataset(
+        file_id, "ascat_a_midbeam_index", 2, dims, H5T_NATIVE_UCHAR,
+        &ascat_midbeam_index[0][0]);
+    H5LTset_attribute_uchar(
+        file_id, "ascat_a_midbeam_index", "valid_max", &uchar_valid_max,
+        1);
+    H5LTset_attribute_uchar(
+        file_id, "ascat_a_midbeam_index", "valid_min", &uchar_valid_min,
+        1);
+
+    H5LTmake_dataset(
+        file_id, "ascat_b_midbeam_index", 2, dims, H5T_NATIVE_UCHAR,
+        &ascat_midbeam_index[1][0]);
+    H5LTset_attribute_uchar(
+        file_id, "ascat_b_midbeam_index", "valid_max", &uchar_valid_max,
+        1);
+    H5LTset_attribute_uchar(
+        file_id, "ascat_b_midbeam_index", "valid_min", &uchar_valid_min,
+        1);
+
+    H5LTmake_dataset(
+        file_id, "ascat_only_num_ambiguities", 2, dims, H5T_NATIVE_UCHAR,
+        &ascat_only_num_ambiguities[0]);
+    H5LTset_attribute_uchar(
+        file_id, "ascat_only_num_ambiguities", "valid_max", &uchar_valid_max,
+        1);
+    H5LTset_attribute_uchar(
+        file_id, "ascat_only_num_ambiguities", "valid_min", &uchar_valid_min,
         1);
 
     uint16 u16_value = 65535;
