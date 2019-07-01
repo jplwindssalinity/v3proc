@@ -1349,3 +1349,52 @@ void AscatFile::get_node_new(int inode, AscatSZFNodeNew *ascat_szf_node) {
 
 }
 
+ASCATNOC::ASCATNOC() {
+    return;
+}
+
+ASCATNOC::ASCATNOC(const char* filename) {
+    Read(filename);
+    return;
+}
+
+ASCATNOC::~ASCATNOC() {
+    return;
+}
+
+int ASCATNOC::Read(const char* filename) {
+    _table.resize(6);
+    FILE* ifp = fopen(filename, "r");
+    fread(&_incmin, sizeof(float), 1, ifp);
+    fread(&_dinc, sizeof(float), 1, ifp);
+    fread(&_ninc, sizeof(int), 1, ifp);
+    for(int ibeam = 0; ibeam < 6; ++ibeam) {
+        _table[ibeam].resize(_ninc);
+        fread(&_table[ibeam][0], sizeof(float), _ninc, ifp);
+    }
+    fclose(ifp);
+    return(1);
+}
+
+int ASCATNOC::Get(float inc, int ibeam, float* correction) {
+
+    if(inc < _incmin || inc > _incmin+_dinc*_ninc) {
+        printf("ASCATNOC::Get: inputs out of range: %f\n", inc);
+        *correction = 0;
+        return(0);
+    }
+
+    int iinc0 = floor((inc-_incmin)/_dinc);
+    if(iinc0 == _ninc) iinc0 = _ninc - 1;
+
+    int iinc1 = 1+iinc0;
+
+    float finc0 = _incmin+iinc0*_dinc;
+    float finc1 = _incmin+iinc1*_dinc;
+
+    *correction = _table[ibeam][iinc0]
+        * (inc-finc0)*(_table[ibeam][iinc1]-_table[ibeam][iinc0])
+        / (finc1-finc0);
+
+    return(1);
+}

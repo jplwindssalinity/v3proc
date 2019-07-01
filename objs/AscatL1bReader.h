@@ -1,3 +1,8 @@
+#ifndef ASCATL1BREADER_H
+#define ASCATL1BREADER_H
+
+#include <vector>
+
 /////////////////////////////////////////
 // header file for ascat level 1b reader
 /////////////////////////////////////////
@@ -156,3 +161,24 @@ class AscatFile
 
 };
 
+class ASCATNOC {
+public:
+    ASCATNOC();
+    ~ASCATNOC();
+
+    ASCATNOC(const char* filename);
+
+    int Read(const char* filename);
+
+    // ibeam [0, 1, 2] - left (fore, mid, aft);
+    //       [3, 4, 5] - right (fore, mid, aft);
+    int Get(float inc, int ibeam, float* correction);
+
+private:
+    std::vector<std::vector<float> > _table;
+    int _ninc;
+    float _incmin;
+    float _dinc;
+};
+
+#endif

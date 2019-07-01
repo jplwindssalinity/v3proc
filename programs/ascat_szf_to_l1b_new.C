@@ -49,6 +49,11 @@ int main(int argc, char* argv[]) {
 
     const char* command = no_path(argv[0]);
     char* config_file = argv[1];
+    char* ascat_noc_table_file = NULL;
+    if(argc == 3) ascat_noc_table_file = argv[2];
+
+    ASCATNOC ascat_noc_table;
+    if(ascat_noc_table_file) ascat_noc_table.Read(ascat_noc_table_file);
 
     ConfigList config_list;
     if(!config_list.Read(config_file)) {
@@ -149,6 +154,15 @@ int main(int argc, char* argv[]) {
                 if(ascat_szf_node.is_bad)
                     continue;
 
+                // check inc in range
+                if(ascat_szf_node.beam == 2 || ascat_szf_node.beam == 4) {
+                    if(ascat_szf_node.t0 < 27.6 || ascat_szf_node.t0 > 52.4)
+                        continue;
+                } else {
+                    if(ascat_szf_node.t0 < 36.8 || ascat_szf_node.t0 > 63.7)
+                        continue;
+                }
+
                 Meas* new_meas = new Meas();
 
                 new_meas->measType = Meas::C_BAND_VV_MEAS_TYPE;
@@ -172,6 +186,14 @@ int main(int argc, char* argv[]) {
                 new_meas->B = 0;
                 new_meas->C = time;
                 new_meas->landFlag = 0;
+
+                // apply NOC table
+                float inc = ascat_szf_node.t0;
+                float correction = 0;
+                if(ascat_noc_table_file) {
+                    ascat_noc_table.Get(inc, new_meas->beamIdx, &correction);
+                    new_meas->value *= pow(10, correction/10);
+                }
 
                 double distance;
                 coast_dist.Get(tmp_lon, tmp_lat, &distance);
