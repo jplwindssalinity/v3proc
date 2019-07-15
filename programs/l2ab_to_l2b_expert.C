@@ -55,9 +55,10 @@ template class std::map<string,string,Options::ltstr>;
 int main(int argc, char* argv[]) {
 
     const char* command = no_path(argv[0]);
-    char* config_file = argv[1];
-    char* l2b_no_filter = argv[2];
-    char* out_file = argv[3];
+    char* l2a_file = argv[1];
+    char* l2b_no_filter_file = argv[2];
+    char* l2b_dirth_file = argv[3];
+    char* out_file = argv[4];
     int optind = 4;
     int is_ascat = 0;
     while((optind < argc) && (argv[optind][0] == '-')) {
@@ -72,24 +73,20 @@ int main(int argc, char* argv[]) {
         optind++;
     }
 
-    ConfigList config_list;
-    config_list.Read(config_file);
-    config_list.ExitForMissingKeywords();
-
     L2A l2a;
     L2B l2b, l2b_nofilt;
 
-    l2a.SetInputFilename(config_list.Get("L2A_FILE"));
+    l2a.SetInputFilename(l2a_file);
     l2a.OpenForReading();
     l2a.ReadHeader();
 
-    l2b.SetInputFilename(config_list.Get("L2B_FILE"));
+    l2b.SetInputFilename(l2b_dirth_file);
     l2b.OpenForReading();
     l2b.ReadHeader();
     l2b.ReadDataRec();
     l2b.Close();
 
-    l2b_nofilt.SetInputFilename(l2b_no_filter);
+    l2b_nofilt.SetInputFilename(l2b_no_filter_file);
     l2b_nofilt.OpenForReading();
     l2b_nofilt.ReadHeader();
     l2b_nofilt.ReadDataRec();
@@ -139,8 +136,12 @@ int main(int argc, char* argv[]) {
     std::vector<float>
         relazi_fore(l2b_size), relazi_mid(l2b_size), relazi_aft(l2b_size);
 
+
+    int num_dirs = 90;
+    std::vector<float> best_spd(l2b_size*num_dirs), best_obj(l2b_size*num_dirs);
+
     for(int ati=0; ati<nati; ++ati) {
-        if(ati%100 == 0)
+        if(ati%200 == 0)
             fprintf(stdout, "%d of %d\n", ati, nati);
         for(int cti=0; cti<ncti; ++cti) {
 
@@ -185,12 +186,22 @@ int main(int argc, char* argv[]) {
                 amb_obj[ambidx] = FILL_VALUE;
             }
 
+            for(int jj=0; jj<num_dirs; ++jj){
+                int ridge_idx = jj + 90*l2bidx;
+                best_spd[ridge_idx] = FILL_VALUE;
+                best_obj[ridge_idx] = FILL_VALUE;
+            }
+
             WVC* ambig_wvc = l2b_nofilt.frame.swath.GetWVC(cti, ati);
             WVC* dirth_wvc = l2b.frame.swath.GetWVC(cti, ati);
 
             if(!l2a_swath[cti][ati] || !ambig_wvc || !dirth_wvc)
                 continue;
 
+            if(ambig_wvc->directionRanges.dirIdx.GetBins() != num_dirs) {
+                printf("Error: wrong number of bins for best spd ridge!\n");
+                exit(1);
+            }
 
             int npols = (is_ascat==1) ? 1 : 2;
             int nlks = (is_ascat==1) ? 3 : 2;
@@ -245,7 +256,7 @@ int main(int argc, char* argv[]) {
                 sum_s02[ilook][ipol] += pow(meas->value, 2);
                 sum_cos_azi[ilook][ipol] += cos(meas->eastAzimuth);
                 sum_sin_azi[ilook][ipol] += sin(meas->eastAzimuth);
-                sum_inc[ilook][ipol] += meas->incidenceAngle;
+                sum_inc[ilook][ipol] += meas->incidenceAngle * 180/M_PI;;
                 cnts[ilook][ipol]++;
             }
 
@@ -320,6 +331,13 @@ int main(int argc, char* argv[]) {
                 relazi_vv_aft[l2bidx] = relazi[1][1];
             }
 
+            // assign best speed obj function ridges
+            for(int ibin = 0; ibin < num_dirs; ++ibin) {
+                int ridge_idx = ibin + 90*l2bidx;
+                best_spd[ridge_idx] = ambig_wvc->directionRanges.bestSpd[ibin];
+                best_obj[ridge_idx] = ambig_wvc->directionRanges.bestObj[ibin];
+            }
+
             // assign l2b ambig related quantities
             num_ambiguities[l2bidx] = ambig_wvc->ambiguities.NodeCount();
             int j_amb = 0;
@@ -342,6 +360,20 @@ int main(int argc, char* argv[]) {
     float valid_max, valid_min;
     hsize_t dims[3] = {ncti, nati, 4};
     hsize_t dims_amb[3] = {ncti, nati, 4};
+    hsize_t dims_ridge[3] = {ncti, nati, 90};
+
+    valid_max = 0; valid_min = -199;
+    H5LTmake_dataset(
+        file_id, "obj_ridge", 3, dims_ridge, H5T_NATIVE_FLOAT, &best_obj[0]);
+    H5LTset_attribute_float(file_id, "obj_ridge", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "obj_ridge", "valid_min", &valid_min, 1);
+
+    valid_max = 100; valid_min = 0;
+    H5LTmake_dataset(
+        file_id, "spd_ridge", 3, dims_ridge, H5T_NATIVE_FLOAT, &best_spd[0]);
+    H5LTset_attribute_float(file_id, "spd_ridge", "valid_max", &valid_max, 1);
+    H5LTset_attribute_float(file_id, "spd_ridge", "valid_min", &valid_min, 1);
+
 
     valid_max = 90; valid_min = -90;
     H5LTmake_dataset(file_id, "lat", 2, dims, H5T_NATIVE_FLOAT, &lat[0]);
@@ -356,23 +388,24 @@ int main(int argc, char* argv[]) {
     H5LTset_attribute_string(file_id, "lon", "units", "degrees_east");
 
     valid_max = 100; valid_min = 0;
-    H5LTmake_dataset(file_id, "amb_spd", 2, dims, H5T_NATIVE_FLOAT, &amb_spd[0]);
+    H5LTmake_dataset(
+        file_id, "amb_spd", 3, dims_amb, H5T_NATIVE_FLOAT, &amb_spd[0]);
     H5LTset_attribute_float(file_id, "amb_spd", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "amb_spd", "valid_min", &valid_min, 1);
     H5LTset_attribute_string(file_id, "amb_spd", "units", "m s-1");
 
     valid_max = 180; valid_min = -180;
-    H5LTmake_dataset(file_id, "amb_dir", 2, dims, H5T_NATIVE_FLOAT, &amb_dir[0]);
+    H5LTmake_dataset(
+        file_id, "amb_dir", 3, dims_amb, H5T_NATIVE_FLOAT, &amb_dir[0]);
     H5LTset_attribute_float(file_id, "amb_dir", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "amb_dir", "valid_min", &valid_min, 1);
     H5LTset_attribute_string(file_id, "amb_dir", "units", "degrees");
 
     valid_max = 0; valid_min = -199;
-    H5LTmake_dataset(file_id, "amb_obj", 3, dims, H5T_NATIVE_FLOAT, &amb_obj[0]);
+    H5LTmake_dataset(
+        file_id, "amb_obj", 3, dims_amb, H5T_NATIVE_FLOAT, &amb_obj[0]);
     H5LTset_attribute_float(file_id, "amb_obj", "valid_max", &valid_max, 1);
     H5LTset_attribute_float(file_id, "amb_obj", "valid_min", &valid_min, 1);
-
-    
 
     if(is_ascat) {
         valid_max = 10; valid_min = -0.01;
