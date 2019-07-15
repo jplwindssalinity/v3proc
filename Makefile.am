@@ -198,7 +198,8 @@ bin_PROGRAMS = \
     programs/l2a_to_l2b_cap_tbonly                \
     programs/l2a_to_l2b_cap_tbonly_avg_s0         \
     programs/smap_match_l1b_l1c                   \
-    programs/l1b_smap_tb_to_land_frac
+    programs/l1b_smap_tb_to_land_frac             \
+    programs/l2ab_to_l2b_expert
 
 # other programs (requires external libraries)
 # programs/generate_rgc_from_ephem_quat_files
