@@ -1363,15 +1363,12 @@ ASCATNOC::~ASCATNOC() {
 }
 
 int ASCATNOC::Read(const char* filename) {
-    _table.resize(6);
     FILE* ifp = fopen(filename, "r");
     fread(&_incmin, sizeof(float), 1, ifp);
     fread(&_dinc, sizeof(float), 1, ifp);
     fread(&_ninc, sizeof(int), 1, ifp);
-    for(int ibeam = 0; ibeam < 6; ++ibeam) {
-        _table[ibeam].resize(_ninc);
-        fread(&_table[ibeam][0], sizeof(float), _ninc, ifp);
-    }
+    _table.resize(6*_ninc);
+    fread(&_table[0], sizeof(float), _ninc*6, ifp);
     fclose(ifp);
     return(1);
 }
@@ -1387,14 +1384,18 @@ int ASCATNOC::Get(float inc, int ibeam, float* correction) {
     int iinc0 = floor((inc-_incmin)/_dinc);
     if(iinc0 == _ninc) iinc0 = _ninc - 1;
 
-    int iinc1 = 1+iinc0;
+    int iinc1 = 1 + iinc0;
 
-    float finc0 = _incmin+iinc0*_dinc;
-    float finc1 = _incmin+iinc1*_dinc;
+    float finc0 = _incmin+(float)iinc0*_dinc;
+    float finc1 = _incmin+(float)iinc1*_dinc;
+    float corr0 = _table[iinc0+ibeam*_ninc];
+    float corr1 = _table[iinc1+ibeam*_ninc];
 
-    *correction = _table[ibeam][iinc0]
-        * (inc-finc0)*(_table[ibeam][iinc1]-_table[ibeam][iinc0])
-        / (finc1-finc0);
+    *correction = corr0 + (inc-finc0)*(corr1-corr0) / (finc1-finc0);
+
+//     printf(
+//         "%f %d %d %f %f %f %f %f\n", inc, iinc0, iinc1, finc0, finc1, corr0,
+//         corr1, *correction);
 
     return(1);
 }

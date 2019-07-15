@@ -175,7 +175,7 @@ public:
     int Get(float inc, int ibeam, float* correction);
 
 private:
-    std::vector<std::vector<float> > _table;
+    std::vector<float> _table;
     int _ninc;
     float _incmin;
     float _dinc;

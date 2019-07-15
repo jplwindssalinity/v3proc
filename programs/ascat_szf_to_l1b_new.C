@@ -191,8 +191,12 @@ int main(int argc, char* argv[]) {
                 float inc = ascat_szf_node.t0;
                 float correction = 0;
                 if(ascat_noc_table_file) {
-                    ascat_noc_table.Get(inc, new_meas->beamIdx, &correction);
-                    new_meas->value *= pow(10, correction/10);
+                    if(ascat_noc_table.Get(inc, new_meas->beamIdx, &correction)) {
+                        new_meas->value *= pow(10, correction/10);
+                    } else {
+                        delete new_meas;
+                        continue;
+                    }
                 }
 
                 double distance;
