@@ -1393,6 +1393,9 @@ int ASCATNOC::Get(float inc, int ibeam, float* correction) {
 
     *correction = corr0 + (inc-finc0)*(corr1-corr0) / (finc1-finc0);
 
+    if(!isfinite(*correction))
+        return(0);
+
 //     printf(
 //         "%f %d %d %f %f %f %f %f\n", inc, iinc0, iinc1, finc0, finc1, corr0,
 //         corr1, *correction);

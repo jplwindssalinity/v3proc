@@ -263,9 +263,12 @@ int main(int argc, char* argv[]) {
                     this_meas->eastAzimuth = atan2(
                         sum_sin_azi[ibeam], sum_cos_azi[ibeam]);
 
-                    this_meas->A = 
+                    this_meas->A = 1;
+                    this_meas->B = 0;
+                    this_meas->C = 
                         (sum_s02[ibeam]-pow(sum_s0[ibeam], 2)/(float)cnts[ibeam])/
                         (float)(cnts[ibeam]-1);
+                    this_meas->numSlices = -1;
 
                     ml_avg.Append(this_meas);
 
