@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
     char* l2b_no_filter_file = argv[2];
     char* l2b_dirth_file = argv[3];
     char* out_file = argv[4];
-    int optind = 4;
+    int optind = 5;
     int is_ascat = 0;
     while((optind < argc) && (argv[optind][0] == '-')) {
         std::string sw = argv[optind];
