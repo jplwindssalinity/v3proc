@@ -97,7 +97,24 @@ int main(int argc, char* argv[]) {
     config_list.WarnForMissingKeywords();
     l1b_szf_files[1] = config_list.Get("L1B_SZF_FILE2");
     l1b_szf_files[2] = config_list.Get("L1B_SZF_FILE3");
+
+    int do_ascat_south2south = 0;
+    config_list.GetInt("DO_ASCAT_SOUTH_TO_SOUTH", &grid_starts_south_pole);
     config_list.ExitForMissingKeywords();
+
+    double rev_start, rev_stop;
+    if(do_ascat_south2south) {
+        etime.FromCodeB(config_list.Get("REV_START_TIME"));
+        rev_start = (
+            (double)etime.GetSec() + (double)etime.GetMs()/1000);
+
+        etime.FromCodeB(config_list.Get("REV_STOP_TIME"));
+        rev_stop = (
+            (double)etime.GetSec() + (double)etime.GetMs()/1000);
+        printf("%f %f\n", rev_start, rev_stop);
+    }
+
+
 
     for(int ipart = 0; ipart < 3; ++ipart) {
 
@@ -134,6 +151,9 @@ int main(int argc, char* argv[]) {
 
             double time = ascat_szf_node_first.tm*86400 + ascat_base;
 
+            if(do_ascat_south2south && (time < rev_start || time > rev_stop))
+                continue;
+
             MeasSpot* new_meas_spot = new MeasSpot();
 
             new_meas_spot->time = time;
@@ -156,10 +176,10 @@ int main(int argc, char* argv[]) {
 
                 // check inc in range
                 if(ascat_szf_node.beam == 2 || ascat_szf_node.beam == 4) {
-                    if(ascat_szf_node.t0 < 27.6 || ascat_szf_node.t0 > 52.4)
+                    if(ascat_szf_node.t0 < 25 || ascat_szf_node.t0 > 55)
                         continue;
                 } else {
-                    if(ascat_szf_node.t0 < 36.8 || ascat_szf_node.t0 > 63.7)
+                    if(ascat_szf_node.t0 < 34 || ascat_szf_node.t0 > 65)
                         continue;
                 }
 
