@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
                     continue;
 
                 // check inc in range
-                if(ascat_szf_node.beam == 2 || ascat_szf_node.beam == 4) {
+                if(ascat_szf_node.beam == 2 || ascat_szf_node.beam == 5) {
                     if(ascat_szf_node.t0 < 25 || ascat_szf_node.t0 > 55)
                         continue;
                 } else {
