@@ -262,8 +262,8 @@ public:
 
 private:
     static const float _sstMin = 1.5;
-    static const float _sstStep = 0.2;
-    static const int _nSST = 150;
+    static const float _sstStep = 0.4;
+    static const int _nSST = 75;
     int _nBuffer;
     std::vector<GMF*> _gmfs;
     std::vector<int> _isst;

@@ -7010,7 +7010,7 @@ int SSTGMF::_LoadAndGet(float sst, GMF** gmf) {
     char filename[1024];
     float gmf_sst = _sstMin + (float)_STToIdx(sst) * _sstStep;
     sprintf(filename, "%s_%04.1f.dat", _gmfBasename, gmf_sst);
-
+    // printf("loading %s\n", filename);
     // Allocate and construct GMF pointed to by this_gmf
     GMF* this_gmf = new GMF();
 
