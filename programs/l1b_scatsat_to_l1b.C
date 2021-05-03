@@ -117,6 +117,8 @@ main(int argc, char* argv[]) {
     char* config_file = argv[1];
     int do_footprint = 0;
     int flag_old_slice_sizes = 0;
+    int hh_only = 0;
+    int vv_only = 0;
 
     optind = 2;
     while((optind < argc) && (argv[optind][0]=='-')) {
@@ -125,6 +127,10 @@ main(int argc, char* argv[]) {
             do_footprint = 1;
         } else if(sw == "--old-slice-sizes") {
             flag_old_slice_sizes = 1;
+        } else if(sw == "--hh-only") {
+            hh_only = 1;
+        } else if(sw == "--vv-only") {
+            vv_only = 1;
         } else {
             fprintf(stderr,"%s: Unknow option\n", command);
             exit(1);
@@ -444,6 +450,9 @@ main(int argc, char* argv[]) {
 
             l1b.frame.spotList.FreeContents();
             for(int ipol = 0; ipol < 2; ++ipol) {
+
+                if(vv_only && ipol==0) continue;
+                if(hh_only && ipol==1) continue;
 
                 for(int ifootprint=0; ifootprint < nfootprints[ipol];
                     ++ifootprint) {
