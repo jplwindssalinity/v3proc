@@ -153,8 +153,8 @@ main(int argc, char* argv[]) {
             break;        // done, exit do loop
         }
 
-        if(irec%100==0) printf("irec %d\n", irec);
-        irec++;
+//         if(irec%100==0) printf("irec %d\n", irec);
+//         irec++;
 
         int ati = l2a.frame.ati;
         int cti = l2a.frame.cti;
